@@ -1,50 +1,25 @@
-# Default values for dkonsole
-replicaCount: 1
+# DKonsole Configuration
+# Only configure what you need. Leave the rest as default.
 
-image:
-  backend:
-    repository: dkonsole/dkonsole-backend
-    pullPolicy: IfNotPresent
-    tag: "0.0.4"
-  frontend:
-    repository: dkonsole/dkonsole-frontend
-    pullPolicy: IfNotPresent
-    tag: "0.0.4"
+# -----------------------------------------------------------------------------
+# 1. Authentication (REQUIRED)
+# -----------------------------------------------------------------------------
+admin:
+  # Username for the dashboard
+  username: admin
+  # Password hash (Argon2). Generate with:
+  # echo -n "password" | argon2 $(openssl rand -base64 16) -id -t 3 -m 12 -p 1 -l 32 -e
+  passwordHash: ""
 
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
+# JWT Secret for session security. Generate with: openssl rand -base64 32
+jwtSecret: ""
 
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
-
-podAnnotations: {}
-
-podSecurityContext:
-  fsGroup: 2000
-
-securityContext:
-  {}
-
-service:
-  type: ClusterIP
-  backend:
-    port: 8080
-  frontend:
-    port: 80
-
+# -----------------------------------------------------------------------------
+# 2. Ingress / External Access (REQUIRED for external access)
+# -----------------------------------------------------------------------------
 ingress:
   enabled: true
   className: "nginx"
-  annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
   hosts:
     - host: dkonsole.example.com
       paths:
@@ -59,91 +34,54 @@ ingress:
       hosts:
         - dkonsole.example.com
 
-# Admin credentials (stored in Kubernetes Secret)
-admin:
-  # Generate hash with: echo -n "yourpassword" | argon2 $(openssl rand -base64 16) -id -t 3 -m 12 -p 1 -l 32 -e
-  username: admin
-  # This should be an Argon2 hash. If empty, default password "password" will be used (INSECURE!)
-  passwordHash: ""
-  
-# JWT secret for token signing (should be a random string)
-# Generate with: openssl rand -base64 32
-jwtSecret: ""
+# -----------------------------------------------------------------------------
+# 3. Docker Images (Optional - Defaults to official images)
+# -----------------------------------------------------------------------------
+image:
+  backend:
+    repository: dkonsole/dkonsole-backend
+    tag: "0.0.5"
+    pullPolicy: Always
+  frontend:
+    repository: dkonsole/dkonsole-frontend
+    tag: "0.0.5"
+    pullPolicy: Always
 
-# RBAC permissions for the ServiceAccount
+# -----------------------------------------------------------------------------
+# 4. Persistence (Optional - For custom logos)
+# -----------------------------------------------------------------------------
+persistence:
+  enabled: true
+  size: 1Gi
+  # storageClass: "standard" # Uncomment to specify a storage class
+
+# -----------------------------------------------------------------------------
+# Advanced Configuration (Defaults are usually fine)
+# -----------------------------------------------------------------------------
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  backend: { port: 8080 }
+  frontend: { port: 80 }
+
+resources:
+  backend:
+    limits: { cpu: 500m, memory: 512Mi }
+    requests: { cpu: 100m, memory: 128Mi }
+  frontend:
+    limits: { cpu: 200m, memory: 256Mi }
+    requests: { cpu: 50m, memory: 64Mi }
+
+# RBAC Permissions (Required for dashboard functionality)
 rbac:
   create: true
-  # Cluster-wide resources
   clusterResources:
     - apiGroups: ["*"]
       resources: ["*"]
       verbs: ["get", "list", "watch"]
-  nonResourceURLs:
-    - "*"
-  # Namespaced resources (applied to all namespaces)
+  nonResourceURLs: ["*"]
   namespacedResources:
-    - apiGroups: [""]
-      resources: 
-        - "pods"
-        - "pods/log"
-        - "pods/exec"
-        - "services"
-        - "configmaps"
-        - "secrets"
-        - "persistentvolumeclaims"
-        - "resourcequotas"
-        - "limitranges"
-      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-    - apiGroups: ["apps"]
-      resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
-      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-    - apiGroups: ["apps"]
-      resources: ["deployments/scale"]
-      verbs: ["get", "update", "patch"]
-    - apiGroups: ["batch"]
-      resources: ["jobs", "cronjobs"]
-      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-    - apiGroups: ["networking.k8s.io"]
-      resources: ["ingresses", "networkpolicies"]
-      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-    - apiGroups: ["rbac.authorization.k8s.io"]
-      resources: ["roles", "rolebindings"]
-      verbs: ["get", "list", "watch"]
-    - apiGroups: ["metrics.k8s.io"]
-      resources: ["pods", "nodes"]
-      verbs: ["get", "list"]
-
-resources:
-  backend:
-    limits:
-      cpu: 500m
-      memory: 512Mi
-    requests:
-      cpu: 100m
-      memory: 128Mi
-  frontend:
-    limits:
-      cpu: 200m
-      memory: 256Mi
-    requests:
-      cpu: 50m
-      memory: 64Mi
-
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 10
-  targetCPUUtilizationPercentage: 80
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}
-
-# Persistence for logo uploads
-persistence:
-  enabled: true
-  storageClass: ""
-  accessMode: ReadWriteOnce
-  size: 1Gi
+    - apiGroups: ["", "apps", "batch", "networking.k8s.io", "rbac.authorization.k8s.io", "metrics.k8s.io"]
+      resources: ["*"]
+      verbs: ["*"]
