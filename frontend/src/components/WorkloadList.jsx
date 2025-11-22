@@ -860,24 +860,6 @@ const WorkloadList = ({ namespace, kind }) => {
         if (currentCluster) params.append('cluster', currentCluster);
 
 
-        const triggerCronJob = (res) => {
-            const params = new URLSearchParams();
-            if (currentCluster) params.append('cluster', currentCluster);
-
-            authFetch(`/api/cronjobs/trigger?${params.toString()}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ namespace: res.namespace, name: res.name })
-            })
-                .then(async (resp) => {
-                    if (!resp.ok) throw new Error('Failed to trigger CronJob');
-                    const data = await resp.json();
-                    alert(`Job ${data.jobName} created successfully!`);
-                    setReloadKey(v => v + 1);
-                })
-                .catch(err => alert(err.message))
-                .finally(() => setConfirmAction(null));
-        };
         authFetch(`/api/scale?${params.toString()}`, { method: 'POST' })
             .then(async (resp) => {
                 if (!resp.ok) throw new Error('Scale failed');
@@ -885,6 +867,25 @@ const WorkloadList = ({ namespace, kind }) => {
             })
             .catch((err) => alert(err.message))
             .finally(() => setScaling(null));
+    };
+
+    const triggerCronJob = (res) => {
+        const params = new URLSearchParams();
+        if (currentCluster) params.append('cluster', currentCluster);
+
+        authFetch(`/api/cronjobs/trigger?${params.toString()}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ namespace: res.namespace, name: res.name })
+        })
+            .then(async (resp) => {
+                if (!resp.ok) throw new Error('Failed to trigger CronJob');
+                const data = await resp.json();
+                alert(`Job ${data.jobName} created successfully!`);
+                setReloadKey(v => v + 1);
+            })
+            .catch(err => alert(err.message))
+            .finally(() => setConfirmAction(null));
     };
 
     return (
@@ -985,7 +986,16 @@ const WorkloadList = ({ namespace, kind }) => {
                                         </>
                                     )}
                                     <td className="px-4 py-3 whitespace-nowrap text-gray-300" onClick={(e) => e.stopPropagation()}>
-                                        <div className="relative">
+                                        <div className="relative flex items-center justify-end space-x-1">
+                                            {res.kind === 'CronJob' && (
+                                                <button
+                                                    onClick={() => setConfirmAction({ res, action: 'trigger' })}
+                                                    className="p-1 hover:bg-gray-700 rounded text-green-400 hover:text-green-300 transition-colors mr-1"
+                                                    title="Run Now"
+                                                >
+                                                    <Play size={16} />
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => setMenuOpen(menuOpen === res.name ? null : res.name)}
                                                 className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
@@ -995,18 +1005,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                             {menuOpen === res.name && (
                                                 <div className="absolute right-0 mt-1 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
                                                     <div className="flex flex-col">
-                                                        {res.kind === 'CronJob' && (
-                                                            <button
-                                                                onClick={() => {
-                                                                    setConfirmAction({ res, action: 'trigger' });
-                                                                    setMenuOpen(null);
-                                                                }}
-                                                                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center"
-                                                            >
-                                                                <Play size={14} className="mr-2 text-green-400" />
-                                                                Run Now
-                                                            </button>
-                                                        )}
+
                                                         <button
                                                             onClick={() => {
                                                                 setConfirmAction({ res, force: false });
