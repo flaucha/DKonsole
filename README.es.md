@@ -55,7 +55,7 @@ Por defecto usa las imágenes oficiales. Puedes cambiar tags o repositorios si e
 ```yaml
 image:
   backend:
-    tag: "0.0.5"
+    tag: "1.0.0"
 ```
 
 ### 2. Imágenes Docker
