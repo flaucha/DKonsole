@@ -365,6 +365,66 @@ const ServiceDetails = ({ details }) => (
     </div>
 );
 
+const IngressDetails = ({ details }) => {
+    const rules = details.rules || [];
+    const tls = details.tls || [];
+    const annotations = details.annotations || {};
+
+    return (
+        <div className="p-4 bg-gray-900/50 rounded-md mt-2 space-y-4">
+            <div>
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Rules</h4>
+                {rules.length > 0 ? (
+                    <div className="space-y-2">
+                        {rules.map((rule, i) => (
+                            <div key={i} className="bg-gray-800 p-2 rounded border border-gray-700">
+                                <div className="text-sm font-medium text-white mb-1">{rule.host || '*'}</div>
+                                <div className="space-y-1">
+                                    {rule.paths && rule.paths.map((path, j) => (
+                                        <div key={j} className="text-xs text-gray-400 pl-2 border-l-2 border-gray-600">
+                                            {path}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-sm text-gray-500 italic">No rules defined</div>
+                )}
+            </div>
+
+            {tls.length > 0 && (
+                <div>
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">TLS</h4>
+                    <div className="space-y-1">
+                        {tls.map((t, i) => (
+                            <div key={i} className="flex items-center text-xs text-gray-300 bg-gray-800 px-2 py-1 rounded border border-gray-700">
+                                <Lock size={12} className="mr-2 text-green-400" />
+                                <span className="font-medium mr-2">{t.secretName}</span>
+                                <span className="text-gray-500">({(t.hosts || []).join(', ')})</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {Object.keys(annotations).length > 0 && (
+                <div>
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Annotations</h4>
+                    <div className="grid grid-cols-1 gap-1">
+                        {Object.entries(annotations).map(([k, v]) => (
+                            <div key={k} className="text-xs break-all">
+                                <span className="text-gray-500">{k}:</span> <span className="text-gray-300">{v}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const PodDetails = ({ details, onStreamLogs, onOpenTerminal, onEditYAML }) => {
     const [showMenu, setShowMenu] = useState(false);
     const containers = details.containers || [];
@@ -658,6 +718,8 @@ const WorkloadList = ({ namespace, kind }) => {
                 );
             case 'Service':
                 return wrapWithEdit(<ServiceDetails details={res.details} />, res);
+            case 'Ingress':
+                return wrapWithEdit(<IngressDetails details={res.details} />, res);
             case 'Pod':
                 return (
                     <PodDetails
@@ -796,15 +858,32 @@ const WorkloadList = ({ namespace, kind }) => {
             delta: String(delta),
         });
         if (currentCluster) params.append('cluster', currentCluster);
+
+
+        const triggerCronJob = (res) => {
+            const params = new URLSearchParams();
+            if (currentCluster) params.append('cluster', currentCluster);
+
+            authFetch(`/api/cronjobs/trigger?${params.toString()}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ namespace: res.namespace, name: res.name })
+            })
+                .then(async (resp) => {
+                    if (!resp.ok) throw new Error('Failed to trigger CronJob');
+                    const data = await resp.json();
+                    alert(`Job ${data.jobName} created successfully!`);
+                    setReloadKey(v => v + 1);
+                })
+                .catch(err => alert(err.message))
+                .finally(() => setConfirmAction(null));
+        };
         authFetch(`/api/scale?${params.toString()}`, { method: 'POST' })
             .then(async (resp) => {
-                if (!resp.ok) {
-                    const text = await resp.text();
-                    throw new Error(text || 'Scale failed');
-                }
+                if (!resp.ok) throw new Error('Scale failed');
                 setReloadKey((v) => v + 1);
             })
-            .catch((err) => alert(err.message || 'Failed to scale deployment'))
+            .catch((err) => alert(err.message))
             .finally(() => setScaling(null));
     };
 
@@ -916,6 +995,18 @@ const WorkloadList = ({ namespace, kind }) => {
                                             {menuOpen === res.name && (
                                                 <div className="absolute right-0 mt-1 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
                                                     <div className="flex flex-col">
+                                                        {res.kind === 'CronJob' && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    setConfirmAction({ res, action: 'trigger' });
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center"
+                                                            >
+                                                                <Play size={14} className="mr-2 text-green-400" />
+                                                                Run Now
+                                                            </button>
+                                                        )}
                                                         <button
                                                             onClick={() => {
                                                                 setConfirmAction({ res, force: false });
@@ -983,9 +1074,15 @@ const WorkloadList = ({ namespace, kind }) => {
             {confirmAction && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                     <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-md shadow-xl">
-                        <h3 className="text-lg font-semibold text-white mb-2">Confirm delete</h3>
+                        <h3 className="text-lg font-semibold text-white mb-2">
+                            {confirmAction.action === 'trigger' ? 'Confirm Run' : 'Confirm delete'}
+                        </h3>
                         <p className="text-sm text-gray-300 mb-4">
-                            {confirmAction.force ? 'Force delete' : 'Delete'} {confirmAction.res.kind} "{confirmAction.res.name}"?
+                            {confirmAction.action === 'trigger' ? (
+                                <>Run CronJob "{confirmAction.res.name}" now?</>
+                            ) : (
+                                <>{confirmAction.force ? 'Force delete' : 'Delete'} {confirmAction.res.kind} "{confirmAction.res.name}"?</>
+                            )}
                         </p>
                         <div className="flex justify-end space-x-3">
                             <button
@@ -995,10 +1092,19 @@ const WorkloadList = ({ namespace, kind }) => {
                                 Cancel
                             </button>
                             <button
-                                onClick={() => triggerDelete(confirmAction.res, confirmAction.force)}
-                                className={`px-4 py-2 rounded-md text-white transition-colors ${confirmAction.force ? 'bg-red-700 hover:bg-red-800' : 'bg-orange-600 hover:bg-orange-700'}`}
+                                onClick={() => {
+                                    if (confirmAction.action === 'trigger') {
+                                        triggerCronJob(confirmAction.res);
+                                    } else {
+                                        triggerDelete(confirmAction.res, confirmAction.force);
+                                    }
+                                }}
+                                className={`px-4 py-2 rounded-md text-white transition-colors ${confirmAction.action === 'trigger'
+                                    ? 'bg-green-600 hover:bg-green-700'
+                                    : confirmAction.force ? 'bg-red-700 hover:bg-red-800' : 'bg-orange-600 hover:bg-orange-700'
+                                    }`}
                             >
-                                {confirmAction.force ? 'Force delete' : 'Delete'}
+                                {confirmAction.action === 'trigger' ? 'Run Now' : (confirmAction.force ? 'Force delete' : 'Delete')}
                             </button>
                         </div>
                     </div>

@@ -100,6 +100,7 @@ func main() {
 		}
 	})))
 	mux.HandleFunc("/api/resource", enableCors(AuthMiddleware(h.DeleteResource)))
+	mux.HandleFunc("/api/cronjobs/trigger", enableCors(AuthMiddleware(h.TriggerCronJob)))
 	mux.HandleFunc("/api/logo", enableCors(AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			h.GetLogo(w, r)

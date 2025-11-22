@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,8 +49,10 @@ type ClusterConfig struct {
 }
 
 type Namespace struct {
-	Name    string `json:"name"`
-	Created string `json:"created"`
+	Name    string            `json:"name"`
+	Status  string            `json:"status"`
+	Labels  map[string]string `json:"labels"`
+	Created string            `json:"created"`
 }
 
 type Resource struct {
@@ -255,6 +258,8 @@ func (h *Handlers) GetNamespaces(w http.ResponseWriter, r *http.Request) {
 	for _, ns := range namespaces.Items {
 		result = append(result, Namespace{
 			Name:    ns.Name,
+			Status:  string(ns.Status.Phase),
+			Labels:  ns.Labels,
 			Created: ns.CreationTimestamp.Format(time.RFC3339),
 		})
 	}
@@ -623,10 +628,34 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 		err = e
 		if err == nil {
 			for _, i := range list.Items {
-				var rules []string
-				for _, r := range i.Spec.Rules {
-					rules = append(rules, r.Host)
+				var tls []map[string]interface{}
+				for _, t := range i.Spec.TLS {
+					tls = append(tls, map[string]interface{}{
+						"hosts":      t.Hosts,
+						"secretName": t.SecretName,
+					})
 				}
+
+				var rules []map[string]interface{}
+				for _, r := range i.Spec.Rules {
+					var paths []string
+					if r.HTTP != nil {
+						for _, p := range r.HTTP.Paths {
+							svcName := "unknown"
+							svcPort := int32(0)
+							if p.Backend.Service != nil {
+								svcName = p.Backend.Service.Name
+								svcPort = p.Backend.Service.Port.Number
+							}
+							paths = append(paths, fmt.Sprintf("%s -> %s:%d", p.Path, svcName, svcPort))
+						}
+					}
+					rules = append(rules, map[string]interface{}{
+						"host":  r.Host,
+						"paths": paths,
+					})
+				}
+
 				resources = append(resources, Resource{
 					Name:      i.Name,
 					Namespace: i.Namespace,
@@ -634,7 +663,9 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Status:    fmt.Sprintf("%d rules", len(i.Spec.Rules)),
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
 					Details: map[string]interface{}{
-						"hosts": rules,
+						"rules":       rules,
+						"tls":         tls,
+						"annotations": i.Annotations,
 					},
 				})
 			}
@@ -2051,4 +2082,60 @@ func (h *Handlers) GetCRDYaml(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/x-yaml")
 	w.Write(yamlBytes)
+}
+
+func (h *Handlers) TriggerCronJob(w http.ResponseWriter, r *http.Request) {
+	if _, err := authenticateRequest(r); err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	client, err := h.getClient(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		Namespace string `json:"namespace"`
+		Name      string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	cronJob, err := client.BatchV1().CronJobs(req.Namespace).Get(context.TODO(), req.Name, metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jobName := fmt.Sprintf("%s-manual-%d", req.Name, time.Now().Unix())
+	job := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      jobName,
+			Namespace: req.Namespace,
+			Annotations: map[string]string{
+				"cronjob.kubernetes.io/instantiate": "manual",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(cronJob, schema.GroupVersionKind{
+					Group:   "batch",
+					Version: "v1",
+					Kind:    "CronJob",
+				}),
+			},
+		},
+		Spec: cronJob.Spec.JobTemplate.Spec,
+	}
+
+	_, err = client.BatchV1().Jobs(req.Namespace).Create(context.TODO(), job, metav1.CreateOptions{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"jobName": jobName})
 }
