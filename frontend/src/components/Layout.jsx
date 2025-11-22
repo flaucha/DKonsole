@@ -166,7 +166,7 @@ const Layout = ({ children, currentView, onViewChange, headerContent }) => {
                             onClick={() => toggleMenu('accessControl')}
                         />
                         <SubMenu isOpen={expandedMenus.accessControl}>
-                            {['Service Accounts', 'Roles', 'Cluster Roles', 'Role Bindings', 'Cluster Role Bindings'].map(item => (
+                            {['Service Accounts', 'Roles', 'Role Bindings', 'Cluster Roles', 'Cluster Role Bindings'].map(item => (
                                 <SubItem
                                     key={item}
                                     label={item}

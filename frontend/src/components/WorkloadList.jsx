@@ -28,7 +28,9 @@ import {
     Lock,   // Added
     Users,  // Added
     Play,   // Added
-    Database // Added
+    Database, // Added
+    Search, // Added
+    RefreshCw // Added
 } from 'lucide-react';
 import LogViewer from './LogViewer';
 import TerminalViewer from './TerminalViewer';
@@ -477,7 +479,7 @@ const PodDetails = ({ details, onStreamLogs, onOpenTerminal, onEditYAML }) => {
                 </div>
                 <div>
                     {metrics.cpu && <DetailRow label="CPU" value={metrics.cpu} icon={Activity} />}
-                    {metrics.memory && <DetailRow label="Memory" value={metrics.memory} icon={HardDrive} />}
+                    {metrics.memory && <DetailRow label="Memory" icon={HardDrive} />}
                 </div>
             </div>
             <div className="flex justify-end space-x-2">
@@ -611,11 +613,15 @@ const WorkloadList = ({ namespace, kind }) => {
     const [confirmAction, setConfirmAction] = useState(null);
     const [scaling, setScaling] = useState(null);
 
+    const [filter, setFilter] = useState('');
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
+
     // Reset state when view context changes
     useEffect(() => {
         setResources([]);
         setExpandedRows({});
         setLoading(true);
+        setFilter(''); // Reset filter on view change
     }, [namespace, kind, currentCluster]);
 
     useEffect(() => {
@@ -673,7 +679,12 @@ const WorkloadList = ({ namespace, kind }) => {
         });
     };
 
-    const sortedResources = [...resources].sort((a, b) => {
+    const filteredResources = resources.filter(r => {
+        if (!filter) return true;
+        return r.name.toLowerCase().includes(filter.toLowerCase());
+    });
+
+    const sortedResources = [...filteredResources].sort((a, b) => {
         const dir = sortDirection === 'asc' ? 1 : -1;
         const getVal = (item) => {
             switch (sortField) {
@@ -856,7 +867,7 @@ const WorkloadList = ({ namespace, kind }) => {
         return <div className="text-gray-400 animate-pulse p-6">Loading {kind}s...</div>;
     }
 
-    if (resources.length === 0) {
+    if (resources.length === 0 && !filter) {
         return <div className="text-gray-500 italic p-6">No {kind}s found in this namespace.</div>;
     }
 
@@ -929,6 +940,57 @@ const WorkloadList = ({ namespace, kind }) => {
                     onClick={() => setMenuOpen(null)}
                 ></div>
             )}
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                <div className="flex items-center space-x-3">
+                    <div className={`p-2 rounded-lg bg-gray-800 ${loading ? 'animate-pulse' : ''}`}>
+                        <Icon size={24} className="text-blue-400" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                            {kind}
+                            <span className="px-2.5 py-0.5 rounded-full bg-gray-800 text-gray-400 text-sm font-medium border border-gray-700">
+                                {filteredResources.length}
+                            </span>
+                        </h1>
+                        <p className="text-gray-400 text-sm mt-0.5">
+                            {namespace === 'all' ? 'All Namespaces' : namespace}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    {(kind === 'ClusterRole' || kind === 'ClusterRoleBinding') && (
+                        <div className={`relative transition-all duration-200 ${isSearchFocused ? 'w-64' : 'w-48'}`}>
+                            <Search size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${isSearchFocused ? 'text-blue-400' : 'text-gray-500'}`} />
+                            <input
+                                type="text"
+                                value={filter}
+                                onChange={(e) => setFilter(e.target.value)}
+                                onFocus={() => setIsSearchFocused(true)}
+                                onBlur={() => setIsSearchFocused(false)}
+                                placeholder={`Search ${kind}s...`}
+                                className={`w-full bg-gray-800 border rounded-md pl-9 pr-4 py-1.5 text-sm text-gray-200 focus:outline-none transition-all ${isSearchFocused ? 'border-blue-500 ring-1 ring-blue-500/20' : 'border-gray-700 hover:border-gray-600'}`}
+                            />
+                            {filter && (
+                                <button
+                                    onClick={() => setFilter('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
+                    )}
+                    <button
+                        onClick={() => setReloadKey(v => v + 1)}
+                        disabled={loading}
+                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
+                        title="Refresh"
+                    >
+                        <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                    </button>
+                </div>
+            </div>
             <div className="bg-gray-800 rounded-lg border border-gray-700">
                 <table className="min-w-full border-separate border-spacing-0">
                     <thead>
@@ -983,15 +1045,15 @@ const WorkloadList = ({ namespace, kind }) => {
                             <th className="w-10 px-4 py-3 bg-gray-900 rounded-tr-lg border-b border-gray-700"></th>
                         </tr>
                     </thead>
-                    <tbody className="bg-gray-800">
-                        {sortedResources.map(res => (
-                            <React.Fragment key={res.name}>
+                    <tbody className="divide-y divide-gray-800">
+                        {filteredResources.map((resource) => (
+                            <React.Fragment key={resource.uid}>
                                 <tr
-                                    className={`cursor-pointer transition-colors hover:bg-gray-700/50 ${expandedRows[res.name] ? 'bg-gray-700/30' : 'border-b border-gray-700'}`}
-                                    onClick={() => toggleRow(res.name)}
+                                    onClick={() => toggleExpand(resource.uid)}
+                                    className={`group hover:bg-gray-800/50 transition-colors cursor-pointer ${expandedId === resource.uid ? 'bg-gray-800/30' : ''}`}
                                 >
                                     <td className="px-4 py-3 whitespace-nowrap text-gray-400 text-center">
-                                        {expandedRows[res.name] ? <CircleMinus size={16} /> : <CirclePlus size={16} />}
+                                        {expandedId === resource.uid ? <CircleMinus size={16} /> : <CirclePlus size={16} />}
                                     </td>
                                     <td className="px-6 py-3 whitespace-nowrap">
                                         <div className="flex items-center">
