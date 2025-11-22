@@ -112,6 +112,9 @@ func main() {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})))
+	mux.HandleFunc("/api/prometheus/status", enableCors(AuthMiddleware(h.GetPrometheusStatus)))
+	mux.HandleFunc("/api/prometheus/metrics", enableCors(AuthMiddleware(h.GetPrometheusMetrics)))
+	mux.HandleFunc("/api/prometheus/pod-metrics", enableCors(AuthMiddleware(h.GetPrometheusPodMetrics)))
 
 	port := ":8080"
 	fmt.Printf("Server starting on port %s...\n", port)

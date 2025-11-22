@@ -36,6 +36,7 @@ import LogViewer from './LogViewer';
 import TerminalViewer from './TerminalViewer';
 import YamlEditor from './YamlEditor';
 import DeploymentMetrics from './DeploymentMetrics';
+import PodMetrics from './PodMetrics';
 
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -620,7 +621,7 @@ const IngressDetails = ({ details, onEditYAML }) => {
     );
 };
 
-const PodDetails = ({ details, onStreamLogs, onOpenTerminal, onEditYAML }) => {
+const PodDetails = ({ details, onStreamLogs, onOpenTerminal, onEditYAML, pod }) => {
     const [showMenu, setShowMenu] = useState(false);
     const containers = details.containers || [];
     const metrics = details.metrics || {};
@@ -689,6 +690,7 @@ const PodDetails = ({ details, onStreamLogs, onOpenTerminal, onEditYAML }) => {
                 </button>
                 <EditYamlButton onClick={onEditYAML} />
             </div>
+            {pod && <PodMetrics pod={{ name: pod.name }} namespace={pod.namespace} />}
         </div>
     );
 };
@@ -946,6 +948,7 @@ const WorkloadList = ({ namespace, kind }) => {
                         onStreamLogs={(container) => setLoggingPod({ ...res, container })}
                         onOpenTerminal={(container) => setTerminalPod({ ...res, container })}
                         onEditYAML={onEditYAML}
+                        pod={res}
                     />
                 );
             case 'ConfigMap':

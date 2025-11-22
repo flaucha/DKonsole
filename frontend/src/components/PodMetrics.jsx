@@ -4,7 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 
-const DeploymentMetrics = ({ deployment, namespace }) => {
+const PodMetrics = ({ pod, namespace }) => {
     const { currentCluster } = useSettings();
     const { authFetch } = useAuth();
     const [data, setData] = useState([]);
@@ -41,7 +41,7 @@ const DeploymentMetrics = ({ deployment, namespace }) => {
     }, [currentCluster, authFetch]);
 
     useEffect(() => {
-        if (!prometheusEnabled || !deployment || !namespace) {
+        if (!prometheusEnabled || !pod || !namespace) {
             setLoading(false);
             return;
         }
@@ -50,13 +50,13 @@ const DeploymentMetrics = ({ deployment, namespace }) => {
             setLoading(true);
             try {
                 const params = new URLSearchParams({
-                    deployment: deployment.name,
+                    pod: pod.name,
                     namespace: namespace,
                     range: timeRange,
                 });
                 if (currentCluster) params.append('cluster', currentCluster);
 
-                const response = await authFetch(`/api/prometheus/metrics?${params.toString()}`);
+                const response = await authFetch(`/api/prometheus/pod-metrics?${params.toString()}`);
                 const metricsData = await response.json();
 
                 // Transform data for recharts
@@ -99,35 +99,33 @@ const DeploymentMetrics = ({ deployment, namespace }) => {
         };
 
         fetchMetrics();
-    }, [deployment, namespace, timeRange, prometheusEnabled, currentCluster, authFetch]);
+    }, [pod, namespace, timeRange, prometheusEnabled, currentCluster, authFetch]);
 
     if (!prometheusEnabled) {
-        return (
-            <div className="p-4 text-gray-500 text-sm italic">
-                Prometheus metrics not available. Configure PROMETHEUS_URL to enable historical metrics.
-            </div>
-        );
+        return null; // Don't show anything if Prometheus is not enabled
     }
 
     if (loading && data.length === 0) {
-        return <div className="text-gray-500 p-4 animate-pulse">Loading metrics...</div>;
+        return <div className="text-gray-500 p-4 animate-pulse text-sm">Loading metrics...</div>;
     }
 
     if (data.length === 0) {
-        return <div className="text-gray-500 p-4">No metrics data available for this deployment.</div>;
+        return <div className="text-gray-500 p-4 text-sm">No metrics data available for this pod.</div>;
     }
 
     return (
-        <div className="mt-4">
+        <div className="mt-4 border-t border-gray-700 pt-4">
+            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Historical Metrics</h4>
+
             {/* Time Range Selector */}
             <div className="flex items-center gap-2 mb-4 flex-wrap">
-                <Clock size={16} className="text-gray-400" />
+                <Clock size={14} className="text-gray-400" />
                 <span className="text-xs text-gray-400">Time Range:</span>
                 {timeRanges.map(range => (
                     <button
                         key={range.value}
                         onClick={() => setTimeRange(range.value)}
-                        className={`px-3 py-1 text-xs rounded-md transition-colors ${timeRange === range.value
+                        className={`px-2.5 py-1 text-xs rounded-md transition-colors ${timeRange === range.value
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
                             }`}
@@ -139,16 +137,16 @@ const DeploymentMetrics = ({ deployment, namespace }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* CPU Chart */}
-                <div className="bg-gray-900/50 p-4 rounded-md border border-gray-700">
+                <div className="bg-gray-900/50 p-3 rounded-md border border-gray-700">
                     <div className="flex items-center mb-2">
-                        <Activity size={16} className="text-blue-400 mr-2" />
+                        <Activity size={14} className="text-blue-400 mr-2" />
                         <h3 className="text-xs font-medium text-gray-300">CPU (millicores)</h3>
                     </div>
                     <div className="h-32 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={data}>
                                 <defs>
-                                    <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
+                                    <linearGradient id="colorCpuPod" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="#60A5FA" stopOpacity={0.3} />
                                         <stop offset="95%" stopColor="#60A5FA" stopOpacity={0} />
                                     </linearGradient>
@@ -157,13 +155,13 @@ const DeploymentMetrics = ({ deployment, namespace }) => {
                                 <XAxis
                                     dataKey="time"
                                     stroke="#9CA3AF"
-                                    fontSize={10}
+                                    fontSize={9}
                                     tick={{ fill: '#9CA3AF' }}
                                     interval="preserveStartEnd"
                                 />
-                                <YAxis stroke="#9CA3AF" fontSize={10} tick={{ fill: '#9CA3AF' }} />
+                                <YAxis stroke="#9CA3AF" fontSize={9} tick={{ fill: '#9CA3AF' }} />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#F3F4F6' }}
+                                    contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#F3F4F6', fontSize: '11px' }}
                                     itemStyle={{ color: '#60A5FA' }}
                                 />
                                 <Area
@@ -171,7 +169,7 @@ const DeploymentMetrics = ({ deployment, namespace }) => {
                                     dataKey="cpu"
                                     stroke="#60A5FA"
                                     fillOpacity={1}
-                                    fill="url(#colorCpu)"
+                                    fill="url(#colorCpuPod)"
                                     isAnimationActive={false}
                                 />
                             </AreaChart>
@@ -180,16 +178,16 @@ const DeploymentMetrics = ({ deployment, namespace }) => {
                 </div>
 
                 {/* Memory Chart */}
-                <div className="bg-gray-900/50 p-4 rounded-md border border-gray-700">
+                <div className="bg-gray-900/50 p-3 rounded-md border border-gray-700">
                     <div className="flex items-center mb-2">
-                        <HardDrive size={16} className="text-purple-400 mr-2" />
+                        <HardDrive size={14} className="text-purple-400 mr-2" />
                         <h3 className="text-xs font-medium text-gray-300">Memory (MiB)</h3>
                     </div>
                     <div className="h-32 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={data}>
                                 <defs>
-                                    <linearGradient id="colorMem" x1="0" y1="0" x2="0" y2="1">
+                                    <linearGradient id="colorMemPod" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="#A78BFA" stopOpacity={0.3} />
                                         <stop offset="95%" stopColor="#A78BFA" stopOpacity={0} />
                                     </linearGradient>
@@ -198,13 +196,13 @@ const DeploymentMetrics = ({ deployment, namespace }) => {
                                 <XAxis
                                     dataKey="time"
                                     stroke="#9CA3AF"
-                                    fontSize={10}
+                                    fontSize={9}
                                     tick={{ fill: '#9CA3AF' }}
                                     interval="preserveStartEnd"
                                 />
-                                <YAxis stroke="#9CA3AF" fontSize={10} tick={{ fill: '#9CA3AF' }} />
+                                <YAxis stroke="#9CA3AF" fontSize={9} tick={{ fill: '#9CA3AF' }} />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#F3F4F6' }}
+                                    contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#F3F4F6', fontSize: '11px' }}
                                     itemStyle={{ color: '#A78BFA' }}
                                 />
                                 <Area
@@ -212,7 +210,7 @@ const DeploymentMetrics = ({ deployment, namespace }) => {
                                     dataKey="memory"
                                     stroke="#A78BFA"
                                     fillOpacity={1}
-                                    fill="url(#colorMem)"
+                                    fill="url(#colorMemPod)"
                                     isAnimationActive={false}
                                 />
                             </AreaChart>
@@ -224,4 +222,4 @@ const DeploymentMetrics = ({ deployment, namespace }) => {
     );
 };
 
-export default DeploymentMetrics;
+export default PodMetrics;
