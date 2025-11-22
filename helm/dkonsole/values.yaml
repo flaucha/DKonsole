@@ -30,19 +30,14 @@ podSecurityContext:
   fsGroup: 2000
 
 securityContext:
-  capabilities:
-    drop:
-    - ALL
-  readOnlyRootFilesystem: false
-  runAsNonRoot: true
-  runAsUser: 1000
+  {}
 
 service:
   type: ClusterIP
   backend:
     port: 8080
   frontend:
-    port: 8080
+    port: 80
 
 ingress:
   enabled: true
