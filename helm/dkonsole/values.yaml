@@ -3,13 +3,13 @@ replicaCount: 1
 
 image:
   backend:
-    repository: your-registry/dkonsole-backend
+    repository: dkonsole/dkonsole-backend
     pullPolicy: IfNotPresent
-    tag: "latest"
+    tag: "0.0.4"
   frontend:
-    repository: your-registry/dkonsole-frontend
+    repository: dkonsole/dkonsole-frontend
     pullPolicy: IfNotPresent
-    tag: "latest"
+    tag: "0.0.4"
 
 imagePullSecrets: []
 nameOverride: ""
