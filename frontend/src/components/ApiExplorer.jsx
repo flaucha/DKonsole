@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Search, ListTree, RefreshCw, Globe, MapPin, FileText } from 'lucide-react';
-import Editor from '@monaco-editor/react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { Search, ListTree, RefreshCw, Globe, MapPin, FileText, ChevronDown } from 'lucide-react';
+import YamlEditor from './YamlEditor';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -14,7 +14,9 @@ const ApiExplorer = ({ namespace }) => {
     const [loadingApis, setLoadingApis] = useState(false);
     const [loadingObjects, setLoadingObjects] = useState(false);
     const [scopeFilter, setScopeFilter] = useState('namespaced'); // namespaced | cluster | all
-    const [yamlView, setYamlView] = useState(null); // {name, namespace, content}
+    const [yamlResource, setYamlResource] = useState(null); // {name, namespace, kind}
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const searchRef = useRef(null);
 
     const fetchApis = () => {
         setLoadingApis(true);
@@ -66,59 +68,96 @@ const ApiExplorer = ({ namespace }) => {
             .sort((a, b) => a.kind.localeCompare(b.kind));
     }, [apis, filter, scopeFilter]);
 
+    // Close suggestions when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (searchRef.current && !searchRef.current.contains(event.target)) {
+                setShowSuggestions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const handleViewYaml = (obj) => {
         if (!selected) return;
-        const params = new URLSearchParams({
-            group: selected.group,
-            version: selected.version,
-            resource: selected.resource,
+        setYamlResource({
             name: obj.name,
-            namespace: selected.namespaced ? obj.namespace || '' : '',
-            namespaced: selected.namespaced ? 'true' : 'false',
+            namespace: obj.namespace,
+            kind: selected.kind
         });
-        if (currentCluster) params.append('cluster', currentCluster);
-        authFetch(`/api/apis/yaml?${params.toString()}`)
-            .then((res) => res.text())
-            .then((yaml) => setYamlView({ name: obj.name, namespace: obj.namespace, content: yaml }))
-            .catch((err) => setYamlView({ name: obj.name, namespace: obj.namespace, content: `# Error: ${err.message}` }));
     };
+
+    const filteredSuggestions = useMemo(() => {
+        if (!filter) return [];
+        const q = filter.toLowerCase();
+        return apis.filter(a => `${a.kind}/${a.resource}`.toLowerCase().includes(q)).slice(0, 10);
+    }, [apis, filter]);
 
     return (
         <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+                <div className="flex items-center space-x-2 min-w-max">
                     <ListTree className="text-blue-400" size={18} />
                     <h1 className="text-xl font-semibold text-white">API Explorer</h1>
                     {loadingApis && <RefreshCw size={16} className="animate-spin text-gray-400" />}
                 </div>
-                <div className="flex items-center space-x-3">
-                    <div className="relative w-64">
+
+                <div className="flex-1 flex items-center gap-4">
+                    <div className="relative flex-1 max-w-2xl" ref={searchRef}>
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                         <input
                             value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
-                            className="w-full bg-gray-800 border border-gray-700 rounded-md pl-8 pr-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500"
-                            placeholder="Search kind/resource..."
+                            onChange={(e) => {
+                                setFilter(e.target.value);
+                                setShowSuggestions(true);
+                            }}
+                            onFocus={() => setShowSuggestions(true)}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md pl-8 pr-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500 transition-all"
+                            placeholder="Search API resources (e.g., pod, deployment, service)..."
                         />
+                        {showSuggestions && filter && filteredSuggestions.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                                {filteredSuggestions.map((api) => (
+                                    <button
+                                        key={`${api.group}-${api.version}-${api.resource}`}
+                                        onClick={() => {
+                                            setSelected(api);
+                                            setFilter(`${api.kind}`);
+                                            setShowSuggestions(false);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 flex justify-between items-center"
+                                    >
+                                        <span>{api.kind}</span>
+                                        <span className="text-xs text-gray-500">{api.group ? `${api.group}/${api.version}` : api.version}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                    <div className="bg-gray-800 border border-gray-700 rounded-md flex overflow-hidden text-sm">
+
+                    <div className="bg-gray-800 border border-gray-700 rounded-md flex overflow-hidden text-sm shrink-0">
                         <button
                             onClick={() => setScopeFilter('namespaced')}
                             className={`px-3 py-1.5 flex items-center space-x-1 ${scopeFilter === 'namespaced' ? 'bg-blue-900 text-blue-100' : 'text-gray-300 hover:bg-gray-700'}`}
+                            title="Show namespaced resources"
                         >
-                            <MapPin size={14} /> <span>Namespaced</span>
+                            <MapPin size={14} /> <span className="hidden sm:inline">Namespaced</span>
                         </button>
                         <button
                             onClick={() => setScopeFilter('cluster')}
                             className={`px-3 py-1.5 flex items-center space-x-1 ${scopeFilter === 'cluster' ? 'bg-blue-900 text-blue-100' : 'text-gray-300 hover:bg-gray-700'}`}
+                            title="Show cluster-wide resources"
                         >
-                            <Globe size={14} /> <span>Cluster</span>
+                            <Globe size={14} /> <span className="hidden sm:inline">Cluster</span>
                         </button>
                         <button
                             onClick={() => setScopeFilter('all')}
                             className={`px-3 py-1.5 flex items-center space-x-1 ${scopeFilter === 'all' ? 'bg-blue-900 text-blue-100' : 'text-gray-300 hover:bg-gray-700'}`}
+                            title="Show all resources"
                         >
-                            <span>All</span>
+                            <span className="hidden sm:inline">All</span>
+                            <span className="sm:hidden">All</span>
                         </button>
                     </div>
                 </div>
@@ -187,7 +226,7 @@ const ApiExplorer = ({ namespace }) => {
                                                     className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-md border border-gray-700 text-xs transition-colors"
                                                 >
                                                     <FileText size={12} className="mr-1.5" />
-                                                    Ver YAML
+                                                    Edit YAML
                                                 </button>
                                             </td>
                                         </tr>
@@ -210,39 +249,15 @@ const ApiExplorer = ({ namespace }) => {
                     )}
                 </div>
             </div>
-            {yamlView && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="bg-gray-900 w-full max-w-4xl h-[80vh] rounded-lg border border-gray-700 flex flex-col shadow-2xl overflow-hidden">
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800">
-                            <div className="flex items-center space-x-2">
-                                <FileText size={16} className="text-gray-400" />
-                                <span className="font-mono text-sm text-gray-200">{yamlView.name}</span>
-                                {yamlView.namespace && <span className="text-xs text-gray-500">({yamlView.namespace})</span>}
-                            </div>
-                            <button
-                                onClick={() => setYamlView(null)}
-                                className="px-3 py-1 text-sm text-gray-200 bg-gray-800 hover:bg-gray-700 rounded border border-gray-700"
-                            >
-                                Close
-                            </button>
-                        </div>
-                        <div className="flex-1 relative">
-                            <Editor
-                                height="100%"
-                                defaultLanguage="yaml"
-                                theme="vs-dark"
-                                value={yamlView.content}
-                                options={{
-                                    readOnly: true,
-                                    minimap: { enabled: false },
-                                    scrollBeyondLastLine: false,
-                                    fontSize: 12,
-                                    automaticLayout: true,
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div>
+            {yamlResource && (
+                <YamlEditor
+                    resource={yamlResource}
+                    onClose={() => setYamlResource(null)}
+                    onSaved={() => {
+                        setYamlResource(null);
+                        // Refresh list if needed, though usually not necessary for edit
+                    }}
+                />
             )}
         </div>
     );

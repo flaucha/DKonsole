@@ -663,9 +663,10 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Status:    fmt.Sprintf("%d rules", len(i.Spec.Rules)),
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
 					Details: map[string]interface{}{
-						"rules":       rules,
-						"tls":         tls,
-						"annotations": i.Annotations,
+						"rules":        rules,
+						"tls":          tls,
+						"annotations":  i.Annotations,
+						"loadBalancer": i.Status.LoadBalancer.Ingress,
 					},
 				})
 			}
@@ -977,10 +978,10 @@ func (h *Handlers) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Try to get metadata; default to namespaced=true for unknown kinds (e.g. CRDs)
 	meta, ok := resourceMeta[kind]
 	if !ok {
-		http.Error(w, "Unsupported kind", http.StatusBadRequest)
-		return
+		meta = ResourceMeta{Namespaced: true}
 	}
 
 	body, err := io.ReadAll(r.Body)
