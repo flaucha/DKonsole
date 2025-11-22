@@ -1151,9 +1151,11 @@ const WorkloadList = ({ namespace, kind }) => {
                                 {filteredResources.length}
                             </span>
                         </h1>
-                        <p className="text-gray-400 text-sm mt-0.5">
-                            {namespace === 'all' ? 'All Namespaces' : namespace}
-                        </p>
+                        {!['Node', 'ClusterRole', 'ClusterRoleBinding', 'PersistentVolume', 'StorageClass'].includes(kind) && (
+                            <p className="text-gray-400 text-sm mt-0.5">
+                                {namespace === 'all' ? 'All Namespaces' : namespace}
+                            </p>
+                        )}
                     </div>
                 </div>
 
