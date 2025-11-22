@@ -88,8 +88,8 @@ func main() {
 	mux.HandleFunc("/api/apis/yaml", enableCors(AuthMiddleware(h.GetAPIResourceYAML)))
 	mux.HandleFunc("/api/scale", enableCors(AuthMiddleware(h.ScaleResource)))
 	mux.HandleFunc("/api/overview", enableCors(AuthMiddleware(h.GetClusterStats)))
-	mux.HandleFunc("/api/pods/logs", enableCors(AuthMiddleware(h.StreamPodLogs)))
-	mux.HandleFunc("/api/pods/exec", enableCors(AuthMiddleware(h.ExecIntoPod))) // WebSocket - now protected
+	mux.HandleFunc("/api/pods/logs", enableCors(h.StreamPodLogs))
+	mux.HandleFunc("/api/pods/exec", h.ExecIntoPod) // WebSocket - no CORS wrapper needed; auth inside handler
 	mux.HandleFunc("/api/clusters", enableCors(AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			h.GetClusters(w, r)
@@ -121,7 +121,7 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
