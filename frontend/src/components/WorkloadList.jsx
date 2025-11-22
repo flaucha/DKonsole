@@ -419,6 +419,7 @@ const ServiceDetails = ({ details }) => {
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Ports</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {ports.map((port, i) => {
+                        if (typeof port !== 'string') return null;
                         // Parse "80:30080/TCP" or similar format
                         const parts = port.split('/');
                         const protocol = parts[1] || 'TCP';
@@ -532,12 +533,30 @@ const IngressDetails = ({ details }) => {
                         <div className="grid grid-cols-1 gap-1">
                             {Object.entries(annotations)
                                 .filter(([k]) => k !== 'kubectl.kubernetes.io/last-applied-configuration')
-                                .map(([k, v]) => (
-                                    <div key={k} className="text-xs break-all flex">
-                                        <span className="text-gray-500 font-medium min-w-[120px] mr-2">{k}:</span>
-                                        <span className="text-gray-300">{v}</span>
-                                    </div>
-                                ))}
+                                .map(([k, v]) => {
+                                    let displayValue = v;
+                                    let isJson = false;
+                                    try {
+                                        if (typeof v === 'string' && (v.startsWith('{') || v.startsWith('['))) {
+                                            const parsed = JSON.parse(v);
+                                            displayValue = JSON.stringify(parsed, null, 2);
+                                            isJson = true;
+                                        }
+                                    } catch (e) { }
+
+                                    return (
+                                        <div key={k} className="text-xs break-all flex flex-col mb-2 border-b border-gray-800 pb-2 last:border-0">
+                                            <span className="text-gray-500 font-medium mb-1">{k}:</span>
+                                            {isJson ? (
+                                                <pre className="text-gray-300 bg-gray-900 p-2 rounded overflow-x-auto font-mono">
+                                                    {displayValue}
+                                                </pre>
+                                            ) : (
+                                                <span className="text-gray-300">{v}</span>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                         </div>
                     </div>
                 </div>
@@ -685,7 +704,7 @@ const EditYamlButton = ({ onClick }) => (
 const WorkloadList = ({ namespace, kind }) => {
     const [resources, setResources] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [expandedRows, setExpandedRows] = useState({});
+    const [expandedId, setExpandedId] = useState(null);
     const [loggingPod, setLoggingPod] = useState(null);
     const [terminalPod, setTerminalPod] = useState(null);
     const [editingResource, setEditingResource] = useState(null);
@@ -704,7 +723,7 @@ const WorkloadList = ({ namespace, kind }) => {
     // Reset state when view context changes
     useEffect(() => {
         setResources([]);
-        setExpandedRows({});
+        setExpandedId(null);
         setLoading(true);
         setFilter(''); // Reset filter on view change
     }, [namespace, kind, currentCluster]);
@@ -749,8 +768,8 @@ const WorkloadList = ({ namespace, kind }) => {
         return () => es.close();
     }, [namespace, kind, currentCluster]);
 
-    const toggleRow = (name) => {
-        setExpandedRows(prev => ({ ...prev, [name]: !prev[name] }));
+    const toggleExpand = (uid) => {
+        setExpandedId(current => current === uid ? null : uid);
     };
 
     const handleSort = (field) => {
@@ -1131,14 +1150,14 @@ const WorkloadList = ({ namespace, kind }) => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800">
-                        {filteredResources.map((resource) => (
-                            <React.Fragment key={resource.uid}>
+                        {filteredResources.map((res) => (
+                            <React.Fragment key={res.uid}>
                                 <tr
-                                    onClick={() => toggleExpand(resource.uid)}
-                                    className={`group hover:bg-gray-800/50 transition-colors cursor-pointer ${expandedId === resource.uid ? 'bg-gray-800/30' : ''}`}
+                                    onClick={() => toggleExpand(res.uid)}
+                                    className={`group hover:bg-gray-800/50 transition-colors cursor-pointer ${expandedId === res.uid ? 'bg-gray-800/30' : ''}`}
                                 >
                                     <td className="px-4 py-3 whitespace-nowrap text-gray-400 text-center">
-                                        {expandedId === resource.uid ? <CircleMinus size={16} /> : <CirclePlus size={16} />}
+                                        {expandedId === res.uid ? <CircleMinus size={16} /> : <CirclePlus size={16} />}
                                     </td>
                                     <td className="px-6 py-3 whitespace-nowrap">
                                         <div className="flex items-center">
@@ -1217,11 +1236,11 @@ const WorkloadList = ({ namespace, kind }) => {
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td colSpan={kind === 'Pod' ? 8 : 6} className={`px-6 pt-0 bg-gray-800 border-0 ${expandedRows[res.name] ? 'border-b border-gray-700' : ''}`}>
+                                    <td colSpan={kind === 'Pod' ? 8 : 6} className={`px-6 pt-0 bg-gray-800 border-0 ${expandedId === res.uid ? 'border-b border-gray-700' : ''}`}>
                                         <div
-                                            className={`pl-12 overflow-y-auto transition-all duration-300 ease-in-out ${expandedRows[res.name] ? 'max-h-[500px] opacity-100 pb-4' : 'max-h-0 opacity-0'}`}
+                                            className={`pl-12 overflow-y-auto transition-all duration-300 ease-in-out ${expandedId === res.uid ? 'max-h-[500px] opacity-100 pb-4' : 'max-h-0 opacity-0'}`}
                                         >
-                                            {expandedRows[res.name] && renderDetails(res)}
+                                            {expandedId === res.uid && renderDetails(res)}
                                         </div>
                                     </td>
                                 </tr>

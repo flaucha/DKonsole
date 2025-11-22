@@ -61,6 +61,7 @@ type Resource struct {
 	Kind      string      `json:"kind"`
 	Status    string      `json:"status"`
 	Created   string      `json:"created"`
+	UID       string      `json:"uid"`
 	Details   interface{} `json:"details,omitempty"`
 }
 
@@ -325,6 +326,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "Deployment",
 					Status:    fmt.Sprintf("%d/%d", i.Status.ReadyReplicas, i.Status.Replicas),
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details:   details,
 				})
 			}
@@ -377,6 +379,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "Node",
 					Status:    status,
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details:   details,
 				})
 			}
@@ -419,6 +422,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "Pod",
 					Status:    string(i.Status.Phase),
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details: map[string]interface{}{
 						"node":       i.Spec.NodeName,
 						"ip":         i.Status.PodIP,
@@ -440,6 +444,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "ConfigMap",
 					Status:    fmt.Sprintf("%d keys", len(i.Data)),
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details: map[string]interface{}{
 						"data": i.Data,
 					},
@@ -461,6 +466,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "Secret",
 					Status:    string(i.Type),
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details: map[string]interface{}{
 						"data": data,
 					},
@@ -497,6 +503,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "Job",
 					Status:    status,
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details:   details,
 				})
 			}
@@ -523,6 +530,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "CronJob",
 					Status:    i.Spec.Schedule,
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details:   details,
 				})
 			}
@@ -548,6 +556,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "StatefulSet",
 					Status:    fmt.Sprintf("%d/%d", i.Status.ReadyReplicas, i.Status.Replicas),
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details:   details,
 				})
 			}
@@ -572,6 +581,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "DaemonSet",
 					Status:    fmt.Sprintf("%d/%d", i.Status.NumberReady, i.Status.DesiredNumberScheduled),
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details:   details,
 				})
 			}
@@ -596,6 +606,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "HPA",
 					Status:    status,
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details:   details,
 				})
 			}
@@ -615,6 +626,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "Service",
 					Status:    string(i.Spec.Type),
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details: map[string]interface{}{
 						"clusterIP": i.Spec.ClusterIP,
 						"ports":     ports,
@@ -662,6 +674,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "Ingress",
 					Status:    fmt.Sprintf("%d rules", len(i.Spec.Rules)),
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details: map[string]interface{}{
 						"rules":        rules,
 						"tls":          tls,
@@ -686,6 +699,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "ServiceAccount",
 					Status:    fmt.Sprintf("%d secrets", len(i.Secrets)),
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details:   details,
 				})
 			}
@@ -704,6 +718,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "Role",
 					Status:    "Active",
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details:   details,
 				})
 			}
@@ -722,6 +737,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "ClusterRole",
 					Status:    "Active",
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details:   details,
 				})
 			}
@@ -741,6 +757,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "RoleBinding",
 					Status:    "Active",
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details:   details,
 				})
 			}
@@ -760,6 +777,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "ClusterRoleBinding",
 					Status:    "Active",
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details:   details,
 				})
 			}
@@ -775,6 +793,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "NetworkPolicy",
 					Status:    "Active", // NetworkPolicies don't have a status field like others
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details: map[string]interface{}{
 						"podSelector": i.Spec.PodSelector.MatchLabels,
 						"policyTypes": i.Spec.PolicyTypes,
@@ -793,6 +812,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "PersistentVolumeClaim",
 					Status:    string(i.Status.Phase),
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details: map[string]interface{}{
 						"accessModes":      i.Spec.AccessModes,
 						"capacity":         i.Status.Capacity.Storage().String(),
@@ -814,6 +834,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "PersistentVolume",
 					Status:    string(i.Status.Phase),
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details: map[string]interface{}{
 						"accessModes":      i.Spec.AccessModes,
 						"capacity":         i.Spec.Capacity.Storage().String(),
@@ -842,6 +863,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "StorageClass",
 					Status:    reclaim,
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details: map[string]interface{}{
 						"provisioner":          i.Provisioner,
 						"reclaimPolicy":        reclaim,
@@ -864,6 +886,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "ResourceQuota",
 					Status:    "Active",
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details: map[string]interface{}{
 						"hard": i.Status.Hard,
 						"used": i.Status.Used,
@@ -882,6 +905,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Kind:      "LimitRange",
 					Status:    "Active",
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
+					UID:       string(i.UID),
 					Details: map[string]interface{}{
 						"limits": i.Spec.Limits,
 					},
