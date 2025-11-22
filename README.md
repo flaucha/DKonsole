@@ -18,6 +18,9 @@ This entire project, from backend to frontend and infrastructure code, was gener
 git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
+# Checkout the latest stable version
+git checkout v1.0.0
+
 # Install
 helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
 ```
