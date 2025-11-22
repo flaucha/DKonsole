@@ -52,7 +52,8 @@ const TerminalViewer = ({ namespace, pod, container, onClose }) => {
         if (!term) return;
 
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/api/pods/exec?namespace=${namespace}&pod=${pod}&container=${container || ''}`;
+        const token = localStorage.getItem('token') || '';
+        const wsUrl = `${protocol}//${window.location.host}/api/pods/exec?namespace=${namespace}&pod=${pod}&container=${container || ''}&token=${encodeURIComponent(token)}`;
 
         const ws = new WebSocket(wsUrl);
         ws.binaryType = 'arraybuffer';

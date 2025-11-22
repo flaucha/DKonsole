@@ -169,13 +169,19 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "Authorization header required", http.StatusUnauthorized)
+		tokenString := ""
+		if authHeader := r.Header.Get("Authorization"); authHeader != "" {
+			tokenString = strings.Replace(authHeader, "Bearer ", "", 1)
+		} else if q := r.URL.Query().Get("token"); q != "" {
+			tokenString = q
+		} else if c, err := r.Cookie("token"); err == nil {
+			tokenString = c.Value
+		}
+		if tokenString == "" {
+			http.Error(w, "Authorization token required", http.StatusUnauthorized)
 			return
 		}
 
-		tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
 		claims := &Claims{}
 
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
