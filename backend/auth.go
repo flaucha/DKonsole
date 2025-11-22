@@ -169,32 +169,38 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		tokenString := ""
-		if authHeader := r.Header.Get("Authorization"); authHeader != "" {
-			tokenString = strings.Replace(authHeader, "Bearer ", "", 1)
-		} else if q := r.URL.Query().Get("token"); q != "" {
-			tokenString = q
-		} else if c, err := r.Cookie("token"); err == nil {
-			tokenString = c.Value
-		}
-		if tokenString == "" {
-			http.Error(w, "Authorization token required", http.StatusUnauthorized)
+		claims, err := authenticateRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
-
-		claims := &Claims{}
-
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			return jwtSecret, nil
-		})
-
-		if err != nil || !token.Valid {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
-			return
-		}
-
-		// Add claims to context
 		ctx := context.WithValue(r.Context(), "user", claims)
 		next(w, r.WithContext(ctx))
 	}
+}
+
+// authenticateRequest extracts and validates JWT from header, query, or cookie.
+func authenticateRequest(r *http.Request) (*Claims, error) {
+	tokenString := ""
+	if authHeader := r.Header.Get("Authorization"); authHeader != "" {
+		tokenString = strings.Replace(authHeader, "Bearer ", "", 1)
+	} else if q := r.URL.Query().Get("token"); q != "" {
+		tokenString = q
+	} else if c, err := r.Cookie("token"); err == nil {
+		tokenString = c.Value
+	}
+	if tokenString == "" {
+		return nil, fmt.Errorf("authorization token required")
+	}
+
+	claims := &Claims{}
+
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+
+	if err != nil || !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+	return claims, nil
 }

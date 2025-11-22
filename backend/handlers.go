@@ -1571,6 +1571,11 @@ func (h *Handlers) GetClusterStats(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
+	if _, err := authenticateRequest(r); err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	client, err := h.getClient(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -1627,6 +1632,11 @@ func (h *Handlers) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
+	if _, err := authenticateRequest(r); err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	client, err := h.getClient(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
