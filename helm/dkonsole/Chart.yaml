@@ -1,14 +1,16 @@
 apiVersion: v2
 name: dkonsole
-description: A Kubernetes Dashboard for cluster management and monitoring
+description: A Kubernetes Dashboard for cluster management and monitoring with Prometheus integration
 type: application
-version: 1.0.3
-appVersion: "1.0.3"
+version: 1.0.4
+appVersion: "1.0.4"
 keywords:
   - kubernetes
   - dashboard
   - monitoring
   - management
+  - prometheus
+  - metrics
 home: https://github.com/yourusername/DKonsole
 maintainers:
   - name: Your Name
