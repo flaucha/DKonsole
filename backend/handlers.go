@@ -34,11 +34,12 @@ import (
 )
 
 type Handlers struct {
-	Clients     map[string]*kubernetes.Clientset
-	Dynamics    map[string]dynamic.Interface
-	Metrics     map[string]*metricsv.Clientset
-	RESTConfigs map[string]*rest.Config
-	mu          sync.RWMutex
+	Clients       map[string]*kubernetes.Clientset
+	Dynamics      map[string]dynamic.Interface
+	Metrics       map[string]*metricsv.Clientset
+	RESTConfigs   map[string]*rest.Config
+	PrometheusURL string
+	mu            sync.RWMutex
 }
 
 type ClusterConfig struct {
@@ -429,6 +430,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 						"restarts":   restarts,
 						"containers": containers,
 						"metrics":    metricsMap[i.Name],
+						"labels":     i.Labels,
 					},
 				})
 			}

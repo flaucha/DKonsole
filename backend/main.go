@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"k8s.io/client-go/dynamic"
@@ -49,10 +50,11 @@ func main() {
 	}
 
 	h := &Handlers{
-		Clients:     make(map[string]*kubernetes.Clientset),
-		Dynamics:    make(map[string]dynamic.Interface),
-		Metrics:     make(map[string]*metricsv.Clientset),
-		RESTConfigs: make(map[string]*rest.Config),
+		Clients:       make(map[string]*kubernetes.Clientset),
+		Dynamics:      make(map[string]dynamic.Interface),
+		Metrics:       make(map[string]*metricsv.Clientset),
+		RESTConfigs:   make(map[string]*rest.Config),
+		PrometheusURL: os.Getenv("PROMETHEUS_URL"),
 	}
 	h.Clients["default"] = clientset
 	h.Dynamics["default"] = dynamicClient
