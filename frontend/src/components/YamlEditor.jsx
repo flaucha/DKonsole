@@ -5,7 +5,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 
 const YamlEditor = ({ resource, onClose, onSaved }) => {
-    const { name, namespace, kind } = resource || {};
+    const { name, namespace, kind, group, version, resource: resourceName, namespaced } = resource || {};
     const { currentCluster } = useSettings();
     const { authFetch } = useAuth();
     const [content, setContent] = useState('');
@@ -17,6 +17,10 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
     const buildUrl = () => {
         const params = new URLSearchParams({ kind, name });
         if (namespace) params.append('namespace', namespace);
+        if (group) params.append('group', group);
+        if (version) params.append('version', version);
+        if (resourceName) params.append('resource', resourceName);
+        if (namespaced !== undefined) params.append('namespaced', namespaced.toString());
         if (currentCluster) params.append('cluster', currentCluster);
         return `/api/resource/yaml?${params.toString()}`;
     };

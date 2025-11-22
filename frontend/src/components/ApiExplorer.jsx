@@ -84,7 +84,11 @@ const ApiExplorer = ({ namespace }) => {
         setYamlResource({
             name: obj.name,
             namespace: obj.namespace,
-            kind: selected.kind
+            kind: selected.kind,
+            group: selected.group,
+            version: selected.version,
+            resource: selected.resource,
+            namespaced: selected.namespaced
         });
     };
 
