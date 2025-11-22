@@ -103,18 +103,18 @@ By default, it uses the official images. You can change tags or repositories if 
 image:
   backend:
     repository: dkonsole/dkonsole-backend
-    tag: "1.0.4"
+    tag: "1.0.5"
   frontend:
     repository: dkonsole/dkonsole-frontend
-    tag: "1.0.4"
+    tag: "1.0.5"
 ```
 
 ## 🐳 Docker Images
 
 The official images are available at:
 
-- **Backend**: `dkonsole/dkonsole-backend:1.0.4`
-- **Frontend**: `dkonsole/dkonsole-frontend:1.0.4`
+- **Backend**: `dkonsole/dkonsole-backend:1.0.5`
+- **Frontend**: `dkonsole/dkonsole-frontend:1.0.5`
 
 ## 📊 Prometheus Metrics
 
