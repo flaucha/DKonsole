@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
@@ -16,17 +16,20 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 # Final stage
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates && \
+    addgroup -S app && adduser -S -G app -u 1000 app
 
-WORKDIR /root/
+WORKDIR /home/app
 
 # Copy the binary from builder
 COPY --from=builder /app/main .
 
 # Create data directory for logo uploads
-RUN mkdir -p /root/data
+RUN mkdir -p /home/app/data && chown -R app:app /home/app
 
 # Expose port
 EXPOSE 8080
+
+USER app
 
 CMD ["./main"]
