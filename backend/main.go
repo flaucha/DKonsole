@@ -107,7 +107,7 @@ func main() {
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
-	}))
+	})))
 
 	port := ":8080"
 	fmt.Printf("Server starting on port %s...\n", port)
