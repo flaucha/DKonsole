@@ -58,21 +58,15 @@ spec:
               key: admin-password-hash
         livenessProbe:
           httpGet:
-            path: /api/overview
+            path: /healthz
             port: http
-            httpHeaders:
-            - name: Authorization
-              value: "Bearer dummy"
           initialDelaySeconds: 30
           periodSeconds: 10
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /api/overview
+            path: /healthz
             port: http
-            httpHeaders:
-            - name: Authorization
-              value: "Bearer dummy"
           initialDelaySeconds: 5
           periodSeconds: 5
         resources:
