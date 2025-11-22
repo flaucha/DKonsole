@@ -369,19 +369,40 @@ const IngressDetails = ({ details }) => {
     const rules = details.rules || [];
     const tls = details.tls || [];
     const annotations = details.annotations || {};
+    const loadBalancer = details.loadBalancer || [];
 
     return (
-        <div className="p-4 bg-gray-900/50 rounded-md mt-2 space-y-4">
+        <div className="p-4 bg-gray-900/50 rounded-md mt-2 space-y-6">
+            {/* LoadBalancer Status */}
+            {loadBalancer.length > 0 && (
+                <div>
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Address</h4>
+                    <div className="flex flex-wrap gap-2">
+                        {loadBalancer.map((lb, i) => (
+                            <div key={i} className="flex items-center px-2 py-1 bg-gray-800 border border-gray-700 rounded text-sm text-white">
+                                <Globe size={14} className="mr-2 text-blue-400" />
+                                {lb.ip || lb.hostname}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Rules Section */}
             <div>
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Rules</h4>
                 {rules.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         {rules.map((rule, i) => (
-                            <div key={i} className="bg-gray-800 p-2 rounded border border-gray-700">
-                                <div className="text-sm font-medium text-white mb-1">{rule.host || '*'}</div>
-                                <div className="space-y-1">
+                            <div key={i} className="bg-gray-800 rounded border border-gray-700 overflow-hidden">
+                                <div className="px-3 py-2 bg-gray-800/50 border-b border-gray-700 flex items-center">
+                                    <span className="text-xs text-gray-500 uppercase mr-2">Host:</span>
+                                    <span className="text-sm font-medium text-white">{rule.host || '*'}</span>
+                                </div>
+                                <div className="p-2 space-y-1">
                                     {rule.paths && rule.paths.map((path, j) => (
-                                        <div key={j} className="text-xs text-gray-400 pl-2 border-l-2 border-gray-600">
+                                        <div key={j} className="flex items-center text-xs text-gray-300 pl-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-gray-600 mr-2"></div>
                                             {path}
                                         </div>
                                     ))}
@@ -394,30 +415,43 @@ const IngressDetails = ({ details }) => {
                 )}
             </div>
 
+            {/* TLS Section */}
             {tls.length > 0 && (
                 <div>
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">TLS</h4>
-                    <div className="space-y-1">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">TLS Configuration</h4>
+                    <div className="space-y-2">
                         {tls.map((t, i) => (
-                            <div key={i} className="flex items-center text-xs text-gray-300 bg-gray-800 px-2 py-1 rounded border border-gray-700">
-                                <Lock size={12} className="mr-2 text-green-400" />
-                                <span className="font-medium mr-2">{t.secretName}</span>
-                                <span className="text-gray-500">({(t.hosts || []).join(', ')})</span>
+                            <div key={i} className="flex flex-col bg-gray-800 px-3 py-2 rounded border border-gray-700">
+                                <div className="flex items-center mb-1">
+                                    <Lock size={14} className="mr-2 text-green-400" />
+                                    <span className="text-xs text-gray-500 uppercase mr-2">Secret:</span>
+                                    <span className="text-sm font-medium text-white">{t.secretName}</span>
+                                </div>
+                                {t.hosts && t.hosts.length > 0 && (
+                                    <div className="ml-6 text-xs text-gray-400">
+                                        <span className="text-gray-500 mr-1">Hosts:</span>
+                                        {t.hosts.join(', ')}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
                 </div>
             )}
 
+            {/* Annotations Section */}
             {Object.keys(annotations).length > 0 && (
                 <div>
                     <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Annotations</h4>
-                    <div className="grid grid-cols-1 gap-1">
-                        {Object.entries(annotations).map(([k, v]) => (
-                            <div key={k} className="text-xs break-all">
-                                <span className="text-gray-500">{k}:</span> <span className="text-gray-300">{v}</span>
-                            </div>
-                        ))}
+                    <div className="bg-gray-800 rounded border border-gray-700 p-2">
+                        <div className="grid grid-cols-1 gap-1">
+                            {Object.entries(annotations).map(([k, v]) => (
+                                <div key={k} className="text-xs break-all flex">
+                                    <span className="text-gray-500 font-medium min-w-[120px] mr-2">{k}:</span>
+                                    <span className="text-gray-300">{v}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
@@ -880,8 +914,7 @@ const WorkloadList = ({ namespace, kind }) => {
         })
             .then(async (resp) => {
                 if (!resp.ok) throw new Error('Failed to trigger CronJob');
-                const data = await resp.json();
-                alert(`Job ${data.jobName} created successfully!`);
+                await resp.json();
                 setReloadKey(v => v + 1);
             })
             .catch(err => alert(err.message))
