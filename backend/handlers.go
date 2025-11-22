@@ -18,14 +18,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
@@ -83,29 +83,29 @@ type ResourceMeta struct {
 }
 
 var resourceMeta = map[string]ResourceMeta{
-	"Deployment":               {Group: "apps", Version: "v1", Resource: "deployments", Namespaced: true},
-	"Node":                     {Group: "", Version: "v1", Resource: "nodes", Namespaced: false},
-	"Pod":                      {Group: "", Version: "v1", Resource: "pods", Namespaced: true},
-	"ConfigMap":                {Group: "", Version: "v1", Resource: "configmaps", Namespaced: true},
-	"Secret":                   {Group: "", Version: "v1", Resource: "secrets", Namespaced: true},
-	"Job":                      {Group: "batch", Version: "v1", Resource: "jobs", Namespaced: true},
-	"CronJob":                  {Group: "batch", Version: "v1", Resource: "cronjobs", Namespaced: true},
-	"StatefulSet":              {Group: "apps", Version: "v1", Resource: "statefulsets", Namespaced: true},
-	"DaemonSet":                {Group: "apps", Version: "v1", Resource: "daemonsets", Namespaced: true},
-	"HorizontalPodAutoscaler":  {Group: "autoscaling", Version: "v2", Resource: "horizontalpodautoscalers", Namespaced: true},
-	"Service":                  {Group: "", Version: "v1", Resource: "services", Namespaced: true},
-	"Ingress":                  {Group: "networking.k8s.io", Version: "v1", Resource: "ingresses", Namespaced: true},
-	"NetworkPolicy":            {Group: "networking.k8s.io", Version: "v1", Resource: "networkpolicies", Namespaced: true},
-	"PersistentVolumeClaim":    {Group: "", Version: "v1", Resource: "persistentvolumeclaims", Namespaced: true},
-	"PersistentVolume":         {Group: "", Version: "v1", Resource: "persistentvolumes", Namespaced: false},
-	"StorageClass":             {Group: "storage.k8s.io", Version: "v1", Resource: "storageclasses", Namespaced: false},
-	"ServiceAccount":           {Group: "", Version: "v1", Resource: "serviceaccounts", Namespaced: true},
-	"Role":                     {Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "roles", Namespaced: true},
-	"ClusterRole":              {Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterroles", Namespaced: false},
-	"RoleBinding":              {Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "rolebindings", Namespaced: true},
-	"ClusterRoleBinding":       {Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterrolebindings", Namespaced: false},
-	"ResourceQuota":            {Group: "", Version: "v1", Resource: "resourcequotas", Namespaced: true},
-	"LimitRange":               {Group: "", Version: "v1", Resource: "limitranges", Namespaced: true},
+	"Deployment":              {Group: "apps", Version: "v1", Resource: "deployments", Namespaced: true},
+	"Node":                    {Group: "", Version: "v1", Resource: "nodes", Namespaced: false},
+	"Pod":                     {Group: "", Version: "v1", Resource: "pods", Namespaced: true},
+	"ConfigMap":               {Group: "", Version: "v1", Resource: "configmaps", Namespaced: true},
+	"Secret":                  {Group: "", Version: "v1", Resource: "secrets", Namespaced: true},
+	"Job":                     {Group: "batch", Version: "v1", Resource: "jobs", Namespaced: true},
+	"CronJob":                 {Group: "batch", Version: "v1", Resource: "cronjobs", Namespaced: true},
+	"StatefulSet":             {Group: "apps", Version: "v1", Resource: "statefulsets", Namespaced: true},
+	"DaemonSet":               {Group: "apps", Version: "v1", Resource: "daemonsets", Namespaced: true},
+	"HorizontalPodAutoscaler": {Group: "autoscaling", Version: "v2", Resource: "horizontalpodautoscalers", Namespaced: true},
+	"Service":                 {Group: "", Version: "v1", Resource: "services", Namespaced: true},
+	"Ingress":                 {Group: "networking.k8s.io", Version: "v1", Resource: "ingresses", Namespaced: true},
+	"NetworkPolicy":           {Group: "networking.k8s.io", Version: "v1", Resource: "networkpolicies", Namespaced: true},
+	"PersistentVolumeClaim":   {Group: "", Version: "v1", Resource: "persistentvolumeclaims", Namespaced: true},
+	"PersistentVolume":        {Group: "", Version: "v1", Resource: "persistentvolumes", Namespaced: false},
+	"StorageClass":            {Group: "storage.k8s.io", Version: "v1", Resource: "storageclasses", Namespaced: false},
+	"ServiceAccount":          {Group: "", Version: "v1", Resource: "serviceaccounts", Namespaced: true},
+	"Role":                    {Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "roles", Namespaced: true},
+	"ClusterRole":             {Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterroles", Namespaced: false},
+	"RoleBinding":             {Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "rolebindings", Namespaced: true},
+	"ClusterRoleBinding":      {Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterrolebindings", Namespaced: false},
+	"ResourceQuota":           {Group: "", Version: "v1", Resource: "resourcequotas", Namespaced: true},
+	"LimitRange":              {Group: "", Version: "v1", Resource: "limitranges", Namespaced: true},
 }
 
 func resolveGVR(kind string) (schema.GroupVersionResource, bool) {
@@ -402,7 +402,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 				for _, c := range i.Spec.Containers {
 					containers = append(containers, c.Name)
 				}
-				
+
 				restarts := int32(0)
 				for _, s := range i.Status.ContainerStatuses {
 					restarts += s.RestartCount
@@ -474,17 +474,17 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					status = "Failed"
 				}
 				details := map[string]interface{}{
-					"active":          i.Status.Active,
-					"succeeded":       i.Status.Succeeded,
-					"failed":          i.Status.Failed,
-					"startTime":       i.Status.StartTime,
-					"completionTime":  i.Status.CompletionTime,
-					"parallelism":     i.Spec.Parallelism,
-					"completions":     i.Spec.Completions,
-					"backoffLimit":    i.Spec.BackoffLimit,
-					"activeDeadline":  i.Spec.ActiveDeadlineSeconds,
-					"podSelector":     i.Spec.Selector,
-					"podTemplate":     i.Spec.Template.Spec,
+					"active":         i.Status.Active,
+					"succeeded":      i.Status.Succeeded,
+					"failed":         i.Status.Failed,
+					"startTime":      i.Status.StartTime,
+					"completionTime": i.Status.CompletionTime,
+					"parallelism":    i.Spec.Parallelism,
+					"completions":    i.Spec.Completions,
+					"backoffLimit":   i.Spec.BackoffLimit,
+					"activeDeadline": i.Spec.ActiveDeadlineSeconds,
+					"podSelector":    i.Spec.Selector,
+					"podTemplate":    i.Spec.Template.Spec,
 				}
 				resources = append(resources, Resource{
 					Name:      i.Name,
@@ -506,11 +506,11 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					lastSchedule = i.Status.LastScheduleTime.Format(time.RFC3339)
 				}
 				details := map[string]interface{}{
-					"schedule":        i.Spec.Schedule,
-					"suspend":         i.Spec.Suspend,
-					"concurrency":     i.Spec.ConcurrencyPolicy,
+					"schedule":         i.Spec.Schedule,
+					"suspend":          i.Spec.Suspend,
+					"concurrency":      i.Spec.ConcurrencyPolicy,
 					"startingDeadline": i.Spec.StartingDeadlineSeconds,
-					"lastSchedule":    lastSchedule,
+					"lastSchedule":     lastSchedule,
 				}
 				resources = append(resources, Resource{
 					Name:      i.Name,
@@ -528,12 +528,12 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			for _, i := range list.Items {
 				details := map[string]interface{}{
-					"replicas":    i.Status.Replicas,
-					"ready":       i.Status.ReadyReplicas,
-					"current":     i.Status.CurrentReplicas,
-					"update":      i.Status.UpdatedReplicas,
-					"serviceName": i.Spec.ServiceName,
-					"podManagement": i.Spec.PodManagementPolicy,
+					"replicas":       i.Status.Replicas,
+					"ready":          i.Status.ReadyReplicas,
+					"current":        i.Status.CurrentReplicas,
+					"update":         i.Status.UpdatedReplicas,
+					"serviceName":    i.Spec.ServiceName,
+					"podManagement":  i.Spec.PodManagementPolicy,
 					"updateStrategy": i.Spec.UpdateStrategy,
 					"volumeClaims":   i.Spec.VolumeClaimTemplates,
 				}
@@ -578,11 +578,11 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 			for _, i := range list.Items {
 				status := fmt.Sprintf("%d/%d replicas", i.Status.CurrentReplicas, i.Status.DesiredReplicas)
 				details := map[string]interface{}{
-					"minReplicas":  i.Spec.MinReplicas,
-					"maxReplicas":  i.Spec.MaxReplicas,
-					"current":      i.Status.CurrentReplicas,
-					"desired":      i.Status.DesiredReplicas,
-					"metrics":      i.Spec.Metrics,
+					"minReplicas":   i.Spec.MinReplicas,
+					"maxReplicas":   i.Spec.MaxReplicas,
+					"current":       i.Status.CurrentReplicas,
+					"desired":       i.Status.DesiredReplicas,
+					"metrics":       i.Spec.Metrics,
 					"lastScaleTime": i.Status.LastScaleTime,
 				}
 				resources = append(resources, Resource{
@@ -1108,8 +1108,8 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := map[string]interface{}{
-		"status":   "applied",
-		"count":    len(applied),
+		"status":    "applied",
+		"count":     len(applied),
 		"resources": applied,
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -1632,7 +1632,9 @@ func (h *Handlers) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("ExecIntoPod called. URL: %s\n", r.URL.String())
 	if _, err := authenticateRequest(r); err != nil {
+		fmt.Printf("ExecIntoPod Auth Failed: %v\n", err)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -1811,7 +1813,7 @@ func (h *Handlers) UploadLogo(w http.ResponseWriter, r *http.Request) {
 	destPath := filepath.Join(DataDir, "logo"+ext)
 	absPath, _ := filepath.Abs(destPath)
 	fmt.Printf("Saving logo to: %s\n", absPath)
-	
+
 	dst, err := os.Create(destPath)
 	if err != nil {
 		fmt.Printf("Error creating destination file: %v\n", err)
@@ -1876,7 +1878,7 @@ func (h *Handlers) GetCRDs(w http.ResponseWriter, r *http.Request) {
 		names, _ := spec["names"].(map[string]interface{})
 		kind, _ := names["kind"].(string)
 		scope, _ := spec["scope"].(string)
-		
+
 		// Get versions
 		versions, _ := spec["versions"].([]interface{})
 		for _, v := range versions {
@@ -1952,7 +1954,7 @@ func (h *Handlers) GetCRDResources(w http.ResponseWriter, r *http.Request) {
 	instances := []CRInstance{}
 	for _, item := range unstructuredList.Items {
 		created := item.GetCreationTimestamp().Format(time.RFC3339)
-		
+
 		// Try to extract status if available
 		status := ""
 		if statusObj, found := item.Object["status"]; found {

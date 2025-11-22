@@ -9,10 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/argon2"
 	"crypto/subtle"
 	"encoding/base64"
+
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/argon2"
 )
 
 var (
@@ -53,7 +54,7 @@ func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if adminUser == "" {
 		adminUser = "admin"
 	}
-	
+
 	if creds.Username != adminUser {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
@@ -189,7 +190,9 @@ func authenticateRequest(r *http.Request) (*Claims, error) {
 	} else if c, err := r.Cookie("token"); err == nil {
 		tokenString = c.Value
 	}
+
 	if tokenString == "" {
+		fmt.Println("Auth Debug: No token found in request")
 		return nil, fmt.Errorf("authorization token required")
 	}
 
@@ -199,7 +202,12 @@ func authenticateRequest(r *http.Request) (*Claims, error) {
 		return jwtSecret, nil
 	})
 
-	if err != nil || !token.Valid {
+	if err != nil {
+		fmt.Printf("Auth Debug: Token parse error: %v\n", err)
+		return nil, fmt.Errorf("invalid token")
+	}
+	if !token.Valid {
+		fmt.Println("Auth Debug: Token is invalid")
 		return nil, fmt.Errorf("invalid token")
 	}
 	return claims, nil
