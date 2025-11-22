@@ -890,6 +890,12 @@ const WorkloadList = ({ namespace, kind }) => {
 
     return (
         <>
+            {menuOpen && (
+                <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setMenuOpen(null)}
+                ></div>
+            )}
             <div className="bg-gray-800 rounded-lg border border-gray-700">
                 <table className="min-w-full border-separate border-spacing-0">
                     <thead>
