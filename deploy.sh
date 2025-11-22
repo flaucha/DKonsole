@@ -4,11 +4,11 @@ set -e
 VERSION="0.0.4"
 
 echo "Building Backend ($VERSION)..."
-docker build -t flaucha/dkonsole-backend:$VERSION ./backend
-docker push flaucha/dkonsole-backend:$VERSION
+docker build -t dkonsole/dkonsole-backend:$VERSION ./backend
+docker push dkonsole/dkonsole-backend:$VERSION
 
 echo "Building Frontend ($VERSION)..."
-docker build -t flaucha/dkonsole-frontend:$VERSION ./frontend
-docker push flaucha/dkonsole-frontend:$VERSION
+docker build -t dkonsole/dkonsole-frontend:$VERSION ./frontend
+docker push dkonsole/dkonsole-frontend:$VERSION
 
 echo "Done! Images pushed with tag: $VERSION"
