@@ -42,7 +42,7 @@ service:
   backend:
     port: 8080
   frontend:
-    port: 80
+    port: 8080
 
 ingress:
   enabled: true
@@ -80,15 +80,11 @@ rbac:
   create: true
   # Cluster-wide resources
   clusterResources:
-    - apiGroups: [""]
-      resources: ["nodes", "namespaces", "persistentvolumes"]
+    - apiGroups: ["*"]
+      resources: ["*"]
       verbs: ["get", "list", "watch"]
-    - apiGroups: ["storage.k8s.io"]
-      resources: ["storageclasses"]
-      verbs: ["get", "list", "watch"]
-    - apiGroups: ["apiextensions.k8s.io"]
-      resources: ["customresourcedefinitions"]
-      verbs: ["get", "list", "watch"]
+  nonResourceURLs:
+    - "*"
   # Namespaced resources (applied to all namespaces)
   namespacedResources:
     - apiGroups: [""]
