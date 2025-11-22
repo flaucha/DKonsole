@@ -1,0 +1,158 @@
+# Default values for dkonsole
+replicaCount: 1
+
+image:
+  backend:
+    repository: your-registry/dkonsole-backend
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  frontend:
+    repository: your-registry/dkonsole-frontend
+    pullPolicy: IfNotPresent
+    tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  backend:
+    port: 8080
+  frontend:
+    port: 80
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: dkonsole.example.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          backend: backend
+        - path: /
+          pathType: Prefix
+          backend: frontend
+  tls:
+    - secretName: dkonsole-tls
+      hosts:
+        - dkonsole.example.com
+
+# Admin credentials (stored in Kubernetes Secret)
+admin:
+  # Generate hash with: echo -n "yourpassword" | argon2 $(openssl rand -base64 16) -id -t 3 -m 12 -p 1 -l 32 -e
+  username: admin
+  # This should be an Argon2 hash. If empty, default password "password" will be used (INSECURE!)
+  passwordHash: ""
+  
+# JWT secret for token signing (should be a random string)
+# Generate with: openssl rand -base64 32
+jwtSecret: ""
+
+# RBAC permissions for the ServiceAccount
+rbac:
+  create: true
+  # Cluster-wide resources
+  clusterResources:
+    - apiGroups: [""]
+      resources: ["nodes", "namespaces", "persistentvolumes"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["storageclasses"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["apiextensions.k8s.io"]
+      resources: ["customresourcedefinitions"]
+      verbs: ["get", "list", "watch"]
+  # Namespaced resources (applied to all namespaces)
+  namespacedResources:
+    - apiGroups: [""]
+      resources: 
+        - "pods"
+        - "pods/log"
+        - "pods/exec"
+        - "services"
+        - "configmaps"
+        - "secrets"
+        - "persistentvolumeclaims"
+        - "resourcequotas"
+        - "limitranges"
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: ["apps"]
+      resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: ["apps"]
+      resources: ["deployments/scale"]
+      verbs: ["get", "update", "patch"]
+    - apiGroups: ["batch"]
+      resources: ["jobs", "cronjobs"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: ["networking.k8s.io"]
+      resources: ["ingresses", "networkpolicies"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: ["rbac.authorization.k8s.io"]
+      resources: ["roles", "rolebindings"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["metrics.k8s.io"]
+      resources: ["pods", "nodes"]
+      verbs: ["get", "list"]
+
+resources:
+  backend:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  frontend:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Persistence for logo uploads
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 1Gi

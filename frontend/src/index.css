@@ -1,0 +1,164 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inconsolata:wght@400;700&family=Inter:wght@400;500;600;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;500;700&family=Nunito:wght@400;600;700&family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;500;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;500;600;700&family=Quicksand:wght@400;500;700&family=Raleway:wght@400;500;700&family=Roboto:wght@400;500;700&family=Source+Sans+Pro:wght@400;600;700&family=Ubuntu:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Default Theme (Gray/Cool) */
+  --color-gray-900: 17 24 39;
+  --color-gray-800: 31 41 55;
+  --color-gray-750: 45 55 72;
+  --color-gray-700: 55 65 81;
+  --color-gray-600: 75 85 99;
+  --color-gray-500: 107 114 128;
+  --color-gray-400: 156 163 175;
+  --color-gray-300: 209 213 219;
+  --color-gray-200: 229 231 235;
+  --color-gray-100: 243 244 246;
+
+  --color-blue-700: 29 78 216;
+  --color-blue-600: 37 99 235;
+  --color-blue-500: 59 130 246;
+  --color-blue-400: 96 165 250;
+
+  --font-family: 'Inter', sans-serif;
+}
+
+[data-theme="ocean"] {
+  /* Ocean Theme (Blue/Slate) */
+  --color-gray-900: 15 23 42;
+  --color-gray-800: 30 41 59;
+  --color-gray-750: 51 65 85;
+  --color-gray-700: 71 85 105;
+  --color-gray-600: 100 116 139;
+  --color-gray-500: 148 163 184;
+  --color-gray-400: 203 213 225;
+  --color-gray-300: 226 232 240;
+  --color-gray-200: 241 245 249;
+  --color-gray-100: 248 250 252;
+
+  --color-blue-700: 30 64 175;
+  --color-blue-600: 37 99 235;
+  --color-blue-500: 59 130 246;
+  --color-blue-400: 96 165 250;
+}
+
+[data-theme="forest"] {
+  /* Forest Theme (Green/Dark) */
+  --color-gray-900: 2 44 34;
+  --color-gray-800: 6 78 59;
+  --color-gray-750: 20 83 45; /* Custom mix */
+  --color-gray-700: 22 101 52;
+  --color-gray-600: 34 197 94;
+  --color-gray-500: 74 222 128;
+  --color-gray-400: 134 239 172;
+  --color-gray-300: 187 247 208;
+  --color-gray-200: 220 252 231;
+  --color-gray-100: 240 253 244;
+
+  --color-blue-700: 21 128 61; /* Reusing Green as primary accent */
+  --color-blue-600: 22 163 74;
+  --color-blue-500: 34 197 94;
+  --color-blue-400: 74 222 128;
+}
+
+[data-theme="sunset"] {
+  /* Sunset Theme (Red/Orange/Dark) */
+  --color-gray-900: 67 20 7;
+  --color-gray-800: 127 29 29;
+  --color-gray-750: 153 27 27;
+  --color-gray-700: 185 28 28;
+  --color-gray-600: 220 38 38;
+  --color-gray-500: 239 68 68;
+  --color-gray-400: 252 165 165;
+  --color-gray-300: 254 202 202;
+  --color-gray-200: 254 226 226;
+  --color-gray-100: 254 242 242;
+
+  --color-blue-700: 154 52 18; /* Orange/Red accent */
+  --color-blue-600: 194 65 12;
+  --color-blue-500: 234 88 12;
+  --color-blue-400: 251 146 60;
+}
+
+[data-theme="midnight"] {
+  /* Midnight Theme (Deep Purple) */
+  --color-gray-900: 15 5 36;
+  --color-gray-800: 26 11 46;
+  --color-gray-750: 36 14 61;
+  --color-gray-700: 46 16 79;
+  --color-gray-600: 88 28 135;
+  --color-gray-500: 126 34 206;
+  --color-gray-400: 168 85 247;
+  --color-gray-300: 192 132 252;
+  --color-gray-200: 216 180 254;
+  --color-gray-100: 243 232 255;
+
+  --color-blue-700: 76 29 149;
+  --color-blue-600: 91 33 182;
+  --color-blue-500: 109 40 217;
+  --color-blue-400: 139 92 246;
+}
+
+[data-theme="nebula"] {
+  /* Nebula Theme (Space/Pink) */
+  --color-gray-900: 10 10 30;
+  --color-gray-800: 20 20 50;
+  --color-gray-750: 35 30 70;
+  --color-gray-700: 50 40 90;
+  --color-gray-600: 192 38 211;
+  --color-gray-500: 219 39 119;
+  --color-gray-400: 236 72 153;
+  --color-gray-300: 244 114 182;
+  --color-gray-200: 251 207 232;
+  --color-gray-100: 253 242 248;
+
+  --color-blue-700: 131 24 67;
+  --color-blue-600: 157 23 77;
+  --color-blue-500: 190 24 93;
+  --color-blue-400: 219 39 119;
+}
+
+[data-theme="dracula"] {
+  /* Dracula Theme (High Contrast) */
+  --color-gray-900: 40 42 54;
+  --color-gray-800: 68 71 90;
+  --color-gray-750: 80 82 105;
+  --color-gray-700: 98 114 164;
+  --color-gray-600: 139 233 253;
+  --color-gray-500: 80 250 123;
+  --color-gray-400: 255 184 108;
+  --color-gray-300: 255 121 198;
+  --color-gray-200: 189 147 249;
+  --color-gray-100: 248 248 242;
+
+  --color-blue-700: 98 114 164;
+  --color-blue-600: 139 233 253;
+  --color-blue-500: 189 147 249;
+  --color-blue-400: 255 121 198;
+}
+
+[data-theme="cyberpunk"] {
+  /* Cyberpunk Theme (Neon/Black) */
+  --color-gray-900: 0 0 0;
+  --color-gray-800: 15 15 15;
+  --color-gray-750: 25 25 25;
+  --color-gray-700: 40 40 40;
+  --color-gray-600: 255 255 0; /* Yellow */
+  --color-gray-500: 0 255 255; /* Cyan */
+  --color-gray-400: 255 0 255; /* Magenta */
+  --color-gray-300: 255 255 255;
+  --color-gray-200: 240 240 240;
+  --color-gray-100: 255 255 255;
+
+  --color-blue-700: 200 200 0;
+  --color-blue-600: 220 220 0;
+  --color-blue-500: 255 230 0; /* Bright Yellow */
+  --color-blue-400: 0 255 255; /* Cyan */
+}
+
+body {
+  @apply bg-gray-900 text-gray-100;
+  font-family: var(--font-family);
+}
