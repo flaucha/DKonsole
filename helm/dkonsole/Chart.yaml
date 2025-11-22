@@ -2,8 +2,8 @@ apiVersion: v2
 name: dkonsole
 description: A Kubernetes Dashboard for cluster management and monitoring
 type: application
-version: 1.0.1
-appVersion: "1.0.1"
+version: 1.0.3
+appVersion: "1.0.3"
 keywords:
   - kubernetes
   - dashboard

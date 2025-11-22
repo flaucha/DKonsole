@@ -19,7 +19,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout de la última versión estable
-git checkout v1.0.1
+git checkout v1.0.3
 
 # Instalar
 helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
@@ -58,7 +58,7 @@ Por defecto usa las imágenes oficiales. Puedes cambiar tags o repositorios si e
 ```yaml
 image:
   backend:
-    tag: "1.0.1"
+    tag: "1.0.3"
 ```
 
 ### 2. Imágenes Docker
