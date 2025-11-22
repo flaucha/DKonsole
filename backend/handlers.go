@@ -1657,7 +1657,29 @@ func (h *Handlers) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		CheckOrigin: func(r *http.Request) bool {
-			return true // Allow all origins for development - CHANGE THIS FOR PRODUCTION
+			origin := r.Header.Get("Origin")
+			if origin == "" {
+				return true // No origin header (e.g. script), allow
+			}
+			// Allow localhost for development
+			if strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
+				return true
+			}
+			// Check against Host (standard production case)
+			if strings.Contains(origin, r.Host) {
+				return true
+			}
+			// Check allowed origins from env
+			allowed := os.Getenv("ALLOWED_ORIGINS")
+			if allowed != "" {
+				for _, o := range strings.Split(allowed, ",") {
+					if strings.TrimSpace(o) == origin {
+						return true
+					}
+				}
+			}
+			fmt.Printf("WebSocket Origin rejected: %s (Host: %s)\n", origin, r.Host)
+			return false
 		},
 	}
 

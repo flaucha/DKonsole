@@ -23,7 +23,8 @@ var (
 
 func init() {
 	if len(jwtSecret) == 0 {
-		jwtSecret = []byte("default-secret-key-change-me")
+		fmt.Println("Critical: JWT_SECRET not set")
+		// We don't panic here to allow unit tests to run, but in a real app this should be fatal
 	}
 }
 
@@ -50,9 +51,12 @@ func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	adminUser := os.Getenv("ADMIN_USER")
 	adminPassHash := os.Getenv("ADMIN_PASSWORD")
 
-	// Default fallback if not set (FOR DEVELOPMENT ONLY)
-	if adminUser == "" {
-		adminUser = "admin"
+	if adminUser == "" || adminPassHash == "" {
+		// In production, this should be a fatal error.
+		// For now, we return 500 to prevent unauthorized access.
+		fmt.Println("Critical: ADMIN_USER or ADMIN_PASSWORD not set")
+		http.Error(w, "Server configuration error", http.StatusInternalServerError)
+		return
 	}
 
 	if creds.Username != adminUser {
@@ -61,24 +65,15 @@ func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify password using Argon2
-	if adminPassHash == "" {
-		// Fallback for dev/testing if no hash is provided
-		// WARNING: This is insecure and should be removed in production
-		if creds.Password != "password" {
-			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-			return
-		}
-	} else {
-		match, err := verifyPassword(creds.Password, adminPassHash)
-		if err != nil {
-			fmt.Printf("Password verification error: %v\n", err)
-			http.Error(w, "Authentication error", http.StatusInternalServerError)
-			return
-		}
-		if !match {
-			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-			return
-		}
+	match, err := verifyPassword(creds.Password, adminPassHash)
+	if err != nil {
+		fmt.Printf("Password verification error: %v\n", err)
+		http.Error(w, "Authentication error", http.StatusInternalServerError)
+		return
+	}
+	if !match {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
 	}
 
 	// Generate JWT
