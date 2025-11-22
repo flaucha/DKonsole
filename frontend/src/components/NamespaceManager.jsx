@@ -115,20 +115,20 @@ const NamespaceManager = () => {
                     <tbody className="bg-gray-800 divide-y divide-gray-700">
                         {namespaces.map((ns) => (
                             <React.Fragment key={ns.name}>
-                                <tr className="hover:bg-gray-750 transition-colors">
+                                <tr
+                                    className="hover:bg-gray-750 transition-colors cursor-pointer"
+                                    onClick={() => toggleExpand(ns.name)}
+                                >
                                     <td className="px-4 py-3">
-                                        <button
-                                            onClick={() => toggleExpand(ns.name)}
-                                            className="text-gray-400 hover:text-white transition-colors"
-                                        >
+                                        <div className="text-gray-400 hover:text-white transition-colors">
                                             {expandedNs[ns.name] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                                        </button>
+                                        </div>
                                     </td>
                                     <td className="px-4 py-3 text-sm font-medium text-white">{ns.name}</td>
                                     <td className="px-4 py-3">
                                         <span className={`px-2 py-1 text-xs rounded-full border ${ns.status === 'Active'
-                                                ? 'bg-green-900/30 text-green-400 border-green-800'
-                                                : 'bg-gray-800 text-gray-400 border-gray-700'
+                                            ? 'bg-green-900/30 text-green-400 border-green-800'
+                                            : 'bg-gray-800 text-gray-400 border-gray-700'
                                             }`}>
                                             {ns.status || 'Unknown'}
                                         </span>
