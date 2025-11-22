@@ -58,6 +58,10 @@ spec:
               key: admin-password-hash
         - name: ALLOWED_ORIGINS
           value: {{ .Values.allowedOrigins | default "" | quote }}
+        {{- if .Values.prometheusUrl }}
+        - name: PROMETHEUS_URL
+          value: {{ .Values.prometheusUrl | quote }}
+        {{- end }}
         livenessProbe:
           httpGet:
             path: /healthz

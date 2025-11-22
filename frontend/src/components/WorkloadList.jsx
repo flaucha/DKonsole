@@ -35,6 +35,7 @@ import {
 import LogViewer from './LogViewer';
 import TerminalViewer from './TerminalViewer';
 import YamlEditor from './YamlEditor';
+import DeploymentMetrics from './DeploymentMetrics';
 
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -83,17 +84,22 @@ const getIcon = (kind) => {
     }
 };
 
-const DetailRow = ({ label, value, icon: Icon }) => (
-    <div className="flex items-start space-x-2 text-sm mb-1">
-        {Icon && <Icon size={14} className="mt-0.5 text-gray-500" />}
-        <span className="text-gray-500 font-medium min-w-[80px]">{label}:</span>
-        <span className="text-gray-300 break-all">
-            {Array.isArray(value) ? (
-                value.length > 0 ? value.join(', ') : <span className="text-gray-600 italic">None</span>
-            ) : (
-                value || <span className="text-gray-600 italic">None</span>
-            )}
-        </span>
+const DetailRow = ({ label, value, icon: Icon, children }) => (
+    <div className="flex items-center justify-between bg-gray-800 px-3 py-2 rounded border border-gray-700 mb-2">
+        <div className="flex items-center">
+            {Icon && <Icon size={14} className="mr-2 text-gray-500" />}
+            <span className="text-xs text-gray-400">{label}</span>
+        </div>
+        <div className="flex items-center">
+            <span className="text-sm font-mono text-white break-all text-right">
+                {Array.isArray(value) ? (
+                    value.length > 0 ? value.join(', ') : <span className="text-gray-600 italic">None</span>
+                ) : (
+                    value || <span className="text-gray-600 italic">None</span>
+                )}
+            </span>
+            {children}
+        </div>
     </div>
 );
 
@@ -132,7 +138,7 @@ const DataRow = ({ label, value, isSecret }) => {
 };
 
 // Detail components for each resource kind
-const NodeDetails = ({ details }) => {
+const NodeDetails = ({ details, onEditYAML }) => {
     const addresses = details.addresses || [];
     const nodeInfo = details.nodeInfo || {};
     const conditions = details.conditions || {};
@@ -196,11 +202,14 @@ const NodeDetails = ({ details }) => {
                     </div>
                 </div>
             )}
+            <div className="flex justify-end mt-4">
+                <EditYamlButton onClick={onEditYAML} />
+            </div>
         </div>
     );
 };
 
-const ServiceAccountDetails = ({ details }) => {
+const ServiceAccountDetails = ({ details, onEditYAML }) => {
     const secrets = details.secrets || [];
     const imagePullSecrets = details.imagePullSecrets || [];
 
@@ -234,11 +243,14 @@ const ServiceAccountDetails = ({ details }) => {
                     <div className="text-sm text-gray-500 italic">No image pull secrets</div>
                 )}
             </div>
+            <div className="flex justify-end mt-4">
+                <EditYamlButton onClick={onEditYAML} />
+            </div>
         </div>
     );
 };
 
-const RoleDetails = ({ details }) => {
+const RoleDetails = ({ details, onEditYAML }) => {
     const rules = details.rules || [];
 
     return (
@@ -270,11 +282,14 @@ const RoleDetails = ({ details }) => {
                     </tbody>
                 </table>
             </div>
+            <div className="flex justify-end mt-4">
+                <EditYamlButton onClick={onEditYAML} />
+            </div>
         </div>
     );
 };
 
-const BindingDetails = ({ details }) => {
+const BindingDetails = ({ details, onEditYAML }) => {
     const subjects = details.subjects || [];
     const roleRef = details.roleRef || {};
 
@@ -311,51 +326,85 @@ const BindingDetails = ({ details }) => {
                     </table>
                 </div>
             </div>
+            <div className="flex justify-end mt-4">
+                <EditYamlButton onClick={onEditYAML} />
+            </div>
         </div>
     );
 };
 
-const DeploymentDetails = ({ details, onScale, scaling }) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-900/50 rounded-md mt-2">
-        <div>
-            <div className="flex items-center space-x-2 mb-2">
-                <DetailRow label="Replicas" value={`${details.ready} / ${details.replicas}`} icon={Layers} />
-                {onScale && (
-                    <div className="flex items-center space-x-1 ml-auto">
-                        <button
-                            onClick={() => onScale(-1)}
-                            disabled={scaling}
-                            className="p-1 rounded bg-gray-800 border border-gray-700 text-gray-200 hover:bg-gray-700 disabled:opacity-50"
-                            title="Scale down"
-                        >
-                            <Minus size={14} />
-                        </button>
-                        <button
-                            onClick={() => onScale(1)}
-                            disabled={scaling}
-                            className="p-1 rounded bg-gray-800 border border-gray-700 text-gray-200 hover:bg-gray-700 disabled:opacity-50"
-                            title="Scale up"
-                        >
-                            <Plus size={14} />
-                        </button>
-                    </div>
-                )}
-            </div>
-            <DetailRow label="Images" value={details.images} icon={Box} />
-            <DetailRow label="Ports" value={details.ports?.map(p => p.toString())} icon={Network} />
-        </div>
-        <div>
-            <DetailRow label="PVCs" value={details.pvcs} icon={HardDrive} />
-            <DetailRow
-                label="Labels"
-                value={details.podLabels ? Object.entries(details.podLabels).map(([k, v]) => `${k}=${v}`) : []}
-                icon={Tag}
-            />
-        </div>
-    </div>
-);
+const DeploymentDetails = ({ details, onScale, scaling, res, onEditYAML }) => {
+    const [activeTab, setActiveTab] = useState('details');
 
-const ServiceDetails = ({ details }) => {
+    return (
+        <div className="mt-2">
+            <div className="flex space-x-4 border-b border-gray-700 mb-4">
+                <button
+                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'details' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                    onClick={() => setActiveTab('details')}
+                >
+                    Details
+                </button>
+                <button
+                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'metrics' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                    onClick={() => setActiveTab('metrics')}
+                >
+                    Metrics (Live)
+                </button>
+            </div>
+
+            {activeTab === 'details' ? (
+                <div className="p-4 bg-gray-900/50 rounded-md">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <div className="mb-2">
+                                <DetailRow label="Replicas" value={`${details.ready} / ${details.replicas}`} icon={Layers}>
+                                    {onScale && (
+                                        <div className="flex items-center space-x-1 ml-2">
+                                            <button
+                                                onClick={() => onScale(-1)}
+                                                disabled={scaling}
+                                                className="p-1 rounded bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600 disabled:opacity-50"
+                                                title="Scale down"
+                                            >
+                                                <Minus size={12} />
+                                            </button>
+                                            <button
+                                                onClick={() => onScale(1)}
+                                                disabled={scaling}
+                                                className="p-1 rounded bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600 disabled:opacity-50"
+                                                title="Scale up"
+                                            >
+                                                <Plus size={12} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </DetailRow>
+                            </div>
+                            <DetailRow label="Images" value={details.images} icon={Box} />
+                            <DetailRow label="Ports" value={details.ports?.map(p => p.toString())} icon={Network} />
+                        </div>
+                        <div>
+                            <DetailRow label="PVCs" value={details.pvcs} icon={HardDrive} />
+                            <DetailRow
+                                label="Labels"
+                                value={details.podLabels ? Object.entries(details.podLabels).map(([k, v]) => `${k}=${v}`) : []}
+                                icon={Tag}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex justify-end mt-4">
+                        <EditYamlButton onClick={onEditYAML} />
+                    </div>
+                </div>
+            ) : (
+                <DeploymentMetrics deployment={res} namespace={res.namespace} />
+            )}
+        </div>
+    );
+};
+
+const ServiceDetails = ({ details, onEditYAML }) => {
     const type = details.type || 'ClusterIP';
     const clusterIP = details.clusterIP;
     const externalIPs = details.externalIPs || [];
@@ -447,11 +496,14 @@ const ServiceDetails = ({ details }) => {
                     })}
                 </div>
             </div>
+            <div className="flex justify-end mt-4">
+                <EditYamlButton onClick={onEditYAML} />
+            </div>
         </div>
     );
 };
 
-const IngressDetails = ({ details }) => {
+const IngressDetails = ({ details, onEditYAML }) => {
     const rules = details.rules || [];
     const tls = details.tls || [];
     const annotations = details.annotations || {};
@@ -561,6 +613,9 @@ const IngressDetails = ({ details }) => {
                     </div>
                 </div>
             )}
+            <div className="flex justify-end mt-4">
+                <EditYamlButton onClick={onEditYAML} />
+            </div>
         </div>
     );
 };
@@ -583,7 +638,7 @@ const PodDetails = ({ details, onStreamLogs, onOpenTerminal, onEditYAML }) => {
                 </div>
                 <div>
                     {metrics.cpu && <DetailRow label="CPU" value={metrics.cpu} icon={Activity} />}
-                    {metrics.memory && <DetailRow label="Memory" icon={HardDrive} />}
+                    {metrics.memory && <DetailRow label="Memory" value={metrics.memory} icon={HardDrive} />}
                 </div>
             </div>
             <div className="flex justify-end space-x-2">
@@ -642,9 +697,11 @@ const ConfigMapDetails = ({ details, onEditYAML }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">
         <div className="flex items-center justify-between mb-2">
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Data</h4>
-            <EditYamlButton onClick={onEditYAML} />
         </div>
         <DataSection data={details.data} />
+        <div className="flex justify-end mt-4">
+            <EditYamlButton onClick={onEditYAML} />
+        </div>
     </div>
 );
 
@@ -652,13 +709,15 @@ const SecretDetails = ({ details, onEditYAML }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">
         <div className="flex items-center justify-between mb-2">
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Data</h4>
-            <EditYamlButton onClick={onEditYAML} />
         </div>
         <DataSection data={details.data} isSecret={true} />
+        <div className="flex justify-end mt-4">
+            <EditYamlButton onClick={onEditYAML} />
+        </div>
     </div>
 );
 
-const NetworkPolicyDetails = ({ details }) => (
+const NetworkPolicyDetails = ({ details, onEditYAML }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">
         <DetailRow label="Policy Types" value={details.policyTypes} icon={Tag} />
         <DetailRow
@@ -666,10 +725,13 @@ const NetworkPolicyDetails = ({ details }) => (
             value={details.podSelector ? Object.entries(details.podSelector).map(([k, v]) => `${k}=${v}`) : []}
             icon={Tag}
         />
+        <div className="flex justify-end mt-4">
+            <EditYamlButton onClick={onEditYAML} />
+        </div>
     </div>
 );
 
-const StorageDetails = ({ details }) => (
+const StorageDetails = ({ details, onEditYAML }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">
         <DetailRow label="Access Modes" value={details.accessModes} icon={Tag} />
         <DetailRow label="Capacity" value={details.capacity} icon={HardDrive} />
@@ -682,12 +744,18 @@ const StorageDetails = ({ details }) => (
                 icon={FileText}
             />
         )}
+        <div className="flex justify-end mt-4">
+            <EditYamlButton onClick={onEditYAML} />
+        </div>
     </div>
 );
 
-const GenericDetails = ({ details }) => (
+const GenericDetails = ({ details, onEditYAML }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">
         <pre className="text-xs text-gray-400 overflow-auto max-h-40">{JSON.stringify(details, null, 2)}</pre>
+        <div className="flex justify-end mt-4">
+            <EditYamlButton onClick={onEditYAML} />
+        </div>
     </div>
 );
 
@@ -834,136 +902,162 @@ const WorkloadList = ({ namespace, kind }) => {
         return sortDirection === 'asc' ? '↑' : '↓';
     };
 
-    const wrapWithEdit = (content, res) => (
-        <div className="relative">
-            <div className="absolute right-4 top-4 z-10">
-                <EditYamlButton onClick={() => setEditingResource(res)} />
-            </div>
-            {content}
-        </div>
-    );
+
 
     const renderDetails = (res) => {
-        if (!res.details) return wrapWithEdit(<div className="p-4 text-gray-500 italic">No details available.</div>, res);
+        const onEditYAML = () => setEditingResource(res);
+        if (!res.details) return (
+            <div className="p-4 text-gray-500 italic">
+                No details available.
+                <div className="flex justify-end mt-4">
+                    <EditYamlButton onClick={onEditYAML} />
+                </div>
+            </div>
+        );
         switch (res.kind) {
             case 'Node':
-                return wrapWithEdit(<NodeDetails details={res.details} />, res);
+                return <NodeDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'ServiceAccount':
-                return wrapWithEdit(<ServiceAccountDetails details={res.details} />, res);
+                return <ServiceAccountDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'Role':
             case 'ClusterRole':
-                return wrapWithEdit(<RoleDetails details={res.details} />, res);
+                return <RoleDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'RoleBinding':
             case 'ClusterRoleBinding':
-                return wrapWithEdit(<BindingDetails details={res.details} />, res);
+                return <BindingDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'Deployment':
-                return wrapWithEdit(
+                return (
                     <DeploymentDetails
                         details={res.details}
                         onScale={(delta) => handleScale(res, delta)}
                         scaling={scaling === res.name}
-                    />,
-                    res
+                        res={res}
+                        onEditYAML={onEditYAML}
+                    />
                 );
             case 'Service':
-                return wrapWithEdit(<ServiceDetails details={res.details} />, res);
+                return <ServiceDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'Ingress':
-                return wrapWithEdit(<IngressDetails details={res.details} />, res);
+                return <IngressDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'Pod':
                 return (
                     <PodDetails
                         details={res.details}
                         onStreamLogs={(container) => setLoggingPod({ ...res, container })}
                         onOpenTerminal={(container) => setTerminalPod({ ...res, container })}
-                        onEditYAML={() => setEditingResource(res)}
+                        onEditYAML={onEditYAML}
                     />
                 );
             case 'ConfigMap':
-                return <ConfigMapDetails details={res.details} onEditYAML={() => setEditingResource(res)} />;
+                return <ConfigMapDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'Secret':
-                return <SecretDetails details={res.details} onEditYAML={() => setEditingResource(res)} />;
+                return <SecretDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'NetworkPolicy':
-                return wrapWithEdit(<NetworkPolicyDetails details={res.details} />, res);
+                return <NetworkPolicyDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'PersistentVolumeClaim':
             case 'PersistentVolume':
-                return wrapWithEdit(<StorageDetails details={res.details} />, res);
+                return <StorageDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'StorageClass':
-                return wrapWithEdit(
-                    <div className="p-4 bg-gray-900/50 rounded-md mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <DetailRow label="Provisioner" value={res.details?.provisioner} icon={HardDrive} />
-                        <DetailRow label="Reclaim Policy" value={res.details?.reclaimPolicy} icon={Activity} />
-                        <DetailRow label="Binding Mode" value={res.details?.volumeBindingMode} icon={Network} />
-                        <DetailRow label="Volume Expansion" value={String(res.details?.allowVolumeExpansion)} icon={Layers} />
-                        <DetailRow
-                            label="Parameters"
-                            value={res.details?.parameters ? Object.entries(res.details.parameters).map(([k, v]) => `${k}=${v}`) : []}
-                            icon={Tag}
-                        />
-                        <DetailRow label="Mount Options" value={res.details?.mountOptions} icon={HardDrive} />
-                    </div>,
-                    res
+                return (
+                    <div className="p-4 bg-gray-900/50 rounded-md mt-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <DetailRow label="Provisioner" value={res.details?.provisioner} icon={HardDrive} />
+                            <DetailRow label="Reclaim Policy" value={res.details?.reclaimPolicy} icon={Activity} />
+                            <DetailRow label="Binding Mode" value={res.details?.volumeBindingMode} icon={Network} />
+                            <DetailRow label="Volume Expansion" value={String(res.details?.allowVolumeExpansion)} icon={Layers} />
+                            <DetailRow
+                                label="Parameters"
+                                value={res.details?.parameters ? Object.entries(res.details.parameters).map(([k, v]) => `${k}=${v}`) : []}
+                                icon={Tag}
+                            />
+                            <DetailRow label="Mount Options" value={res.details?.mountOptions} icon={HardDrive} />
+                        </div>
+                        <div className="flex justify-end mt-4">
+                            <EditYamlButton onClick={onEditYAML} />
+                        </div>
+                    </div>
                 );
             case 'Job':
-                return wrapWithEdit(
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-900/50 rounded-md mt-2">
-                        <DetailRow label="Active" value={res.details?.active} icon={Activity} />
-                        <DetailRow label="Succeeded" value={res.details?.succeeded} icon={Check} />
-                        <DetailRow label="Failed" value={res.details?.failed} icon={X} />
-                        <DetailRow label="Parallelism" value={res.details?.parallelism} icon={Layers} />
-                        <DetailRow label="Completions" value={res.details?.completions} icon={Layers} />
-                        <DetailRow label="Backoff Limit" value={res.details?.backoffLimit} icon={AlertTriangle} />
-                    </div>,
-                    res
+                return (
+                    <div className="p-4 bg-gray-900/50 rounded-md mt-2">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <DetailRow label="Active" value={res.details?.active} icon={Activity} />
+                            <DetailRow label="Succeeded" value={res.details?.succeeded} icon={Check} />
+                            <DetailRow label="Failed" value={res.details?.failed} icon={X} />
+                            <DetailRow label="Parallelism" value={res.details?.parallelism} icon={Layers} />
+                            <DetailRow label="Completions" value={res.details?.completions} icon={Layers} />
+                            <DetailRow label="Backoff Limit" value={res.details?.backoffLimit} icon={AlertTriangle} />
+                        </div>
+                        <div className="flex justify-end mt-4">
+                            <EditYamlButton onClick={onEditYAML} />
+                        </div>
+                    </div>
                 );
             case 'CronJob':
-                return wrapWithEdit(
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-900/50 rounded-md mt-2">
-                        <DetailRow label="Schedule" value={res.details?.schedule} icon={Clock} />
-                        <DetailRow label="Suspend" value={String(res.details?.suspend)} icon={Pause} />
-                        <DetailRow label="Concurrency" value={res.details?.concurrency} icon={Layers} />
-                        <DetailRow label="Start Deadline" value={res.details?.startingDeadline} icon={Clock} />
-                        <DetailRow label="Last Schedule" value={res.details?.lastSchedule} icon={Clock} />
-                    </div>,
-                    res
+                return (
+                    <div className="p-4 bg-gray-900/50 rounded-md mt-2">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <DetailRow label="Schedule" value={res.details?.schedule} icon={Clock} />
+                            <DetailRow label="Suspend" value={String(res.details?.suspend)} icon={Pause} />
+                            <DetailRow label="Concurrency" value={res.details?.concurrency} icon={Layers} />
+                            <DetailRow label="Start Deadline" value={res.details?.startingDeadline} icon={Clock} />
+                            <DetailRow label="Last Schedule" value={res.details?.lastSchedule} icon={Clock} />
+                        </div>
+                        <div className="flex justify-end mt-4">
+                            <EditYamlButton onClick={onEditYAML} />
+                        </div>
+                    </div>
                 );
             case 'StatefulSet':
-                return wrapWithEdit(
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-900/50 rounded-md mt-2">
-                        <DetailRow label="Replicas" value={`${res.details?.ready}/${res.details?.replicas}`} icon={Layers} />
-                        <DetailRow label="Current" value={res.details?.current} icon={Activity} />
-                        <DetailRow label="Updated" value={res.details?.update} icon={Activity} />
-                        <DetailRow label="Service" value={res.details?.serviceName} icon={Network} />
-                        <DetailRow label="Pod Mgmt" value={res.details?.podManagement} icon={Box} />
-                        <DetailRow label="Update Strategy" value={res.details?.updateStrategy?.type} icon={Layers} />
-                    </div>,
-                    res
+                return (
+                    <div className="p-4 bg-gray-900/50 rounded-md mt-2">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <DetailRow label="Replicas" value={`${res.details?.ready}/${res.details?.replicas}`} icon={Layers} />
+                            <DetailRow label="Current" value={res.details?.current} icon={Activity} />
+                            <DetailRow label="Updated" value={res.details?.update} icon={Activity} />
+                            <DetailRow label="Service" value={res.details?.serviceName} icon={Network} />
+                            <DetailRow label="Pod Mgmt" value={res.details?.podManagement} icon={Box} />
+                            <DetailRow label="Update Strategy" value={res.details?.updateStrategy?.type} icon={Layers} />
+                        </div>
+                        <div className="flex justify-end mt-4">
+                            <EditYamlButton onClick={onEditYAML} />
+                        </div>
+                    </div>
                 );
             case 'DaemonSet':
-                return wrapWithEdit(
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-900/50 rounded-md mt-2">
-                        <DetailRow label="Desired" value={res.details?.desired} icon={Activity} />
-                        <DetailRow label="Current" value={res.details?.current} icon={Activity} />
-                        <DetailRow label="Ready" value={res.details?.ready} icon={Activity} />
-                        <DetailRow label="Available" value={res.details?.available} icon={Check} />
-                        <DetailRow label="Updated" value={res.details?.updated} icon={Layers} />
-                        <DetailRow label="Misscheduled" value={res.details?.misscheduled} icon={AlertTriangle} />
-                    </div>,
-                    res
+                return (
+                    <div className="p-4 bg-gray-900/50 rounded-md mt-2">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <DetailRow label="Desired" value={res.details?.desired} icon={Activity} />
+                            <DetailRow label="Current" value={res.details?.current} icon={Activity} />
+                            <DetailRow label="Ready" value={res.details?.ready} icon={Activity} />
+                            <DetailRow label="Available" value={res.details?.available} icon={Check} />
+                            <DetailRow label="Updated" value={res.details?.updated} icon={Layers} />
+                            <DetailRow label="Misscheduled" value={res.details?.misscheduled} icon={AlertTriangle} />
+                        </div>
+                        <div className="flex justify-end mt-4">
+                            <EditYamlButton onClick={onEditYAML} />
+                        </div>
+                    </div>
                 );
             case 'HPA':
-                return wrapWithEdit(
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-900/50 rounded-md mt-2">
-                        <DetailRow label="Min Replicas" value={res.details?.minReplicas} icon={Layers} />
-                        <DetailRow label="Max Replicas" value={res.details?.maxReplicas} icon={Layers} />
-                        <DetailRow label="Current" value={res.details?.current} icon={Activity} />
-                        <DetailRow label="Desired" value={res.details?.desired} icon={Activity} />
-                        <DetailRow label="Metrics" value={res.details?.metrics ? res.details.metrics.map((m) => m.type).join(', ') : ''} icon={Activity} />
-                        <DetailRow label="Last Scale" value={res.details?.lastScaleTime} icon={Clock} />
-                    </div>,
-                    res
+                return (
+                    <div className="p-4 bg-gray-900/50 rounded-md mt-2">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <DetailRow label="Min Replicas" value={res.details?.minReplicas} icon={Layers} />
+                            <DetailRow label="Max Replicas" value={res.details?.maxReplicas} icon={Layers} />
+                            <DetailRow label="Current" value={res.details?.current} icon={Activity} />
+                            <DetailRow label="Desired" value={res.details?.desired} icon={Activity} />
+                            <DetailRow label="Metrics" value={res.details?.metrics ? res.details.metrics.map((m) => m.type).join(', ') : ''} icon={Activity} />
+                            <DetailRow label="Last Scale" value={res.details?.lastScaleTime} icon={Clock} />
+                        </div>
+                        <div className="flex justify-end mt-4">
+                            <EditYamlButton onClick={onEditYAML} />
+                        </div>
+                    </div>
                 );
             default:
-                return wrapWithEdit(<GenericDetails details={res.details} />, res);
+                return <GenericDetails details={res.details} onEditYAML={onEditYAML} />;
         }
     };
 

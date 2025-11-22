@@ -69,6 +69,8 @@ persistence:
 # -----------------------------------------------------------------------------
 # Advanced Configuration (Defaults are usually fine)
 # -----------------------------------------------------------------------------
+prometheusUrl: ""
+
 replicaCount: 1
 
 service:
