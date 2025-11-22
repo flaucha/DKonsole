@@ -918,17 +918,40 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Try to get metadata; use namespaced from query param if provided (for CRDs)
+	namespacedParam := r.URL.Query().Get("namespaced")
 	meta, ok := resourceMeta[kind]
 	if !ok {
-		http.Error(w, "Unsupported kind", http.StatusBadRequest)
-		return
+		// Default to namespaced=true unless explicitly told otherwise
+		isNamespaced := true
+		if namespacedParam == "false" {
+			isNamespaced = false
+		}
+		meta = ResourceMeta{Namespaced: isNamespaced}
 	}
 
 	if meta.Namespaced && namespace == "" {
 		namespace = "default"
 	}
 
-	gvr, _ := resolveGVR(kind)
+	// Try to get GVR from query parameters (passed by API Explorer for CRDs)
+	group := r.URL.Query().Get("group")
+	version := r.URL.Query().Get("version")
+	resourceName := r.URL.Query().Get("resource")
+
+	var gvr schema.GroupVersionResource
+	if group != "" || version != "" || resourceName != "" {
+		// Use explicit GVR from query params (for CRDs)
+		gvr = schema.GroupVersionResource{
+			Group:    group,
+			Version:  version,
+			Resource: resourceName,
+		}
+	} else {
+		// Fall back to static resolution for known types
+		gvr, _ = resolveGVR(kind)
+	}
+
 	var res dynamic.ResourceInterface
 	if meta.Namespaced {
 		if allNamespaces {
@@ -978,10 +1001,16 @@ func (h *Handlers) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Try to get metadata; default to namespaced=true for unknown kinds (e.g. CRDs)
+	// Try to get metadata; use namespaced from query param if provided (for CRDs)
+	namespacedParam := r.URL.Query().Get("namespaced")
 	meta, ok := resourceMeta[kind]
 	if !ok {
-		meta = ResourceMeta{Namespaced: true}
+		// Default to namespaced=true unless explicitly told otherwise
+		isNamespaced := true
+		if namespacedParam == "false" {
+			isNamespaced = false
+		}
+		meta = ResourceMeta{Namespaced: isNamespaced}
 	}
 
 	body, err := io.ReadAll(r.Body)
@@ -1026,7 +1055,31 @@ func (h *Handlers) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 	// Cleanup noisy metadata fields that are not needed for updates
 	unstructured.RemoveNestedField(obj.Object, "metadata", "managedFields")
 
-	gvr, _ := resolveGVR(kind)
+	// Extract GVR from the object's apiVersion and kind (not from query param)
+	// This allows us to support CRDs and any custom resources
+	apiVersion := obj.GetAPIVersion()
+	objKind := obj.GetKind()
+
+	// Parse apiVersion (format: "group/version" or just "version")
+	group := ""
+	version := apiVersion
+	if parts := strings.SplitN(apiVersion, "/", 2); len(parts) == 2 {
+		group = parts[0]
+		version = parts[1]
+	}
+
+	// Try to get resource name from static map first
+	gvr, ok := resolveGVR(objKind)
+	if !ok {
+		// For CRDs and unknown types, use lowercase(kind) + "s" as resource name
+		resourceName := strings.ToLower(objKind) + "s"
+		gvr = schema.GroupVersionResource{
+			Group:    group,
+			Version:  version,
+			Resource: resourceName,
+		}
+	}
+
 	var res dynamic.ResourceInterface
 	if meta.Namespaced {
 		res = dynamicClient.Resource(gvr).Namespace(obj.GetNamespace())
