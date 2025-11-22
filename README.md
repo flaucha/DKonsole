@@ -155,6 +155,13 @@ cd frontend && npm run dev
 
 ## 📝 Changelog
 
+### v1.0.5 (2025-11-22)
+- 🔧 Improved build and release scripts
+- 📝 Added `build.sh` for simple Docker builds
+- 📝 Added `release.sh` for automated releases with git tagging
+- 📚 Added `SCRIPTS.md` documentation
+- 🔄 Deprecated `deploy.sh` in favor of new scripts
+
 ### v1.0.4 (2025-11-22)
 - ✨ Added Prometheus integration for Pod metrics
 - 📊 Historical metrics with time range selector (1h, 6h, 12h, 1d, 7d, 15d)
