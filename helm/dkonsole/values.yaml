@@ -69,6 +69,15 @@ persistence:
 # -----------------------------------------------------------------------------
 # Advanced Configuration (Defaults are usually fine)
 # -----------------------------------------------------------------------------
+
+# Prometheus Integration (Optional)
+# Configure the Prometheus endpoint to enable historical metrics for Pods
+# If not set, the Metrics tab will not be displayed in Pod details
+# Example: "http://prometheus-server.monitoring.svc.cluster.local:9090"
+# Features enabled:
+#   - Historical CPU and memory metrics for Pods
+#   - Time range selector (1h, 6h, 12h, 1d, 7d, 15d)
+#   - Metrics tab in Pod details view
 prometheusUrl: ""
 
 replicaCount: 1
