@@ -192,7 +192,6 @@ func authenticateRequest(r *http.Request) (*Claims, error) {
 	}
 
 	if tokenString == "" {
-		fmt.Println("Auth Debug: No token found in request")
 		return nil, fmt.Errorf("authorization token required")
 	}
 
@@ -202,12 +201,7 @@ func authenticateRequest(r *http.Request) (*Claims, error) {
 		return jwtSecret, nil
 	})
 
-	if err != nil {
-		fmt.Printf("Auth Debug: Token parse error: %v\n", err)
-		return nil, fmt.Errorf("invalid token")
-	}
-	if !token.Valid {
-		fmt.Println("Auth Debug: Token is invalid")
+	if err != nil || !token.Valid {
 		return nil, fmt.Errorf("invalid token")
 	}
 	return claims, nil

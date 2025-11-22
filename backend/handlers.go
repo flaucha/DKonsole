@@ -1632,9 +1632,7 @@ func (h *Handlers) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("ExecIntoPod called. URL: %s\n", r.URL.String())
 	if _, err := authenticateRequest(r); err != nil {
-		fmt.Printf("ExecIntoPod Auth Failed: %v\n", err)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
