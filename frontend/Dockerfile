@@ -16,18 +16,12 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
-RUN addgroup -S app && adduser -S -G app -u 1000 app && \
-    mkdir -p /var/cache/nginx /var/run /var/log/nginx && \
-    chown -R app:app /var/cache/nginx /var/run /var/log/nginx /usr/share/nginx/html /etc/nginx
-
 # Copy built assets
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
-EXPOSE 8080
-
-USER app
+EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
