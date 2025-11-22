@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="1.0.3"
+VERSION="1.0.4"
 
 echo "Building Backend ($VERSION)..."
 docker build -t dkonsole/dkonsole-backend:$VERSION ./backend
