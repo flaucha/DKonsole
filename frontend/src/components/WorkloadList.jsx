@@ -335,72 +335,49 @@ const BindingDetails = ({ details, onEditYAML }) => {
 };
 
 const DeploymentDetails = ({ details, onScale, scaling, res, onEditYAML }) => {
-    const [activeTab, setActiveTab] = useState('details');
-
     return (
-        <div className="mt-2">
-            <div className="flex space-x-4 border-b border-gray-700 mb-4">
-                <button
-                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'details' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
-                    onClick={() => setActiveTab('details')}
-                >
-                    Details
-                </button>
-                <button
-                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'metrics' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
-                    onClick={() => setActiveTab('metrics')}
-                >
-                    Metrics (Live)
-                </button>
-            </div>
-
-            {activeTab === 'details' ? (
-                <div className="p-4 bg-gray-900/50 rounded-md">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <div className="mb-2">
-                                <DetailRow label="Replicas" value={`${details.ready} / ${details.replicas}`} icon={Layers}>
-                                    {onScale && (
-                                        <div className="flex items-center space-x-1 ml-2">
-                                            <button
-                                                onClick={() => onScale(-1)}
-                                                disabled={scaling}
-                                                className="p-1 rounded bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600 disabled:opacity-50"
-                                                title="Scale down"
-                                            >
-                                                <Minus size={12} />
-                                            </button>
-                                            <button
-                                                onClick={() => onScale(1)}
-                                                disabled={scaling}
-                                                className="p-1 rounded bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600 disabled:opacity-50"
-                                                title="Scale up"
-                                            >
-                                                <Plus size={12} />
-                                            </button>
-                                        </div>
-                                    )}
-                                </DetailRow>
-                            </div>
-                            <DetailRow label="Images" value={details.images} icon={Box} />
-                            <DetailRow label="Ports" value={details.ports?.map(p => p.toString())} icon={Network} />
-                        </div>
-                        <div>
-                            <DetailRow label="PVCs" value={details.pvcs} icon={HardDrive} />
-                            <DetailRow
-                                label="Labels"
-                                value={details.podLabels ? Object.entries(details.podLabels).map(([k, v]) => `${k}=${v}`) : []}
-                                icon={Tag}
-                            />
-                        </div>
+        <div className="p-4 bg-gray-900/50 rounded-md mt-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <div className="mb-2">
+                        <DetailRow label="Replicas" value={`${details.ready} / ${details.replicas}`} icon={Layers}>
+                            {onScale && (
+                                <div className="flex items-center space-x-1 ml-2">
+                                    <button
+                                        onClick={() => onScale(-1)}
+                                        disabled={scaling}
+                                        className="p-1 rounded bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600 disabled:opacity-50"
+                                        title="Scale down"
+                                    >
+                                        <Minus size={12} />
+                                    </button>
+                                    <button
+                                        onClick={() => onScale(1)}
+                                        disabled={scaling}
+                                        className="p-1 rounded bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600 disabled:opacity-50"
+                                        title="Scale up"
+                                    >
+                                        <Plus size={12} />
+                                    </button>
+                                </div>
+                            )}
+                        </DetailRow>
                     </div>
-                    <div className="flex justify-end mt-4">
-                        <EditYamlButton onClick={onEditYAML} />
-                    </div>
+                    <DetailRow label="Images" value={details.images} icon={Box} />
+                    <DetailRow label="Ports" value={details.ports?.map(p => p.toString())} icon={Network} />
                 </div>
-            ) : (
-                <DeploymentMetrics deployment={res} namespace={res.namespace} />
-            )}
+                <div>
+                    <DetailRow label="PVCs" value={details.pvcs} icon={HardDrive} />
+                    <DetailRow
+                        label="Labels"
+                        value={details.podLabels ? Object.entries(details.podLabels).map(([k, v]) => `${k}=${v}`) : []}
+                        icon={Tag}
+                    />
+                </div>
+            </div>
+            <div className="flex justify-end mt-4">
+                <EditYamlButton onClick={onEditYAML} />
+            </div>
         </div>
     );
 };
@@ -623,74 +600,95 @@ const IngressDetails = ({ details, onEditYAML }) => {
 
 const PodDetails = ({ details, onStreamLogs, onOpenTerminal, onEditYAML, pod }) => {
     const [showMenu, setShowMenu] = useState(false);
+    const [activeTab, setActiveTab] = useState('details');
     const containers = details.containers || [];
     const metrics = details.metrics || {};
 
     return (
-        <div className="p-4 bg-gray-900/50 rounded-md mt-2">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-                <div>
-                    <DetailRow label="Node" value={details.node} icon={Server} />
-                    <DetailRow label="IP" value={details.ip} icon={Network} />
-                </div>
-                <div>
-                    <DetailRow label="Restarts" value={details.restarts} icon={Activity} />
-                    <DetailRow label="Containers" value={containers} icon={Box} />
-                </div>
-                <div>
-                    {metrics.cpu && <DetailRow label="CPU" value={metrics.cpu} icon={Activity} />}
-                    {metrics.memory && <DetailRow label="Memory" value={metrics.memory} icon={HardDrive} />}
-                </div>
+        <div className="mt-2">
+            <div className="flex space-x-4 border-b border-gray-700 mb-4">
+                <button
+                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'details' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                    onClick={() => setActiveTab('details')}
+                >
+                    Details
+                </button>
+                <button
+                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'metrics' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                    onClick={() => setActiveTab('metrics')}
+                >
+                    Metrics
+                </button>
             </div>
-            <div className="flex justify-end space-x-2">
-                {/* Stream Logs */}
-                {containers.length > 1 ? (
-                    <div className="relative">
+
+            {activeTab === 'details' ? (
+                <div className="p-4 bg-gray-900/50 rounded-md">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                        <div>
+                            <DetailRow label="Node" value={details.node} icon={Server} />
+                            <DetailRow label="IP" value={details.ip} icon={Network} />
+                        </div>
+                        <div>
+                            <DetailRow label="Restarts" value={details.restarts} icon={Activity} />
+                            <DetailRow label="Containers" value={containers} icon={Box} />
+                        </div>
+                        <div>
+                            {metrics.cpu && <DetailRow label="CPU" value={metrics.cpu} icon={Activity} />}
+                            {metrics.memory && <DetailRow label="Memory" value={metrics.memory} icon={HardDrive} />}
+                        </div>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                        {/* Stream Logs */}
+                        {containers.length > 1 ? (
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowMenu(!showMenu)}
+                                    className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-600 text-xs transition-colors"
+                                >
+                                    <Terminal size={12} className="mr-1.5" />
+                                    Stream Logs
+                                    <ChevronDown size={12} className="ml-1.5" />
+                                </button>
+                                {showMenu && (
+                                    <div className="absolute right-0 bottom-full mb-1 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10">
+                                        {containers.map(c => (
+                                            <button
+                                                key={c}
+                                                onClick={() => {
+                                                    onStreamLogs(c);
+                                                    setShowMenu(false);
+                                                }}
+                                                className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-700 first:rounded-t-md last:rounded-b-md"
+                                            >
+                                                {c}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => onStreamLogs(containers[0])}
+                                className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-600 text-xs transition-colors"
+                            >
+                                <Terminal size={12} className="mr-1.5" />
+                                Stream Logs
+                            </button>
+                        )}
+                        {/* Open Terminal */}
                         <button
-                            onClick={() => setShowMenu(!showMenu)}
+                            onClick={() => onOpenTerminal(containers[0])}
                             className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-600 text-xs transition-colors"
                         >
                             <Terminal size={12} className="mr-1.5" />
-                            Stream Logs
-                            <ChevronDown size={12} className="ml-1.5" />
+                            Open Terminal
                         </button>
-                        {showMenu && (
-                            <div className="absolute right-0 bottom-full mb-1 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10">
-                                {containers.map(c => (
-                                    <button
-                                        key={c}
-                                        onClick={() => {
-                                            onStreamLogs(c);
-                                            setShowMenu(false);
-                                        }}
-                                        className="block w-full text-left px-4 py-2 text-xs text-gray-300 hover:bg-gray-700 first:rounded-t-md last:rounded-b-md"
-                                    >
-                                        {c}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
+                        <EditYamlButton onClick={onEditYAML} />
                     </div>
-                ) : (
-                    <button
-                        onClick={() => onStreamLogs(containers[0])}
-                        className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-600 text-xs transition-colors"
-                    >
-                        <Terminal size={12} className="mr-1.5" />
-                        Stream Logs
-                    </button>
-                )}
-                {/* Open Terminal */}
-                <button
-                    onClick={() => onOpenTerminal(containers[0])}
-                    className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-600 text-xs transition-colors"
-                >
-                    <Terminal size={12} className="mr-1.5" />
-                    Open Terminal
-                </button>
-                <EditYamlButton onClick={onEditYAML} />
-            </div>
-            {pod && <PodMetrics pod={{ name: pod.name }} namespace={pod.namespace} />}
+                </div>
+            ) : (
+                pod && <PodMetrics pod={{ name: pod.name }} namespace={pod.namespace} />
+            )}
         </div>
     );
 };
