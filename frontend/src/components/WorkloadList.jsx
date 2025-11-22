@@ -355,17 +355,100 @@ const DeploymentDetails = ({ details, onScale, scaling }) => (
     </div>
 );
 
-const ServiceDetails = ({ details }) => (
-    <div className="p-4 bg-gray-900/50 rounded-md mt-2">
-        <DetailRow label="Cluster IP" value={details.clusterIP} icon={Network} />
-        <DetailRow label="Ports" value={details.ports} icon={Network} />
-        <DetailRow
-            label="Selector"
-            value={details.selector ? Object.entries(details.selector).map(([k, v]) => `${k}=${v}`) : []}
-            icon={Tag}
-        />
-    </div>
-);
+const ServiceDetails = ({ details }) => {
+    const type = details.type || 'ClusterIP';
+    const clusterIP = details.clusterIP;
+    const externalIPs = details.externalIPs || [];
+    const ports = details.ports || [];
+    const selector = details.selector || {};
+
+    const getTypeColor = (t) => {
+        switch (t) {
+            case 'LoadBalancer': return 'text-blue-400 border-blue-400/30 bg-blue-400/10';
+            case 'NodePort': return 'text-purple-400 border-purple-400/30 bg-purple-400/10';
+            default: return 'text-gray-400 border-gray-600 bg-gray-800';
+        }
+    };
+
+    return (
+        <div className="p-4 bg-gray-900/50 rounded-md mt-2 space-y-4">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getTypeColor(type)}`}>
+                        {type}
+                    </span>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">IP Addresses</h4>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between bg-gray-800 px-3 py-2 rounded border border-gray-700">
+                            <span className="text-xs text-gray-400">Cluster IP</span>
+                            <span className="text-sm font-mono text-white">{clusterIP}</span>
+                        </div>
+                        {externalIPs.map((ip, i) => (
+                            <div key={i} className="flex items-center justify-between bg-gray-800 px-3 py-2 rounded border border-gray-700">
+                                <span className="text-xs text-gray-400">External IP</span>
+                                <span className="text-sm font-mono text-white">{ip}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div>
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Selector</h4>
+                    <div className="flex flex-wrap gap-2">
+                        {Object.keys(selector).length > 0 ? (
+                            Object.entries(selector).map(([k, v]) => (
+                                <div key={k} className="flex items-center px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-300">
+                                    <Tag size={12} className="mr-1.5 text-gray-500" />
+                                    <span className="text-gray-400 mr-1">{k}:</span>
+                                    <span className="text-white">{v}</span>
+                                </div>
+                            ))
+                        ) : (
+                            <span className="text-sm text-gray-500 italic">No selector</span>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Ports</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {ports.map((port, i) => {
+                        // Parse "80:30080/TCP" or similar format
+                        const parts = port.split('/');
+                        const protocol = parts[1] || 'TCP';
+                        const portMap = parts[0].split(':');
+                        const portNum = portMap[0];
+                        const targetPort = portMap[1] || portNum;
+
+                        return (
+                            <div key={i} className="flex items-center justify-between bg-gray-800 px-3 py-2 rounded border border-gray-700">
+                                <div className="flex items-center">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></div>
+                                    <span className="text-sm font-mono text-white">{portNum}</span>
+                                    {portNum !== targetPort && (
+                                        <>
+                                            <span className="text-gray-500 mx-1">→</span>
+                                            <span className="text-xs text-gray-400">{targetPort}</span>
+                                        </>
+                                    )}
+                                </div>
+                                <span className="text-[10px] font-bold text-gray-500 bg-gray-900 px-1.5 py-0.5 rounded">
+                                    {protocol}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const IngressDetails = ({ details }) => {
     const rules = details.rules || [];
@@ -447,12 +530,14 @@ const IngressDetails = ({ details }) => {
                     <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Annotations</h4>
                     <div className="bg-gray-800 rounded border border-gray-700 p-2">
                         <div className="grid grid-cols-1 gap-1">
-                            {Object.entries(annotations).map(([k, v]) => (
-                                <div key={k} className="text-xs break-all flex">
-                                    <span className="text-gray-500 font-medium min-w-[120px] mr-2">{k}:</span>
-                                    <span className="text-gray-300">{v}</span>
-                                </div>
-                            ))}
+                            {Object.entries(annotations)
+                                .filter(([k]) => k !== 'kubectl.kubernetes.io/last-applied-configuration')
+                                .map(([k, v]) => (
+                                    <div key={k} className="text-xs break-all flex">
+                                        <span className="text-gray-500 font-medium min-w-[120px] mr-2">{k}:</span>
+                                        <span className="text-gray-300">{v}</span>
+                                    </div>
+                                ))}
                         </div>
                     </div>
                 </div>
