@@ -34,6 +34,17 @@ ingress:
       hosts:
         - dkonsole.example.com
 
+# Allowed Origins for WebSocket (CORS)
+# Comma-separated list of allowed origins (e.g., "https://dkonsole.example.com,http://localhost:5173")
+# If empty, only same-origin requests are allowed.
+allowedOrigins: ""
+
+# Pod Security Context (Run as non-root user 'app' uid 1000)
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
 # -----------------------------------------------------------------------------
 # 3. Docker Images (Optional - Defaults to official images)
 # -----------------------------------------------------------------------------

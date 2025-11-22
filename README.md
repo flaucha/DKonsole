@@ -44,6 +44,9 @@ ingress:
   enabled: true
   hosts:
     - host: dkonsole.example.com
+
+# Optional: Restrict WebSocket origins (CORS)
+allowedOrigins: "https://dkonsole.example.com"
 ```
 
 ### 3. Docker Images (Optional)
