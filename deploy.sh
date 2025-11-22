@@ -3,7 +3,7 @@
 # This script is kept for backward compatibility
 set -e
 
-VERSION="1.0.4"
+VERSION="1.0.5"
 
 echo "⚠️  Note: This script is deprecated. Please use './build.sh' instead."
 echo ""
