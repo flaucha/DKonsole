@@ -55,7 +55,7 @@ By default, it uses the official images. You can change tags or repositories if 
 ```yaml
 image:
   backend:
-    tag: "0.0.5"
+    tag: "1.0.0"
 ```
 
 ### 2. Docker Images
