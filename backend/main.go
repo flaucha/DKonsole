@@ -63,6 +63,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/login", enableCors(h.LoginHandler))
+	mux.HandleFunc("/healthz", h.HealthHandler)
 	mux.HandleFunc("/api/namespaces", enableCors(AuthMiddleware(h.GetNamespaces)))
 	mux.HandleFunc("/api/resources", enableCors(AuthMiddleware(h.GetResources)))
 	mux.HandleFunc("/api/resources/watch", enableCors(AuthMiddleware(h.WatchResources)))

@@ -133,6 +133,12 @@ func (h *Handlers) GetClusters(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(clusters)
 }
 
+// HealthHandler is an unauthenticated liveness endpoint
+func (h *Handlers) HealthHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status":"ok"}`))
+}
+
 func (h *Handlers) AddCluster(w http.ResponseWriter, r *http.Request) {
 	var config ClusterConfig
 	if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
