@@ -149,15 +149,37 @@ func main() {
 	if _, err := os.Stat(staticDir); os.IsNotExist(err) {
 		log.Printf("Warning: static directory '%s' not found, frontend will not be served", staticDir)
 	} else {
+		// Middleware to add security headers for static files
+		secureStaticFiles := func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Add security headers
+				w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+				w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+				w.Header().Set("X-Content-Type-Options", "nosniff")
+				w.Header().Set("X-XSS-Protection", "1; mode=block")
+				w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+				w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+				// HSTS - only if HTTPS is detected
+				if r.Header.Get("X-Forwarded-Proto") == "https" || r.TLS != nil {
+					w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+				}
+				next.ServeHTTP(w, r)
+			})
+		}
+
 		// Serve static assets (JS, CSS, images, etc.) - Vite puts them in /assets/
 		fileServer := http.FileServer(http.Dir(staticDir))
-		mux.Handle("/assets/", http.StripPrefix("/assets/", fileServer))
+		mux.Handle("/assets/", secureStaticFiles(http.StripPrefix("/assets/", fileServer)))
 		
 		// Serve other static files directly from root (favicon, robots.txt, etc.)
 		mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+			// Add security headers
+			w.Header().Set("X-Content-Type-Options", "nosniff")
 			http.ServeFile(w, r, filepath.Join(staticDir, "favicon.ico"))
 		})
 		mux.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+			// Add security headers
+			w.Header().Set("X-Content-Type-Options", "nosniff")
 			http.ServeFile(w, r, filepath.Join(staticDir, "robots.txt"))
 		})
 		
@@ -172,6 +194,17 @@ func main() {
 			if strings.HasPrefix(r.URL.Path, "/assets/") {
 				http.NotFound(w, r)
 				return
+			}
+			// Add security headers
+			w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+			w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			w.Header().Set("X-XSS-Protection", "1; mode=block")
+			w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+			w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+			// HSTS - only if HTTPS is detected
+			if r.Header.Get("X-Forwarded-Proto") == "https" || r.TLS != nil {
+				w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 			}
 			// Serve index.html for all other routes (SPA routing)
 			indexPath := filepath.Join(staticDir, "index.html")
