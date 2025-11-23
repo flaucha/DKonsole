@@ -91,10 +91,6 @@ const Dashboard = () => {
                     </div>
                 ) : (
                     <div className="p-6">
-                        <div className="mb-6">
-                            <h1 className="text-2xl font-bold">{currentView}</h1>
-                        </div>
-
                         {currentView === 'Overview' ? (
                             <ClusterOverview />
                         ) : (
