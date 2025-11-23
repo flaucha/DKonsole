@@ -15,11 +15,11 @@ if kubectl get hpa dkonsole-hpa -n dkonsole &>/dev/null; then
     kubectl get hpa dkonsole-hpa -n dkonsole -o yaml | grep -E "apiVersion|kind|name:" | head -5
     echo ""
 else
-    echo "❌ HPA no encontrado. ¿Quieres crearlo desde dkonsole-hpa.yaml?"
+    echo "❌ HPA no encontrado. ¿Quieres crearlo desde examples/dkonsole-hpa.yaml?"
     read -p "Crear HPA? (y/n): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        kubectl apply -f dkonsole-hpa.yaml
+        kubectl apply -f ../examples/dkonsole-hpa.yaml
         echo "✅ HPA creado"
     else
         echo "⚠️  Continuando sin crear HPA..."
@@ -49,7 +49,7 @@ if docker images | grep -q "dkonsole/dkonsole.*1.1.0"; then
     fi
     echo ""
 else
-    echo "❌ Imagen local no encontrada. Ejecuta ./build.sh primero"
+    echo "❌ Imagen local no encontrada. Ejecuta ./scripts/build.sh primero"
     exit 1
 fi
 
