@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.0.5-green.svg)
+![Version](https://img.shields.io/badge/version-1.0.6-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built entirely with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -30,7 +30,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.0.5
+git checkout v1.0.6
 
 # Install
 helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
@@ -103,18 +103,18 @@ By default, it uses the official images. You can change tags or repositories if 
 image:
   backend:
     repository: dkonsole/dkonsole-backend
-    tag: "1.0.5"
+    tag: "1.0.6"
   frontend:
     repository: dkonsole/dkonsole-frontend
-    tag: "1.0.5"
+    tag: "1.0.6"
 ```
 
 ## 🐳 Docker Images
 
 The official images are available at:
 
-- **Backend**: `dkonsole/dkonsole-backend:1.0.5`
-- **Frontend**: `dkonsole/dkonsole-frontend:1.0.5`
+- **Backend**: `dkonsole/dkonsole-backend:1.0.6`
+- **Frontend**: `dkonsole/dkonsole-frontend:1.0.6`
 
 ## 📊 Prometheus Metrics
 
@@ -137,6 +137,9 @@ If you find this project useful, consider donating to support development.
 **BSC (Binance Smart Chain) Wallet:**
 `0x9baf648fa316030e12b15cbc85278fdbd82a7d20`
 
+**Buy me a coffee:**
+https://buymeacoffee.com/flaucha
+
 ## 📧 Contact
 
 For questions or feedback, please contact: **flaucha@gmail.com**
@@ -154,6 +157,15 @@ cd frontend && npm run dev
 ```
 
 ## 📝 Changelog
+
+### v1.0.6 (2025-11-22)
+- ✨ Enhanced Pod metrics with Network RX/TX and PVC usage
+- 🎨 Fixed visual issues in Pod metrics tabs (removed extra border, smooth transitions)
+- 📊 Improved Cluster Overview with Prometheus integration
+- 📈 Added real-time node metrics table with CPU, Memory, Disk, and Network stats
+- 🔧 Added cluster-wide statistics (avg CPU/Memory, network traffic, trends)
+- 💫 Added fadeIn animation for smooth tab transitions
+- 🎯 Conditional rendering of metrics based on data availability
 
 ### v1.0.5 (2025-11-22)
 - 🔧 Improved build and release scripts

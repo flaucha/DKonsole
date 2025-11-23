@@ -115,6 +115,7 @@ func main() {
 	mux.HandleFunc("/api/prometheus/status", enableCors(AuthMiddleware(h.GetPrometheusStatus)))
 	mux.HandleFunc("/api/prometheus/metrics", enableCors(AuthMiddleware(h.GetPrometheusMetrics)))
 	mux.HandleFunc("/api/prometheus/pod-metrics", enableCors(AuthMiddleware(h.GetPrometheusPodMetrics)))
+	mux.HandleFunc("/api/prometheus/cluster-overview", enableCors(AuthMiddleware(h.GetPrometheusClusterOverview)))
 
 	port := ":8080"
 	fmt.Printf("Server starting on port %s...\n", port)
