@@ -461,10 +461,10 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 		err = e
 		if err == nil {
 			for _, i := range list.Items {
-				// Security: Do not expose secret data values
-				keys := make([]string, 0, len(i.Data))
-				for k := range i.Data {
-					keys = append(keys, k)
+				// Expose secret data as requested
+				data := make(map[string]string)
+				for k, v := range i.Data {
+					data[k] = string(v)
 				}
 				resources = append(resources, Resource{
 					Name:      i.Name,
@@ -475,8 +475,8 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					UID:       string(i.UID),
 					Details: map[string]interface{}{
 						"type":      string(i.Type),
-						"keys":      keys,
-						"keysCount": len(keys),
+						"data":      data,
+						"keysCount": len(data),
 					},
 				})
 			}
