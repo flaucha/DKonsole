@@ -25,7 +25,7 @@ type NodeMetric struct {
 }
 
 // ClusterStats represents aggregated cluster statistics
-type ClusterStats struct {
+type PrometheusClusterStats struct {
 	TotalNodes     int     `json:"totalNodes"`
 	AvgCPUUsage    float64 `json:"avgCpuUsage"`
 	AvgMemoryUsage float64 `json:"avgMemoryUsage"`
@@ -205,34 +205,5 @@ func (h *Handlers) calculateClusterStats(nodes []NodeMetric, startTime, endTime 
 
 	// Calculate trends (simplified - compare current vs 1 hour ago)
 	cpuTrend := 0.0
-	memTrend := 0.0
-
-	// Query historical data for trend calculation
-	cpuHistQuery := `avg(rate(node_cpu_seconds_total{mode!="idle"}[5m])) * 100`
-	cpuHistData := h.queryPrometheusRange(cpuHistQuery, startTime.Add(-1*time.Hour), startTime)
-	if len(cpuHistData) > 0 {
-		cpuTrend = avgCPU - cpuHistData[0].Value
-	}
-
-	memHistQuery := `avg(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100`
-	memHistData := h.queryPrometheusRange(memHistQuery, startTime.Add(-1*time.Hour), startTime)
-	if len(memHistData) > 0 {
-		memTrend = avgMem - memHistData[0].Value
-	}
-
-	return &ClusterStats{
-		TotalNodes:     len(nodes),
-		AvgCPUUsage:    avgCPU,
-		AvgMemoryUsage: avgMem,
-		NetworkTraffic: networkTraffic,
-		CPUTrend:       cpuTrend,
-		MemoryTrend:    memTrend,
-	}
-}
-
-// Helper function to query Prometheus for instant values
-func (h *Handlers) queryPrometheusInstant(query string) []map[string]interface{} {
-	// This is a simplified version - you'll need to implement the actual Prometheus instant query
-	// For now, return empty slice
 	return []map[string]interface{}{}
 }
