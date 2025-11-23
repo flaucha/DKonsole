@@ -104,14 +104,14 @@ const NamespaceManager = () => {
             </div>
 
             <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-                <table className="min-w-full">
-                    <thead className="bg-gray-900">
+                <table className="min-w-full border-separate border-spacing-0">
+                    <thead>
                         <tr>
                             <th className="w-10 px-4 py-3 bg-gray-900 rounded-tl-lg border-b border-gray-700"></th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Labels</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Age</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Name</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Labels</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Age</th>
                             <th className="w-10 px-4 py-3 bg-gray-900 rounded-tr-lg border-b border-gray-700"></th>
                         </tr>
                     </thead>
