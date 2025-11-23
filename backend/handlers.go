@@ -137,8 +137,8 @@ func normalizeKind(kind string) string {
 }
 
 func resolveGVR(kind string) (schema.GroupVersionResource, bool) {
-	normalizedKind := normalizeKind(kind)
-	meta, ok := resourceMeta[normalizedKind]
+	// Note: kind should already be normalized before calling this function
+	meta, ok := resourceMeta[kind]
 	if !ok {
 		return schema.GroupVersionResource{}, false
 	}
@@ -1126,10 +1126,24 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 
 	obj, err := res.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		log.Printf("GetResourceYAML error: kind=%s, normalizedKind=%s, gvr=%+v, namespace=%s, name=%s, error=%v", 
-			kind, normalizedKind, gvr, namespace, name, err)
-		handleError(w, err, fmt.Sprintf("Failed to fetch resource"), http.StatusInternalServerError)
-		return
+		// If HPA fails with v2, try v1 (some clusters may not have v2)
+		if normalizedKind == "HorizontalPodAutoscaler" && gvr.Version == "v2" && apierrors.IsNotFound(err) {
+			log.Printf("GetResourceYAML: HPA v2 not found, trying v1")
+			gvr.Version = "v1"
+			if meta.Namespaced {
+				res = dynamicClient.Resource(gvr).Namespace(namespace)
+			} else {
+				res = dynamicClient.Resource(gvr)
+			}
+			obj, err = res.Get(ctx, name, metav1.GetOptions{})
+		}
+		
+		if err != nil {
+			log.Printf("GetResourceYAML error: kind=%s, normalizedKind=%s, gvr=%+v, namespace=%s, name=%s, error=%v", 
+				kind, normalizedKind, gvr, namespace, name, err)
+			handleError(w, err, fmt.Sprintf("Failed to fetch resource"), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	jsonData, err := obj.MarshalJSON()
