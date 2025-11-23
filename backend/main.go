@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -126,9 +127,49 @@ func main() {
 
 func enableCors(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		origin := r.Header.Get("Origin")
+		allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+
+		// If no origin (and not OPTIONS), allow if it's not a browser request or handle as same-origin
+		// However, for strict security, we might want to block if we expect only browser traffic.
+		// For now, we follow the recommendation:
+		if origin == "" && r.Method != "OPTIONS" {
+			next(w, r)
+			return
+		}
+
+		allowed := false
+		if allowedOrigins != "" {
+			origins := strings.Split(allowedOrigins, ",")
+			for _, o := range origins {
+				if strings.TrimSpace(o) == origin {
+					allowed = true
+					break
+				}
+			}
+		} else {
+			// If no ALLOWED_ORIGINS set, allow same-origin or localhost for dev
+			// In production, you should set ALLOWED_ORIGINS
+			if origin != "" {
+				// Simple check: if origin contains the host, it's likely same-origin
+				if strings.Contains(origin, r.Host) || strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
+					allowed = true
+				}
+			}
+		}
+
+		if !allowed && origin != "" {
+			http.Error(w, "Origin not allowed", http.StatusForbidden)
+			return
+		}
+
+		if origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Max-Age", "3600")
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
