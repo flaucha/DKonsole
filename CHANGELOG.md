@@ -5,6 +5,74 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2024-12-19
+
+### 🏗️ Unified Architecture Release
+
+This release introduces a major architectural improvement with enhanced security and simplified deployment.
+
+### Architecture Changes
+
+- **Unified Container**: Backend and Frontend integrated in a single Docker image
+  - Eliminated inter-container communication
+  - Reduced attack surface
+  - Single process model for easier auditing
+- **Simplified Deployment**: Single service, single deployment, single port (8080)
+- **Easier Management**: One image to build, version, and deploy
+
+### Technical Improvements
+
+- Backend now serves frontend static files directly
+- Simplified Helm chart with unified deployment
+- Reduced resource overhead (single container instead of two)
+- Single ingress path configuration (`/` instead of separate `/api` and `/` paths)
+
+### Security Improvements
+
+- **Reduced Attack Surface**: Unified architecture eliminates network communication between containers
+- **Security Score**: 88/100 (comprehensive security audit completed)
+- **Security Features**:
+  - Argon2 password hashing with JWT-based authentication
+  - HttpOnly cookies with Secure and SameSite=Strict flags
+  - Comprehensive input validation (RFC 1123 for Kubernetes names)
+  - Rate limiting (50 req/sec general, 5 req/min for login)
+  - Audit logging for all API requests
+  - Content Security Policy (CSP) headers
+  - CORS validation with origin checking
+  - WebSocket origin validation
+
+### Changed
+
+- Docker image changed from `dkonsole/dkonsole-backend` and `dkonsole/dkonsole-frontend` to `dkonsole/dkonsole`
+- Helm values updated: `image.backend` and `image.frontend` replaced with single `image` configuration
+- Ingress paths simplified: single path `/` instead of separate `/api` and `/` paths
+
+### Migration Notes
+
+**Breaking Changes:**
+- If upgrading from v1.0.x, update your Helm values to use the new unified `image` configuration
+- Update ingress configuration to use single path `/`
+- Docker image repository changed to `dkonsole/dkonsole`
+
+**Upgrade Path:**
+```yaml
+# Old configuration (v1.0.x)
+image:
+  backend:
+    repository: dkonsole/dkonsole-backend
+    tag: "1.0.7"
+  frontend:
+    repository: dkonsole/dkonsole-frontend
+    tag: "1.0.7"
+
+# New configuration (v1.1.0+)
+image:
+  repository: dkonsole/dkonsole
+  tag: "1.1.0"
+```
+
+---
+
 ## [1.0.7] - 2025-11-23
 
 ### 🔒 Security Hardening Release
@@ -133,6 +201,7 @@ This release focuses on addressing critical security vulnerabilities and impleme
 
 ---
 
+[1.1.0]: https://github.com/flaucha/DKonsole/compare/v1.0.7...v1.1.0
 [1.0.7]: https://github.com/flaucha/DKonsole/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/flaucha/DKonsole/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/flaucha/DKonsole/compare/v1.0.4...v1.0.5

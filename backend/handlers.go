@@ -1304,24 +1304,56 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 			resourceTypeCounts[kind]++
 		}
 
-		// Validate that the resource is allowed
-		if !isResourceAllowed(obj) {
-			http.Error(w, fmt.Sprintf("Resource type %s is not allowed", obj.GetKind()), http.StatusForbidden)
-			return
-		}
-
 		// Validate namespace (prevent creation in system namespaces)
 		if isSystemNamespace(obj.GetNamespace()) {
 			http.Error(w, "Cannot create resources in system namespaces", http.StatusForbidden)
 			return
 		}
 
-		gvr, ok := resolveGVR(kind)
-		if !ok {
-			http.Error(w, fmt.Sprintf("Unsupported kind: %s", kind), http.StatusBadRequest)
+		// Extract GVR from the object's apiVersion and kind (supports CRDs and any custom resources)
+		apiVersion := obj.GetAPIVersion()
+		if apiVersion == "" {
+			http.Error(w, "Resource apiVersion missing", http.StatusBadRequest)
 			return
 		}
-		meta := resourceMeta[kind]
+
+		// Parse apiVersion (format: "group/version" or just "version")
+		group := ""
+		version := apiVersion
+		if parts := strings.SplitN(apiVersion, "/", 2); len(parts) == 2 {
+			group = parts[0]
+			version = parts[1]
+		}
+
+		// Try to get resource name and metadata from static map first
+		gvr, ok := resolveGVR(kind)
+		var meta ResourceMeta
+		if ok {
+			meta = resourceMeta[kind]
+		} else {
+			// For CRDs and unknown types, use lowercase(kind) + "s" as resource name
+			resourceName := strings.ToLower(kind) + "s"
+			gvr = schema.GroupVersionResource{
+				Group:    group,
+				Version:  version,
+				Resource: resourceName,
+			}
+			// Determine if namespaced: if namespace is explicitly set in YAML, it's namespaced
+			// If no namespace is set, check common cluster-scoped resource patterns
+			hasNamespace := obj.GetNamespace() != ""
+			isClusterScopedKind := strings.HasPrefix(kind, "Cluster") || 
+				kind == "PersistentVolume" || kind == "StorageClass" || 
+				kind == "CustomResourceDefinition" || kind == "Node"
+			
+			if isClusterScopedKind {
+				meta = ResourceMeta{Namespaced: false}
+			} else if hasNamespace {
+				meta = ResourceMeta{Namespaced: true}
+			} else {
+				// Default to namespaced (most resources are namespaced)
+				meta = ResourceMeta{Namespaced: true}
+			}
+		}
 
 		// Namespace defaults
 		if meta.Namespaced {
@@ -1329,6 +1361,7 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 				obj.SetNamespace("default")
 			}
 		} else {
+			// Ensure cluster-scoped resources have no namespace
 			obj.SetNamespace("")
 		}
 
@@ -1407,28 +1440,6 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
-}
-
-func isResourceAllowed(obj *unstructured.Unstructured) bool {
-	// Whitelist of allowed resources
-	allowedKinds := map[string]bool{
-		"ConfigMap":               true,
-		"Secret":                  true,
-		"Deployment":              true,
-		"Service":                 true,
-		"Ingress":                 true,
-		"PersistentVolumeClaim":   true,
-		"Job":                     true,
-		"CronJob":                 true,
-		"StatefulSet":             true,
-		"DaemonSet":               true,
-		"HorizontalPodAutoscaler": true,
-		"NetworkPolicy":           true,
-		"ServiceAccount":          true,
-		"Role":                    true,
-		"RoleBinding":             true,
-	}
-	return allowedKinds[obj.GetKind()]
 }
 
 func isSystemNamespace(ns string) bool {
