@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.0.6-green.svg)
+![Version](https://img.shields.io/badge/version-1.0.7-green.svg)
 
 <img width="1916" height="928" alt="image" src="https://github.com/user-attachments/assets/ef3ae6e6-ca3f-4955-9980-3dfae895c1ad" />
 
@@ -33,7 +33,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.0.6
+git checkout v1.0.7
 
 # Install
 helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
@@ -106,18 +106,18 @@ By default, it uses the official images. You can change tags or repositories if 
 image:
   backend:
     repository: dkonsole/dkonsole-backend
-    tag: "1.0.6"
+    tag: "1.0.7"
   frontend:
     repository: dkonsole/dkonsole-frontend
-    tag: "1.0.6"
+    tag: "1.0.7"
 ```
 
 ## 🐳 Docker Images
 
 The official images are available at:
 
-- **Backend**: `dkonsole/dkonsole-backend:1.0.6`
-- **Frontend**: `dkonsole/dkonsole-frontend:1.0.6`
+- **Backend**: `dkonsole/dkonsole-backend:1.0.7`
+- **Frontend**: `dkonsole/dkonsole-frontend:1.0.7`
 
 ## 📊 Prometheus Metrics
 
@@ -160,6 +160,39 @@ cd frontend && npm run dev
 ```
 
 ## 📝 Changelog
+
+### v1.0.7 (2025-11-23)
+**🔒 Security Hardening Release**
+
+This release focuses on addressing critical security vulnerabilities and implementing enterprise-grade security measures:
+
+**Critical Security Fixes:**
+- 🛡️ **PromQL Injection Prevention**: Added strict input validation for all Prometheus queries to prevent injection attacks
+- 🔐 **Cookie-Based Authentication**: Migrated from localStorage to HttpOnly cookies for JWT tokens, eliminating XSS token theft risks
+- ✅ **Kubernetes Name Validation**: Implemented RFC 1123 validation for all resource names and namespaces to prevent command injection
+- 🚫 **Input Sanitization**: Added comprehensive validation across all API endpoints (GetResourceYAML, DeleteResource, ScaleResource, StreamPodLogs, ExecIntoPod)
+
+**Security Enhancements:**
+- 📝 **Audit Logging**: Implemented comprehensive audit middleware logging all API requests with user attribution, timestamps, and response codes
+- ⏱️ **Rate Limiting**: Added intelligent rate limiting (300 req/min per IP) to prevent DoS attacks and brute force attempts
+- 🔒 **CSP Updates**: Enhanced Content Security Policy to allow Monaco Editor while maintaining security
+- 🔑 **JWT Secret Enforcement**: Strict validation requiring JWT_SECRET to be set and minimum 32 characters
+
+**Bug Fixes:**
+- 🐛 Fixed table sorting functionality in WorkloadList component
+- 🐛 Fixed YAML editor infinite loading issue caused by CSP restrictions
+- 🐛 Fixed Secret data display (now properly decodes and shows values)
+- 🐛 Removed duplicate mux initialization in main.go
+
+**Architecture Improvements:**
+- 🏗️ Unified middleware chain for consistent security policy application
+- 🎯 Separated public and secure route handlers
+- 📊 Enhanced error handling and validation across all handlers
+
+**Developer Experience:**
+- 📚 Improved code organization with dedicated middleware.go
+- 🧹 Removed external validation dependency, using native regex for better portability
+- 🔧 Better separation of concerns between authentication, auditing, and rate limiting
 
 ### v1.0.6 (2025-11-22)
 - ✨ Enhanced Pod metrics with Network RX/TX and PVC usage
