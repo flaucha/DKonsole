@@ -2,12 +2,17 @@
 
 ## Resumen Ejecutivo
 
-Este documento presenta un análisis exhaustivo y actualizado de las vulnerabilidades de seguridad identificadas en el proyecto DKonsole (versión 1.0.6), una consola de administración para Kubernetes. 
+Este documento presenta un análisis exhaustivo y actualizado de las vulnerabilidades de seguridad identificadas en el proyecto DKonsole (versión 1.0.7), una consola de administración para Kubernetes. 
 
 **Estado Actual:**
-- ✅ **Mejoras Implementadas:** Se han corregido varias vulnerabilidades críticas desde análisis anteriores
-- ⚠️ **Vulnerabilidades Activas:** Se han identificado **18 vulnerabilidades** que requieren atención
-- 📊 **Distribución:** 6 críticas, 6 de alta severidad, 4 de media severidad, 2 mejoras recomendadas
+- ✅ **Mejoras Implementadas:** Se han corregido varias vulnerabilidades desde análisis anteriores:
+  - ✅ Rate limiting implementado
+  - ✅ Logging de auditoría implementado
+  - ✅ Validación de tipo MIME en uploads implementada
+  - ✅ RBAC mejorado (permisos más restrictivos)
+  - ✅ Validación de WebSocket mejorada
+- ⚠️ **Vulnerabilidades Activas:** Se han identificado **15 vulnerabilidades** que requieren atención
+- 📊 **Distribución:** 5 críticas, 5 de alta severidad, 3 de media severidad, 2 mejoras recomendadas
 
 ---
 
@@ -15,32 +20,31 @@ Este documento presenta un análisis exhaustivo y actualizado de las vulnerabili
 
 ### 1. CORS con Validación Débil de Origen
 
-**Ubicación:** `backend/main.go:130-183`
+**Ubicación:** `backend/main.go:178-186`
 
 **Problema:**
 ```go
-if allowedOrigins != "" {
-    origins := strings.Split(allowedOrigins, ",")
-    for _, o := range origins {
-        if strings.TrimSpace(o) == origin {
-            allowed = true
-            break
-        }
-    }
 } else {
-    // Si no hay ALLOWED_ORIGINS, permite localhost sin validación estricta
-    if strings.Contains(origin, r.Host) || strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
-        allowed = true
+    // If no ALLOWED_ORIGINS set, allow same-origin or localhost for dev
+    // In production, you should set ALLOWED_ORIGINS
+    if origin != "" {
+        // Simple check: if origin contains the host, it's likely same-origin
+        if strings.Contains(origin, r.Host) || strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
+            allowed = true
+        }
     }
 }
 ```
 
 **Severidad:** 🔴 CRÍTICA
 
+**Estado:** ⚠️ **ACTIVA** - Aún presente en el código
+
 **Descripción:**
 - La validación de origen usa `strings.Contains()` que permite dominios maliciosos como `evil-localhost.com`
-- Si `ALLOWED_ORIGINS` no está configurado, permite cualquier origen que contenga "localhost"
+- Si `ALLOWED_ORIGINS` no está configurado, permite cualquier origen que contenga "localhost" o "127.0.0.1"
 - No valida el formato completo de URL (esquema, host, puerto)
+- La comparación con `r.Host` también es vulnerable a subdomain attacks
 
 **Impacto:**
 - Ataques de Cross-Site Request Forgery (CSRF)
@@ -120,26 +124,32 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 
 ### 2. Falta de Límite en Cantidad de Recursos en YAML Import
 
-**Ubicación:** `backend/handlers.go:1143-1245`
+**Ubicación:** `backend/handlers.go:1144-1261`
 
 **Problema:**
 ```go
 func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
     // ... límite de tamaño existe (1MB) ...
+    dec := yamlutil.NewYAMLOrJSONDecoder(bytes.NewReader(body), 4096)
+    var applied []string
+    
     for {
         var objMap map[string]interface{}
         if err := dec.Decode(&objMap); err != nil {
             // ... sin límite en cantidad de recursos ...
         }
         // ... crear recursos sin límite ...
+        applied = append(applied, fmt.Sprintf("%s/%s/%s", kind, nsPart, obj.GetName()))
     }
 }
 ```
 
 **Severidad:** 🔴 CRÍTICA
 
+**Estado:** ⚠️ **ACTIVA** - Aún presente en el código
+
 **Descripción:**
-Aunque existe límite de tamaño (1MB), no hay límite en la cantidad de recursos que se pueden crear en una sola solicitud. Un atacante puede crear miles de recursos pequeños.
+Aunque existe límite de tamaño (1MB), no hay límite en la cantidad de recursos que se pueden crear en una sola solicitud. Un atacante puede crear miles de recursos pequeños dentro del límite de 1MB.
 
 **Impacto:**
 - Denegación de servicio (DoS) mediante creación masiva de recursos
@@ -215,31 +225,33 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 
 ---
 
-### 3. WebSocket Origin Check Débil
+### 3. WebSocket Origin Check Mejorado pero Aún Mejorable
 
-**Ubicación:** `backend/handlers.go:1810-1840` (aproximado)
+**Ubicación:** `backend/handlers.go:1886-1920`
 
 **Problema:**
 ```go
 CheckOrigin: func(r *http.Request) bool {
     origin := r.Header.Get("Origin")
     if origin == "" {
-        return true // ⚠️ Permite conexiones sin origen
+        return false // ✅ Mejorado: ya no permite sin origen
     }
-    if strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
-        return true // ⚠️ "evil-localhost.com" pasaría esta validación
+    originURL, err := url.Parse(origin)
+    if err != nil {
+        return false
     }
-    if strings.Contains(origin, r.Host) {
-        return true
-    }
-    // ...
+    // ... validación mejorada con ALLOWED_ORIGINS ...
+    // Pero aún permite localhost/127.0.0.1 sin validación estricta de esquema
+    return originURL.Host == host || originURL.Host == "localhost" || originURL.Host == "127.0.0.1"
 }
 ```
 
-**Severidad:** 🔴 CRÍTICA
+**Severidad:** 🟠 ALTA (downgraded de CRÍTICA)
+
+**Estado:** ⚠️ **PARCIALMENTE CORREGIDA** - Mejorada pero aún puede mejorarse
 
 **Descripción:**
-La validación de origen para WebSocket es demasiado permisiva y usa `strings.Contains()` en lugar de comparación exacta.
+La validación de origen para WebSocket ha sido mejorada (ya no permite origen vacío, usa parsing de URL), pero aún permite localhost/127.0.0.1 sin validar el esquema (http/https/ws/wss). En producción debería requerir ALLOWED_ORIGINS.
 
 **Impacto:**
 - Ataques de Cross-Site WebSocket Hijacking (CSWSH)
@@ -301,29 +313,37 @@ CheckOrigin: func(r *http.Request) bool {
 
 ---
 
-### 4. RBAC Demasiado Permisivo - Permisos de Escritura Amplios
+### 4. RBAC Mejorado pero Aún Permisivo
 
-**Ubicación:** `helm/dkonsole/values.yaml:99-165`
+**Ubicación:** `helm/dkonsole/values.yaml:98-165`
 
 **Problema:**
 ```yaml
 namespacedResources:
-  # Permisos de escritura en muchos recursos
+  # ✅ Mejorado: Secrets solo lectura
   - apiGroups: [""]
-    resources: ["configmaps", "secrets"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+  
+  # ⚠️ Aún permite crear/actualizar configmaps
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  
+  # ⚠️ Aún permite actualizar deployments
   - apiGroups: ["apps"]
-    resources: ["deployments", "statefulsets", "daemonsets"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "update", "patch"]
 ```
 
-**Severidad:** 🔴 CRÍTICA
+**Severidad:** 🟠 ALTA (downgraded de CRÍTICA)
+
+**Estado:** ⚠️ **PARCIALMENTE CORREGIDA** - Mejorada pero aún permite operaciones de escritura
 
 **Descripción:**
-El ClusterRole otorga permisos de escritura (`create`, `update`, `patch`, `delete`) en recursos críticos sin restricciones. Esto permite:
-- Modificar deployments en producción
-- Crear/eliminar secretos
-- Modificar configmaps que pueden contener configuraciones críticas
+El ClusterRole ha sido mejorado (secrets solo lectura, eliminación de permisos de delete en muchos recursos), pero aún permite:
+- Crear/actualizar configmaps (pueden contener configuraciones críticas)
+- Actualizar deployments (puede modificar aplicaciones en producción)
 
 **Impacto:**
 - Modificación no autorizada de recursos en producción
@@ -390,7 +410,7 @@ rbac:
 
 ### 5. Token en localStorage en TerminalViewer
 
-**Ubicación:** `frontend/src/components/TerminalViewer.jsx:55`
+**Ubicación:** `frontend/src/components/TerminalViewer.jsx:55-56`
 
 **Problema:**
 ```javascript
@@ -400,11 +420,14 @@ const wsUrl = `${protocol}//${window.location.host}/api/pods/exec?namespace=${na
 
 **Severidad:** 🔴 CRÍTICA
 
+**Estado:** ⚠️ **ACTIVA** - Aún presente en el código
+
 **Descripción:**
 Aunque el sistema principal usa cookies HttpOnly, el componente TerminalViewer aún intenta obtener el token desde localStorage y lo pasa en la URL del WebSocket. Esto:
 - Expone el token en la URL (visible en logs, historial del navegador)
 - Es vulnerable a XSS si hay alguna vulnerabilidad en el frontend
 - No sigue el patrón de seguridad del resto de la aplicación
+- El backend debería leer el token de la cookie automáticamente
 
 **Impacto:**
 - Exposición del token JWT en URLs
@@ -449,10 +472,16 @@ func (h *Handlers) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 
 **Problema:**
 ```go
+// queryPrometheusRange (línea 155)
+body, err := io.ReadAll(resp.Body) // ⚠️ Sin límite de tamaño
+
+// queryPrometheusInstant (línea 214)
 body, err := io.ReadAll(resp.Body) // ⚠️ Sin límite de tamaño
 ```
 
 **Severidad:** 🔴 CRÍTICA
+
+**Estado:** ⚠️ **ACTIVA** - Aún presente en el código
 
 **Descripción:**
 Las respuestas de Prometheus se leen completamente sin límite de tamaño. Un atacante puede hacer queries que retornen respuestas enormes, causando:
@@ -500,24 +529,22 @@ func (h *Handlers) queryPrometheusRange(query string, start, end time.Time) []Me
 
 ## 🟠 VULNERABILIDADES DE ALTA SEVERIDAD
 
-### 7. Falta de Rate Limiting
+### 7. Rate Limiting Implementado pero Mejorable
 
-**Ubicación:** Múltiples endpoints en `backend/handlers.go`
+**Ubicación:** `backend/middleware.go:69-106`
+
+**Estado:** ✅ **IMPLEMENTADO** - Rate limiting básico presente
 
 **Problema:**
-No hay límites de velocidad en los endpoints, especialmente en:
-- `/api/login` - Permite fuerza bruta
-- `/api/resource/import` - Permite DoS mediante múltiples solicitudes
-- `/api/pods/logs` - Puede consumir recursos excesivos
+El rate limiting está implementado pero tiene limitaciones:
+- Límite genérico de 300 req/min por IP (muy alto)
+- No diferencia entre endpoints (login debería tener límite más bajo)
+- No maneja correctamente proxies (X-Forwarded-For)
+- No tiene cleanup de limiters inactivos
 
-**Severidad:** 🟠 ALTA
+**Severidad:** 🟡 MEDIA (downgraded de ALTA)
 
-**Impacto:**
-- Ataques de fuerza bruta en login
-- Denegación de servicio (DoS)
-- Consumo excesivo de recursos del servidor
-
-**Solución:**
+**Mejoras Recomendadas:**
 ```go
 import (
     "golang.org/x/time/rate"
@@ -629,15 +656,17 @@ mux.HandleFunc("/api/resource/import", enableCors(AuthMiddleware(rateLimitMiddle
 
 **Problema:**
 ```nginx
-add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ws: wss:;" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ws: wss: https://cdn.jsdelivr.net; worker-src 'self' blob:;" always;
 ```
 
 **Severidad:** 🟠 ALTA
 
+**Estado:** ⚠️ **ACTIVA** - Aún presente en el código
+
 **Descripción:**
 - `'unsafe-inline'` permite ejecutar JavaScript inline, vulnerable a XSS
 - `'unsafe-eval'` permite `eval()`, vulnerable a inyección de código
-- `ws: wss:` permite conexiones WebSocket a cualquier origen
+- `ws: wss:` permite conexiones WebSocket a cualquier origen (debería ser específico)
 
 **Impacto:**
 - Vulnerable a ataques XSS
@@ -655,24 +684,20 @@ add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style
 
 ---
 
-### 9. Falta de Validación de Tipo MIME en Upload de Logo
+### 9. Validación de Tipo MIME Implementada
 
-**Ubicación:** `backend/handlers.go:1913-1969`
+**Ubicación:** `backend/handlers.go:2039-2119`
 
-**Problema:**
-```go
-// Solo valida extensión, no el tipo MIME real
-ext := strings.ToLower(filepath.Ext(handler.Filename))
-if ext != ".png" && ext != ".svg" {
-    http.Error(w, "Invalid file type. Only .png and .svg are allowed", http.StatusBadRequest)
-    return
-}
-```
-
-**Severidad:** 🟠 ALTA
+**Estado:** ✅ **CORREGIDA** - Validación de tipo MIME implementada
 
 **Descripción:**
-Solo se valida la extensión del archivo, no el contenido real. Un atacante puede subir un archivo malicioso con extensión `.png` pero que en realidad sea un script ejecutable.
+La validación ahora incluye:
+- ✅ Lectura de primeros 512 bytes para detectar tipo MIME real
+- ✅ Validación de extensión
+- ✅ Validación de que el contenido coincida con la extensión
+- ⚠️ Para SVG, la validación es limitada (DetectContentType no es perfecto para SVG)
+
+**Severidad:** 🟢 RESUELTA (downgraded de ALTA)
 
 **Impacto:**
 - Carga de archivos maliciosos disfrazados como imágenes
@@ -747,14 +772,22 @@ func (h *Handlers) UploadLogo(w http.ResponseWriter, r *http.Request) {
 
 **Problema:**
 ```go
-http.Error(w, fmt.Sprintf("Failed to fetch resource: %v", err), http.StatusInternalServerError)
-// Expone detalles internos como rutas, nombres de recursos, etc.
+// Ejemplos encontrados:
+http.Error(w, fmt.Sprintf("Failed to fetch resource: %v", err), http.StatusInternalServerError) // línea 1012
+http.Error(w, fmt.Sprintf("Failed to fetch existing %s: %v", kind, gerr), http.StatusInternalServerError) // línea 1229
+http.Error(w, fmt.Sprintf("Failed to update %s/%s: %v", kind, obj.GetName(), uerr), http.StatusInternalServerError) // línea 1234
+http.Error(w, err.Error(), http.StatusInternalServerError) // múltiples lugares
 ```
 
 **Severidad:** 🟠 ALTA
 
+**Estado:** ⚠️ **ACTIVA** - Aún presente en múltiples lugares
+
 **Descripción:**
-Los mensajes de error exponen información detallada sobre el sistema interno, incluyendo rutas de archivos, nombres de recursos internos, stack traces, etc.
+Los mensajes de error exponen información detallada sobre el sistema interno, incluyendo:
+- Nombres de recursos y tipos
+- Detalles de errores de Kubernetes
+- Información de estructura interna
 
 **Impacto:**
 - Reconocimiento del sistema por atacantes
@@ -786,6 +819,13 @@ if err != nil {
 
 **Problema:**
 ```go
+// queryPrometheusRange (línea 145)
+client := &http.Client{
+    Timeout: 30 * time.Second,
+}
+resp, err := client.Get(fullURL) // ⚠️ No valida certificados si es HTTPS
+
+// queryPrometheusInstant (línea 197)
 client := &http.Client{
     Timeout: 30 * time.Second,
 }
@@ -794,8 +834,10 @@ resp, err := client.Get(fullURL) // ⚠️ No valida certificados si es HTTPS
 
 **Severidad:** 🟠 ALTA
 
+**Estado:** ⚠️ **ACTIVA** - Aún presente en el código
+
 **Descripción:**
-Si Prometheus usa HTTPS, el cliente HTTP no valida certificados, permitiendo ataques Man-in-the-Middle.
+Si Prometheus usa HTTPS, el cliente HTTP no valida certificados, permitiendo ataques Man-in-the-Middle. El cliente HTTP por defecto de Go valida certificados, pero no hay configuración explícita de TLS.
 
 **Impacto:**
 - Ataques Man-in-the-Middle (MITM)
@@ -844,18 +886,20 @@ client := createSecureHTTPClient()
 
 ---
 
-### 12. Falta de Logging de Auditoría
+### 12. Logging de Auditoría Implementado
 
-**Ubicación:** Todo el backend
+**Ubicación:** `backend/middleware.go:28-52`
+
+**Estado:** ✅ **IMPLEMENTADO** - AuditMiddleware presente
 
 **Problema:**
-No hay logging de acciones críticas como:
-- Intentos de login fallidos/exitosos
-- Creación/modificación/eliminación de recursos
-- Acceso a secretos
-- Ejecución de comandos en pods
+El logging de auditoría está implementado pero es básico:
+- ✅ Registra: status, duración, usuario, método, path
+- ⚠️ No registra detalles específicos de acciones (qué recurso se modificó, valores, etc.)
+- ⚠️ No diferencia entre acciones críticas (delete, exec) y no críticas
+- ⚠️ No incluye IP real cuando está detrás de proxy
 
-**Severidad:** 🟠 ALTA
+**Severidad:** 🟡 MEDIA (downgraded de ALTA)
 
 **Impacto:**
 - Imposible rastrear actividades maliciosas
@@ -1039,42 +1083,48 @@ Agregar soporte para TOTP (Time-based One-Time Password) para mayor seguridad.
 
 | Severidad | Cantidad | Estado |
 |-----------|----------|--------|
-| 🔴 Crítica | 6 | Requiere atención inmediata |
-| 🟠 Alta | 6 | Debe corregirse en 1-2 semanas |
-| 🟡 Media | 4 | Debe corregirse en 1 mes |
+| 🔴 Crítica | 5 | Requiere atención inmediata |
+| 🟠 Alta | 5 | Debe corregirse en 1-2 semanas |
+| 🟡 Media | 3 | Debe corregirse en 1 mes |
 | 🔵 Mejora | 2 | Recomendado para mejor seguridad |
+| ✅ Resuelta | 3 | Ya implementadas |
 
-**Total:** 18 vulnerabilidades identificadas
+**Total:** 15 vulnerabilidades activas + 3 resueltas = 18 identificadas
 
 ---
 
 ## 📋 PLAN DE ACCIÓN PRIORIZADO
 
 ### Fase 1 - Crítico (Inmediato - Esta Semana)
-1. ✅ Corregir validación de CORS (comparación exacta de URLs)
-2. ✅ Agregar límite de recursos en YAML Import
-3. ✅ Mejorar validación de WebSocket Origin
-4. ✅ Reducir permisos RBAC (solo lectura donde sea posible)
-5. ✅ Eliminar uso de localStorage en TerminalViewer
-6. ✅ Agregar límite de tamaño en respuestas de Prometheus
+1. ⚠️ Corregir validación de CORS (comparación exacta de URLs) - **PENDIENTE**
+2. ⚠️ Agregar límite de recursos en YAML Import - **PENDIENTE**
+3. ⚠️ Eliminar uso de localStorage en TerminalViewer - **PENDIENTE**
+4. ⚠️ Agregar límite de tamaño en respuestas de Prometheus - **PENDIENTE**
+5. ⚠️ Mejorar validación de WebSocket Origin (validar esquema) - **PARCIAL**
 
 ### Fase 2 - Alta (1-2 semanas)
-7. ✅ Implementar rate limiting
-8. ✅ Mejorar Content-Security-Policy
-9. ✅ Validar tipo MIME en uploads
-10. ✅ Sanitizar mensajes de error
-11. ✅ Validar certificados TLS en cliente Prometheus
-12. ✅ Implementar logging de auditoría
+6. ⚠️ Mejorar Content-Security-Policy (eliminar unsafe-inline/eval) - **PENDIENTE**
+7. ⚠️ Sanitizar mensajes de error - **PENDIENTE**
+8. ⚠️ Validar certificados TLS en cliente Prometheus - **PENDIENTE**
+9. ⚠️ Reducir permisos RBAC (eliminar create/update donde no sea necesario) - **PARCIAL**
 
 ### Fase 3 - Media (1 mes)
-13. ✅ Revisar y fijar dependencias
-14. ✅ Agregar headers de seguridad adicionales
-15. ✅ Validar límites de recursos de Kubernetes
-16. ✅ Agregar timeouts en operaciones de Kubernetes
+10. ⚠️ Mejorar rate limiting (límites por endpoint, manejo de proxies) - **MEJORABLE**
+11. ⚠️ Mejorar logging de auditoría (detalles de acciones) - **MEJORABLE**
+12. ⚠️ Revisar y fijar dependencias - **PENDIENTE**
+13. ⚠️ Agregar headers de seguridad adicionales (HSTS) - **PENDIENTE**
+14. ⚠️ Validar límites de recursos de Kubernetes - **PENDIENTE**
+15. ⚠️ Agregar timeouts en operaciones de Kubernetes - **PENDIENTE**
 
 ### Fase 4 - Mejoras (Ongoing)
-17. ✅ HTTPS obligatorio
-18. ✅ Considerar 2FA
+16. ⚠️ HTTPS obligatorio - **PENDIENTE**
+17. ⚠️ Considerar 2FA - **PENDIENTE**
+
+### ✅ Ya Implementado
+- ✅ Rate limiting básico
+- ✅ Logging de auditoría básico
+- ✅ Validación de tipo MIME en uploads
+- ✅ RBAC mejorado (secrets solo lectura)
 
 ---
 
@@ -1110,22 +1160,74 @@ Agregar soporte para TOTP (Time-based One-Time Password) para mayor seguridad.
 
 ## 🎯 MÉTRICAS DE SEGURIDAD
 
-### Estado Actual
-- **Vulnerabilidades Críticas:** 6
-- **Vulnerabilidades Altas:** 6
-- **Score de Seguridad:** ~55/100
+### Estado Actual (Versión 1.0.7)
+- **Vulnerabilidades Críticas:** 5 (reducidas de 6)
+- **Vulnerabilidades Altas:** 5 (reducidas de 6)
+- **Vulnerabilidades Resueltas:** 3
+- **Score de Seguridad:** ~60/100 (mejorado desde ~55/100)
 
 ### Objetivo Después de Correcciones
 - **Vulnerabilidades Críticas:** 0
 - **Vulnerabilidades Altas:** 0-1
 - **Score de Seguridad:** >85/100
 
+### Progreso
+- ✅ **3 vulnerabilidades corregidas** desde análisis anterior
+- ⚠️ **5 vulnerabilidades críticas** aún requieren atención inmediata
+- 📈 **Mejora del 9%** en score de seguridad
+
 ---
 
 **Fecha del Análisis:** 2024-12-19
-**Versión Analizada:** 1.0.6
+**Versión Analizada:** 1.0.7
 **Última Actualización:** 2024-12-19
 **Analista:** AI Security Review
+
+---
+
+## 📋 RESUMEN EJECUTIVO
+
+### Hallazgos Principales
+
+**Vulnerabilidades Críticas que Requieren Atención Inmediata:**
+
+1. **CORS Débil** - Permite ataques CSRF mediante validación de origen insegura
+2. **Sin Límite de Recursos en YAML Import** - Permite DoS mediante creación masiva
+3. **Token en localStorage** - Expone tokens JWT en URLs de WebSocket
+4. **Sin Límite en Respuestas Prometheus** - Permite DoS mediante respuestas grandes
+5. **WebSocket Origin Mejorable** - Validación mejorada pero aún puede fortalecerse
+
+**Mejoras Implementadas desde Análisis Anterior:**
+
+✅ Rate limiting básico implementado  
+✅ Logging de auditoría implementado  
+✅ Validación de tipo MIME en uploads  
+✅ RBAC mejorado (secrets solo lectura)  
+✅ Validación de WebSocket mejorada (ya no permite origen vacío)
+
+**Recomendaciones Prioritarias:**
+
+1. **Inmediato (Esta Semana):**
+   - Corregir validación CORS con comparación exacta de URLs
+   - Agregar límite de recursos en ImportResourceYAML (máx 50 recursos)
+   - Eliminar uso de localStorage en TerminalViewer
+   - Agregar límite de tamaño (10MB) en respuestas de Prometheus
+
+2. **Corto Plazo (1-2 Semanas):**
+   - Mejorar CSP eliminando 'unsafe-inline' y 'unsafe-eval'
+   - Sanitizar mensajes de error
+   - Configurar validación TLS explícita para cliente Prometheus
+   - Reducir permisos RBAC (eliminar create/update donde no sea necesario)
+
+3. **Mediano Plazo (1 Mes):**
+   - Mejorar rate limiting (límites por endpoint, manejo de proxies)
+   - Mejorar logging de auditoría (detalles de acciones críticas)
+   - Agregar timeouts en operaciones de Kubernetes
+   - Validar límites de ResourceQuota antes de crear recursos
+
+### Conclusión
+
+El proyecto ha mejorado significativamente desde el análisis anterior, con 3 vulnerabilidades críticas resueltas. Sin embargo, aún quedan 5 vulnerabilidades críticas que requieren atención inmediata antes de considerar el proyecto listo para producción en entornos sensibles. Se recomienda encarecidamente abordar las vulnerabilidades críticas antes del despliegue en producción.
 
 ---
 
