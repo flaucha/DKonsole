@@ -75,7 +75,6 @@ func main() {
 		return enableCors(RateLimitMiddleware(AuditMiddleware(h)))
 	}
 
-	mux := http.NewServeMux()
 	mux.HandleFunc("/api/login", public(h.LoginHandler))
 	mux.HandleFunc("/api/logout", public(h.LogoutHandler)) // Logout doesn't strictly need auth check if we just clear cookie, but usually it's fine.
 	mux.HandleFunc("/api/me", secure(h.MeHandler))
