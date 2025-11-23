@@ -1,34 +1,33 @@
 #!/bin/bash
 set -e
 
-VERSION="1.0.7"
+VERSION="1.1.0"
 
 echo "=========================================="
-echo "Building DKonsole v${VERSION}"
+echo "🔨 DKonsole Build v${VERSION}"
 echo "=========================================="
 echo ""
 
-echo "📦 Building Backend..."
-docker build -t dkonsole/dkonsole-backend:$VERSION ./backend
-echo "✅ Backend built successfully"
+# Build Unified Docker Image (Backend + Frontend)
+echo "📦 Building Unified Image (Backend + Frontend)..."
+docker build -t dkonsole/dkonsole:$VERSION .
+echo "✅ Unified image built successfully"
 echo ""
 
-echo "📦 Building Frontend..."
-docker build -t dkonsole/dkonsole-frontend:$VERSION ./frontend
-echo "✅ Frontend built successfully"
-echo ""
-
-echo "🚀 Pushing Backend to Docker Hub..."
-docker push dkonsole/dkonsole-backend:$VERSION
-echo "✅ Backend pushed successfully"
-echo ""
-
-echo "🚀 Pushing Frontend to Docker Hub..."
-docker push dkonsole/dkonsole-frontend:$VERSION
-echo "✅ Frontend pushed successfully"
+# Also tag as latest for local testing
+echo "🏷️  Tagging as 'latest' for local testing..."
+docker tag dkonsole/dkonsole:$VERSION dkonsole/dkonsole:latest
+echo "✅ Tagged as latest"
 echo ""
 
 echo "=========================================="
 echo "✨ Build Complete!"
-echo "Images pushed with tag: v${VERSION}"
 echo "=========================================="
+echo ""
+echo "📦 Docker Image:"
+echo "   - dkonsole/dkonsole:${VERSION}"
+echo "   - dkonsole/dkonsole:latest"
+echo ""
+echo "🧪 To test locally:"
+echo "   docker run -p 8080:8080 dkonsole/dkonsole:${VERSION}"
+echo ""

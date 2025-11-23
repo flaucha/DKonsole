@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,6 +18,43 @@ import (
 	"k8s.io/client-go/util/homedir"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 )
+
+// ResponseWriter wrapper to fix Content-Type after FileServer sets it
+type contentTypeFixer struct {
+	http.ResponseWriter
+	path string
+}
+
+func (c *contentTypeFixer) WriteHeader(code int) {
+	// Fix Content-Type based on file extension before writing headers
+	ext := filepath.Ext(c.path)
+	switch ext {
+	case ".js":
+		c.ResponseWriter.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+	case ".css":
+		c.ResponseWriter.Header().Set("Content-Type", "text/css; charset=utf-8")
+	case ".json":
+		c.ResponseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
+	case ".png":
+		c.ResponseWriter.Header().Set("Content-Type", "image/png")
+	case ".jpg", ".jpeg":
+		c.ResponseWriter.Header().Set("Content-Type", "image/jpeg")
+	case ".svg":
+		c.ResponseWriter.Header().Set("Content-Type", "image/svg+xml")
+	case ".woff", ".woff2":
+		c.ResponseWriter.Header().Set("Content-Type", "font/woff2")
+	case ".ttf":
+		c.ResponseWriter.Header().Set("Content-Type", "font/ttf")
+	case ".eot":
+		c.ResponseWriter.Header().Set("Content-Type", "application/vnd.ms-fontobject")
+	default:
+		// Try to detect MIME type from extension
+		if ct := mime.TypeByExtension(ext); ct != "" {
+			c.ResponseWriter.Header().Set("Content-Type", ct)
+		}
+	}
+	c.ResponseWriter.WriteHeader(code)
+}
 
 func main() {
 	var kubeconfig *string
@@ -149,9 +187,15 @@ func main() {
 	if _, err := os.Stat(staticDir); os.IsNotExist(err) {
 		log.Printf("Warning: static directory '%s' not found, frontend will not be served", staticDir)
 	} else {
-		// Middleware to add security headers for static files
+		// Middleware to add security headers and correct MIME types for static files
 		secureStaticFiles := func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Wrap ResponseWriter to fix Content-Type
+				fixer := &contentTypeFixer{
+					ResponseWriter: w,
+					path:           r.URL.Path,
+				}
+				
 				// Add security headers
 				// Allow Google Fonts for font-src and style-src
 				// Allow Monaco Editor from cdn.jsdelivr.net
@@ -165,12 +209,14 @@ func main() {
 				if r.Header.Get("X-Forwarded-Proto") == "https" || r.TLS != nil {
 					w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 				}
-				next.ServeHTTP(w, r)
+				next.ServeHTTP(fixer, r)
 			})
 		}
 
 		// Serve static assets (JS, CSS, images, etc.) - Vite puts them in /assets/
-		fileServer := http.FileServer(http.Dir(staticDir))
+		// FileServer points to staticDir/assets because Vite outputs to dist/assets/
+		assetsDir := filepath.Join(staticDir, "assets")
+		fileServer := http.FileServer(http.Dir(assetsDir))
 		mux.Handle("/assets/", secureStaticFiles(http.StripPrefix("/assets/", fileServer)))
 		
 		// Serve other static files directly from root (favicon, robots.txt, etc.)
