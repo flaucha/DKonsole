@@ -5,6 +5,51 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2024-12-19
+
+### 🐛 Bug Fixes and Improvements
+
+This release fixes critical issues with resource import and YAML viewing functionality.
+
+### Fixed
+
+- **Resource Import**: Fixed import functionality to accept ANY Kubernetes resource (including CRDs and custom resources)
+  - Removed restrictive whitelist that limited importable resources
+  - Added dynamic GVR resolution using Kubernetes Discovery API
+  - Improved support for cluster-scoped resources (ClusterRole, ClusterRoleBinding, etc.)
+- **HPA YAML Viewing**: Fixed issue where HorizontalPodAutoscaler YAML could not be viewed
+  - Added alias normalization (HPA → HorizontalPodAutoscaler)
+  - Implemented automatic fallback between autoscaling/v1 and autoscaling/v2 API versions
+  - Added comprehensive error handling and logging
+- **Resource Kind Aliases**: Added support for common resource aliases
+  - HPA → HorizontalPodAutoscaler
+  - PVC → PersistentVolumeClaim
+  - PV → PersistentVolume
+  - SC → StorageClass
+  - SA → ServiceAccount
+  - CR → ClusterRole
+  - CRB → ClusterRoleBinding
+  - RB → RoleBinding
+
+### Changed
+
+- **RBAC Permissions**: Updated to provide full access to all namespaced and cluster-scoped resources
+  - Enables importing and managing any Kubernetes resource via YAML
+  - Maintains security by keeping cluster resources read-only where appropriate
+- **Dynamic Resource Discovery**: Enhanced resource resolution using Kubernetes Discovery API
+  - Automatically finds correct GroupVersionResource for any resource type
+  - Works with Custom Resource Definitions (CRDs) and unknown resource types
+  - Falls back to static mapping if discovery fails
+
+### Technical Improvements
+
+- Added extensive logging for debugging resource resolution issues
+- Improved error messages with detailed context
+- Better handling of API version mismatches
+- Enhanced validation and error recovery
+
+---
+
 ## [1.1.0] - 2024-12-19
 
 ### 🏗️ Unified Architecture Release
@@ -201,6 +246,7 @@ This release focuses on addressing critical security vulnerabilities and impleme
 
 ---
 
+[1.1.1]: https://github.com/flaucha/DKonsole/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/flaucha/DKonsole/compare/v1.0.7...v1.1.0
 [1.0.7]: https://github.com/flaucha/DKonsole/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/flaucha/DKonsole/compare/v1.0.5...v1.0.6
