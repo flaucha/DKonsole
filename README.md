@@ -179,6 +179,18 @@ cd frontend && npm run dev
 
 ## 📝 Changelog
 
+### v1.1.2 (2025-01-23)
+**✨ Resource Quota Manager Improvements**
+
+- ✅ **Namespace Selector**: Added namespace filter with All/Selected toggle
+- ✅ **Automatic Refresh**: Resources refresh automatically after operations
+- ✅ **UI Consistency**: Reorganized layout to match other pages
+- ✅ **Menu Simplification**: Streamlined to Edit YAML and Delete only
+- ✅ **YAML Editor Fix**: Now uses kubectl apply (Server-Side Apply)
+- ✅ **Create Menu**: Changed from hover to click interaction
+- ✅ **Template Namespace**: New resources use selected namespace
+- ✅ **Color Consistency**: Removed colorful elements for gray-scale design
+
 ### v1.1.1 (2024-12-19)
 **🐛 Bug Fixes and Improvements**
 
