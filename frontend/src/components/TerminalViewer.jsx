@@ -52,8 +52,8 @@ const TerminalViewer = ({ namespace, pod, container, onClose }) => {
         if (!term) return;
 
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const token = localStorage.getItem('token') || '';
-        const wsUrl = `${protocol}//${window.location.host}/api/pods/exec?namespace=${namespace}&pod=${pod}&container=${container || ''}&token=${encodeURIComponent(token)}`;
+        // Token is automatically sent via HttpOnly cookie, no need to pass it in URL
+        const wsUrl = `${protocol}//${window.location.host}/api/pods/exec?namespace=${namespace}&pod=${pod}&container=${container || ''}`;
 
         const ws = new WebSocket(wsUrl);
         ws.binaryType = 'arraybuffer';

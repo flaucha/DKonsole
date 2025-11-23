@@ -28,21 +28,37 @@ func (r *StatusRecorder) Flush() {
 func AuditMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		recorder := &StatusRecorder{ResponseWriter: w, Status: http.StatusOK}
+		
+		// For WebSocket, don't use StatusRecorder as it interferes with upgrade
+		isWebSocket := r.Header.Get("Upgrade") == "websocket"
+		var recorder *StatusRecorder
+		if !isWebSocket {
+			recorder = &StatusRecorder{ResponseWriter: w, Status: http.StatusOK}
+			w = recorder
+		}
 
-		next(recorder, r)
+		next(w, r)
 
 		duration := time.Since(start)
 
-		// Extract user if available (set by AuthMiddleware)
+		// Extract user if available (set by AuthMiddleware or handler)
 		user := "anonymous"
 		if claims, ok := r.Context().Value("user").(*Claims); ok {
 			user = claims.Username
 		}
 
+		// Get status code
+		status := http.StatusOK
+		if recorder != nil {
+			status = recorder.Status
+		} else if isWebSocket {
+			// For WebSocket, we can't easily get the status, assume success if we got here
+			status = http.StatusSwitchingProtocols
+		}
+
 		// Log format: [AUDIT] | Status | Duration | User | Method | Path
 		log.Printf("[AUDIT] | %d | %v | %s | %s %s",
-			recorder.Status,
+			status,
 			duration,
 			user,
 			r.Method,

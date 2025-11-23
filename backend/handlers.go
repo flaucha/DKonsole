@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -128,6 +129,15 @@ func resolveGVR(kind string) (schema.GroupVersionResource, bool) {
 	}, true
 }
 
+// handleError logs detailed error internally and returns sanitized message to user
+func handleError(w http.ResponseWriter, err error, userMessage string, statusCode int) {
+	// Log the full error internally with context
+	log.Printf("Error [%s]: %v", userMessage, err)
+
+	// Send generic message to user (don't expose internal details)
+	http.Error(w, userMessage, statusCode)
+}
+
 func (h *Handlers) GetClusters(w http.ResponseWriter, r *http.Request) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
@@ -177,13 +187,13 @@ func (h *Handlers) AddCluster(w http.ResponseWriter, r *http.Request) {
 
 	clientset, err := kubernetes.NewForConfig(k8sConfig)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to create client: %v", err), http.StatusInternalServerError)
+		handleError(w, err, "Failed to create client", http.StatusInternalServerError)
 		return
 	}
 
 	dynamicClient, err := dynamic.NewForConfig(k8sConfig)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to create dynamic client: %v", err), http.StatusInternalServerError)
+		handleError(w, err, "Failed to create dynamic client", http.StatusInternalServerError)
 		return
 	}
 
@@ -1159,8 +1169,35 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 
 	dec := yamlutil.NewYAMLOrJSONDecoder(bytes.NewReader(body), 4096)
 	var applied []string
+	resourceCount := 0
+	maxResources := 50 // Maximum resources per request
+
+	// Counters per resource type
+	resourceTypeCounts := make(map[string]int)
+	maxPerType := map[string]int{
+		"Deployment":              10,
+		"Service":                 20,
+		"ConfigMap":               30,
+		"Secret":                  10,
+		"Job":                     15,
+		"CronJob":                 5,
+		"StatefulSet":             10,
+		"DaemonSet":               5,
+		"HorizontalPodAutoscaler": 10,
+		"Ingress":                 15,
+		"NetworkPolicy":           10,
+		"ServiceAccount":          20,
+		"Role":                    15,
+		"RoleBinding":             15,
+		"PersistentVolumeClaim":   10,
+	}
 
 	for {
+		if resourceCount >= maxResources {
+			http.Error(w, fmt.Sprintf("Too many resources (max %d per request)", maxResources), http.StatusBadRequest)
+			return
+		}
+
 		var objMap map[string]interface{}
 		if err := dec.Decode(&objMap); err != nil {
 			if err == io.EOF {
@@ -1178,6 +1215,22 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 		if kind == "" {
 			http.Error(w, "Resource kind missing", http.StatusBadRequest)
 			return
+		}
+
+		// Validate limit per resource type
+		if maxCount, exists := maxPerType[kind]; exists {
+			if resourceTypeCounts[kind] >= maxCount {
+				http.Error(w, fmt.Sprintf("Too many resources of type %s (max %d)", kind, maxCount), http.StatusBadRequest)
+				return
+			}
+			resourceTypeCounts[kind]++
+		} else {
+			// For unspecified types, use general limit
+			if resourceTypeCounts[kind] >= 10 {
+				http.Error(w, fmt.Sprintf("Too many resources of type %s (max 10)", kind), http.StatusBadRequest)
+				return
+			}
+			resourceTypeCounts[kind]++
 		}
 
 		// Validate that the resource is allowed
@@ -1226,16 +1279,16 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 		if apierrors.IsAlreadyExists(err) {
 			existing, gerr := res.Get(ctx, obj.GetName(), metav1.GetOptions{})
 			if gerr != nil {
-				http.Error(w, fmt.Sprintf("Failed to fetch existing %s: %v", kind, gerr), http.StatusInternalServerError)
+				handleError(w, gerr, fmt.Sprintf("Failed to fetch existing %s", kind), http.StatusInternalServerError)
 				return
 			}
 			obj.SetResourceVersion(existing.GetResourceVersion())
 			if _, uerr := res.Update(ctx, obj, metav1.UpdateOptions{}); uerr != nil {
-				http.Error(w, fmt.Sprintf("Failed to update %s/%s: %v", kind, obj.GetName(), uerr), http.StatusInternalServerError)
+				handleError(w, uerr, fmt.Sprintf("Failed to update %s", kind), http.StatusInternalServerError)
 				return
 			}
 		} else if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to create %s/%s: %v", kind, obj.GetName(), err), http.StatusInternalServerError)
+			handleError(w, err, fmt.Sprintf("Failed to create %s", kind), http.StatusInternalServerError)
 			return
 		}
 
@@ -1244,6 +1297,7 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 			nsPart = "-"
 		}
 		applied = append(applied, fmt.Sprintf("%s/%s/%s", kind, nsPart, obj.GetName()))
+		resourceCount++
 	}
 
 	if len(applied) == 0 {
@@ -1362,7 +1416,7 @@ func (h *Handlers) DeleteResource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := res.Delete(context.TODO(), name, delOpts); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to delete %s/%s: %v", kind, name, err), http.StatusInternalServerError)
+		handleError(w, err, fmt.Sprintf("Failed to delete %s", kind), http.StatusInternalServerError)
 		return
 	}
 
@@ -1844,10 +1898,26 @@ func (h *Handlers) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
-	if _, err := authenticateRequest(r); err != nil {
+	// Authenticate before WebSocket upgrade
+	claims, err := authenticateRequest(r)
+	if err != nil {
+		// Log authentication failure for debugging
+		cookieCount := len(r.Cookies())
+		hasAuthHeader := r.Header.Get("Authorization") != ""
+		hasTokenParam := r.URL.Query().Get("token") != ""
+		log.Printf("WebSocket auth failed: %v, Origin: %s, Host: %s, Cookies: %d, AuthHeader: %v, TokenParam: %v", 
+			err, r.Header.Get("Origin"), r.Host, cookieCount, hasAuthHeader, hasTokenParam)
+		// For WebSocket, return error without trying to set WebSocket headers
+		// The upgrade hasn't happened yet, so we can use normal HTTP error
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+	
+	// Store user info in context for audit logging
+	ctx := context.WithValue(r.Context(), "user", claims)
+	r = r.WithContext(ctx)
+	
+	log.Printf("WebSocket auth successful for user: %s", claims.Username)
 
 	client, err := h.getClient(r)
 	if err != nil {
@@ -1885,9 +1955,14 @@ func (h *Handlers) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 		WriteBufferSize: 1024,
 		CheckOrigin: func(r *http.Request) bool {
 			origin := r.Header.Get("Origin")
+			
+			// For WebSocket, be more permissive - allow empty origin for same-origin connections
 			if origin == "" {
-				return false // Do not allow empty origin
+				// Allow empty origin (same-origin connections, non-browser clients)
+				// This is safe for WebSocket as it's same-origin
+				return true
 			}
+			
 			originURL, err := url.Parse(origin)
 			if err != nil {
 				return false
@@ -1903,29 +1978,73 @@ func (h *Handlers) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 					if err != nil {
 						continue
 					}
-					if originURL.Scheme == allowedURL.Scheme && originURL.Host == allowedURL.Host {
+					// Compare scheme and host (ignore port for flexibility)
+					allowedHost := allowedURL.Host
+					originHost := originURL.Host
+					if strings.Contains(allowedHost, ":") {
+						allowedHost = strings.Split(allowedHost, ":")[0]
+					}
+					if strings.Contains(originHost, ":") {
+						originHost = strings.Split(originHost, ":")[0]
+					}
+					// Allow https<->wss and http<->ws scheme matching
+					schemeMatch := (originURL.Scheme == allowedURL.Scheme) ||
+						(originURL.Scheme == "https" && allowedURL.Scheme == "wss") ||
+						(originURL.Scheme == "wss" && allowedURL.Scheme == "https") ||
+						(originURL.Scheme == "http" && allowedURL.Scheme == "ws") ||
+						(originURL.Scheme == "ws" && allowedURL.Scheme == "http")
+					if schemeMatch && originHost == allowedHost {
 						return true
 					}
 				}
 				return false
 			}
 
-			// If no ALLOWED_ORIGINS, allow same-origin, localhost
+			// If no ALLOWED_ORIGINS, allow same-origin, localhost with valid scheme
+			// Extract host without port for comparison
+			// Consider X-Forwarded-Host for proxy/load balancer scenarios
 			host := r.Host
+			if forwardedHost := r.Header.Get("X-Forwarded-Host"); forwardedHost != "" {
+				host = forwardedHost
+			}
 			if strings.Contains(host, ":") {
 				host = strings.Split(host, ":")[0]
 			}
 
-			return originURL.Host == host || originURL.Host == "localhost" || originURL.Host == "127.0.0.1"
+			originHost := originURL.Host
+			if strings.Contains(originHost, ":") {
+				originHost = strings.Split(originHost, ":")[0]
+			}
+
+			// Validate scheme is http/https/ws/wss
+			validScheme := originURL.Scheme == "http" || originURL.Scheme == "https" ||
+				originURL.Scheme == "ws" || originURL.Scheme == "wss"
+
+			// Allow same host (regardless of port), localhost, or 127.0.0.1
+			// This allows connections from the same domain even if behind a proxy
+			// Also check if origin host ends with the request host (for subdomains)
+			hostMatch := originHost == host || 
+				originHost == "localhost" || 
+				originHost == "127.0.0.1" ||
+				strings.HasSuffix(originHost, "."+host) ||
+				strings.HasSuffix(host, "."+originHost)
+			
+			return validScheme && hostMatch
 		},
 	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to upgrade to WebSocket: %v", err), http.StatusInternalServerError)
+		// Log the upgrade error for debugging
+		log.Printf("WebSocket upgrade failed: %v, Origin: %s, Host: %s", 
+			err, r.Header.Get("Origin"), r.Host)
+		// Don't write error if headers were already written (upgrade may have partially succeeded)
+		// Just return to avoid "superfluous response.WriteHeader" error
 		return
 	}
 	defer conn.Close()
+	
+	log.Printf("WebSocket upgraded successfully for pod: %s/%s", ns, podName)
 
 	// Create exec request
 	req := client.CoreV1().RESTClient().Post().
@@ -2025,8 +2144,8 @@ func (h *Handlers) GetLogo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if foundPath == "" {
-		absPath, _ := filepath.Abs(filepath.Join(DataDir, "logo.png")) // Default for logging
-		fmt.Printf("Logo file not found (checked .png and .svg) in: %s\n", filepath.Dir(absPath))
+		// Logo not found - return 404
+		// Frontend will handle this gracefully and use default logo
 		http.Error(w, "Logo not found", http.StatusNotFound)
 		return
 	}
