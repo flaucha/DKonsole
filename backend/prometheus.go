@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -72,16 +74,29 @@ func (h *Handlers) GetPrometheusMetrics(w http.ResponseWriter, r *http.Request) 
 		startTime = endTime.Add(-1 * time.Hour)
 	}
 
+	// Validate and escape parameters
+	validatedNamespace, err := validatePromQLParam(namespace, "namespace")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	validatedDeployment, err := validatePromQLParam(deployment, "deployment")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	// Query CPU metrics
 	cpuQuery := fmt.Sprintf(
 		`sum(rate(container_cpu_usage_seconds_total{namespace="%s",pod=~"%s-.*"}[5m])) * 1000`,
-		namespace, deployment,
+		validatedNamespace, validatedDeployment,
 	)
 
 	// Query Memory metrics
 	memoryQuery := fmt.Sprintf(
 		`sum(container_memory_working_set_bytes{namespace="%s",pod=~"%s-.*"}) / 1024 / 1024`,
-		namespace, deployment,
+		validatedNamespace, validatedDeployment,
 	)
 
 	cpuData := h.queryPrometheusRange(cpuQuery, startTime, endTime)
@@ -94,6 +109,25 @@ func (h *Handlers) GetPrometheusMetrics(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// validatePromQLParam validates and escapes PromQL parameters to prevent injection
+func validatePromQLParam(param, paramName string) (string, error) {
+	// Validate that it only contains alphanumeric characters, hyphens, and dots
+	// This covers Kubernetes namespaces, pod names, deployment names, etc.
+	validPattern := regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
+	if !validPattern.MatchString(param) {
+		return "", fmt.Errorf("invalid %s: contains invalid characters", paramName)
+	}
+
+	// Validate max length (Kubernetes limit is usually 253)
+	if len(param) > 253 {
+		return "", fmt.Errorf("invalid %s: too long", paramName)
+	}
+
+	// Escape double quotes just in case (though regex above prevents them)
+	escaped := strings.ReplaceAll(param, `"`, `\"`)
+	return escaped, nil
 }
 
 func (h *Handlers) queryPrometheusRange(query string, start, end time.Time) []MetricDataPoint {

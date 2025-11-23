@@ -1251,7 +1251,7 @@ const WorkloadList = ({ namespace, kind }) => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800">
-                        {filteredResources.map((res) => (
+                        {sortedResources.map((res) => (
                             <React.Fragment key={res.uid}>
                                 <tr
                                     onClick={() => toggleExpand(res.uid)}

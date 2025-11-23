@@ -129,9 +129,39 @@ func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 	})
 
+	// Do not return token in body to prevent storage in localStorage
 	json.NewEncoder(w).Encode(map[string]string{
-		"token": tokenString,
-		"role":  "admin",
+		"role": "admin",
+	})
+}
+
+// LogoutHandler clears the session cookie
+func (h *Handlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Expires:  time.Unix(0, 0),
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/",
+		MaxAge:   -1,
+	})
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Logged out"))
+}
+
+// MeHandler returns current user info if authenticated
+func (h *Handlers) MeHandler(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value("user").(*Claims)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"username": claims.Username,
+		"role":     claims.Role,
 	})
 }
 

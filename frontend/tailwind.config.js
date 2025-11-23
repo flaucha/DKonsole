@@ -28,7 +28,15 @@ export default {
                 primary: '#0f172a', // Keep for backward compatibility if used
                 secondary: '#1e293b',
                 accent: '#3b82f6',
-            }
+            },
+            borderRadius: {
+                'none': '0',
+                'sm': 'var(--radius-sm)',
+                DEFAULT: 'var(--radius-md)',
+                'md': 'var(--radius-md)',
+                'lg': 'var(--radius-lg)',
+                'full': '9999px',
+            },
         },
     },
     plugins: [],

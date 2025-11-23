@@ -9,14 +9,22 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        const role = localStorage.getItem('role');
-        if (token) {
-            // Ideally we should verify token validity with backend here
-            setUser({ token, role });
-        }
-        setLoading(false);
+        checkSession();
     }, []);
+
+    const checkSession = async () => {
+        try {
+            const res = await fetch('/api/me');
+            if (res.ok) {
+                const data = await res.json();
+                setUser(data);
+            }
+        } catch (error) {
+            console.error('Session check failed:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const login = async (username, password) => {
         try {
@@ -28,9 +36,8 @@ export const AuthProvider = ({ children }) => {
 
             if (res.ok) {
                 const data = await res.json();
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('role', data.role);
-                setUser({ token: data.token, role: data.role });
+                // Token is handled by HttpOnly cookie
+                setUser({ username, role: data.role });
                 return true;
             } else {
                 throw new Error('Invalid credentials');
@@ -41,22 +48,20 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
+    const logout = async () => {
+        try {
+            await fetch('/api/logout', { method: 'POST' });
+        } catch (error) {
+            console.error('Logout failed:', error);
+        }
         setUser(null);
     };
 
     const authFetch = async (url, options = {}) => {
-        const token = localStorage.getItem('token');
-        const headers = {
-            ...options.headers,
-            'Authorization': `Bearer ${token}`,
-        };
-
-        const res = await fetch(url, { ...options, headers });
+        // No need to manually attach token, cookies handle it
+        const res = await fetch(url, options);
         if (res.status === 401) {
-            logout();
+            setUser(null);
             throw new Error('Session expired');
         }
         return res;
