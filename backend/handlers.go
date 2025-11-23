@@ -95,6 +95,7 @@ type ResourceMeta struct {
 var resourceMeta = map[string]ResourceMeta{
 	"Deployment":              {Group: "apps", Version: "v1", Resource: "deployments", Namespaced: true},
 	"Node":                    {Group: "", Version: "v1", Resource: "nodes", Namespaced: false},
+	"Namespace":               {Group: "", Version: "v1", Resource: "namespaces", Namespaced: false},
 	"Pod":                     {Group: "", Version: "v1", Resource: "pods", Namespaced: true},
 	"ConfigMap":               {Group: "", Version: "v1", Resource: "configmaps", Namespaced: true},
 	"Secret":                  {Group: "", Version: "v1", Resource: "secrets", Namespaced: true},

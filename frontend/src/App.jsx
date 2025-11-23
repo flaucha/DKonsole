@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import YamlImporter from './components/YamlImporter';
 import ApiExplorer from './components/ApiExplorer';
 import NamespaceManager from './components/NamespaceManager';
+import ResourceQuotaManager from './components/ResourceQuotaManager';
 import Login from './components/Login';
 
 const ProtectedRoute = ({ children }) => {
@@ -83,6 +84,10 @@ const Dashboard = () => {
                 ) : currentView === 'Namespaces' ? (
                     <div className="p-0">
                         <NamespaceManager />
+                    </div>
+                ) : currentView === 'Resource Quotas' ? (
+                    <div className="p-0">
+                        <ResourceQuotaManager />
                     </div>
                 ) : (
                     <div className="p-6">

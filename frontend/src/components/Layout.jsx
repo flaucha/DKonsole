@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database } from 'lucide-react';
+import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database, Gauge } from 'lucide-react';
 import defaultLogo from '../assets/logo-full.svg';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -192,6 +192,13 @@ const Layout = ({ children, currentView, onViewChange, headerContent }) => {
                             label="Namespaces"
                             active={currentView === 'Namespaces'}
                             onClick={() => onViewChange('Namespaces')}
+                        />
+
+                        <SidebarItem
+                            icon={Gauge}
+                            label="Resource Quotas"
+                            active={currentView === 'Resource Quotas'}
+                            onClick={() => onViewChange('Resource Quotas')}
                         />
 
                         <SidebarItem
