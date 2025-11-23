@@ -12,9 +12,24 @@ const NamespaceSelector = ({ selected, onSelect }) => {
 
     useEffect(() => {
         authFetch('/api/namespaces')
-            .then(res => res.json())
-            .then(data => setNamespaces(data))
-            .catch(err => console.error("Failed to fetch namespaces:", err));
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`Failed to fetch namespaces: ${res.status} ${res.statusText}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setNamespaces(data);
+                } else {
+                    console.error("Invalid namespaces response:", data);
+                    setNamespaces([]);
+                }
+            })
+            .catch(err => {
+                console.error("Failed to fetch namespaces:", err);
+                setNamespaces([]);
+            });
     }, [authFetch]);
 
     useEffect(() => {
