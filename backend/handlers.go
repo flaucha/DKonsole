@@ -1174,21 +1174,40 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 
 	obj, err := res.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		// If HPA fails with v2, try v1 (some clusters may not have v2)
-		if normalizedKind == "HorizontalPodAutoscaler" && gvr.Version == "v2" && apierrors.IsNotFound(err) {
-			log.Printf("GetResourceYAML: HPA v2 not found, trying v1")
-			gvr.Version = "v1"
-			if meta.Namespaced {
-				res = dynamicClient.Resource(gvr).Namespace(namespace)
-			} else {
-				res = dynamicClient.Resource(gvr)
+		log.Printf("GetResourceYAML: First attempt failed - kind=%s, normalizedKind=%s, gvr=%+v, namespace=%s, name=%s, error=%v", 
+			kind, normalizedKind, gvr, namespace, name, err)
+		
+		// If HPA fails, try different API versions
+		if normalizedKind == "HorizontalPodAutoscaler" {
+			versions := []string{"v2", "v1"}
+			if gvr.Version == "v2" {
+				versions = []string{"v1"}
+			} else if gvr.Version == "v1" {
+				versions = []string{"v2"}
 			}
-			obj, err = res.Get(ctx, name, metav1.GetOptions{})
+			
+			for _, ver := range versions {
+				if apierrors.IsNotFound(err) || strings.Contains(err.Error(), "could not find") {
+					log.Printf("GetResourceYAML: Trying HPA with version %s", ver)
+					gvr.Version = ver
+					if meta.Namespaced {
+						res = dynamicClient.Resource(gvr).Namespace(namespace)
+					} else {
+						res = dynamicClient.Resource(gvr)
+					}
+					obj, err = res.Get(ctx, name, metav1.GetOptions{})
+					if err == nil {
+						log.Printf("GetResourceYAML: Success with version %s", ver)
+						break
+					}
+					log.Printf("GetResourceYAML: Version %s also failed: %v", ver, err)
+				}
+			}
 		}
 		
 		if err != nil {
-			log.Printf("GetResourceYAML error: kind=%s, normalizedKind=%s, gvr=%+v, namespace=%s, name=%s, error=%v", 
-				kind, normalizedKind, gvr, namespace, name, err)
+			log.Printf("GetResourceYAML FINAL ERROR: kind=%s, normalizedKind=%s, gvr=%+v, namespace=%s, name=%s, namespaced=%v, error=%v", 
+				kind, normalizedKind, gvr, namespace, name, meta.Namespaced, err)
 			handleError(w, err, fmt.Sprintf("Failed to fetch resource"), http.StatusInternalServerError)
 			return
 		}
