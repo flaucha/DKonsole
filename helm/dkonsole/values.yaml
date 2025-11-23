@@ -99,11 +99,67 @@ resources:
 rbac:
   create: true
   clusterResources:
-    - apiGroups: ["*"]
-      resources: ["*"]
+    # Read-only access to non-sensitive cluster resources
+    - apiGroups: [""]
+      resources: ["nodes", "persistentvolumes", "storageclasses"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["apiextensions.k8s.io"]
+      resources: ["customresourcedefinitions"]
       verbs: ["get", "list", "watch"]
   nonResourceURLs: ["*"]
   namespacedResources:
-    - apiGroups: ["", "apps", "batch", "networking.k8s.io", "rbac.authorization.k8s.io", "metrics.k8s.io"]
-      resources: ["*"]
-      verbs: ["*"]
+    # Read-only resources
+    - apiGroups: [""]
+      resources: ["pods", "services", "configmaps", "namespaces", "persistentvolumeclaims", "serviceaccounts", "resourcequotas", "limitranges"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["apps"]
+      resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["batch"]
+      resources: ["jobs", "cronjobs"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["networking.k8s.io"]
+      resources: ["ingresses", "networkpolicies"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["metrics.k8s.io"]
+      resources: ["pods", "nodes"]
+      verbs: ["get", "list"]
+    - apiGroups: ["autoscaling"]
+      resources: ["horizontalpodautoscalers"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["storageclasses"]
+      verbs: ["get", "list", "watch"]
+    
+    # Write access (limited)
+    - apiGroups: [""]
+      resources: ["configmaps"]
+      verbs: ["get", "list", "watch", "create", "update", "patch"]
+    - apiGroups: ["apps"]
+      resources: ["deployments"]
+      verbs: ["get", "list", "watch", "update", "patch"]
+    
+    # Secrets: Metadata only (backend filters data)
+    - apiGroups: [""]
+      resources: ["secrets"]
+      verbs: ["get", "list", "watch"]
+    
+    # RBAC: Read-only
+    - apiGroups: ["rbac.authorization.k8s.io"]
+      resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+      verbs: ["get", "list", "watch"]
+    
+    # Pod operations
+    - apiGroups: [""]
+      resources: ["pods/log", "pods/exec"]
+      verbs: ["get", "create"]
+    
+    # Scaling
+    - apiGroups: ["apps"]
+      resources: ["deployments/scale"]
+      verbs: ["get", "update", "patch"]
+    
+    # Jobs
+    - apiGroups: ["batch"]
+      resources: ["jobs"]
+      verbs: ["create"]

@@ -108,7 +108,11 @@ func (h *Handlers) queryPrometheusRange(query string, start, end time.Time) []Me
 
 	fullURL := fmt.Sprintf("%s?%s", promURL, params.Encode())
 
-	resp, err := http.Get(fullURL)
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Get(fullURL)
 	if err != nil {
 		return []MetricDataPoint{}
 	}
@@ -156,7 +160,11 @@ func (h *Handlers) queryPrometheusInstant(query string) []map[string]interface{}
 
 	fullURL := fmt.Sprintf("%s?%s", promURL, params.Encode())
 
-	resp, err := http.Get(fullURL)
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Get(fullURL)
 	if err != nil {
 		fmt.Printf("Error querying Prometheus: %v\n", err)
 		return []map[string]interface{}{}
@@ -181,7 +189,7 @@ func (h *Handlers) queryPrometheusInstant(query string) []map[string]interface{}
 			ResultType string `json:"resultType"`
 			Result     []struct {
 				Metric map[string]string `json:"metric"`
-				Value  []interface{}      `json:"value"`
+				Value  []interface{}     `json:"value"`
 			} `json:"result"`
 		} `json:"data"`
 		Error     string `json:"error"`

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -458,9 +459,10 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 		err = e
 		if err == nil {
 			for _, i := range list.Items {
-				data := make(map[string]string)
-				for k, v := range i.Data {
-					data[k] = string(v)
+				// Security: Do not expose secret data values
+				keys := make([]string, 0, len(i.Data))
+				for k := range i.Data {
+					keys = append(keys, k)
 				}
 				resources = append(resources, Resource{
 					Name:      i.Name,
@@ -470,7 +472,9 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
 					UID:       string(i.UID),
 					Details: map[string]interface{}{
-						"data": data,
+						"type":      string(i.Type),
+						"keys":      keys,
+						"keysCount": len(keys),
 					},
 				})
 			}
@@ -1130,9 +1134,12 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Limit body size to 1MB to prevent DoS
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to read body: %v", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Failed to read body or body too large: %v", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1156,6 +1163,18 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 		kind := obj.GetKind()
 		if kind == "" {
 			http.Error(w, "Resource kind missing", http.StatusBadRequest)
+			return
+		}
+
+		// Validate that the resource is allowed
+		if !isResourceAllowed(obj) {
+			http.Error(w, fmt.Sprintf("Resource type %s is not allowed", obj.GetKind()), http.StatusForbidden)
+			return
+		}
+
+		// Validate namespace (prevent creation in system namespaces)
+		if isSystemNamespace(obj.GetNamespace()) {
+			http.Error(w, "Cannot create resources in system namespaces", http.StatusForbidden)
 			return
 		}
 
@@ -1225,6 +1244,37 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
+}
+
+func isResourceAllowed(obj *unstructured.Unstructured) bool {
+	// Whitelist of allowed resources
+	allowedKinds := map[string]bool{
+		"ConfigMap":               true,
+		"Secret":                  true,
+		"Deployment":              true,
+		"Service":                 true,
+		"Ingress":                 true,
+		"PersistentVolumeClaim":   true,
+		"Job":                     true,
+		"CronJob":                 true,
+		"StatefulSet":             true,
+		"DaemonSet":               true,
+		"HorizontalPodAutoscaler": true,
+		"NetworkPolicy":           true,
+		"ServiceAccount":          true,
+		"Role":                    true,
+		"RoleBinding":             true,
+	}
+	return allowedKinds[obj.GetKind()]
+}
+
+func isSystemNamespace(ns string) bool {
+	systemNamespaces := map[string]bool{
+		"kube-system":     true,
+		"kube-public":     true,
+		"kube-node-lease": true,
+	}
+	return systemNamespaces[ns]
 }
 
 func (h *Handlers) DeleteResource(w http.ResponseWriter, r *http.Request) {
@@ -1770,27 +1820,37 @@ func (h *Handlers) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 		CheckOrigin: func(r *http.Request) bool {
 			origin := r.Header.Get("Origin")
 			if origin == "" {
-				return true // No origin header (e.g. script), allow
+				return false // Do not allow empty origin
 			}
-			// Allow localhost for development
-			if strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
-				return true
+			originURL, err := url.Parse(origin)
+			if err != nil {
+				return false
 			}
-			// Check against Host (standard production case)
-			if strings.Contains(origin, r.Host) {
-				return true
-			}
+
 			// Check allowed origins from env
-			allowed := os.Getenv("ALLOWED_ORIGINS")
-			if allowed != "" {
-				for _, o := range strings.Split(allowed, ",") {
-					if strings.TrimSpace(o) == origin {
+			allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+			if allowedOrigins != "" {
+				origins := strings.Split(allowedOrigins, ",")
+				for _, allowed := range origins {
+					allowed = strings.TrimSpace(allowed)
+					allowedURL, err := url.Parse(allowed)
+					if err != nil {
+						continue
+					}
+					if originURL.Scheme == allowedURL.Scheme && originURL.Host == allowedURL.Host {
 						return true
 					}
 				}
+				return false
 			}
-			fmt.Printf("WebSocket Origin rejected: %s (Host: %s)\n", origin, r.Host)
-			return false
+
+			// If no ALLOWED_ORIGINS, allow same-origin, localhost
+			host := r.Host
+			if strings.Contains(host, ":") {
+				host = strings.Split(host, ":")[0]
+			}
+
+			return originURL.Host == host || originURL.Host == "localhost" || originURL.Host == "127.0.0.1"
 		},
 	}
 
@@ -1922,12 +1982,36 @@ func (h *Handlers) UploadLogo(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	if handler.Size > 5<<20 {
+		http.Error(w, "File too large (max 5MB)", http.StatusBadRequest)
+		return
+	}
+
+	// Read first 512 bytes to detect content type
+	buffer := make([]byte, 512)
+	if _, err := file.Read(buffer); err != nil {
+		http.Error(w, "Error reading file", http.StatusBadRequest)
+		return
+	}
+	file.Seek(0, 0) // Reset pointer
+
+	contentType := http.DetectContentType(buffer)
+	// allowedTypes map removed as it was unused. We validate specifically below.
+
 	// Validate extension
 	ext := strings.ToLower(filepath.Ext(handler.Filename))
 	if ext != ".png" && ext != ".svg" {
 		http.Error(w, "Invalid file type. Only .png and .svg are allowed", http.StatusBadRequest)
 		return
 	}
+
+	if ext == ".png" && contentType != "image/png" {
+		http.Error(w, "Invalid file content (not a PNG)", http.StatusBadRequest)
+		return
+	}
+	// For SVG, we might want to check if it looks like XML/SVG, but DetectContentType is limited.
+	// We'll trust the extension + size limit for SVG for now to avoid breaking valid SVGs,
+	// but in a real high-sec env we'd parse the XML.
 
 	// Ensure data directory exists
 	if err := os.MkdirAll(DataDir, 0755); err != nil {

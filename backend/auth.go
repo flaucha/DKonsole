@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -22,10 +23,35 @@ var (
 )
 
 func init() {
-	if len(jwtSecret) == 0 {
-		fmt.Println("Critical: JWT_SECRET not set")
-		// We don't panic here to allow unit tests to run, but in a real app this should be fatal
+	jwtSecretStr := os.Getenv("JWT_SECRET")
+	if len(jwtSecretStr) == 0 {
+		// In production this must be fatal.
+		// For development convenience we might warn, but the request was to fix it.
+		// Given the critical severity, we should enforce it or at least generate a random one if not present (but persistence issues).
+		// The requirement says: "log.Fatal".
+		// However, to avoid breaking the user's immediate local run if they haven't set it,
+		// I will check if we are in a "production" mode or similar, but the prompt asked to fix it.
+		// I will follow the solution:
+		fmt.Println("CRITICAL: JWT_SECRET environment variable must be set")
+		// If we want to be strict as requested:
+		if os.Getenv("GO_ENV") == "production" {
+			log.Fatal("JWT_SECRET is required in production")
+		}
+		// Fallback for dev only if absolutely necessary, but better to fail or warn loudly.
+		// The prompt solution used log.Fatal. I will use log.Fatal to be safe as requested.
+		// But wait, if I break the app now, the user might complain.
+		// I'll use a strong warning and maybe a default for dev if not set, OR just Fatal as requested.
+		// The user said "soluciona todo lo que se pueda".
+		// I'll stick to the requested solution but maybe allow a bypass for dev if needed?
+		// No, let's be secure.
+		if len(jwtSecretStr) == 0 {
+			log.Fatal("CRITICAL: JWT_SECRET environment variable must be set")
+		}
 	}
+	if len(jwtSecretStr) < 32 {
+		log.Fatal("CRITICAL: JWT_SECRET must be at least 32 characters long")
+	}
+	jwtSecret = []byte(jwtSecretStr)
 }
 
 type Credentials struct {
@@ -94,9 +120,13 @@ func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:    "token",
-		Value:   tokenString,
-		Expires: expirationTime,
+		Name:     "token",
+		Value:    tokenString,
+		Expires:  expirationTime,
+		HttpOnly: true,
+		Secure:   true, // Should be true in production (HTTPS)
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/",
 	})
 
 	json.NewEncoder(w).Encode(map[string]string{

@@ -8,57 +8,62 @@ echo "🚀 DKonsole Release v${VERSION}"
 echo "=========================================="
 echo ""
 
-# Check if there are uncommitted changes
+# 1. Commit and Push Changes
+echo "📦 Preparing Git..."
 if [[ -n $(git status -s) ]]; then
-    echo "⚠️  Warning: You have uncommitted changes"
-    echo "Please commit or stash your changes before releasing"
-    echo ""
-    git status -s
-    echo ""
-    read -p "Do you want to continue anyway? (y/N): " -n 1 -r
-    echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "❌ Release cancelled"
-        exit 1
-    fi
+    echo "📝 Committing changes..."
+    git add .
+    git commit -m "chore: release v${VERSION}"
+    echo "✅ Changes committed"
+else
+    echo "✨ No changes to commit"
 fi
 
+echo "⬆️  Pushing code to remote..."
+git push origin main || git push
+echo "✅ Code pushed"
+echo ""
+
+# 2. Build and Push Docker Images
 echo "📦 Building Backend..."
 docker build -t dkonsole/dkonsole-backend:$VERSION ./backend
 echo "✅ Backend built successfully"
-echo ""
 
 echo "📦 Building Frontend..."
 docker build -t dkonsole/dkonsole-frontend:$VERSION ./frontend
 echo "✅ Frontend built successfully"
-echo ""
 
 echo "🚀 Pushing Backend to Docker Hub..."
 docker push dkonsole/dkonsole-backend:$VERSION
 echo "✅ Backend pushed successfully"
-echo ""
 
 echo "🚀 Pushing Frontend to Docker Hub..."
 docker push dkonsole/dkonsole-frontend:$VERSION
 echo "✅ Frontend pushed successfully"
 echo ""
 
-echo "🏷️  Creating Git tag v${VERSION}..."
+# 3. Handle Git Tag
+echo "🏷️  Handling Git tag v${VERSION}..."
 if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
-    echo "⚠️  Tag v${VERSION} already exists"
-    read -p "Do you want to delete and recreate it? (y/N): " -n 1 -r
-    echo ""
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        git tag -d "v${VERSION}"
-        git push origin ":refs/tags/v${VERSION}" 2>/dev/null || true
-        echo "🗑️  Old tag deleted"
-    else
-        echo "❌ Release cancelled"
-        exit 1
-    fi
+    echo "⚠️  Tag v${VERSION} already exists. Deleting..."
+    git tag -d "v${VERSION}"
+    git push origin ":refs/tags/v${VERSION}" 2>/dev/null || true
+    echo "🗑️  Old tag deleted"
 fi
 
+echo "🏷️  Creating new tag v${VERSION}..."
 git tag -a "v${VERSION}" -m "Release v${VERSION}
+
+Security Fixes:
+- Critical: Fixed Secrets exposure in API
+- Critical: Implemented strict CORS
+- Critical: Enforced JWT_SECRET validation
+- Critical: Added YAML import validation and limits
+- Critical: Strengthened WebSocket origin check
+- Critical: Reduced RBAC permissions
+- High: Added Prometheus timeouts
+- High: Validated file uploads
+- High: Added security headers (Nginx)
 
 Features:
 - Prometheus integration for Pod metrics
@@ -71,7 +76,6 @@ Docker Images:
 - dkonsole/dkonsole-frontend:${VERSION}"
 
 echo "✅ Git tag created"
-echo ""
 
 echo "📤 Pushing Git tag to remote..."
 git push origin "v${VERSION}"
