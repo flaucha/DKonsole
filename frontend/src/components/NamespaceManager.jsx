@@ -125,13 +125,13 @@ const NamespaceManager = () => {
                                     <td className="px-4 py-3 whitespace-nowrap text-gray-400 text-center">
                                         {expandedNs[ns.name] ? <CircleMinus size={16} /> : <CirclePlus size={16} />}
                                     </td>
-                                    <td className="px-6 py-3 whitespace-nowrap">
-                                        <div className="flex items-center">
+                                    <td className="px-6 py-3">
+                                        <div className="flex items-center min-w-0">
                                             <div className="flex-shrink-0 h-6 w-6 bg-gray-700 rounded flex items-center justify-center text-gray-400">
                                                 <Database size={14} />
                                             </div>
-                                            <div className="ml-4">
-                                                <div className="text-sm font-medium text-white">{ns.name}</div>
+                                            <div className="ml-4 min-w-0 flex-1">
+                                                <div className="text-sm font-medium text-white truncate">{ns.name}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -188,10 +188,13 @@ const NamespaceManager = () => {
                                         </div>
                                     </td>
                                 </tr>
-                                {expandedNs[ns.name] && (
-                                    <tr>
-                                        <td colSpan="6" className="bg-gray-900/50 px-4 py-4">
-                                            <div className="p-4 bg-gray-900/50 rounded-md space-y-6">
+                                <tr>
+                                    <td colSpan="6" className={`px-6 pt-0 bg-gray-800 border-0 ${expandedNs[ns.name] ? 'border-b border-gray-700' : ''}`}>
+                                        <div
+                                            className={`transition-all duration-300 ease-in-out ${expandedNs[ns.name] ? 'opacity-100 pb-4' : 'max-h-0 opacity-0 overflow-hidden'}`}
+                                        >
+                                            {expandedNs[ns.name] && (
+                                                <div className="p-4 bg-gray-900/50 rounded-md space-y-6">
                                                 {/* Basic Information */}
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div>
@@ -237,7 +240,7 @@ const NamespaceManager = () => {
                                                             {Object.entries(ns.annotations).map(([k, v]) => (
                                                                 <div key={k} className="bg-gray-800 border border-gray-700 rounded p-2 text-xs">
                                                                     <span className="font-medium text-gray-400">{k}:</span>
-                                                                    <span className="ml-2 text-gray-300 break-all">{v}</span>
+                                                                    <span className="ml-2 text-gray-300 break-words">{v}</span>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -248,10 +251,11 @@ const NamespaceManager = () => {
                                                 <div className="flex justify-end mt-4">
                                                     <EditYamlButton onClick={() => setEditingYaml({ name: ns.name, kind: 'Namespace', namespaced: false })} />
                                                 </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
                             </React.Fragment>
                         ))}
                     </tbody>
