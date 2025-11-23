@@ -4,6 +4,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import QuotaEditor from './QuotaEditor';
 import LimitRangeEditor from './LimitRangeEditor';
+import { getStatusBadgeClass } from '../utils/statusBadge';
 
 const NamespaceManager = () => {
     const { currentCluster } = useSettings();
@@ -126,10 +127,7 @@ const NamespaceManager = () => {
                                     </td>
                                     <td className="px-4 py-3 text-sm font-medium text-white">{ns.name}</td>
                                     <td className="px-4 py-3">
-                                        <span className={`px-2 py-1 text-xs rounded-full border ${ns.status === 'Active'
-                                            ? 'bg-green-900/30 text-green-400 border-green-800'
-                                            : 'bg-gray-800 text-gray-400 border-gray-700'
-                                            }`}>
+                                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(ns.status)}`}>
                                             {ns.status || 'Unknown'}
                                         </span>
                                     </td>

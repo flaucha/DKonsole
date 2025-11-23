@@ -1092,8 +1092,13 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
+	// Log request for debugging
+	log.Printf("UpdateResourceYAML: Method=%s, Content-Type=%s, kind=%s, name=%s, namespace=%s", 
+		r.Method, r.Header.Get("Content-Type"), r.URL.Query().Get("kind"), r.URL.Query().Get("name"), r.URL.Query().Get("namespace"))
+	
 	dynamicClient, err := h.getDynamicClient(r)
 	if err != nil {
+		log.Printf("UpdateResourceYAML: Error getting dynamic client: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -1103,6 +1108,7 @@ func (h *Handlers) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 	namespace := r.URL.Query().Get("namespace")
 
 	if kind == "" {
+		log.Printf("UpdateResourceYAML: Missing kind parameter")
 		http.Error(w, "Missing kind parameter", http.StatusBadRequest)
 		return
 	}
@@ -1210,8 +1216,12 @@ func (h *Handlers) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
+	// Log request for debugging
+	log.Printf("ImportResourceYAML: Method=%s, Content-Type=%s", r.Method, r.Header.Get("Content-Type"))
+	
 	dynamicClient, err := h.getDynamicClient(r)
 	if err != nil {
+		log.Printf("ImportResourceYAML: Error getting dynamic client: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -1221,9 +1231,12 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		log.Printf("ImportResourceYAML: Error reading body: %v", err)
 		http.Error(w, fmt.Sprintf("Failed to read body or body too large: %v", err), http.StatusBadRequest)
 		return
 	}
+	
+	log.Printf("ImportResourceYAML: Body size=%d bytes", len(body))
 
 	dec := yamlutil.NewYAMLOrJSONDecoder(bytes.NewReader(body), 4096)
 	var applied []string
@@ -1329,21 +1342,23 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 		defer cancel()
 
 		// Validate ResourceQuota and LimitRange before creating resource
+		// Note: These validations are advisory - Kubernetes API server will enforce them
+		// We log warnings but don't block operations to avoid false positives
 		if meta.Namespaced && obj.GetNamespace() != "" {
 			client, err := h.getClient(r)
 			if err == nil {
 				// Validate ResourceQuota (check if creation would exceed limits)
+				// Log warning but don't block - Kubernetes will enforce quotas
 				if quotaErr := h.validateResourceQuota(ctx, client, obj.GetNamespace(), obj); quotaErr != nil {
-					auditLog(r, "create", kind, obj.GetName(), obj.GetNamespace(), false, quotaErr, nil)
-					http.Error(w, quotaErr.Error(), http.StatusForbidden)
-					return
+					log.Printf("Warning: ResourceQuota validation issue for %s/%s in %s: %v", kind, obj.GetName(), obj.GetNamespace(), quotaErr)
+					// Don't block - let Kubernetes API server handle it
 				}
 
 				// Validate LimitRange (check if resource conforms to constraints)
+				// Log warning but don't block - Kubernetes will enforce limits
 				if limitErr := h.validateLimitRange(ctx, client, obj.GetNamespace(), obj); limitErr != nil {
-					auditLog(r, "create", kind, obj.GetName(), obj.GetNamespace(), false, limitErr, nil)
-					http.Error(w, limitErr.Error(), http.StatusForbidden)
-					return
+					log.Printf("Warning: LimitRange validation issue for %s/%s in %s: %v", kind, obj.GetName(), obj.GetNamespace(), limitErr)
+					// Don't block - let Kubernetes API server handle it
 				}
 			}
 		}
