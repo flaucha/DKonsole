@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Database, RefreshCw, ChevronDown, ChevronRight, Tag, Calendar, Activity, Edit, Plus } from 'lucide-react';
+import { Database, RefreshCw, CirclePlus, CircleMinus, Tag, Calendar, Clock, MoreVertical, FileText } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
-import QuotaEditor from './QuotaEditor';
-import LimitRangeEditor from './LimitRangeEditor';
+import YamlEditor from './YamlEditor';
 import { getStatusBadgeClass } from '../utils/statusBadge';
 
 const NamespaceManager = () => {
@@ -12,10 +11,9 @@ const NamespaceManager = () => {
     const [namespaces, setNamespaces] = useState([]);
     const [loading, setLoading] = useState(false);
     const [expandedNs, setExpandedNs] = useState({});
-    const [quotas, setQuotas] = useState({});
-    const [limitRanges, setLimitRanges] = useState({});
-    const [editingQuota, setEditingQuota] = useState(null);
-    const [editingLimitRange, setEditingLimitRange] = useState(null);
+    const [menuOpen, setMenuOpen] = useState(null);
+    const [confirmAction, setConfirmAction] = useState(null);
+    const [editingYaml, setEditingYaml] = useState(null);
 
     const fetchNamespaces = () => {
         setLoading(true);
@@ -31,45 +29,12 @@ const NamespaceManager = () => {
             .catch(() => setLoading(false));
     };
 
-    const fetchNamespaceDetails = (nsName) => {
-        const params = new URLSearchParams({
-            namespace: nsName,
-            kind: 'ResourceQuota'
-        });
-        if (currentCluster) params.append('cluster', currentCluster);
-
-        authFetch(`/api/resources?${params.toString()}`)
-            .then(res => res.json())
-            .then(data => {
-                setQuotas(prev => ({ ...prev, [nsName]: data || [] }));
-            })
-            .catch(() => setQuotas(prev => ({ ...prev, [nsName]: [] })));
-
-        const limitParams = new URLSearchParams({
-            namespace: nsName,
-            kind: 'LimitRange'
-        });
-        if (currentCluster) limitParams.append('cluster', currentCluster);
-
-        authFetch(`/api/resources?${limitParams.toString()}`)
-            .then(res => res.json())
-            .then(data => {
-                setLimitRanges(prev => ({ ...prev, [nsName]: data || [] }));
-            })
-            .catch(() => setLimitRanges(prev => ({ ...prev, [nsName]: [] })));
-    };
-
     useEffect(() => {
         fetchNamespaces();
     }, [currentCluster]);
 
     const toggleExpand = (nsName) => {
-        const isExpanding = !expandedNs[nsName];
-        setExpandedNs(prev => ({ ...prev, [nsName]: isExpanding }));
-
-        if (isExpanding && !quotas[nsName]) {
-            fetchNamespaceDetails(nsName);
-        }
+        setExpandedNs(prev => ({ ...prev, [nsName]: !prev[nsName] }));
     };
 
     const getAge = (created) => {
@@ -82,6 +47,44 @@ const NamespaceManager = () => {
         const minutes = Math.floor(diff / (1000 * 60));
         return `${minutes}m`;
     };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'Unknown';
+        return new Date(dateString).toLocaleString();
+    };
+
+    const handleDelete = async (namespace, force = false) => {
+        const params = new URLSearchParams({
+            kind: 'Namespace',
+            name: namespace
+        });
+        if (force) params.append('force', 'true');
+        if (currentCluster) params.append('cluster', currentCluster);
+
+        try {
+            const res = await authFetch(`/api/resource?${params.toString()}`, {
+                method: 'DELETE'
+            });
+
+            if (!res.ok) {
+                throw new Error('Failed to delete namespace');
+            }
+
+            fetchNamespaces();
+        } catch (err) {
+            alert(`Error deleting namespace: ${err.message}`);
+        }
+    };
+
+    const EditYamlButton = ({ onClick }) => (
+        <button
+            onClick={onClick}
+            className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-600 text-xs transition-colors"
+        >
+            <FileText size={12} className="mr-1.5" />
+            Edit YAML
+        </button>
+    );
 
     return (
         <div className="p-6">
@@ -104,159 +107,146 @@ const NamespaceManager = () => {
                 <table className="min-w-full">
                     <thead className="bg-gray-900">
                         <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-8"></th>
+                            <th className="w-10 px-4 py-3 bg-gray-900 rounded-tl-lg border-b border-gray-700"></th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Labels</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Age</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Quotas</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Limits</th>
+                            <th className="w-10 px-4 py-3 bg-gray-900 rounded-tr-lg border-b border-gray-700"></th>
                         </tr>
                     </thead>
-                    <tbody className="bg-gray-800 divide-y divide-gray-700">
+                    <tbody className="divide-y divide-gray-800">
                         {namespaces.map((ns) => (
                             <React.Fragment key={ns.name}>
                                 <tr
-                                    className="hover:bg-gray-750 transition-colors cursor-pointer"
+                                    className={`group hover:bg-gray-800/50 transition-colors cursor-pointer ${expandedNs[ns.name] ? 'bg-gray-800/30' : ''}`}
                                     onClick={() => toggleExpand(ns.name)}
                                 >
-                                    <td className="px-4 py-3">
-                                        <div className="text-gray-400 hover:text-white transition-colors">
-                                            {expandedNs[ns.name] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                    <td className="px-4 py-3 whitespace-nowrap text-gray-400 text-center">
+                                        {expandedNs[ns.name] ? <CircleMinus size={16} /> : <CirclePlus size={16} />}
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                            <div className="flex-shrink-0 h-6 w-6 bg-gray-700 rounded flex items-center justify-center text-gray-400">
+                                                <Database size={14} />
+                                            </div>
+                                            <div className="ml-4">
+                                                <div className="text-sm font-medium text-white">{ns.name}</div>
+                                            </div>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-sm font-medium text-white">{ns.name}</td>
-                                    <td className="px-4 py-3">
+                                    <td className="px-6 py-3 whitespace-nowrap">
                                         <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(ns.status)}`}>
                                             {ns.status || 'Unknown'}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-gray-400">
+                                    <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-400">
                                         {ns.labels ? Object.keys(ns.labels).length : 0}
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-gray-400">{getAge(ns.created)}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-300">
-                                        {quotas[ns.name] ? quotas[ns.name].length : '-'}
-                                    </td>
-                                    <td className="px-4 py-3 text-sm text-gray-300">
-                                        {limitRanges[ns.name] ? limitRanges[ns.name].length : '-'}
+                                    <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-400">{getAge(ns.created)}</td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-gray-300" onClick={(e) => e.stopPropagation()}>
+                                        <div className="relative flex items-center justify-end">
+                                            <button
+                                                onClick={() => setMenuOpen(menuOpen === ns.name ? null : ns.name)}
+                                                className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
+                                            >
+                                                <MoreVertical size={16} />
+                                            </button>
+                                            {menuOpen === ns.name && (
+                                                <div className="absolute right-0 mt-1 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
+                                                    <div className="flex flex-col">
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingYaml({ name: ns.name, kind: 'Namespace', namespaced: false });
+                                                                setMenuOpen(null);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                                                        >
+                                                            Edit YAML
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setConfirmAction({ namespace: ns.name, force: false });
+                                                                setMenuOpen(null);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setConfirmAction({ namespace: ns.name, force: true });
+                                                                setMenuOpen(null);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"
+                                                        >
+                                                            Force Delete
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                                 {expandedNs[ns.name] && (
                                     <tr>
-                                        <td colSpan="7" className="bg-gray-900/50 px-4 py-4">
-                                            <div className="space-y-6">
-                                                {/* Metadata Section */}
+                                        <td colSpan="6" className="bg-gray-900/50 px-4 py-4">
+                                            <div className="p-4 bg-gray-900/50 rounded-md space-y-6">
+                                                {/* Basic Information */}
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div>
-                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Labels</h4>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {ns.labels && Object.keys(ns.labels).length > 0 ? (
-                                                                Object.entries(ns.labels).map(([k, v]) => (
-                                                                    <span key={k} className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-300">
-                                                                        {k}={v}
-                                                                    </span>
-                                                                ))
-                                                            ) : (
-                                                                <span className="text-sm text-gray-500 italic">No labels</span>
-                                                            )}
-                                                        </div>
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                            <Clock size={12} className="mr-1" />
+                                                            Creation Time
+                                                        </h4>
+                                                        <div className="text-sm text-gray-300">{formatDate(ns.created)}</div>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                            <Tag size={12} className="mr-1" />
+                                                            Age
+                                                        </h4>
+                                                        <div className="text-sm text-gray-300">{getAge(ns.created)}</div>
                                                     </div>
                                                 </div>
 
-                                                <div className="border-t border-gray-800 pt-4">
-                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                                        {/* Resource Quotas Section */}
-                                                        <div>
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <h3 className="text-sm font-semibold text-gray-300 flex items-center">
-                                                                    <Activity size={14} className="mr-2 text-gray-400" />
-                                                                    Resource Quotas
-                                                                </h3>
-                                                                <button
-                                                                    onClick={() => setEditingQuota({ namespace: ns.name, name: '', kind: 'ResourceQuota', isNew: true })}
-                                                                    className="flex items-center px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded border border-blue-500 transition-colors"
-                                                                >
-                                                                    <Plus size={12} className="mr-1" />
-                                                                    Add Quota
-                                                                </button>
-                                                            </div>
-                                                            {quotas[ns.name]?.length > 0 ? (
-                                                                <div className="space-y-2">
-                                                                    {quotas[ns.name].map((quota) => (
-                                                                        <div key={quota.name} className="bg-gray-800 border border-gray-700 rounded p-3">
-                                                                            <div className="flex items-center justify-between mb-2">
-                                                                                <span className="text-sm font-medium text-white">{quota.name}</span>
-                                                                                <button
-                                                                                    onClick={() => setEditingQuota({ ...quota, namespace: ns.name })}
-                                                                                    className="flex items-center px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 rounded border border-gray-600 transition-colors"
-                                                                                >
-                                                                                    <Edit size={12} className="mr-1" />
-                                                                                    Edit
-                                                                                </button>
-                                                                            </div>
-                                                                            {quota.details?.hard && (
-                                                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                                                                                    {Object.entries(quota.details.hard).map(([key, value]) => (
-                                                                                        <div key={key} className="text-gray-400">
-                                                                                            <span className="font-medium">{key}:</span> {value}
-                                                                                            {quota.details.used?.[key] && (
-                                                                                                <span className="text-gray-500"> ({quota.details.used[key]} used)</span>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            ) : (
-                                                                <p className="text-xs text-gray-500 italic">No resource quotas defined</p>
-                                                            )}
-                                                        </div>
+                                                {/* Labels Section */}
+                                                <div>
+                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                        <Tag size={12} className="mr-1" />
+                                                        Labels
+                                                    </h4>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {ns.labels && Object.keys(ns.labels).length > 0 ? (
+                                                            Object.entries(ns.labels).map(([k, v]) => (
+                                                                <span key={k} className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-300">
+                                                                    {k}={v}
+                                                                </span>
+                                                            ))
+                                                        ) : (
+                                                            <span className="text-sm text-gray-500 italic">No labels</span>
+                                                        )}
+                                                    </div>
+                                                </div>
 
-                                                        {/* Limit Ranges Section */}
-                                                        <div>
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <h3 className="text-sm font-semibold text-gray-300 flex items-center">
-                                                                    <Tag size={14} className="mr-2 text-gray-400" />
-                                                                    Limit Ranges
-                                                                </h3>
-                                                                <button
-                                                                    onClick={() => setEditingLimitRange({ namespace: ns.name, name: '', kind: 'LimitRange', isNew: true })}
-                                                                    className="flex items-center px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded border border-blue-500 transition-colors"
-                                                                >
-                                                                    <Plus size={12} className="mr-1" />
-                                                                    Add Limit Range
-                                                                </button>
-                                                            </div>
-                                                            {limitRanges[ns.name]?.length > 0 ? (
-                                                                <div className="space-y-2">
-                                                                    {limitRanges[ns.name].map((limitRange) => (
-                                                                        <div key={limitRange.name} className="bg-gray-800 border border-gray-700 rounded p-3">
-                                                                            <div className="flex items-center justify-between mb-2">
-                                                                                <span className="text-sm font-medium text-white">{limitRange.name}</span>
-                                                                                <button
-                                                                                    onClick={() => setEditingLimitRange({ ...limitRange, namespace: ns.name })}
-                                                                                    className="flex items-center px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 rounded border border-gray-600 transition-colors"
-                                                                                >
-                                                                                    <Edit size={12} className="mr-1" />
-                                                                                    Edit
-                                                                                </button>
-                                                                            </div>
-                                                                            {limitRange.details?.limits && (
-                                                                                <div className="text-xs text-gray-400">
-                                                                                    {limitRange.details.limits.length} limit(s) configured
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    ))}
+                                                {/* Annotations Section */}
+                                                {ns.annotations && Object.keys(ns.annotations).length > 0 && (
+                                                    <div>
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Annotations</h4>
+                                                        <div className="space-y-1">
+                                                            {Object.entries(ns.annotations).map(([k, v]) => (
+                                                                <div key={k} className="bg-gray-800 border border-gray-700 rounded p-2 text-xs">
+                                                                    <span className="font-medium text-gray-400">{k}:</span>
+                                                                    <span className="ml-2 text-gray-300 break-all">{v}</span>
                                                                 </div>
-                                                            ) : (
-                                                                <p className="text-xs text-gray-500 italic">No limit ranges defined</p>
-                                                            )}
+                                                            ))}
                                                         </div>
                                                     </div>
+                                                )}
+
+                                                {/* Actions */}
+                                                <div className="flex justify-end mt-4">
+                                                    <EditYamlButton onClick={() => setEditingYaml({ name: ns.name, kind: 'Namespace', namespaced: false })} />
                                                 </div>
                                             </div>
                                         </td>
@@ -272,26 +262,52 @@ const NamespaceManager = () => {
                 )}
             </div>
 
-            {editingQuota && (
-                <QuotaEditor
-                    resource={editingQuota}
-                    onClose={() => setEditingQuota(null)}
+            {menuOpen && (
+                <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setMenuOpen(null)}
+                ></div>
+            )}
+
+            {editingYaml && (
+                <YamlEditor
+                    resource={editingYaml}
+                    onClose={() => setEditingYaml(null)}
                     onSaved={() => {
-                        setEditingQuota(null);
-                        fetchNamespaceDetails(editingQuota.namespace);
+                        setEditingYaml(null);
+                        fetchNamespaces();
                     }}
                 />
             )}
 
-            {editingLimitRange && (
-                <LimitRangeEditor
-                    resource={editingLimitRange}
-                    onClose={() => setEditingLimitRange(null)}
-                    onSaved={() => {
-                        setEditingLimitRange(null);
-                        fetchNamespaceDetails(editingLimitRange.namespace);
-                    }}
-                />
+            {confirmAction && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-md shadow-xl">
+                        <h3 className="text-lg font-semibold text-white mb-2">
+                            Confirm delete
+                        </h3>
+                        <p className="text-sm text-gray-300 mb-4">
+                            {confirmAction.force ? 'Force delete' : 'Delete'} Namespace "{confirmAction.namespace}"?
+                        </p>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={() => setConfirmAction(null)}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    await handleDelete(confirmAction.namespace, confirmAction.force);
+                                    setConfirmAction(null);
+                                }}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
+                            >
+                                {confirmAction.force ? 'Force Delete' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
