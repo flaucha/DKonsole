@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="1.0.6"
+VERSION="1.0.7"
 
 echo "=========================================="
 echo "🚀 DKonsole Release v${VERSION}"
