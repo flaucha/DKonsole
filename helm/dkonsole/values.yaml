@@ -9,17 +9,68 @@ admin:
   username: admin
   # Password hash (Argon2). Generate with:
   # echo -n "password" | argon2 $(openssl rand -base64 16) -id -t 3 -m 12 -p 1 -l 32 -e
+  # This should be an Argon2 hash. If empty, default password "password" will be used (INSECURE!)
   passwordHash: ""
 
 # JWT Secret for session security. Generate with: openssl rand -base64 32
 jwtSecret: ""
 
 # -----------------------------------------------------------------------------
-# 2. Ingress / External Access (REQUIRED for external access)
+# 2. Docker Image Configuration
+# -----------------------------------------------------------------------------
+image:
+  repository: dkonsole/dkonsole
+  tag: "1.1.1"
+  pullPolicy: Always
+
+# Image pull secrets (optional)
+# Example: [{"name": "myregistrykey"}]
+imagePullSecrets: []
+
+# Name override for the release (optional)
+nameOverride: ""
+
+# Full name override for the release (optional)
+fullnameOverride: ""
+
+# -----------------------------------------------------------------------------
+# 3. Service Account Configuration
+# -----------------------------------------------------------------------------
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# -----------------------------------------------------------------------------
+# 4. Pod Configuration
+# -----------------------------------------------------------------------------
+# Pod annotations (optional)
+podAnnotations: {}
+
+# Pod Security Context (Run as non-root user)
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 2000
+
+# Container Security Context (optional)
+securityContext: {}
+
+# -----------------------------------------------------------------------------
+# 5. Ingress / External Access (REQUIRED for external access)
 # -----------------------------------------------------------------------------
 ingress:
   enabled: true
   className: "nginx"
+  # Ingress annotations (e.g., for cert-manager)
+  # Example:
+  #   cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  #   nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  annotations: {}
   hosts:
     - host: dkonsole.example.com
       paths:
@@ -35,33 +86,62 @@ ingress:
 # If empty, only same-origin requests are allowed.
 allowedOrigins: ""
 
-# Pod Security Context (Run as non-root user 'app' uid 1000)
-podSecurityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
-  fsGroup: 1000
+# -----------------------------------------------------------------------------
+# 6. Service Configuration
+# -----------------------------------------------------------------------------
+service:
+  type: ClusterIP
+  port: 8080
 
 # -----------------------------------------------------------------------------
-# 3. Docker Image (Optional - Defaults to official image)
+# 7. Replica Configuration
 # -----------------------------------------------------------------------------
-image:
-  repository: dkonsole/dkonsole
-  tag: "1.1.0"
-  pullPolicy: Always
+replicaCount: 1
 
 # -----------------------------------------------------------------------------
-# 4. Persistence (Optional - For custom logos)
+# 8. Resource Limits and Requests
+# -----------------------------------------------------------------------------
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# -----------------------------------------------------------------------------
+# 9. Autoscaling Configuration (Optional)
+# -----------------------------------------------------------------------------
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+# -----------------------------------------------------------------------------
+# 10. Node Selection and Scheduling
+# -----------------------------------------------------------------------------
+# Node selector (optional)
+nodeSelector: {}
+
+# Tolerations (optional)
+tolerations: []
+
+# Affinity rules (optional)
+affinity: {}
+
+# -----------------------------------------------------------------------------
+# 11. Persistence (Optional - For custom logos)
 # -----------------------------------------------------------------------------
 persistence:
   enabled: true
+  # storageClass: "" # Uncomment to specify a storage class
+  accessMode: ReadWriteOnce
   size: 1Gi
-  # storageClass: "standard" # Uncomment to specify a storage class
 
 # -----------------------------------------------------------------------------
-# Advanced Configuration (Defaults are usually fine)
+# 12. Prometheus Integration (Optional)
 # -----------------------------------------------------------------------------
-
-# Prometheus Integration (Optional)
 # Configure the Prometheus endpoint to enable historical metrics for Pods
 # If not set, the Metrics tab will not be displayed in Pod details
 # Example: "http://prometheus-server.monitoring.svc.cluster.local:9090"
@@ -71,45 +151,24 @@ persistence:
 #   - Metrics tab in Pod details view
 prometheusUrl: ""
 
-replicaCount: 1
-
-service:
-  type: ClusterIP
-  port: 8080
-
-resources:
-  limits: { cpu: 500m, memory: 512Mi }
-  requests: { cpu: 100m, memory: 128Mi }
-
-# RBAC Permissions (Required for dashboard functionality)
+# -----------------------------------------------------------------------------
+# 13. RBAC Permissions (Required for dashboard functionality)
+# -----------------------------------------------------------------------------
 # FULL ACCESS to ALL resources (both cluster-scoped and namespaced) - allows importing ANY Kubernetes resource via YAML
 rbac:
   create: true
+  # Cluster-wide resources - FULL ACCESS to create/update/delete cluster-scoped resources
+  # This allows importing ClusterRole, ClusterRoleBinding, PersistentVolume, StorageClass, etc.
   clusterResources:
-    # FULL ACCESS to cluster-scoped resources (ClusterRole, ClusterRoleBinding, PersistentVolume, StorageClass, etc.)
     - apiGroups: ["*"]
       resources: ["*"]
-      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  nonResourceURLs: ["*"]
+      verbs: ["*"]
+  nonResourceURLs:
+    - "*"
+  # Namespaced resources - FULL ACCESS to all resources in all API groups
+  # This allows importing ANY Kubernetes resource via YAML
   namespacedResources:
-    # FULL ACCESS to all namespaced resources in all API groups
-    # This enables importing ANY Kubernetes resource (including CRDs) via YAML
-    - apiGroups: [""]
-      resources: ["*"]
-      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    # FULL ACCESS to all namespaced resources in all API groups (including all subresources)
     - apiGroups: ["*"]
       resources: ["*"]
-      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-    
-    # Special subresources
-    - apiGroups: [""]
-      resources: ["pods/log", "pods/exec"]
-      verbs: ["get", "create"]
-    - apiGroups: ["apps"]
-      resources: ["deployments/scale", "statefulsets/scale", "replicasets/scale"]
-      verbs: ["get", "update", "patch"]
-    
-    # Metrics API
-    - apiGroups: ["metrics.k8s.io"]
-      resources: ["pods", "nodes"]
-      verbs: ["get", "list"]
+      verbs: ["*"]
