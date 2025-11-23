@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 import LogViewer from './LogViewer';
 import TerminalViewer from './TerminalViewer';
-import { Terminal } from '@xterm/xterm';
+import { Terminal as XTerminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 
@@ -158,10 +158,11 @@ const TerminalViewerInline = ({ namespace, pod, container }) => {
     const termRef = useRef(null);
     const fitAddonRef = useRef(null);
     const wsRef = useRef(null);
+    const containerRef = useRef(null);
 
     // Initialize terminal once
     useEffect(() => {
-        const term = new Terminal({
+        const term = new XTerminal({
             convertEol: true,
             cursorBlink: true,
             fontSize: 13,
@@ -253,13 +254,22 @@ const TerminalViewerInline = ({ namespace, pod, container }) => {
         };
     }, [namespace, pod, container]);
 
-    // Refit when content changes
+    // Refit when content changes and scroll into view
     useEffect(() => {
-        fitAddonRef.current?.fit();
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+            if (fitAddonRef.current) {
+                fitAddonRef.current.fit();
+            }
+            // Scroll the terminal container into view
+            if (containerRef.current) {
+                containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        });
     }, [namespace, pod, container]);
 
     return (
-        <div className="bg-gray-900 border border-gray-700 rounded-lg flex flex-col h-full overflow-hidden">
+        <div ref={containerRef} className="bg-gray-900 border border-gray-700 rounded-lg flex flex-col h-full overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 bg-gray-800">
                 <div className="flex items-center space-x-2">
@@ -848,6 +858,7 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
     const [selectedContainer, setSelectedContainer] = useState(null);
     const containers = details.containers || [];
     const metrics = details.metrics || {};
+    const terminalContainerRef = useRef(null);
 
     // Set default container when component mounts or containers change
     useEffect(() => {
@@ -856,9 +867,24 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
         }
     }, [containers, selectedContainer]);
 
+    // Scroll into view when terminal tab is activated
+    useEffect(() => {
+        if (activeTab === 'terminal' && terminalContainerRef.current) {
+            // Use setTimeout to ensure DOM is updated
+            setTimeout(() => {
+                terminalContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+    }, [activeTab]);
+
+    // Determine if we should use full height (for logs/terminal tabs)
+    const isFullHeightTab = activeTab === 'logs' || activeTab === 'terminal';
+    // Calculate height: viewport height minus header, tabs, and padding (approximately)
+    const fullHeight = 'calc(100vh - 300px)';
+
     return (
-        <div className="mt-2">
-            <div className="flex space-x-4 border-b border-gray-700 mb-4">
+        <div className="mt-2 flex flex-col" style={{ height: isFullHeightTab ? fullHeight : 'auto' }}>
+            <div className="flex space-x-4 border-b border-gray-700 mb-4 flex-shrink-0">
                 <button
                     className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'details' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
                     onClick={() => setActiveTab('details')}
@@ -885,7 +911,7 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                 </button>
             </div>
 
-            <div className="transition-all duration-300 ease-in-out">
+            <div className={`transition-all duration-300 ease-in-out flex-1 flex flex-col ${isFullHeightTab ? 'min-h-0' : ''}`}>
                 {activeTab === 'details' ? (
                     <div className="p-4 bg-gray-900/50 rounded-md animate-fadeIn">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
@@ -907,9 +933,9 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                         </div>
                     </div>
                 ) : activeTab === 'logs' ? (
-                    <div className="animate-fadeIn h-[500px] flex flex-col">
+                    <div className="animate-fadeIn flex-1 flex flex-col min-h-0">
                         {containers.length > 1 && (
-                            <div className="mb-3 flex items-center space-x-2">
+                            <div className="mb-3 flex items-center space-x-2 flex-shrink-0">
                                 <label className="text-xs text-gray-400">Container:</label>
                                 <select
                                     value={selectedContainer || ''}
@@ -923,17 +949,19 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                             </div>
                         )}
                         {selectedContainer && pod && (
-                            <LogViewerInline
-                                namespace={pod.namespace}
-                                pod={pod.name}
-                                container={selectedContainer}
-                            />
+                            <div className="flex-1 min-h-0">
+                                <LogViewerInline
+                                    namespace={pod.namespace}
+                                    pod={pod.name}
+                                    container={selectedContainer}
+                                />
+                            </div>
                         )}
                     </div>
                 ) : activeTab === 'terminal' ? (
-                    <div className="animate-fadeIn h-[500px] flex flex-col">
+                    <div ref={terminalContainerRef} className="animate-fadeIn flex-1 flex flex-col min-h-0">
                         {containers.length > 1 && (
-                            <div className="mb-3 flex items-center space-x-2">
+                            <div className="mb-3 flex items-center space-x-2 flex-shrink-0">
                                 <label className="text-xs text-gray-400">Container:</label>
                                 <select
                                     value={selectedContainer || ''}
@@ -947,11 +975,13 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                             </div>
                         )}
                         {selectedContainer && pod && (
-                            <TerminalViewerInline
-                                namespace={pod.namespace}
-                                pod={pod.name}
-                                container={selectedContainer}
-                            />
+                            <div className="flex-1 min-h-0">
+                                <TerminalViewerInline
+                                    namespace={pod.namespace}
+                                    pod={pod.name}
+                                    container={selectedContainer}
+                                />
+                            </div>
                         )}
                     </div>
                 ) : (
@@ -1604,7 +1634,8 @@ const WorkloadList = ({ namespace, kind }) => {
                                 <tr>
                                     <td colSpan={kind === 'Pod' ? 8 : 6} className={`px-6 pt-0 bg-gray-800 border-0 ${expandedId === res.uid ? 'border-b border-gray-700' : ''}`}>
                                         <div
-                                            className={`pl-12 overflow-y-auto transition-all duration-300 ease-in-out ${expandedId === res.uid ? 'max-h-[500px] opacity-100 pb-4' : 'max-h-0 opacity-0'}`}
+                                            className={`pl-12 transition-all duration-300 ease-in-out ${expandedId === res.uid ? 'opacity-100 pb-4' : 'max-h-0 opacity-0 overflow-hidden'}`}
+                                            style={expandedId === res.uid && res.kind === 'Pod' ? { maxHeight: 'calc(100vh - 250px)' } : {}}
                                         >
                                             {expandedId === res.uid && renderDetails(res)}
                                         </div>
