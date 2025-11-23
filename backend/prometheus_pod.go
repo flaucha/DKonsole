@@ -58,35 +58,48 @@ func (h *Handlers) GetPrometheusPodMetrics(w http.ResponseWriter, r *http.Reques
 		startTime = endTime.Add(-1 * time.Hour)
 	}
 
+	// Validate and escape parameters
+	validatedNamespace, err := validatePromQLParam(namespace, "namespace")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	validatedPodName, err := validatePromQLParam(podName, "pod")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	// Query CPU metrics for specific pod
 	cpuQuery := fmt.Sprintf(
 		`sum(rate(container_cpu_usage_seconds_total{namespace="%s",pod="%s",container!=""}[5m])) * 1000`,
-		namespace, podName,
+		validatedNamespace, validatedPodName,
 	)
 
 	// Query Memory metrics for specific pod
 	memoryQuery := fmt.Sprintf(
 		`sum(container_memory_working_set_bytes{namespace="%s",pod="%s",container!=""}) / 1024 / 1024`,
-		namespace, podName,
+		validatedNamespace, validatedPodName,
 	)
 
 	// Query Network RX (receive) metrics
 	networkRxQuery := fmt.Sprintf(
 		`sum(rate(container_network_receive_bytes_total{namespace="%s",pod="%s"}[5m])) / 1024`,
-		namespace, podName,
+		validatedNamespace, validatedPodName,
 	)
 
 	// Query Network TX (transmit) metrics
 	networkTxQuery := fmt.Sprintf(
 		`sum(rate(container_network_transmit_bytes_total{namespace="%s",pod="%s"}[5m])) / 1024`,
-		namespace, podName,
+		validatedNamespace, validatedPodName,
 	)
 
 	// Query PVC usage percentage
 	// This query calculates the percentage of used space in PVCs mounted by the pod
 	pvcUsageQuery := fmt.Sprintf(
 		`(sum(kubelet_volume_stats_used_bytes{namespace="%s",pod="%s"}) / sum(kubelet_volume_stats_capacity_bytes{namespace="%s",pod="%s"})) * 100`,
-		namespace, podName, namespace, podName,
+		validatedNamespace, validatedPodName, validatedNamespace, validatedPodName,
 	)
 
 	cpuData := h.queryPrometheusRange(cpuQuery, startTime, endTime)

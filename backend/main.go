@@ -65,12 +65,25 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/login", enableCors(h.LoginHandler))
-	mux.HandleFunc("/healthz", h.HealthHandler)
-	mux.HandleFunc("/api/namespaces", enableCors(AuthMiddleware(h.GetNamespaces)))
-	mux.HandleFunc("/api/resources", enableCors(AuthMiddleware(h.GetResources)))
-	mux.HandleFunc("/api/resources/watch", enableCors(AuthMiddleware(h.WatchResources)))
-	mux.HandleFunc("/api/resource/yaml", enableCors(AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	// Helper for authenticated routes
+	secure := func(h http.HandlerFunc) http.HandlerFunc {
+		return enableCors(RateLimitMiddleware(AuditMiddleware(AuthMiddleware(h))))
+	}
+
+	// Helper for public routes
+	public := func(h http.HandlerFunc) http.HandlerFunc {
+		return enableCors(RateLimitMiddleware(AuditMiddleware(h)))
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/login", public(h.LoginHandler))
+	mux.HandleFunc("/api/logout", public(h.LogoutHandler)) // Logout doesn't strictly need auth check if we just clear cookie, but usually it's fine.
+	mux.HandleFunc("/api/me", secure(h.MeHandler))
+	mux.HandleFunc("/healthz", h.HealthHandler) // Health check usually no auth/audit/limit or loose limit
+	mux.HandleFunc("/api/namespaces", secure(h.GetNamespaces))
+	mux.HandleFunc("/api/resources", secure(h.GetResources))
+	mux.HandleFunc("/api/resources/watch", secure(h.WatchResources))
+	mux.HandleFunc("/api/resource/yaml", secure(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			h.GetResourceYAML(w, r)
 		} else if r.Method == http.MethodPut {
@@ -78,22 +91,38 @@ func main() {
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
-	})))
-	mux.HandleFunc("/api/resource/import", enableCors(AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	}))
+	mux.HandleFunc("/api/resource/import", secure(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			h.ImportResourceYAML(w, r)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
-	})))
-	mux.HandleFunc("/api/apis", enableCors(AuthMiddleware(h.ListAPIResources)))
-	mux.HandleFunc("/api/apis/resources", enableCors(AuthMiddleware(h.ListAPIResourceObjects)))
-	mux.HandleFunc("/api/apis/yaml", enableCors(AuthMiddleware(h.GetAPIResourceYAML)))
-	mux.HandleFunc("/api/scale", enableCors(AuthMiddleware(h.ScaleResource)))
-	mux.HandleFunc("/api/overview", enableCors(AuthMiddleware(h.GetClusterStats)))
-	mux.HandleFunc("/api/pods/logs", enableCors(h.StreamPodLogs))
-	mux.HandleFunc("/api/pods/exec", h.ExecIntoPod) // WebSocket - no CORS wrapper needed; auth inside handler
-	mux.HandleFunc("/api/clusters", enableCors(AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	}))
+	mux.HandleFunc("/api/apis", secure(h.ListAPIResources))
+	mux.HandleFunc("/api/apis/resources", secure(h.ListAPIResourceObjects))
+	mux.HandleFunc("/api/apis/yaml", secure(h.GetAPIResourceYAML))
+	mux.HandleFunc("/api/scale", secure(h.ScaleResource))
+	mux.HandleFunc("/api/overview", secure(h.GetClusterStats))
+	// StreamPodLogs and ExecIntoPod handle their own auth/upgrade, but we can wrap them with Audit/RateLimit.
+	// Note: ExecIntoPod uses WebSocket, RateLimit should skip or be high. Audit is good.
+	// They use "authenticateRequest" internally? Let's check.
+	// Yes, they do. So we can use secure() but we need to make sure AuthMiddleware doesn't break WS upgrade or double-check.
+	// AuthMiddleware checks token. ExecIntoPod checks token. Double check is fine.
+	// However, ExecIntoPod might need to handle the error differently (WS close).
+	// Let's stick to the existing pattern for Pods but add Audit/RateLimit.
+	// Actually, StreamPodLogs is HTTP stream, Exec is WS.
+	// I'll wrap them with secure() for consistency, assuming AuthMiddleware handles the token check fine.
+	mux.HandleFunc("/api/pods/logs", secure(h.StreamPodLogs))
+	mux.HandleFunc("/api/pods/exec", func(w http.ResponseWriter, r *http.Request) {
+		// Custom wrap for Exec to avoid CORS/Auth middleware issues if any,
+		// but actually Exec needs to be secure.
+		// The original code didn't wrap Exec with enableCors, likely because it's WS?
+		// But WS handshake is HTTP.
+		// I'll wrap it with Audit and RateLimit. Auth is inside.
+		RateLimitMiddleware(AuditMiddleware(h.ExecIntoPod))(w, r)
+	})
+	mux.HandleFunc("/api/clusters", secure(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			h.GetClusters(w, r)
 		} else if r.Method == http.MethodPost {
@@ -101,10 +130,10 @@ func main() {
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
-	})))
-	mux.HandleFunc("/api/resource", enableCors(AuthMiddleware(h.DeleteResource)))
-	mux.HandleFunc("/api/cronjobs/trigger", enableCors(AuthMiddleware(h.TriggerCronJob)))
-	mux.HandleFunc("/api/logo", enableCors(AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	}))
+	mux.HandleFunc("/api/resource", secure(h.DeleteResource))
+	mux.HandleFunc("/api/cronjobs/trigger", secure(h.TriggerCronJob))
+	mux.HandleFunc("/api/logo", secure(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			h.GetLogo(w, r)
 		} else if r.Method == http.MethodPost {
@@ -112,11 +141,11 @@ func main() {
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
-	})))
-	mux.HandleFunc("/api/prometheus/status", enableCors(AuthMiddleware(h.GetPrometheusStatus)))
-	mux.HandleFunc("/api/prometheus/metrics", enableCors(AuthMiddleware(h.GetPrometheusMetrics)))
-	mux.HandleFunc("/api/prometheus/pod-metrics", enableCors(AuthMiddleware(h.GetPrometheusPodMetrics)))
-	mux.HandleFunc("/api/prometheus/cluster-overview", enableCors(AuthMiddleware(h.GetPrometheusClusterOverview)))
+	}))
+	mux.HandleFunc("/api/prometheus/status", secure(h.GetPrometheusStatus))
+	mux.HandleFunc("/api/prometheus/metrics", secure(h.GetPrometheusMetrics))
+	mux.HandleFunc("/api/prometheus/pod-metrics", secure(h.GetPrometheusPodMetrics))
+	mux.HandleFunc("/api/prometheus/cluster-overview", secure(h.GetPrometheusClusterOverview))
 
 	port := ":8080"
 	fmt.Printf("Server starting on port %s...\n", port)

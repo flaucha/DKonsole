@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"regexp"
+
 	"github.com/gorilla/websocket"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -948,6 +950,18 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := validateK8sName(name, "name"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if namespace != "" && namespace != "all" {
+		if err := validateK8sName(namespace, "namespace"); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
 	// Try to get metadata; use namespaced from query param if provided (for CRDs)
 	namespacedParam := r.URL.Query().Get("namespaced")
 	meta, ok := resourceMeta[kind]
@@ -1300,6 +1314,17 @@ func (h *Handlers) DeleteResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := validateK8sName(name, "name"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if namespace != "" && namespace != "all" {
+		if err := validateK8sName(namespace, "namespace"); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
 	meta, ok := resourceMeta[kind]
 	if !ok {
 		http.Error(w, "Unsupported kind", http.StatusBadRequest)
@@ -1369,6 +1394,17 @@ func (h *Handlers) ScaleResource(w http.ResponseWriter, r *http.Request) {
 	if name == "" {
 		http.Error(w, "Missing name", http.StatusBadRequest)
 		return
+	}
+
+	if err := validateK8sName(name, "name"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if namespace != "" {
+		if err := validateK8sName(namespace, "namespace"); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 	if namespace == "" {
 		namespace = "default"
@@ -1752,6 +1788,21 @@ func (h *Handlers) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := validateK8sName(ns, "namespace"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := validateK8sName(podName, "pod"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if container != "" {
+		if err := validateK8sName(container, "container"); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
 	opts := &corev1.PodLogOptions{
 		Follow: true,
 	}
@@ -1811,6 +1862,21 @@ func (h *Handlers) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 	if ns == "" || podName == "" {
 		http.Error(w, "Missing namespace or pod parameter", http.StatusBadRequest)
 		return
+	}
+
+	if err := validateK8sName(ns, "namespace"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := validateK8sName(podName, "pod"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if container != "" {
+		if err := validateK8sName(container, "container"); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
 	// Upgrade HTTP connection to WebSocket
@@ -2213,6 +2279,20 @@ func (h *Handlers) GetCRDYaml(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Add validation for name and namespace
+	if err := validateK8sName(name, "name"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Only validate namespace if it's provided and relevant
+	if namespaced && namespace != "" {
+		if err := validateK8sName(namespace, "namespace"); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
 	dynamic, err := h.getDynamicClient(r)
 	if err != nil {
 		http.Error(w, "Dynamic client not found", http.StatusInternalServerError)
@@ -2302,4 +2382,24 @@ func (h *Handlers) TriggerCronJob(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"jobName": jobName})
+}
+
+func validateK8sName(name, paramName string) error {
+	if name == "" {
+		return fmt.Errorf("%s is required", paramName)
+	}
+
+	// Validate length
+	if len(name) > 253 {
+		return fmt.Errorf("invalid %s: too long (max 253 characters)", paramName)
+	}
+
+	// Validate according to RFC 1123 (Kubernetes names) using regex
+	// Lowercase alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character.
+	var dns1123SubdomainRegexp = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
+	if !dns1123SubdomainRegexp.MatchString(name) {
+		return fmt.Errorf("invalid %s: must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character", paramName)
+	}
+
+	return nil
 }
