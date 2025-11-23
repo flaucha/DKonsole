@@ -50,15 +50,20 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
     const handleSave = () => {
         setSaving(true);
         setError('');
-        authFetch(buildUrl(), {
-            method: 'PUT',
+        
+        // Use import endpoint which uses Server-Side Apply (equivalent to kubectl apply -f)
+        const params = new URLSearchParams();
+        if (currentCluster) params.append('cluster', currentCluster);
+
+        authFetch(`/api/resource/import?${params.toString()}`, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/x-yaml' },
             body: content,
         })
             .then(async (res) => {
                 if (!res.ok) {
                     const text = await res.text();
-                    throw new Error(text || 'Failed to update resource');
+                    throw new Error(text || 'Failed to apply resource');
                 }
                 setSaving(false);
                 onSaved?.();
@@ -95,7 +100,7 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
                         <button
                             onClick={handleSave}
                             disabled={loading || saving}
-                            className="flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-md text-sm transition-colors"
+                            className="flex items-center px-3 py-1.5 bg-gray-700 hover:bg-gray-600 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-md text-sm transition-colors"
                         >
                             {saving ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
                             Apply changes

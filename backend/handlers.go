@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -1325,6 +1326,10 @@ func (h *Handlers) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 
 	// Cleanup noisy metadata fields that are not needed for updates
 	unstructured.RemoveNestedField(obj.Object, "metadata", "managedFields")
+	// For SSA, we generally want to remove resourceVersion so it doesn't conflict
+	unstructured.RemoveNestedField(obj.Object, "metadata", "resourceVersion")
+	unstructured.RemoveNestedField(obj.Object, "metadata", "uid")
+	unstructured.RemoveNestedField(obj.Object, "metadata", "creationTimestamp")
 
 	// Extract GVR from the object's apiVersion and kind (not from query param)
 	// This allows us to support CRDs and any custom resources
@@ -1361,7 +1366,23 @@ func (h *Handlers) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := createTimeoutContext()
 	defer cancel()
 
-	_, err = res.Update(ctx, &obj, metav1.UpdateOptions{})
+	// Use Server-Side Apply (SSA)
+	// This is equivalent to `kubectl apply` and handles creation/updates robustly
+	// It doesn't require resourceVersion and manages field ownership
+	force := true
+	patchOptions := metav1.PatchOptions{
+		FieldManager: "dkonsole",
+		Force:        &force,
+	}
+
+	// Marshal the object back to JSON for the patch body
+	patchData, err := json.Marshal(obj.Object)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to marshal patch: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	_, err = res.Patch(ctx, obj.GetName(), types.ApplyPatchType, patchData, patchOptions)
 	if err != nil {
 		auditLog(r, "update", objKind, obj.GetName(), namespace, false, err, nil)
 		handleError(w, err, fmt.Sprintf("Failed to update %s", objKind), http.StatusInternalServerError)
@@ -1565,20 +1586,24 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 			res = dynamicClient.Resource(gvr)
 		}
 
-		_, err = res.Create(ctx, obj, metav1.CreateOptions{})
-		if apierrors.IsAlreadyExists(err) {
-			existing, gerr := res.Get(ctx, obj.GetName(), metav1.GetOptions{})
-			if gerr != nil {
-				handleError(w, gerr, fmt.Sprintf("Failed to fetch existing %s", kind), http.StatusInternalServerError)
-				return
-			}
-			obj.SetResourceVersion(existing.GetResourceVersion())
-			if _, uerr := res.Update(ctx, obj, metav1.UpdateOptions{}); uerr != nil {
-				handleError(w, uerr, fmt.Sprintf("Failed to update %s", kind), http.StatusInternalServerError)
-				return
-			}
-		} else if err != nil {
-			handleError(w, err, fmt.Sprintf("Failed to create %s", kind), http.StatusInternalServerError)
+		// Use Server-Side Apply (SSA) for import as well
+		// This handles both creation and updates (upsert) robustly
+		force := true
+		patchOptions := metav1.PatchOptions{
+			FieldManager: "dkonsole",
+			Force:        &force,
+		}
+
+		// Marshal the object back to JSON for the patch body
+		patchData, err := json.Marshal(obj.Object)
+		if err != nil {
+			handleError(w, err, fmt.Sprintf("Failed to marshal patch for %s", kind), http.StatusInternalServerError)
+			return
+		}
+
+		_, err = res.Patch(ctx, obj.GetName(), types.ApplyPatchType, patchData, patchOptions)
+		if err != nil {
+			handleError(w, err, fmt.Sprintf("Failed to apply %s", kind), http.StatusInternalServerError)
 			return
 		}
 

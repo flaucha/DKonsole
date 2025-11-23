@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="1.1.1"
+VERSION="1.1.2"
 
 echo "=========================================="
 echo "🚀 DKonsole Release v${VERSION}"
@@ -46,20 +46,15 @@ fi
 echo "🏷️  Creating new tag v${VERSION}..."
 git tag -a "v${VERSION}" -m "Release v${VERSION}
 
-Architecture:
-- Unified container: Backend and Frontend integrated in a single image
-- Improved security: Reduced attack surface, no inter-container communication
-- Simplified deployment: Single service, single deployment
-
-Security Improvements:
-- Unified container architecture reduces attack surface
-- Eliminated inter-container network communication
-- Single process model for easier auditing
-
-Features:
-- Backend now serves frontend static files
-- Single port (8080) for all traffic
-- Simplified Helm chart deployment
+Resource Quota Manager Improvements:
+- Added namespace selector with All/Selected toggle
+- Automatic refresh after create/edit/delete operations
+- UI consistency improvements matching other pages
+- Streamlined menu (Edit YAML and Delete only)
+- YAML editor now uses kubectl apply (Server-Side Apply)
+- Create menu changed from hover to click
+- New resource templates use selected namespace
+- Consistent gray-scale color scheme
 
 Docker Image:
 - dkonsole/dkonsole:${VERSION}"

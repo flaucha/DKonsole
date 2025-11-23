@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.1.1-green.svg)
+![Version](https://img.shields.io/badge/version-1.1.2-green.svg)
 
 <img width="1916" height="928" alt="image" src="https://github.com/user-attachments/assets/ef3ae6e6-ca3f-4955-9980-3dfae895c1ad" />
 
@@ -33,7 +33,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.1.1
+git checkout v1.1.2
 
 # Install
 helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
@@ -101,18 +101,30 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.1.1"
+  tag: "1.1.2"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.1.1`
+- **Unified**: `dkonsole/dkonsole:1.1.2`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.1.2 (2025-01-23)
+**✨ Resource Quota Manager Improvements**
+
+- ✅ **Namespace Selector**: Added namespace filter with All/Selected toggle
+- ✅ **Automatic Refresh**: Resources refresh automatically after operations
+- ✅ **UI Consistency**: Reorganized layout to match other pages
+- ✅ **Menu Simplification**: Streamlined to Edit YAML and Delete only
+- ✅ **YAML Editor Fix**: Now uses kubectl apply (Server-Side Apply)
+- ✅ **Create Menu**: Changed from hover to click interaction
+- ✅ **Template Namespace**: New resources use selected namespace
+- ✅ **Color Consistency**: Removed colorful elements for gray-scale design
 
 ### v1.1.1 (2024-12-19)
 **🐛 Bug Fixes and Improvements**

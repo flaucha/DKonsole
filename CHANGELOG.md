@@ -5,6 +5,61 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2025-01-23
+
+### ✨ Resource Quota Manager Improvements
+
+This release introduces significant improvements to the Resource Quota Manager interface and functionality.
+
+### Added
+
+- **Namespace Selector**: Added namespace filter selector similar to API Explorer
+  - Toggle between "All Namespaces" and selected namespace from header
+  - Automatically syncs with namespace selected in the main header
+  - Clean, consistent UI without dropdown clutter
+- **Automatic Refresh**: Resources now automatically refresh after create, edit, or delete operations
+  - No manual refresh button needed
+  - Immediate visual feedback on all operations
+
+### Changed
+
+- **UI Consistency**: Reorganized Resource Quota Manager layout to match other pages
+  - Removed centered max-width container
+  - Standardized header with icon and title size
+  - Consistent button styles and spacing
+- **Menu Simplification**: Streamlined card menu options
+  - Removed redundant "Edit" button
+  - Only "Edit YAML" and "Delete" options remain
+  - Cleaner, more focused interface
+- **YAML Editor**: Fixed YAML editor to use `kubectl apply` (Server-Side Apply)
+  - Changed from PUT to `/api/resource/import` endpoint
+  - Properly handles both create and update operations
+  - Equivalent to `kubectl apply -f` behavior
+- **Create New Menu**: Changed from hover to click interaction
+  - More predictable user experience
+  - Menu closes on outside click
+  - Closes automatically after selection
+- **Template Namespace**: New resource templates now use the selected namespace
+  - ResourceQuota and LimitRange templates automatically use correct namespace
+  - Respects namespace filter selection
+
+### Fixed
+
+- **Color Scheme**: Removed colorful elements for consistent gray-scale design
+  - Progress bars now use neutral gray colors
+  - Removed blue/purple accent colors from cards and tabs
+  - Consistent with rest of application aesthetic
+- **Delete Refresh**: Fixed issue where deleted resources didn't refresh automatically
+  - Modal now closes properly after deletion
+  - List refreshes immediately after successful delete
+
+### Technical Improvements
+
+- Improved state management for namespace filtering
+- Better synchronization between header namespace and resource filter
+- Enhanced error handling in delete operations
+- Cleaner code organization
+
 ## [1.1.1] - 2024-12-19
 
 ### 🐛 Bug Fixes and Improvements

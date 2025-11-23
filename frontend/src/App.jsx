@@ -87,7 +87,7 @@ const Dashboard = () => {
                     </div>
                 ) : currentView === 'Resource Quotas' ? (
                     <div className="p-0">
-                        <ResourceQuotaManager />
+                        <ResourceQuotaManager namespace={selectedNamespace} />
                     </div>
                 ) : (
                     <div className="p-6">
