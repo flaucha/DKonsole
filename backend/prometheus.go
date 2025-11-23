@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -36,7 +37,11 @@ type DeploymentMetricsResponse struct {
 }
 
 func (h *Handlers) GetPrometheusMetrics(w http.ResponseWriter, r *http.Request) {
+	log.Printf("GetPrometheusMetrics: PrometheusURL=%s, deployment=%s, namespace=%s", 
+		h.PrometheusURL, r.URL.Query().Get("deployment"), r.URL.Query().Get("namespace"))
+	
 	if h.PrometheusURL == "" {
+		log.Printf("GetPrometheusMetrics: Prometheus URL not configured")
 		http.Error(w, "Prometheus URL not configured", http.StatusServiceUnavailable)
 		return
 	}
@@ -46,6 +51,7 @@ func (h *Handlers) GetPrometheusMetrics(w http.ResponseWriter, r *http.Request) 
 	rangeParam := r.URL.Query().Get("range") // e.g., "1h", "6h", "12h", "1d", "7d", "15d"
 
 	if deployment == "" || namespace == "" {
+		log.Printf("GetPrometheusMetrics: Missing deployment or namespace")
 		http.Error(w, "deployment and namespace are required", http.StatusBadRequest)
 		return
 	}
@@ -279,6 +285,7 @@ func (h *Handlers) queryPrometheusInstant(query string) []map[string]interface{}
 }
 
 func (h *Handlers) GetPrometheusStatus(w http.ResponseWriter, r *http.Request) {
+	log.Printf("GetPrometheusStatus: PrometheusURL=%s", h.PrometheusURL)
 	status := map[string]interface{}{
 		"enabled": h.PrometheusURL != "",
 		"url":     h.PrometheusURL,

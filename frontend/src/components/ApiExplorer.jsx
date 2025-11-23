@@ -3,6 +3,7 @@ import { Search, ListTree, RefreshCw, Globe, MapPin, FileText, ChevronDown } fro
 import YamlEditor from './YamlEditor';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { getStatusBadgeClass } from '../utils/statusBadge';
 
 const ApiExplorer = ({ namespace }) => {
     const { currentCluster } = useSettings();
@@ -220,7 +221,15 @@ const ApiExplorer = ({ namespace }) => {
                                             {selected.namespaced && (
                                                 <td className="px-4 py-2 text-sm text-gray-300">{obj.namespace || '-'}</td>
                                             )}
-                                            <td className="px-4 py-2 text-sm text-gray-300">{obj.status || '—'}</td>
+                                            <td className="px-4 py-2">
+                                                {obj.status ? (
+                                                    <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(obj.status)}`}>
+                                                        {obj.status}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-sm text-gray-300">—</span>
+                                                )}
+                                            </td>
                                             <td className="px-4 py-2 text-sm text-gray-400">
                                                 {obj.created ? new Date(obj.created).toLocaleDateString() : '—'}
                                             </td>

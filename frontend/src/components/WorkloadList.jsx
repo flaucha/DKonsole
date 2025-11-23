@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Box,
     FileText,
@@ -30,10 +30,253 @@ import {
     Play,   // Added
     Database, // Added
     Search, // Added
-    RefreshCw // Added
+    RefreshCw, // Added
+    Download // Added
 } from 'lucide-react';
 import LogViewer from './LogViewer';
 import TerminalViewer from './TerminalViewer';
+import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import '@xterm/xterm/css/xterm.css';
+
+// Inline version of LogViewer for tabs (no popup)
+const LogViewerInline = ({ namespace, pod, container }) => {
+    const [logs, setLogs] = useState([]);
+    const [isPaused, setIsPaused] = useState(false);
+    const bottomRef = useRef(null);
+    const streamRef = useRef(null);
+    const { authFetch } = useAuth();
+
+    useEffect(() => {
+        setLogs([]); // Clear logs when container changes
+        const fetchLogs = async () => {
+            try {
+                const response = await authFetch(`/api/pods/logs?namespace=${namespace}&pod=${pod}&container=${container || ''}`);
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                streamRef.current = reader;
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    const text = decoder.decode(value, { stream: true });
+                    setLogs(prev => [...prev, ...text.split('\n').filter(Boolean)]);
+                }
+            } catch (error) {
+                console.error('Error streaming logs:', error);
+                setLogs(prev => [...prev, `Error: ${error.message}`]);
+            }
+        };
+
+        fetchLogs();
+
+        return () => {
+            if (streamRef.current) {
+                streamRef.current.cancel();
+            }
+        };
+    }, [namespace, pod, container, authFetch]);
+
+    useEffect(() => {
+        if (!isPaused && bottomRef.current) {
+            bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [logs, isPaused]);
+
+    const handleDownload = () => {
+        const blob = new Blob([logs.join('\n')], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${pod}-${container || 'default'}-logs.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleClear = () => {
+        setLogs([]);
+    };
+
+    return (
+        <div className="bg-gray-900 border border-gray-700 rounded-lg flex flex-col h-full overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 bg-gray-800">
+                <div className="flex items-center space-x-2">
+                    <Terminal size={16} className="text-gray-400" />
+                    <span className="font-mono text-xs text-gray-200">{pod}</span>
+                    {container && <span className="text-xs text-gray-500">({container})</span>}
+                </div>
+                <div className="flex items-center space-x-2">
+                    <button
+                        onClick={() => setIsPaused(!isPaused)}
+                        className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
+                        title={isPaused ? "Resume auto-scroll" : "Pause auto-scroll"}
+                    >
+                        {isPaused ? <Play size={14} /> : <Pause size={14} />}
+                    </button>
+                    <button
+                        onClick={handleClear}
+                        className="px-2 py-1 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-700 transition-colors"
+                        title="Clear logs"
+                    >
+                        Clear
+                    </button>
+                    <button
+                        onClick={handleDownload}
+                        className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
+                        title="Download logs"
+                    >
+                        <Download size={14} />
+                    </button>
+                </div>
+            </div>
+
+            {/* Logs Content */}
+            <div className="flex-1 overflow-auto p-4 font-mono text-xs bg-black text-green-400">
+                {logs.length === 0 ? (
+                    <div className="text-gray-500 italic">Loading logs...</div>
+                ) : (
+                    <>
+                        {logs.map((line, i) => (
+                            <div key={i} className="whitespace-pre-wrap break-all hover:bg-gray-900/30 py-0.5">
+                                {line}
+                            </div>
+                        ))}
+                        <div ref={bottomRef} />
+                    </>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Inline version of TerminalViewer for tabs (no popup)
+const TerminalViewerInline = ({ namespace, pod, container }) => {
+    const termContainerRef = useRef(null);
+    const termRef = useRef(null);
+    const fitAddonRef = useRef(null);
+    const wsRef = useRef(null);
+
+    // Initialize terminal once
+    useEffect(() => {
+        const term = new Terminal({
+            convertEol: true,
+            cursorBlink: true,
+            fontSize: 13,
+            fontFamily: 'Menlo, Monaco, "Cascadia Mono", "Fira Code", monospace',
+            theme: {
+                background: '#000000',
+                foreground: '#e5e7eb',
+            },
+        });
+
+        const fitAddon = new FitAddon();
+        term.loadAddon(fitAddon);
+
+        term.open(termContainerRef.current);
+        requestAnimationFrame(() => fitAddon.fit());
+        term.focus();
+
+        termRef.current = term;
+        fitAddonRef.current = fitAddon;
+
+        const handleResize = () => {
+            if (fitAddonRef.current) {
+                fitAddonRef.current.fit();
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            term.dispose();
+        };
+    }, []);
+
+    // Connect WebSocket for the active pod/container
+    useEffect(() => {
+        const term = termRef.current;
+        if (!term) return;
+
+        // Close existing connection
+        if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+            wsRef.current.close();
+        }
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/api/pods/exec?namespace=${namespace}&pod=${pod}&container=${container || ''}`;
+
+        const ws = new WebSocket(wsUrl);
+        ws.binaryType = 'arraybuffer';
+        wsRef.current = ws;
+
+        const decoder = new TextDecoder();
+        const dataListener = term.onData((data) => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(data);
+            }
+        });
+
+        ws.onopen = () => {
+            term.clear();
+            term.writeln(`\x1b[33mConnected to ${pod}${container ? ` (${container})` : ''}\x1b[0m`);
+            fitAddonRef.current?.fit();
+            term.focus();
+        };
+
+        ws.onmessage = (event) => {
+            if (typeof event.data === 'string') {
+                term.write(event.data);
+            } else if (event.data instanceof ArrayBuffer) {
+                term.write(decoder.decode(event.data));
+            } else if (event.data instanceof Blob) {
+                event.data.arrayBuffer().then((buf) => term.write(decoder.decode(buf)));
+            }
+        };
+
+        ws.onerror = () => {
+            term.writeln('\r\n\x1b[31mWebSocket error. Check connection.\x1b[0m');
+        };
+
+        ws.onclose = () => {
+            term.writeln('\r\n\x1b[31mConnection closed.\x1b[0m');
+        };
+
+        return () => {
+            dataListener.dispose();
+            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+                ws.close();
+            }
+        };
+    }, [namespace, pod, container]);
+
+    // Refit when content changes
+    useEffect(() => {
+        fitAddonRef.current?.fit();
+    }, [namespace, pod, container]);
+
+    return (
+        <div className="bg-gray-900 border border-gray-700 rounded-lg flex flex-col h-full overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 bg-gray-800">
+                <div className="flex items-center space-x-2">
+                    <Terminal size={16} className="text-gray-400" />
+                    <span className="font-mono text-xs text-gray-200">{pod}</span>
+                    {container && <span className="text-xs text-gray-500">({container})</span>}
+                    <span className="text-xs text-gray-600">• Terminal</span>
+                </div>
+            </div>
+
+            {/* Terminal Surface */}
+            <div className="flex-1 bg-black overflow-hidden">
+                <div ref={termContainerRef} className="w-full h-full" />
+            </div>
+        </div>
+    );
+};
 import YamlEditor from './YamlEditor';
 import DeploymentMetrics from './DeploymentMetrics';
 import PodMetrics from './PodMetrics';
@@ -84,6 +327,8 @@ const getIcon = (kind) => {
             return Box;
     }
 };
+
+import { getStatusBadgeClass } from '../utils/statusBadge';
 
 const DetailRow = ({ label, value, icon: Icon, children }) => (
     <div className="flex items-center justify-between bg-gray-800 px-3 py-2 rounded border border-gray-700 mb-2">
@@ -598,11 +843,18 @@ const IngressDetails = ({ details, onEditYAML }) => {
     );
 };
 
-const PodDetails = ({ details, onStreamLogs, onOpenTerminal, onEditYAML, pod }) => {
-    const [showMenu, setShowMenu] = useState(false);
+const PodDetails = ({ details, onEditYAML, pod }) => {
     const [activeTab, setActiveTab] = useState('details');
+    const [selectedContainer, setSelectedContainer] = useState(null);
     const containers = details.containers || [];
     const metrics = details.metrics || {};
+
+    // Set default container when component mounts or containers change
+    useEffect(() => {
+        if (containers.length > 0 && !selectedContainer) {
+            setSelectedContainer(containers[0]);
+        }
+    }, [containers, selectedContainer]);
 
     return (
         <div className="mt-2">
@@ -612,6 +864,18 @@ const PodDetails = ({ details, onStreamLogs, onOpenTerminal, onEditYAML, pod }) 
                     onClick={() => setActiveTab('details')}
                 >
                     Details
+                </button>
+                <button
+                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'logs' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                    onClick={() => setActiveTab('logs')}
+                >
+                    Logs
+                </button>
+                <button
+                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'terminal' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                    onClick={() => setActiveTab('terminal')}
+                >
+                    Terminal
                 </button>
                 <button
                     className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'metrics' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
@@ -639,53 +903,56 @@ const PodDetails = ({ details, onStreamLogs, onOpenTerminal, onEditYAML, pod }) 
                             </div>
                         </div>
                         <div className="flex justify-end space-x-2">
-                            {/* Stream Logs */}
-                            {containers.length > 1 ? (
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setShowMenu(!showMenu)}
-                                        className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-600 text-xs transition-colors"
-                                    >
-                                        <Terminal size={12} className="mr-1.5" />
-                                        Stream Logs
-                                        <ChevronDown size={12} className="ml-1.5" />
-                                    </button>
-                                    {showMenu && (
-                                        <div className="absolute right-0 bottom-full mb-1 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10">
-                                            {containers.map(c => (
-                                                <button
-                                                    key={c}
-                                                    onClick={() => {
-                                                        onStreamLogs(c);
-                                                        setShowMenu(false);
-                                                    }}
-                                                    className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-700 first:rounded-t-md last:rounded-b-md"
-                                                >
-                                                    {c}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={() => onStreamLogs(containers[0])}
-                                    className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-600 text-xs transition-colors"
-                                >
-                                    <Terminal size={12} className="mr-1.5" />
-                                    Stream Logs
-                                </button>
-                            )}
-                            {/* Open Terminal */}
-                            <button
-                                onClick={() => onOpenTerminal(containers[0])}
-                                className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-600 text-xs transition-colors"
-                            >
-                                <Terminal size={12} className="mr-1.5" />
-                                Open Terminal
-                            </button>
                             <EditYamlButton onClick={onEditYAML} />
                         </div>
+                    </div>
+                ) : activeTab === 'logs' ? (
+                    <div className="animate-fadeIn h-[500px] flex flex-col">
+                        {containers.length > 1 && (
+                            <div className="mb-3 flex items-center space-x-2">
+                                <label className="text-xs text-gray-400">Container:</label>
+                                <select
+                                    value={selectedContainer || ''}
+                                    onChange={(e) => setSelectedContainer(e.target.value)}
+                                    className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none focus:border-blue-500"
+                                >
+                                    {containers.map(c => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        {selectedContainer && pod && (
+                            <LogViewerInline
+                                namespace={pod.namespace}
+                                pod={pod.name}
+                                container={selectedContainer}
+                            />
+                        )}
+                    </div>
+                ) : activeTab === 'terminal' ? (
+                    <div className="animate-fadeIn h-[500px] flex flex-col">
+                        {containers.length > 1 && (
+                            <div className="mb-3 flex items-center space-x-2">
+                                <label className="text-xs text-gray-400">Container:</label>
+                                <select
+                                    value={selectedContainer || ''}
+                                    onChange={(e) => setSelectedContainer(e.target.value)}
+                                    className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none focus:border-blue-500"
+                                >
+                                    {containers.map(c => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        {selectedContainer && pod && (
+                            <TerminalViewerInline
+                                namespace={pod.namespace}
+                                pod={pod.name}
+                                container={selectedContainer}
+                            />
+                        )}
                     </div>
                 ) : (
                     <div className="animate-fadeIn">
@@ -947,8 +1214,6 @@ const WorkloadList = ({ namespace, kind }) => {
                 return (
                     <PodDetails
                         details={res.details}
-                        onStreamLogs={(container) => setLoggingPod({ ...res, container })}
-                        onOpenTerminal={(container) => setTerminalPod({ ...res, container })}
                         onEditYAML={onEditYAML}
                         pod={res}
                     />
@@ -1274,7 +1539,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                         <div className="text-sm text-gray-300">{res.kind}</div>
                                     </td>
                                     <td className="px-6 py-3 whitespace-nowrap">
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-700 text-gray-200">
+                                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(res.status)}`}>
                                             {res.status}
                                         </span>
                                     </td>

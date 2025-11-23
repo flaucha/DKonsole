@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 )
@@ -17,6 +18,8 @@ type PodMetricsResponse struct {
 }
 
 func (h *Handlers) GetPrometheusPodMetrics(w http.ResponseWriter, r *http.Request) {
+	log.Printf("GetPrometheusPodMetrics: PrometheusURL=%s, pod=%s, namespace=%s", 
+		h.PrometheusURL, r.URL.Query().Get("pod"), r.URL.Query().Get("namespace"))
 	if h.PrometheusURL == "" {
 		http.Error(w, "Prometheus URL not configured", http.StatusServiceUnavailable)
 		return

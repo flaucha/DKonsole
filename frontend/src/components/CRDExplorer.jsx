@@ -3,6 +3,7 @@ import { Search, Package, RefreshCw, Globe, MapPin, FileText } from 'lucide-reac
 import Editor from '@monaco-editor/react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { getStatusBadgeClass } from '../utils/statusBadge';
 
 const CRDExplorer = ({ namespace }) => {
     const { currentCluster } = useSettings();
@@ -177,7 +178,15 @@ const CRDExplorer = ({ namespace }) => {
                                             {selected.scope === 'Namespaced' && (
                                                 <td className="px-4 py-2 text-sm text-gray-300">{resource.namespace || '-'}</td>
                                             )}
-                                            <td className="px-4 py-2 text-sm text-gray-300">{resource.status || '—'}</td>
+                                            <td className="px-4 py-2">
+                                                {resource.status ? (
+                                                    <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(resource.status)}`}>
+                                                        {resource.status}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-sm text-gray-300">—</span>
+                                                )}
+                                            </td>
                                             <td className="px-4 py-2 text-sm text-gray-400">
                                                 {resource.created ? new Date(resource.created).toLocaleDateString() : '—'}
                                             </td>
