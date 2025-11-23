@@ -199,9 +199,8 @@ This release focuses on addressing critical security vulnerabilities and impleme
 
 ### Added
 
-- Added `build.sh` for simple Docker builds
-- Added `release.sh` for automated releases with git tagging
-- Added `SCRIPTS.md` documentation
+- Added build and release scripts in `scripts/` directory
+- Scripts documentation available in `scripts/SCRIPTS.md`
 
 ### Changed
 

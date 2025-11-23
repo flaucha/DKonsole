@@ -1,6 +1,6 @@
 # Build & Release Scripts
 
-This directory contains scripts for building and releasing DKonsole.
+This directory (`scripts/`) contains scripts for building and releasing DKonsole.
 
 ## Scripts Overview
 
@@ -14,6 +14,7 @@ Builds and pushes Docker images to Docker Hub **without** creating git tags.
 
 **Usage:**
 ```bash
+cd scripts
 chmod +x build.sh
 ./build.sh
 ```
@@ -35,6 +36,7 @@ Builds, pushes Docker images, **and** creates/pushes git tags.
 
 **Usage:**
 ```bash
+cd scripts
 chmod +x release.sh
 ./release.sh
 ```
@@ -70,10 +72,9 @@ VERSION="1.0.4"
 
 **To release a new version:**
 
-1. Update the version in all three scripts:
-   - `build.sh`
-   - `release.sh`
-   - `deploy.sh` (for compatibility)
+1. Update the version in scripts:
+   - `scripts/build.sh`
+   - `scripts/release.sh`
 
 2. Update version in:
    - `helm/dkonsole/Chart.yaml` (version and appVersion)
@@ -98,6 +99,7 @@ VERSION="1.0.4"
 
 ### Rebuild current version images
 ```bash
+cd scripts
 ./build.sh
 ```
 
@@ -109,6 +111,7 @@ git add .
 git commit -m "chore: bump version to 1.0.5"
 
 # 3. Run release
+cd scripts
 ./release.sh
 ```
 
@@ -132,6 +135,7 @@ git push origin v1.0.4
 
 **"Permission denied" error:**
 ```bash
+cd scripts
 chmod +x build.sh release.sh
 ```
 
