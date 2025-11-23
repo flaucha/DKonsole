@@ -44,3 +44,5 @@ secrets.yaml
 
 #SEG_FILE
 ANALISIS_SEGURIDAD.md
+ANALISIS_SEGURIDAD.local.md
+*_SEGURIDAD.local.*
