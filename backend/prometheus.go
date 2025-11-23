@@ -145,9 +145,7 @@ func (h *Handlers) queryPrometheusRange(query string, start, end time.Time) []Me
 
 	fullURL := fmt.Sprintf("%s?%s", promURL, params.Encode())
 
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-	}
+	client := createSecureHTTPClient()
 
 	resp, err := client.Get(fullURL)
 	if err != nil {
