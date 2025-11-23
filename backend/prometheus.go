@@ -147,6 +147,62 @@ func (h *Handlers) queryPrometheusRange(query string, start, end time.Time) []Me
 	return dataPoints
 }
 
+func (h *Handlers) queryPrometheusInstant(query string) []map[string]interface{} {
+	// Build Prometheus query URL for instant query
+	promURL := fmt.Sprintf("%s/api/v1/query", h.PrometheusURL)
+
+	params := url.Values{}
+	params.Add("query", query)
+
+	fullURL := fmt.Sprintf("%s?%s", promURL, params.Encode())
+
+	resp, err := http.Get(fullURL)
+	if err != nil {
+		return []map[string]interface{}{}
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return []map[string]interface{}{}
+	}
+
+	var result struct {
+		Status string `json:"status"`
+		Data   struct {
+			ResultType string `json:"resultType"`
+			Result     []struct {
+				Metric map[string]string `json:"metric"`
+				Value  []interface{}      `json:"value"`
+			} `json:"result"`
+		} `json:"data"`
+	}
+
+	if err := json.Unmarshal(body, &result); err != nil {
+		return []map[string]interface{}{}
+	}
+
+	var results []map[string]interface{}
+	for _, r := range result.Data.Result {
+		resultMap := make(map[string]interface{})
+		// Copy metric labels
+		for k, v := range r.Metric {
+			resultMap[k] = v
+		}
+		// Add value if present
+		if len(r.Value) >= 2 {
+			if valueStr, ok := r.Value[1].(string); ok {
+				var floatValue float64
+				fmt.Sscanf(valueStr, "%f", &floatValue)
+				resultMap["value"] = floatValue
+			}
+		}
+		results = append(results, resultMap)
+	}
+
+	return results
+}
+
 func (h *Handlers) GetPrometheusStatus(w http.ResponseWriter, r *http.Request) {
 	status := map[string]interface{}{
 		"enabled": h.PrometheusURL != "",

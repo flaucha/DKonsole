@@ -9,8 +9,8 @@ import (
 
 // ClusterOverviewResponse includes cluster-wide metrics
 type ClusterOverviewResponse struct {
-	NodeMetrics  []NodeMetric  `json:"nodeMetrics"`
-	ClusterStats *ClusterStats `json:"clusterStats"`
+	NodeMetrics  []NodeMetric            `json:"nodeMetrics"`
+	ClusterStats *PrometheusClusterStats `json:"clusterStats"`
 }
 
 // NodeMetric represents metrics for a single node
@@ -24,7 +24,7 @@ type NodeMetric struct {
 	Status    string  `json:"status"`
 }
 
-// ClusterStats represents aggregated cluster statistics
+// PrometheusClusterStats represents aggregated cluster statistics from Prometheus
 type PrometheusClusterStats struct {
 	TotalNodes     int     `json:"totalNodes"`
 	AvgCPUUsage    float64 `json:"avgCpuUsage"`
@@ -180,10 +180,15 @@ func (h *Handlers) getNodeMetrics(startTime, endTime time.Time) []NodeMetric {
 	return nodes
 }
 
-func (h *Handlers) calculateClusterStats(nodes []NodeMetric, startTime, endTime time.Time) *ClusterStats {
+func (h *Handlers) calculateClusterStats(nodes []NodeMetric, startTime, endTime time.Time) *PrometheusClusterStats {
 	if len(nodes) == 0 {
-		return &ClusterStats{
-			TotalNodes: 0,
+		return &PrometheusClusterStats{
+			TotalNodes:     0,
+			AvgCPUUsage:    0.0,
+			AvgMemoryUsage: 0.0,
+			NetworkTraffic: 0.0,
+			CPUTrend:       0.0,
+			MemoryTrend:    0.0,
 		}
 	}
 
@@ -204,6 +209,17 @@ func (h *Handlers) calculateClusterStats(nodes []NodeMetric, startTime, endTime 
 	networkTraffic := (totalNetworkRx + totalNetworkTx) / 1024 // Convert to MB/s
 
 	// Calculate trends (simplified - compare current vs 1 hour ago)
+	// For now, we'll set trends to 0.0 as calculating actual trends would require
+	// querying historical data which is more complex
 	cpuTrend := 0.0
-	return []map[string]interface{}{}
+	memoryTrend := 0.0
+
+	return &PrometheusClusterStats{
+		TotalNodes:     len(nodes),
+		AvgCPUUsage:    avgCPU,
+		AvgMemoryUsage: avgMem,
+		NetworkTraffic: networkTraffic,
+		CPUTrend:       cpuTrend,
+		MemoryTrend:    memoryTrend,
+	}
 }
