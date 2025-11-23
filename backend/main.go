@@ -144,6 +144,45 @@ func main() {
 	mux.HandleFunc("/api/prometheus/pod-metrics", secure(h.GetPrometheusPodMetrics))
 	mux.HandleFunc("/api/prometheus/cluster-overview", secure(h.GetPrometheusClusterOverview))
 
+	// Serve static files from frontend build
+	staticDir := "./static"
+	if _, err := os.Stat(staticDir); os.IsNotExist(err) {
+		log.Printf("Warning: static directory '%s' not found, frontend will not be served", staticDir)
+	} else {
+		// Serve static assets (JS, CSS, images, etc.) - Vite puts them in /assets/
+		fileServer := http.FileServer(http.Dir(staticDir))
+		mux.Handle("/assets/", http.StripPrefix("/assets/", fileServer))
+		
+		// Serve other static files directly from root (favicon, robots.txt, etc.)
+		mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, filepath.Join(staticDir, "favicon.ico"))
+		})
+		mux.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, filepath.Join(staticDir, "robots.txt"))
+		})
+		
+		// SPA fallback: serve index.html for all non-API routes
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			// Don't serve index.html for API routes
+			if strings.HasPrefix(r.URL.Path, "/api") {
+				http.NotFound(w, r)
+				return
+			}
+			// Don't serve index.html for asset requests
+			if strings.HasPrefix(r.URL.Path, "/assets/") {
+				http.NotFound(w, r)
+				return
+			}
+			// Serve index.html for all other routes (SPA routing)
+			indexPath := filepath.Join(staticDir, "index.html")
+			if _, err := os.Stat(indexPath); err == nil {
+				http.ServeFile(w, r, indexPath)
+			} else {
+				http.NotFound(w, r)
+			}
+		})
+	}
+
 	port := ":8080"
 	fmt.Printf("Server starting on port %s...\n", port)
 	if err := http.ListenAndServe(port, mux); err != nil {

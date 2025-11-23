@@ -1,35 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "dkonsole.fullname" . }}-backend
+  name: {{ include "dkonsole.fullname" . }}
   labels:
     {{- include "dkonsole.labels" . | nindent 4 }}
-    app.kubernetes.io/component: backend
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.service.backend.port }}
+    - port: {{ .Values.service.port }}
       targetPort: http
       protocol: TCP
       name: http
   selector:
     {{- include "dkonsole.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: backend
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "dkonsole.fullname" . }}-frontend
-  labels:
-    {{- include "dkonsole.labels" . | nindent 4 }}
-    app.kubernetes.io/component: frontend
-spec:
-  type: {{ .Values.service.type }}
-  ports:
-    - port: {{ .Values.service.frontend.port }}
-      targetPort: http
-      protocol: TCP
-      name: http
-  selector:
-    {{- include "dkonsole.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: frontend

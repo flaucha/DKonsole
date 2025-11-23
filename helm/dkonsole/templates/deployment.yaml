@@ -1,10 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "dkonsole.fullname" . }}-backend
+  name: {{ include "dkonsole.fullname" . }}
   labels:
     {{- include "dkonsole.labels" . | nindent 4 }}
-    app.kubernetes.io/component: backend
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -12,7 +11,6 @@ spec:
   selector:
     matchLabels:
       {{- include "dkonsole.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: backend
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -21,7 +19,6 @@ spec:
       {{- end }}
       labels:
         {{- include "dkonsole.selectorLabels" . | nindent 8 }}
-        app.kubernetes.io/component: backend
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -31,11 +28,11 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-      - name: backend
+      - name: dkonsole
         securityContext:
           {{- toYaml .Values.securityContext | nindent 12 }}
-        image: "{{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag | default .Chart.AppVersion }}"
-        imagePullPolicy: {{ .Values.image.backend.pullPolicy }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
         - name: http
           containerPort: 8080
@@ -76,7 +73,7 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 5
         resources:
-          {{- toYaml .Values.resources.backend | nindent 12 }}
+          {{- toYaml .Values.resources | nindent 12 }}
         volumeMounts:
         {{- if .Values.persistence.enabled }}
         - name: data
@@ -100,3 +97,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+
