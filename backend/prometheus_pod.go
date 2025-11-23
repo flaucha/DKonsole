@@ -7,6 +7,15 @@ import (
 	"time"
 )
 
+// PodMetricsResponse includes all pod metrics
+type PodMetricsResponse struct {
+	CPU       []MetricDataPoint `json:"cpu"`
+	Memory    []MetricDataPoint `json:"memory"`
+	NetworkRx []MetricDataPoint `json:"networkRx"`
+	NetworkTx []MetricDataPoint `json:"networkTx"`
+	PVCUsage  []MetricDataPoint `json:"pvcUsage"`
+}
+
 func (h *Handlers) GetPrometheusPodMetrics(w http.ResponseWriter, r *http.Request) {
 	if h.PrometheusURL == "" {
 		http.Error(w, "Prometheus URL not configured", http.StatusServiceUnavailable)
@@ -61,12 +70,37 @@ func (h *Handlers) GetPrometheusPodMetrics(w http.ResponseWriter, r *http.Reques
 		namespace, podName,
 	)
 
+	// Query Network RX (receive) metrics
+	networkRxQuery := fmt.Sprintf(
+		`sum(rate(container_network_receive_bytes_total{namespace="%s",pod="%s"}[5m])) / 1024`,
+		namespace, podName,
+	)
+
+	// Query Network TX (transmit) metrics
+	networkTxQuery := fmt.Sprintf(
+		`sum(rate(container_network_transmit_bytes_total{namespace="%s",pod="%s"}[5m])) / 1024`,
+		namespace, podName,
+	)
+
+	// Query PVC usage percentage
+	// This query calculates the percentage of used space in PVCs mounted by the pod
+	pvcUsageQuery := fmt.Sprintf(
+		`(sum(kubelet_volume_stats_used_bytes{namespace="%s",pod="%s"}) / sum(kubelet_volume_stats_capacity_bytes{namespace="%s",pod="%s"})) * 100`,
+		namespace, podName, namespace, podName,
+	)
+
 	cpuData := h.queryPrometheusRange(cpuQuery, startTime, endTime)
 	memoryData := h.queryPrometheusRange(memoryQuery, startTime, endTime)
+	networkRxData := h.queryPrometheusRange(networkRxQuery, startTime, endTime)
+	networkTxData := h.queryPrometheusRange(networkTxQuery, startTime, endTime)
+	pvcUsageData := h.queryPrometheusRange(pvcUsageQuery, startTime, endTime)
 
-	response := DeploymentMetricsResponse{
-		CPU:    cpuData,
-		Memory: memoryData,
+	response := PodMetricsResponse{
+		CPU:       cpuData,
+		Memory:    memoryData,
+		NetworkRx: networkRxData,
+		NetworkTx: networkTxData,
+		PVCUsage:  pvcUsageData,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

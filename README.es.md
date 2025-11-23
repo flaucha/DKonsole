@@ -75,6 +75,9 @@ Si encuentras útil este proyecto, considera hacer una donación para apoyar el 
 **Billetera BSC (Binance Smart Chain):**
 `0x9baf648fa316030e12b15cbc85278fdbd82a7d20`
 
+**Buy me a coffee:**
+https://buymeacoffee.com/flaucha
+
 ## 📧 Contacto
 
 Para preguntas o comentarios, por favor contacta a: **flaucha@gmail.com**
