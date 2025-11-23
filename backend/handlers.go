@@ -1014,8 +1014,12 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
+	log.Printf("GetResourceYAML called: kind=%s, name=%s, namespace=%s", 
+		r.URL.Query().Get("kind"), r.URL.Query().Get("name"), r.URL.Query().Get("namespace"))
+	
 	dynamicClient, err := h.getDynamicClient(r)
 	if err != nil {
+		log.Printf("GetResourceYAML: Error getting dynamic client: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -1026,6 +1030,7 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 	allNamespaces := namespace == "all"
 
 	if kind == "" || name == "" {
+		log.Printf("GetResourceYAML: Missing parameters - kind=%s, name=%s", kind, name)
 		http.Error(w, "Missing kind or name parameter", http.StatusBadRequest)
 		return
 	}
@@ -1078,12 +1083,20 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 		// Fall back to static resolution for known types (with alias normalization)
 		var ok bool
 		gvr, ok = resolveGVR(normalizedKind)
+		log.Printf("GetResourceYAML: resolveGVR result - ok=%v, gvr=%+v for normalizedKind=%s", ok, gvr, normalizedKind)
+		
 		if !ok {
 			// Try to find GVR using discovery API
+			log.Printf("GetResourceYAML: Resource not in static map, trying discovery API for kind=%s", normalizedKind)
 			client, err := h.getClient(r)
-			if err == nil {
+			if err != nil {
+				log.Printf("GetResourceYAML: Error getting client for discovery: %v", err)
+			} else {
 				lists, err := client.Discovery().ServerPreferredResources()
-				if err == nil || discovery.IsGroupDiscoveryFailedError(err) {
+				if err != nil && !discovery.IsGroupDiscoveryFailedError(err) {
+					log.Printf("GetResourceYAML: Discovery error: %v", err)
+				} else {
+					log.Printf("GetResourceYAML: Discovery returned %d API groups", len(lists))
 					// Search for the resource kind in discovered resources
 					for _, list := range lists {
 						gv, _ := schema.ParseGroupVersion(list.GroupVersion)
@@ -1095,13 +1108,20 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 									Resource: ar.Name,
 								}
 								ok = true
-								log.Printf("GetResourceYAML: Found GVR via discovery: %+v for kind=%s", gvr, normalizedKind)
+								log.Printf("GetResourceYAML: Found GVR via discovery: %+v for kind=%s (namespaced=%v)", gvr, normalizedKind, ar.Namespaced)
+								// Update meta if we found it via discovery
+								if !meta.Namespaced && ar.Namespaced {
+									meta.Namespaced = ar.Namespaced
+								}
 								break
 							}
 						}
 						if ok {
 							break
 						}
+					}
+					if !ok {
+						log.Printf("GetResourceYAML: Resource kind=%s not found in discovery API", normalizedKind)
 					}
 				}
 			}
