@@ -158,12 +158,20 @@ func (h *Handlers) queryPrometheusInstant(query string) []map[string]interface{}
 
 	resp, err := http.Get(fullURL)
 	if err != nil {
+		fmt.Printf("Error querying Prometheus: %v\n", err)
 		return []map[string]interface{}{}
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		fmt.Printf("Prometheus query failed with status %d: %s\n", resp.StatusCode, string(body))
+		return []map[string]interface{}{}
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		fmt.Printf("Error reading Prometheus response: %v\n", err)
 		return []map[string]interface{}{}
 	}
 
@@ -176,9 +184,17 @@ func (h *Handlers) queryPrometheusInstant(query string) []map[string]interface{}
 				Value  []interface{}      `json:"value"`
 			} `json:"result"`
 		} `json:"data"`
+		Error     string `json:"error"`
+		ErrorType string `json:"errorType"`
 	}
 
 	if err := json.Unmarshal(body, &result); err != nil {
+		fmt.Printf("Error parsing Prometheus response: %v\n", err)
+		return []map[string]interface{}{}
+	}
+
+	if result.Status != "success" {
+		fmt.Printf("Prometheus query error: %s (type: %s)\n", result.Error, result.ErrorType)
 		return []map[string]interface{}{}
 	}
 

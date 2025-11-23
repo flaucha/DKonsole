@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Server, Layers, Box, Network, Globe, HardDrive, Activity, Database, Cpu, TrendingUp, Clock, AlertTriangle } from 'lucide-react';
+import { Server, Layers, Box, Network, Globe, HardDrive, Activity, Database, Cpu, TrendingUp, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 
@@ -50,16 +50,8 @@ const ClusterOverview = () => {
     const [prometheusEnabled, setPrometheusEnabled] = useState(false);
     const [nodeMetrics, setNodeMetrics] = useState([]);
     const [clusterStats, setClusterStats] = useState(null);
-    const [timeRange, setTimeRange] = useState('1h');
     const { authFetch } = useAuth();
     const { currentCluster } = useSettings();
-
-    const timeRanges = [
-        { value: '1h', label: '1 Hour' },
-        { value: '6h', label: '6 Hours' },
-        { value: '12h', label: '12 Hours' },
-        { value: '1d', label: '1 Day' },
-    ];
 
     // Check Prometheus status
     useEffect(() => {
@@ -100,21 +92,33 @@ const ClusterOverview = () => {
 
         const fetchClusterMetrics = async () => {
             try {
-                const params = new URLSearchParams({ range: timeRange });
+                const params = new URLSearchParams();
                 if (currentCluster) params.append('cluster', currentCluster);
 
                 const response = await authFetch(`/api/prometheus/cluster-overview?${params.toString()}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Error fetching cluster metrics:', response.status, errorText);
+                    setNodeMetrics([]);
+                    setClusterStats(null);
+                    return;
+                }
+
                 const data = await response.json();
+                console.log('Cluster metrics data:', data);
 
                 setNodeMetrics(data.nodeMetrics || []);
                 setClusterStats(data.clusterStats || null);
             } catch (error) {
                 console.error('Error fetching cluster metrics:', error);
+                setNodeMetrics([]);
+                setClusterStats(null);
             }
         };
 
         fetchClusterMetrics();
-    }, [prometheusEnabled, timeRange, currentCluster, authFetch]);
+    }, [prometheusEnabled, currentCluster, authFetch]);
 
     if (loading) {
         return <div className="text-gray-400 animate-pulse p-6">Loading cluster overview...</div>;
@@ -137,26 +141,6 @@ const ClusterOverview = () => {
                         {prometheusEnabled ? 'Real-time cluster metrics and node statistics' : 'High-level cluster resource summary'}
                     </p>
                 </div>
-
-                {/* Time Range Selector - Only show if Prometheus is enabled */}
-                {prometheusEnabled && (
-                    <div className="flex items-center gap-2">
-                        <Clock size={14} className="text-gray-400" />
-                        <span className="text-xs text-gray-400">Time Range:</span>
-                        {timeRanges.map(range => (
-                            <button
-                                key={range.value}
-                                onClick={() => setTimeRange(range.value)}
-                                className={`px-3 py-1.5 text-xs rounded-md transition-all duration-200 ${timeRange === range.value
-                                    ? 'bg-blue-600 text-white shadow-md'
-                                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
-                                    }`}
-                            >
-                                {range.label}
-                            </button>
-                        ))}
-                    </div>
-                )}
             </div>
 
             {/* Prometheus Metrics Stats - Only if enabled */}
