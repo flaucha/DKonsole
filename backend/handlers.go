@@ -117,8 +117,28 @@ var resourceMeta = map[string]ResourceMeta{
 	"LimitRange":              {Group: "", Version: "v1", Resource: "limitranges", Namespaced: true},
 }
 
+// Map common aliases to full resource names
+var kindAliases = map[string]string{
+	"HPA": "HorizontalPodAutoscaler",
+	"PVC": "PersistentVolumeClaim",
+	"PV":  "PersistentVolume",
+	"SC":  "StorageClass",
+	"SA":  "ServiceAccount",
+	"CR":  "ClusterRole",
+	"CRB": "ClusterRoleBinding",
+	"RB":  "RoleBinding",
+}
+
+func normalizeKind(kind string) string {
+	if alias, ok := kindAliases[kind]; ok {
+		return alias
+	}
+	return kind
+}
+
 func resolveGVR(kind string) (schema.GroupVersionResource, bool) {
-	meta, ok := resourceMeta[kind]
+	normalizedKind := normalizeKind(kind)
+	meta, ok := resourceMeta[normalizedKind]
 	if !ok {
 		return schema.GroupVersionResource{}, false
 	}
@@ -1021,9 +1041,12 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Normalize kind (handle aliases like HPA -> HorizontalPodAutoscaler)
+	normalizedKind := normalizeKind(kind)
+	
 	// Try to get metadata; use namespaced from query param if provided (for CRDs)
 	namespacedParam := r.URL.Query().Get("namespaced")
-	meta, ok := resourceMeta[kind]
+	meta, ok := resourceMeta[normalizedKind]
 	if !ok {
 		// Default to namespaced=true unless explicitly told otherwise
 		isNamespaced := true
@@ -1051,9 +1074,41 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 			Resource: resourceName,
 		}
 	} else {
-		// Fall back to static resolution for known types
-		gvr, _ = resolveGVR(kind)
+		// Fall back to static resolution for known types (with alias normalization)
+		var ok bool
+		gvr, ok = resolveGVR(normalizedKind)
+		if !ok {
+			// If not found in static map, try to construct from common patterns
+			// This handles cases where the kind might be a CRD or unknown type
+			// For HPA specifically, we know it's autoscaling/v2/horizontalpodautoscalers
+			if normalizedKind == "HorizontalPodAutoscaler" {
+				gvr = schema.GroupVersionResource{
+					Group:    "autoscaling",
+					Version:  "v2",
+					Resource: "horizontalpodautoscalers",
+				}
+			} else {
+				// For unknown types, try to infer from kind name
+				// Default to core v1 if we can't determine
+				resourceName := strings.ToLower(normalizedKind) + "s"
+				gvr = schema.GroupVersionResource{
+					Group:    "",
+					Version:  "v1",
+					Resource: resourceName,
+				}
+			}
+		}
 	}
+
+	// Validate GVR is not empty
+	if gvr.Resource == "" {
+		log.Printf("GetResourceYAML error: Empty GVR for kind=%s, normalizedKind=%s", kind, normalizedKind)
+		http.Error(w, fmt.Sprintf("Unable to resolve resource type: %s", kind), http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("GetResourceYAML: kind=%s, normalizedKind=%s, gvr=%+v, namespace=%s, name=%s, namespaced=%v", 
+		kind, normalizedKind, gvr, namespace, name, meta.Namespaced)
 
 	var res dynamic.ResourceInterface
 	if meta.Namespaced {
@@ -1071,6 +1126,8 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 
 	obj, err := res.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
+		log.Printf("GetResourceYAML error: kind=%s, normalizedKind=%s, gvr=%+v, namespace=%s, name=%s, error=%v", 
+			kind, normalizedKind, gvr, namespace, name, err)
 		handleError(w, err, fmt.Sprintf("Failed to fetch resource"), http.StatusInternalServerError)
 		return
 	}
@@ -1113,9 +1170,12 @@ func (h *Handlers) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Normalize kind (handle aliases like HPA -> HorizontalPodAutoscaler)
+	normalizedKind := normalizeKind(kind)
+	
 	// Try to get metadata; use namespaced from query param if provided (for CRDs)
 	namespacedParam := r.URL.Query().Get("namespaced")
-	meta, ok := resourceMeta[kind]
+	meta, ok := resourceMeta[normalizedKind]
 	if !ok {
 		// Default to namespaced=true unless explicitly told otherwise
 		isNamespaced := true
@@ -1325,11 +1385,14 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 			version = parts[1]
 		}
 
+		// Normalize kind (handle aliases like HPA -> HorizontalPodAutoscaler)
+		normalizedKind := normalizeKind(kind)
+		
 		// Try to get resource name and metadata from static map first
-		gvr, ok := resolveGVR(kind)
+		gvr, ok := resolveGVR(normalizedKind)
 		var meta ResourceMeta
 		if ok {
-			meta = resourceMeta[kind]
+			meta = resourceMeta[normalizedKind]
 		} else {
 			// For CRDs and unknown types, use lowercase(kind) + "s" as resource name
 			resourceName := strings.ToLower(kind) + "s"
@@ -1485,7 +1548,10 @@ func (h *Handlers) DeleteResource(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	meta, ok := resourceMeta[kind]
+	// Normalize kind (handle aliases like HPA -> HorizontalPodAutoscaler)
+	normalizedKind := normalizeKind(kind)
+	
+	meta, ok := resourceMeta[normalizedKind]
 	if !ok {
 		http.Error(w, "Unsupported kind", http.StatusBadRequest)
 		return
@@ -1501,7 +1567,7 @@ func (h *Handlers) DeleteResource(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	gvr, _ := resolveGVR(kind)
+	gvr, _ := resolveGVR(normalizedKind)
 	var res dynamic.ResourceInterface
 	if meta.Namespaced {
 		res = dynamicClient.Resource(gvr).Namespace(namespace)
@@ -1628,13 +1694,16 @@ func (h *Handlers) WatchResources(w http.ResponseWriter, r *http.Request) {
 		namespace = "default"
 	}
 
-	meta, ok := resourceMeta[kind]
+	// Normalize kind (handle aliases like HPA -> HorizontalPodAutoscaler)
+	normalizedKind := normalizeKind(kind)
+	
+	meta, ok := resourceMeta[normalizedKind]
 	if !ok {
 		http.Error(w, "Unsupported kind", http.StatusBadRequest)
 		return
 	}
 
-	gvr, _ := resolveGVR(kind)
+	gvr, _ := resolveGVR(normalizedKind)
 	var res dynamic.ResourceInterface
 	if meta.Namespaced {
 		if allNamespaces {
