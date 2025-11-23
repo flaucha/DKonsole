@@ -1,6 +1,6 @@
 module github.com/example/k8s-view
 
-go 1.23.0
+go 1.24.0
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
@@ -11,3 +11,5 @@ require (
 	k8s.io/metrics v0.29.0
 	sigs.k8s.io/yaml v1.4.0
 )
+
+require golang.org/x/time v0.14.0 // indirect
