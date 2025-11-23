@@ -76,7 +76,7 @@ func main() {
 		return enableCors(RateLimitMiddleware(AuditMiddleware(h)))
 	}
 
-	mux.HandleFunc("/api/login", public(h.LoginHandler))
+	mux.HandleFunc("/api/login", enableCors(LoginRateLimitMiddleware(AuditMiddleware(h.LoginHandler))))
 	mux.HandleFunc("/api/logout", public(h.LogoutHandler)) // Logout doesn't strictly need auth check if we just clear cookie, but usually it's fine.
 	mux.HandleFunc("/api/me", secure(h.MeHandler))
 	mux.HandleFunc("/healthz", h.HealthHandler) // Health check usually no auth/audit/limit or loose limit

@@ -138,6 +138,53 @@ func handleError(w http.ResponseWriter, err error, userMessage string, statusCod
 	http.Error(w, userMessage, statusCode)
 }
 
+// createTimeoutContext creates a context with a timeout for Kubernetes operations
+// Default timeout is 30 seconds, but can be customized via environment variable
+func createTimeoutContext() (context.Context, context.CancelFunc) {
+	timeout := 30 * time.Second
+	if timeoutStr := os.Getenv("K8S_OPERATION_TIMEOUT"); timeoutStr != "" {
+		if parsed, err := time.ParseDuration(timeoutStr); err == nil {
+			timeout = parsed
+		}
+	}
+	return context.WithTimeout(context.Background(), timeout)
+}
+
+// auditLog logs detailed audit information for critical actions
+func auditLog(r *http.Request, action, resourceKind, resourceName, namespace string, success bool, err error, details map[string]interface{}) {
+	user := "anonymous"
+	if claims, ok := r.Context().Value("user").(*Claims); ok {
+		user = claims.Username
+	}
+
+	// Get real client IP (handles proxies)
+	clientIP := r.RemoteAddr
+	if ip := r.Header.Get("X-Real-IP"); ip != "" {
+		clientIP = ip
+	} else if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
+		ips := strings.Split(ip, ",")
+		if len(ips) > 0 {
+			clientIP = strings.TrimSpace(ips[0])
+		}
+	}
+
+	logMsg := fmt.Sprintf("[AUDIT] Action=%s | Resource=%s/%s | Namespace=%s | User=%s | IP=%s | Success=%v",
+		action, resourceKind, resourceName, namespace, user, clientIP, success)
+
+	if err != nil {
+		logMsg += fmt.Sprintf(" | Error=%v", err)
+	}
+
+	if len(details) > 0 {
+		logMsg += " | Details="
+		for k, v := range details {
+			logMsg += fmt.Sprintf("%s:%v ", k, v)
+		}
+	}
+
+	log.Printf(logMsg)
+}
+
 func (h *Handlers) GetClusters(w http.ResponseWriter, r *http.Request) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
@@ -263,7 +310,9 @@ func (h *Handlers) GetNamespaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	namespaces, err := client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
+	namespaces, err := client.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -1017,9 +1066,12 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 		res = dynamicClient.Resource(gvr)
 	}
 
-	obj, err := res.Get(context.TODO(), name, metav1.GetOptions{})
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
+
+	obj, err := res.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to fetch resource: %v", err), http.StatusInternalServerError)
+		handleError(w, err, fmt.Sprintf("Failed to fetch resource"), http.StatusInternalServerError)
 		return
 	}
 
@@ -1141,11 +1193,17 @@ func (h *Handlers) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 		res = dynamicClient.Resource(gvr)
 	}
 
-	_, err = res.Update(context.TODO(), &obj, metav1.UpdateOptions{})
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
+
+	_, err = res.Update(ctx, &obj, metav1.UpdateOptions{})
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to update resource: %v", err), http.StatusInternalServerError)
+		auditLog(r, "update", objKind, obj.GetName(), namespace, false, err, nil)
+		handleError(w, err, fmt.Sprintf("Failed to update %s", objKind), http.StatusInternalServerError)
 		return
 	}
+
+	auditLog(r, "update", objKind, obj.GetName(), namespace, true, nil, nil)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"status":"updated"}`))
@@ -1267,7 +1325,8 @@ func (h *Handlers) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 		unstructured.RemoveNestedField(obj.Object, "metadata", "resourceVersion")
 		unstructured.RemoveNestedField(obj.Object, "metadata", "uid")
 
-		ctx := context.TODO()
+		ctx, cancel := createTimeoutContext()
+		defer cancel()
 		var res dynamic.ResourceInterface
 		if meta.Namespaced {
 			res = dynamicClient.Resource(gvr).Namespace(obj.GetNamespace())
@@ -1415,10 +1474,20 @@ func (h *Handlers) DeleteResource(w http.ResponseWriter, r *http.Request) {
 		PropagationPolicy:  &propagation,
 	}
 
-	if err := res.Delete(context.TODO(), name, delOpts); err != nil {
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
+
+	if err := res.Delete(ctx, name, delOpts); err != nil {
+		auditLog(r, "delete", kind, name, namespace, false, err, map[string]interface{}{
+			"force": force,
+		})
 		handleError(w, err, fmt.Sprintf("Failed to delete %s", kind), http.StatusInternalServerError)
 		return
 	}
+
+	auditLog(r, "delete", kind, name, namespace, true, nil, map[string]interface{}{
+		"force": force,
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"status":"deleted"}`))
@@ -1470,7 +1539,8 @@ func (h *Handlers) ScaleResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.TODO()
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
 	scale, err := client.AppsV1().Deployments(namespace).GetScale(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to get scale: %v", err), http.StatusInternalServerError)
@@ -1529,7 +1599,9 @@ func (h *Handlers) WatchResources(w http.ResponseWriter, r *http.Request) {
 		res = dynamicClient.Resource(gvr)
 	}
 
-	watcher, err := res.Watch(context.TODO(), metav1.ListOptions{
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
+	watcher, err := res.Watch(ctx, metav1.ListOptions{
 		Watch: true,
 	})
 	if err != nil {
@@ -1734,9 +1806,12 @@ func (h *Handlers) GetAPIResourceYAML(w http.ResponseWriter, r *http.Request) {
 		res = dynamicClient.Resource(gvr)
 	}
 
-	obj, err := res.Get(context.TODO(), name, metav1.GetOptions{})
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
+
+	obj, err := res.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to fetch resource: %v", err), http.StatusInternalServerError)
+		handleError(w, err, fmt.Sprintf("Failed to fetch resource"), http.StatusInternalServerError)
 		return
 	}
 
@@ -1774,7 +1849,8 @@ func (h *Handlers) GetClusterStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.TODO()
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
 	stats := ClusterStats{}
 
 	// Nodes
@@ -1865,7 +1941,9 @@ func (h *Handlers) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	req := client.CoreV1().Pods(ns).GetLogs(podName, opts)
-	stream, err := req.Stream(context.TODO())
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
+	stream, err := req.Stream(ctx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to open log stream: %v", err), http.StatusInternalServerError)
 		return
@@ -2468,7 +2546,9 @@ func (h *Handlers) TriggerCronJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cronJob, err := client.BatchV1().CronJobs(req.Namespace).Get(context.TODO(), req.Name, metav1.GetOptions{})
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
+	cronJob, err := client.BatchV1().CronJobs(req.Namespace).Get(ctx, req.Name, metav1.GetOptions{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -2493,7 +2573,9 @@ func (h *Handlers) TriggerCronJob(w http.ResponseWriter, r *http.Request) {
 		Spec: cronJob.Spec.JobTemplate.Spec,
 	}
 
-	_, err = client.BatchV1().Jobs(req.Namespace).Create(context.TODO(), job, metav1.CreateOptions{})
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
+	_, err = client.BatchV1().Jobs(req.Namespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
