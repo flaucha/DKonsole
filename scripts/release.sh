@@ -26,6 +26,8 @@ echo ""
 
 # 2. Build and Push Docker Image (Unified)
 echo "📦 Building Unified Image (Backend + Frontend)..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
 docker build -t dkonsole/dkonsole:$VERSION .
 echo "✅ Unified image built successfully"
 
