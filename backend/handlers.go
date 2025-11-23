@@ -2573,9 +2573,9 @@ func (h *Handlers) TriggerCronJob(w http.ResponseWriter, r *http.Request) {
 		Spec: cronJob.Spec.JobTemplate.Spec,
 	}
 
-	ctx, cancel := createTimeoutContext()
-	defer cancel()
-	_, err = client.BatchV1().Jobs(req.Namespace).Create(ctx, job, metav1.CreateOptions{})
+	ctx2, cancel2 := createTimeoutContext()
+	defer cancel2()
+	_, err = client.BatchV1().Jobs(req.Namespace).Create(ctx2, job, metav1.CreateOptions{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
