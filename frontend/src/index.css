@@ -223,3 +223,60 @@ body {
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-in-out;
 }
+
+/* Custom Scrollbar Styles - Modern and elegant */
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(31, 41, 55, 0.5); /* gray-800 with transparency */
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.8); /* gray-600 with transparency */
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.9); /* gray-500 with transparency */
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: rgba(156, 163, 175, 1); /* gray-400 */
+  background-clip: padding-box;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(75, 85, 99, 0.8) rgba(31, 41, 55, 0.5);
+}
+
+/* Darker scrollbar for dark backgrounds */
+.bg-black ::-webkit-scrollbar-track,
+.bg-gray-900 ::-webkit-scrollbar-track {
+  background: rgba(17, 24, 39, 0.8); /* gray-900 with transparency */
+}
+
+.bg-black ::-webkit-scrollbar-thumb,
+.bg-gray-900 ::-webkit-scrollbar-thumb {
+  background: rgba(55, 65, 81, 0.8); /* gray-700 with transparency */
+}
+
+.bg-black ::-webkit-scrollbar-thumb:hover,
+.bg-gray-900 ::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.9); /* gray-600 with transparency */
+}
+
+/* Firefox dark backgrounds */
+.bg-black *,
+.bg-gray-900 * {
+  scrollbar-color: rgba(55, 65, 81, 0.8) rgba(17, 24, 39, 0.8);
+}
