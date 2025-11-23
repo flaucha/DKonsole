@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.0.6-green.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-green.svg)
 
 **DKonsole** es un dashboard moderno y ligero para Kubernetes, construido enteramente con **Inteligencia Artificial**. Proporciona una interfaz intuitiva para gestionar los recursos de tu cluster, ver logs y ejecutar comandos en pods.
 
@@ -20,7 +20,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout de la última versión estable
-git checkout v1.0.3
+git checkout v1.1.0
 
 # Instalar
 helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace

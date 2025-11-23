@@ -33,13 +33,9 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ include "dkonsole.fullname" $ }}-{{ .backend }}
+                name: {{ include "dkonsole.fullname" $ }}
                 port:
-                  {{- if eq .backend "backend" }}
-                  number: {{ $.Values.service.backend.port }}
-                  {{- else }}
-                  number: {{ $.Values.service.frontend.port }}
-                  {{- end }}
+                  number: {{ $.Values.service.port }}
           {{- end }}
     {{- end }}
 {{- end }}

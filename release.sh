@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="1.0.7"
+VERSION="1.1.0"
 
 echo "=========================================="
 echo "🚀 DKonsole Release v${VERSION}"
@@ -24,22 +24,14 @@ git push origin main || git push
 echo "✅ Code pushed"
 echo ""
 
-# 2. Build and Push Docker Images
-echo "📦 Building Backend..."
-docker build -t dkonsole/dkonsole-backend:$VERSION ./backend
-echo "✅ Backend built successfully"
+# 2. Build and Push Docker Image (Unified)
+echo "📦 Building Unified Image (Backend + Frontend)..."
+docker build -t dkonsole/dkonsole:$VERSION .
+echo "✅ Unified image built successfully"
 
-echo "📦 Building Frontend..."
-docker build -t dkonsole/dkonsole-frontend:$VERSION ./frontend
-echo "✅ Frontend built successfully"
-
-echo "🚀 Pushing Backend to Docker Hub..."
-docker push dkonsole/dkonsole-backend:$VERSION
-echo "✅ Backend pushed successfully"
-
-echo "🚀 Pushing Frontend to Docker Hub..."
-docker push dkonsole/dkonsole-frontend:$VERSION
-echo "✅ Frontend pushed successfully"
+echo "🚀 Pushing Unified Image to Docker Hub..."
+docker push dkonsole/dkonsole:$VERSION
+echo "✅ Unified image pushed successfully"
 echo ""
 
 # 3. Handle Git Tag
@@ -54,26 +46,23 @@ fi
 echo "🏷️  Creating new tag v${VERSION}..."
 git tag -a "v${VERSION}" -m "Release v${VERSION}
 
-Security Fixes:
-- Critical: Fixed Secrets exposure in API
-- Critical: Implemented strict CORS
-- Critical: Enforced JWT_SECRET validation
-- Critical: Added YAML import validation and limits
-- Critical: Strengthened WebSocket origin check
-- Critical: Reduced RBAC permissions
-- High: Added Prometheus timeouts
-- High: Validated file uploads
-- High: Added security headers (Nginx)
+Architecture:
+- Unified container: Backend and Frontend integrated in a single image
+- Improved security: Reduced attack surface, no inter-container communication
+- Simplified deployment: Single service, single deployment
+
+Security Improvements:
+- Unified container architecture reduces attack surface
+- Eliminated inter-container network communication
+- Single process model for easier auditing
 
 Features:
-- Prometheus integration for Pod metrics
-- Historical metrics with time range selector
-- Metrics tab in Pod details
-- Fixed namespace display for cluster-scoped resources
+- Backend now serves frontend static files
+- Single port (8080) for all traffic
+- Simplified Helm chart deployment
 
-Docker Images:
-- dkonsole/dkonsole-backend:${VERSION}
-- dkonsole/dkonsole-frontend:${VERSION}"
+Docker Image:
+- dkonsole/dkonsole:${VERSION}"
 
 echo "✅ Git tag created"
 
@@ -86,9 +75,8 @@ echo "=========================================="
 echo "✨ Release v${VERSION} Complete!"
 echo "=========================================="
 echo ""
-echo "📦 Docker Images:"
-echo "   - dkonsole/dkonsole-backend:${VERSION}"
-echo "   - dkonsole/dkonsole-frontend:${VERSION}"
+echo "📦 Docker Image:"
+echo "   - dkonsole/dkonsole:${VERSION}"
 echo ""
 echo "🏷️  Git Tag:"
 echo "   - v${VERSION}"

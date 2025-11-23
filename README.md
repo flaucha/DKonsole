@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.0.7-green.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-green.svg)
 
 <img width="1916" height="928" alt="image" src="https://github.com/user-attachments/assets/ef3ae6e6-ca3f-4955-9980-3dfae895c1ad" />
 
@@ -33,7 +33,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.0.7
+git checkout v1.1.0
 
 # Install
 helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
@@ -70,12 +70,8 @@ ingress:
   hosts:
     - host: dkonsole.example.com
       paths:
-        - path: /api
-          pathType: Prefix
-          backend: backend
         - path: /
           pathType: Prefix
-          backend: frontend
   tls:
     - secretName: dkonsole-tls
       hosts:
@@ -99,25 +95,22 @@ prometheusUrl: "http://prometheus-server.monitoring.svc.cluster.local:9090"
 
 **Note:** If `prometheusUrl` is not configured, the Metrics tab will not be displayed.
 
-### 4. Docker Images (Optional)
-By default, it uses the official images. You can change tags or repositories if needed.
+### 4. Docker Image (Optional)
+By default, it uses the official image. You can change tag or repository if needed.
 
 ```yaml
 image:
-  backend:
-    repository: dkonsole/dkonsole-backend
-    tag: "1.0.7"
-  frontend:
-    repository: dkonsole/dkonsole-frontend
-    tag: "1.0.7"
+  repository: dkonsole/dkonsole
+  tag: "1.1.0"
 ```
 
-## 🐳 Docker Images
+## 🐳 Docker Image
 
-The official images are available at:
+The official image is available at:
 
-- **Backend**: `dkonsole/dkonsole-backend:1.0.7`
-- **Frontend**: `dkonsole/dkonsole-frontend:1.0.7`
+- **Unified**: `dkonsole/dkonsole:1.1.0`
+
+**Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📊 Prometheus Metrics
 
@@ -160,6 +153,28 @@ cd frontend && npm run dev
 ```
 
 ## 📝 Changelog
+
+### v1.1.0 (2024-12-19)
+**🏗️ Unified Architecture Release**
+
+This release introduces a major architectural improvement with enhanced security:
+
+**Architecture Changes:**
+- 🎯 **Unified Container**: Backend and Frontend integrated in a single Docker image
+- 🔒 **Improved Security**: Reduced attack surface by eliminating inter-container communication
+- 🚀 **Simplified Deployment**: Single service, single deployment, single port (8080)
+- 📦 **Easier Management**: One image to build, version, and deploy
+
+**Technical Improvements:**
+- Backend now serves frontend static files directly
+- Simplified Helm chart with unified deployment
+- Reduced resource overhead (single container instead of two)
+- Single ingress path configuration
+
+**Migration Notes:**
+- Docker image changed from `dkonsole/dkonsole-backend` and `dkonsole/dkonsole-frontend` to `dkonsole/dkonsole`
+- Helm values updated: `image.backend` and `image.frontend` replaced with single `image` configuration
+- Ingress paths simplified: single path `/` instead of separate `/api` and `/` paths
 
 ### v1.0.7 (2025-11-23)
 **🔒 Security Hardening Release**
