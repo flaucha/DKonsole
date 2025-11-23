@@ -621,74 +621,78 @@ const PodDetails = ({ details, onStreamLogs, onOpenTerminal, onEditYAML, pod }) 
                 </button>
             </div>
 
-            {activeTab === 'details' ? (
-                <div className="p-4 bg-gray-900/50 rounded-md">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-                        <div>
-                            <DetailRow label="Node" value={details.node} icon={Server} />
-                            <DetailRow label="IP" value={details.ip} icon={Network} />
+            <div className="transition-all duration-300 ease-in-out">
+                {activeTab === 'details' ? (
+                    <div className="p-4 bg-gray-900/50 rounded-md animate-fadeIn">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                            <div>
+                                <DetailRow label="Node" value={details.node} icon={Server} />
+                                <DetailRow label="IP" value={details.ip} icon={Network} />
+                            </div>
+                            <div>
+                                <DetailRow label="Restarts" value={details.restarts} icon={Activity} />
+                                <DetailRow label="Containers" value={containers} icon={Box} />
+                            </div>
+                            <div>
+                                {metrics.cpu && <DetailRow label="CPU" value={metrics.cpu} icon={Activity} />}
+                                {metrics.memory && <DetailRow label="Memory" value={metrics.memory} icon={HardDrive} />}
+                            </div>
                         </div>
-                        <div>
-                            <DetailRow label="Restarts" value={details.restarts} icon={Activity} />
-                            <DetailRow label="Containers" value={containers} icon={Box} />
-                        </div>
-                        <div>
-                            {metrics.cpu && <DetailRow label="CPU" value={metrics.cpu} icon={Activity} />}
-                            {metrics.memory && <DetailRow label="Memory" value={metrics.memory} icon={HardDrive} />}
-                        </div>
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                        {/* Stream Logs */}
-                        {containers.length > 1 ? (
-                            <div className="relative">
+                        <div className="flex justify-end space-x-2">
+                            {/* Stream Logs */}
+                            {containers.length > 1 ? (
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowMenu(!showMenu)}
+                                        className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-600 text-xs transition-colors"
+                                    >
+                                        <Terminal size={12} className="mr-1.5" />
+                                        Stream Logs
+                                        <ChevronDown size={12} className="ml-1.5" />
+                                    </button>
+                                    {showMenu && (
+                                        <div className="absolute right-0 bottom-full mb-1 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10">
+                                            {containers.map(c => (
+                                                <button
+                                                    key={c}
+                                                    onClick={() => {
+                                                        onStreamLogs(c);
+                                                        setShowMenu(false);
+                                                    }}
+                                                    className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-700 first:rounded-t-md last:rounded-b-md"
+                                                >
+                                                    {c}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
                                 <button
-                                    onClick={() => setShowMenu(!showMenu)}
+                                    onClick={() => onStreamLogs(containers[0])}
                                     className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-600 text-xs transition-colors"
                                 >
                                     <Terminal size={12} className="mr-1.5" />
                                     Stream Logs
-                                    <ChevronDown size={12} className="ml-1.5" />
                                 </button>
-                                {showMenu && (
-                                    <div className="absolute right-0 bottom-full mb-1 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10">
-                                        {containers.map(c => (
-                                            <button
-                                                key={c}
-                                                onClick={() => {
-                                                    onStreamLogs(c);
-                                                    setShowMenu(false);
-                                                }}
-                                                className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-700 first:rounded-t-md last:rounded-b-md"
-                                            >
-                                                {c}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
+                            )}
+                            {/* Open Terminal */}
                             <button
-                                onClick={() => onStreamLogs(containers[0])}
+                                onClick={() => onOpenTerminal(containers[0])}
                                 className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-600 text-xs transition-colors"
                             >
                                 <Terminal size={12} className="mr-1.5" />
-                                Stream Logs
+                                Open Terminal
                             </button>
-                        )}
-                        {/* Open Terminal */}
-                        <button
-                            onClick={() => onOpenTerminal(containers[0])}
-                            className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-600 text-xs transition-colors"
-                        >
-                            <Terminal size={12} className="mr-1.5" />
-                            Open Terminal
-                        </button>
-                        <EditYamlButton onClick={onEditYAML} />
+                            <EditYamlButton onClick={onEditYAML} />
+                        </div>
                     </div>
-                </div>
-            ) : (
-                pod && <PodMetrics pod={{ name: pod.name }} namespace={pod.namespace} />
-            )}
+                ) : (
+                    <div className="animate-fadeIn">
+                        {pod && <PodMetrics pod={{ name: pod.name }} namespace={pod.namespace} />}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
