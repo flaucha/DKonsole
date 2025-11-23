@@ -1,11 +1,14 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -152,9 +155,18 @@ func (h *Handlers) queryPrometheusRange(query string, start, end time.Time) []Me
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	// Limit response size to 10MB to prevent DoS
+	maxResponseSize := int64(10 << 20) // 10MB
+	limitedReader := io.LimitReader(resp.Body, maxResponseSize)
+
+	body, err := io.ReadAll(limitedReader)
 	if err != nil {
 		return []MetricDataPoint{}
+	}
+
+	// Check if response was truncated
+	if len(body) >= int(maxResponseSize) {
+		fmt.Printf("Warning: Prometheus response truncated (max %d bytes)\n", maxResponseSize)
 	}
 
 	var result PrometheusQueryResult
@@ -194,9 +206,7 @@ func (h *Handlers) queryPrometheusInstant(query string) []map[string]interface{}
 
 	fullURL := fmt.Sprintf("%s?%s", promURL, params.Encode())
 
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-	}
+	client := createSecureHTTPClient()
 
 	resp, err := client.Get(fullURL)
 	if err != nil {
@@ -205,16 +215,25 @@ func (h *Handlers) queryPrometheusInstant(query string) []map[string]interface{}
 	}
 	defer resp.Body.Close()
 
+	// Limit response size to 10MB to prevent DoS
+	maxResponseSize := int64(10 << 20) // 10MB
+	limitedReader := io.LimitReader(resp.Body, maxResponseSize)
+
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(limitedReader)
 		fmt.Printf("Prometheus query failed with status %d: %s\n", resp.StatusCode, string(body))
 		return []map[string]interface{}{}
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(limitedReader)
 	if err != nil {
 		fmt.Printf("Error reading Prometheus response: %v\n", err)
 		return []map[string]interface{}{}
+	}
+
+	// Check if response was truncated
+	if len(body) >= int(maxResponseSize) {
+		fmt.Printf("Warning: Prometheus response truncated (max %d bytes)\n", maxResponseSize)
 	}
 
 	var result struct {
@@ -269,4 +288,35 @@ func (h *Handlers) GetPrometheusStatus(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(status)
+}
+
+// createSecureHTTPClient creates an HTTP client with proper TLS certificate validation
+func createSecureHTTPClient() *http.Client {
+	// Load system certificate pool
+	rootCAs, _ := x509.SystemCertPool()
+	if rootCAs == nil {
+		rootCAs = x509.NewCertPool()
+	}
+
+	// Optional: load additional certificates from environment variable
+	// certPEM := os.Getenv("PROMETHEUS_CA_CERT")
+	// if certPEM != "" {
+	//     rootCAs.AppendCertsFromPEM([]byte(certPEM))
+	// }
+
+	config := &tls.Config{
+		RootCAs: rootCAs,
+		// In production, do not skip verification
+		// Only allow skipping for development/testing
+		InsecureSkipVerify: os.Getenv("PROMETHEUS_INSECURE_SKIP_VERIFY") == "true",
+	}
+
+	transport := &http.Transport{
+		TLSClientConfig: config,
+	}
+
+	return &http.Client{
+		Timeout:   30 * time.Second,
+		Transport: transport,
+	}
 }

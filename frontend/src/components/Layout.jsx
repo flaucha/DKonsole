@@ -56,11 +56,15 @@ const Layout = ({ children, currentView, onViewChange, headerContent }) => {
     useEffect(() => {
         authFetch('/api/logo')
             .then(res => {
-                if (res.ok) {
+                // Only set custom logo if response is OK (200) and has content
+                if (res.ok && res.status === 200) {
                     setLogoSrc('/api/logo');
                 }
+                // If 404 or other error, keep default logo (no action needed)
             })
-            .catch(() => { });
+            .catch(() => {
+                // Silently handle errors (network, etc.) - keep default logo
+            });
     }, []);
 
     const toggleMenu = (menu) => {

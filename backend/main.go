@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -114,12 +115,9 @@ func main() {
 	// I'll wrap them with secure() for consistency, assuming AuthMiddleware handles the token check fine.
 	mux.HandleFunc("/api/pods/logs", secure(h.StreamPodLogs))
 	mux.HandleFunc("/api/pods/exec", func(w http.ResponseWriter, r *http.Request) {
-		// Custom wrap for Exec to avoid CORS/Auth middleware issues if any,
-		// but actually Exec needs to be secure.
-		// The original code didn't wrap Exec with enableCors, likely because it's WS?
-		// But WS handshake is HTTP.
-		// I'll wrap it with Audit and RateLimit. Auth is inside.
-		RateLimitMiddleware(AuditMiddleware(h.ExecIntoPod))(w, r)
+		// WebSocket endpoint needs CORS for browser connections
+		// Auth is handled inside ExecIntoPod
+		enableCors(RateLimitMiddleware(AuditMiddleware(h.ExecIntoPod)))(w, r)
 	})
 	mux.HandleFunc("/api/clusters", secure(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
@@ -170,18 +168,33 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 		if allowedOrigins != "" {
 			origins := strings.Split(allowedOrigins, ",")
 			for _, o := range origins {
-				if strings.TrimSpace(o) == origin {
+				o = strings.TrimSpace(o)
+				if o == origin {
 					allowed = true
 					break
 				}
 			}
 		} else {
-			// If no ALLOWED_ORIGINS set, allow same-origin or localhost for dev
+			// If no ALLOWED_ORIGINS set, allow same-origin exact match or localhost/127.0.0.1 for dev
 			// In production, you should set ALLOWED_ORIGINS
 			if origin != "" {
-				// Simple check: if origin contains the host, it's likely same-origin
-				if strings.Contains(origin, r.Host) || strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
-					allowed = true
+				originURL, err := url.Parse(origin)
+				if err == nil {
+					host := r.Host
+					// Remove port for comparison if present
+					if strings.Contains(host, ":") {
+						host = strings.Split(host, ":")[0]
+					}
+					originHost := originURL.Host
+					if strings.Contains(originHost, ":") {
+						originHost = strings.Split(originHost, ":")[0]
+					}
+					// Only allow exact match: localhost, 127.0.0.1, or same host
+					// Also validate scheme is http/https
+					if (originHost == "localhost" || originHost == "127.0.0.1" || originHost == host) &&
+						(originURL.Scheme == "http" || originURL.Scheme == "https") {
+						allowed = true
+					}
 				}
 			}
 		}
