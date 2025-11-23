@@ -1082,7 +1082,13 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// Fall back to static resolution for known types (with alias normalization)
 		var ok bool
-		gvr, ok = resolveGVR(normalizedKind)
+		
+		// Force discovery for HPA to ensure we get the correct server-preferred version
+		// This matches the behavior of API Explorer and avoids hardcoded version mismatches
+		if normalizedKind != "HorizontalPodAutoscaler" {
+			gvr, ok = resolveGVR(normalizedKind)
+		}
+		
 		log.Printf("GetResourceYAML: resolveGVR result - ok=%v, gvr=%+v for normalizedKind=%s", ok, gvr, normalizedKind)
 		
 		if !ok {
@@ -1179,36 +1185,47 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 		
 		// If HPA fails, try different API versions
 		if normalizedKind == "HorizontalPodAutoscaler" {
-			versions := []string{"v2", "v1"}
-			if gvr.Version == "v2" {
-				versions = []string{"v1"}
-			} else if gvr.Version == "v1" {
-				versions = []string{"v2"}
-			}
+			// Try all known HPA versions in order of preference
+			versions := []string{"v2", "v2beta2", "v2beta1", "v1"}
 			
 			for _, ver := range versions {
-				if apierrors.IsNotFound(err) || strings.Contains(err.Error(), "could not find") {
-					log.Printf("GetResourceYAML: Trying HPA with version %s", ver)
-					gvr.Version = ver
-					if meta.Namespaced {
-						res = dynamicClient.Resource(gvr).Namespace(namespace)
-					} else {
-						res = dynamicClient.Resource(gvr)
-					}
-					obj, err = res.Get(ctx, name, metav1.GetOptions{})
-					if err == nil {
-						log.Printf("GetResourceYAML: Success with version %s", ver)
-						break
-					}
-					log.Printf("GetResourceYAML: Version %s also failed: %v", ver, err)
+				// Skip if it's the version we already tried
+				if ver == gvr.Version {
+					continue
 				}
+
+				// Try fallback for ANY error, as version mismatches can manifest in various ways
+				// (e.g. "no matches for kind", "could not find", 404, etc.)
+				log.Printf("GetResourceYAML: Error encountered (%v), trying HPA with version %s", err, ver)
+				gvr.Version = ver
+				if meta.Namespaced {
+					res = dynamicClient.Resource(gvr).Namespace(namespace)
+				} else {
+					res = dynamicClient.Resource(gvr)
+				}
+				obj, err = res.Get(ctx, name, metav1.GetOptions{})
+				if err == nil {
+					log.Printf("GetResourceYAML: Success with version %s", ver)
+					break
+				}
+				log.Printf("GetResourceYAML: Version %s also failed: %v", ver, err)
 			}
 		}
 		
 		if err != nil {
 			log.Printf("GetResourceYAML FINAL ERROR: kind=%s, normalizedKind=%s, gvr=%+v, namespace=%s, name=%s, namespaced=%v, error=%v", 
 				kind, normalizedKind, gvr, namespace, name, meta.Namespaced, err)
-			handleError(w, err, fmt.Sprintf("Failed to fetch resource"), http.StatusInternalServerError)
+			
+			statusCode := http.StatusInternalServerError
+			if apierrors.IsNotFound(err) {
+				statusCode = http.StatusNotFound
+			} else if apierrors.IsForbidden(err) {
+				statusCode = http.StatusForbidden
+			} else if apierrors.IsBadRequest(err) {
+				statusCode = http.StatusBadRequest
+			}
+			
+			handleError(w, err, fmt.Sprintf("Failed to fetch resource: %v", err), statusCode)
 			return
 		}
 	}

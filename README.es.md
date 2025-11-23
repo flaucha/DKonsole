@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.1.0-green.svg)
+![Version](https://img.shields.io/badge/version-1.1.1-green.svg)
 
 **DKonsole** es un dashboard moderno y ligero para Kubernetes, construido enteramente con **Inteligencia Artificial**. Proporciona una interfaz intuitiva para gestionar los recursos de tu cluster, ver logs, ejecutar comandos en pods y monitorear métricas históricas con integración de Prometheus.
 
@@ -30,7 +30,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout de la última versión estable
-git checkout v1.1.0
+git checkout v1.1.1
 
 # Instalar
 helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
@@ -93,14 +93,14 @@ Por defecto usa la imagen oficial. Puedes cambiar el tag o repositorio si es nec
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.1.0"
+  tag: "1.1.1"
 ```
 
 ## 🐳 Imagen Docker
 
 La imagen oficial está disponible en:
 
-- **Unificada**: `dkonsole/dkonsole:1.1.0`
+- **Unificada**: `dkonsole/dkonsole:1.1.1`
 
 **Nota:** A partir de v1.1.0, DKonsole usa una arquitectura de contenedor unificada donde el backend sirve los archivos estáticos del frontend. Esto mejora la seguridad al reducir la superficie de ataque y eliminar la comunicación entre contenedores.
 
@@ -145,6 +145,25 @@ cd frontend && npm run dev
 ```
 
 ## 📝 Changelog
+
+### v1.1.1 (2024-12-19)
+**🐛 Correcciones y Mejoras**
+
+- ✅ **Corregida Importación de Recursos**: Ahora acepta CUALQUIER recurso de Kubernetes (incluyendo CRDs)
+- ✅ **Corregida Visualización de YAML de HPA**: Resuelto problema con visualización de YAML de HorizontalPodAutoscaler
+- ✅ **Agregados Alias de Recursos**: Soporte para alias comunes (HPA, PVC, PV, etc.)
+- ✅ **Descubrimiento Dinámico de Recursos**: Usa Discovery API de Kubernetes para resolución automática
+- ✅ **RBAC Mejorado**: Acceso completo a todos los recursos para funcionalidad de importación
+
+### v1.1.1 (2024-12-19)
+**🐛 Correcciones y Mejoras**
+
+- ✅ **Corregida Importación de Recursos**: Ahora acepta CUALQUIER recurso de Kubernetes (incluyendo CRDs y recursos personalizados)
+- ✅ **Corregida Visualización de YAML de HPA**: Resuelto problema con visualización de YAML de HorizontalPodAutoscaler
+- ✅ **Agregados Alias de Recursos**: Soporte para alias comunes (HPA, PVC, PV, SC, SA, CR, CRB, RB)
+- ✅ **Descubrimiento Dinámico de Recursos**: Usa Discovery API de Kubernetes para resolución automática
+- ✅ **RBAC Mejorado**: Acceso completo a todos los recursos para funcionalidad de importación
+- ✅ **Manejo de Errores Mejorado**: Mejores mensajes de error y fallback automático entre versiones de API
 
 ### v1.1.0 (2024-12-19)
 **🏗️ Lanzamiento de Arquitectura Unificada**
