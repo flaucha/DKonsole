@@ -44,6 +44,7 @@ type Handlers struct {
 	RESTConfigs   map[string]*rest.Config
 	PrometheusURL string
 	mu            sync.RWMutex
+	discoveryClients map[string]discovery.DiscoveryInterface
 }
 
 type ClusterConfig struct {
@@ -1078,23 +1079,50 @@ func (h *Handlers) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 		var ok bool
 		gvr, ok = resolveGVR(normalizedKind)
 		if !ok {
-			// If not found in static map, try to construct from common patterns
-			// This handles cases where the kind might be a CRD or unknown type
-			// For HPA specifically, we know it's autoscaling/v2/horizontalpodautoscalers
-			if normalizedKind == "HorizontalPodAutoscaler" {
-				gvr = schema.GroupVersionResource{
-					Group:    "autoscaling",
-					Version:  "v2",
-					Resource: "horizontalpodautoscalers",
+			// Try to find GVR using discovery API
+			client, err := h.getClient(r)
+			if err == nil {
+				lists, err := client.Discovery().ServerPreferredResources()
+				if err == nil || discovery.IsGroupDiscoveryFailedError(err) {
+					// Search for the resource kind in discovered resources
+					for _, list := range lists {
+						gv, _ := schema.ParseGroupVersion(list.GroupVersion)
+						for _, ar := range list.APIResources {
+							if ar.Kind == normalizedKind && !strings.Contains(ar.Name, "/") {
+								gvr = schema.GroupVersionResource{
+									Group:    gv.Group,
+									Version:  gv.Version,
+									Resource: ar.Name,
+								}
+								ok = true
+								log.Printf("GetResourceYAML: Found GVR via discovery: %+v for kind=%s", gvr, normalizedKind)
+								break
+							}
+						}
+						if ok {
+							break
+						}
+					}
 				}
-			} else {
-				// For unknown types, try to infer from kind name
-				// Default to core v1 if we can't determine
-				resourceName := strings.ToLower(normalizedKind) + "s"
-				gvr = schema.GroupVersionResource{
-					Group:    "",
-					Version:  "v1",
-					Resource: resourceName,
+			}
+			
+			// If still not found, try common patterns
+			if !ok {
+				if normalizedKind == "HorizontalPodAutoscaler" {
+					// Try v2 first, then v1
+					gvr = schema.GroupVersionResource{
+						Group:    "autoscaling",
+						Version:  "v2",
+						Resource: "horizontalpodautoscalers",
+					}
+				} else {
+					// For unknown types, try to infer from kind name
+					resourceName := strings.ToLower(normalizedKind) + "s"
+					gvr = schema.GroupVersionResource{
+						Group:    "",
+						Version:  "v1",
+						Resource: resourceName,
+					}
 				}
 			}
 		}
