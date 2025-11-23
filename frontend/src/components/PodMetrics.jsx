@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, HardDrive, Clock } from 'lucide-react';
+import { Activity, HardDrive, Clock, Network, Database } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -63,6 +63,9 @@ const PodMetrics = ({ pod, namespace }) => {
                 const transformedData = [];
                 const cpuMap = new Map();
                 const memMap = new Map();
+                const netRxMap = new Map();
+                const netTxMap = new Map();
+                const pvcMap = new Map();
 
                 // Build maps by timestamp
                 metricsData.cpu?.forEach(point => {
@@ -73,8 +76,26 @@ const PodMetrics = ({ pod, namespace }) => {
                     memMap.set(point.timestamp, point.value);
                 });
 
+                metricsData.networkRx?.forEach(point => {
+                    netRxMap.set(point.timestamp, point.value);
+                });
+
+                metricsData.networkTx?.forEach(point => {
+                    netTxMap.set(point.timestamp, point.value);
+                });
+
+                metricsData.pvcUsage?.forEach(point => {
+                    pvcMap.set(point.timestamp, point.value);
+                });
+
                 // Merge data points
-                const allTimestamps = new Set([...cpuMap.keys(), ...memMap.keys()]);
+                const allTimestamps = new Set([
+                    ...cpuMap.keys(),
+                    ...memMap.keys(),
+                    ...netRxMap.keys(),
+                    ...netTxMap.keys(),
+                    ...pvcMap.keys()
+                ]);
                 const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b);
 
                 sortedTimestamps.forEach(ts => {
@@ -87,6 +108,9 @@ const PodMetrics = ({ pod, namespace }) => {
                         }),
                         cpu: cpuMap.get(ts) || 0,
                         memory: memMap.get(ts) || 0,
+                        networkRx: netRxMap.get(ts) || 0,
+                        networkTx: netTxMap.get(ts) || 0,
+                        pvcUsage: pvcMap.get(ts) || 0,
                     });
                 });
 
@@ -113,8 +137,12 @@ const PodMetrics = ({ pod, namespace }) => {
         return <div className="text-gray-500 p-4 text-sm">No metrics data available for this pod.</div>;
     }
 
+    // Check if we have network or PVC data
+    const hasNetworkData = data.some(d => d.networkRx > 0 || d.networkTx > 0);
+    const hasPVCData = data.some(d => d.pvcUsage > 0);
+
     return (
-        <div className="mt-4 border-t border-gray-700 pt-4">
+        <div className="p-4 bg-gray-900/50 rounded-md">
             <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Historical Metrics</h4>
 
             {/* Time Range Selector */}
@@ -125,9 +153,9 @@ const PodMetrics = ({ pod, namespace }) => {
                     <button
                         key={range.value}
                         onClick={() => setTimeRange(range.value)}
-                        className={`px-2.5 py-1 text-xs rounded-md transition-colors ${timeRange === range.value
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
+                        className={`px-2.5 py-1 text-xs rounded-md transition-all duration-200 ${timeRange === range.value
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
                             }`}
                     >
                         {range.label}
@@ -217,6 +245,135 @@ const PodMetrics = ({ pod, namespace }) => {
                         </ResponsiveContainer>
                     </div>
                 </div>
+
+                {/* Network RX Chart */}
+                {hasNetworkData && (
+                    <div className="bg-gray-900/50 p-3 rounded-md border border-gray-700">
+                        <div className="flex items-center mb-2">
+                            <Network size={14} className="text-green-400 mr-2" />
+                            <h3 className="text-xs font-medium text-gray-300">Network RX (KB/s)</h3>
+                        </div>
+                        <div className="h-32 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={data}>
+                                    <defs>
+                                        <linearGradient id="colorNetRx" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#34D399" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#34D399" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                                    <XAxis
+                                        dataKey="time"
+                                        stroke="#9CA3AF"
+                                        fontSize={9}
+                                        tick={{ fill: '#9CA3AF' }}
+                                        interval="preserveStartEnd"
+                                    />
+                                    <YAxis stroke="#9CA3AF" fontSize={9} tick={{ fill: '#9CA3AF' }} />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#F3F4F6', fontSize: '11px' }}
+                                        itemStyle={{ color: '#34D399' }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="networkRx"
+                                        stroke="#34D399"
+                                        fillOpacity={1}
+                                        fill="url(#colorNetRx)"
+                                        isAnimationActive={false}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
+
+                {/* Network TX Chart */}
+                {hasNetworkData && (
+                    <div className="bg-gray-900/50 p-3 rounded-md border border-gray-700">
+                        <div className="flex items-center mb-2">
+                            <Network size={14} className="text-yellow-400 mr-2" />
+                            <h3 className="text-xs font-medium text-gray-300">Network TX (KB/s)</h3>
+                        </div>
+                        <div className="h-32 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={data}>
+                                    <defs>
+                                        <linearGradient id="colorNetTx" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#FBBF24" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#FBBF24" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                                    <XAxis
+                                        dataKey="time"
+                                        stroke="#9CA3AF"
+                                        fontSize={9}
+                                        tick={{ fill: '#9CA3AF' }}
+                                        interval="preserveStartEnd"
+                                    />
+                                    <YAxis stroke="#9CA3AF" fontSize={9} tick={{ fill: '#9CA3AF' }} />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#F3F4F6', fontSize: '11px' }}
+                                        itemStyle={{ color: '#FBBF24' }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="networkTx"
+                                        stroke="#FBBF24"
+                                        fillOpacity={1}
+                                        fill="url(#colorNetTx)"
+                                        isAnimationActive={false}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
+
+                {/* PVC Usage Chart */}
+                {hasPVCData && (
+                    <div className="bg-gray-900/50 p-3 rounded-md border border-gray-700">
+                        <div className="flex items-center mb-2">
+                            <Database size={14} className="text-orange-400 mr-2" />
+                            <h3 className="text-xs font-medium text-gray-300">PVC Usage (%)</h3>
+                        </div>
+                        <div className="h-32 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={data}>
+                                    <defs>
+                                        <linearGradient id="colorPVC" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#FB923C" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#FB923C" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                                    <XAxis
+                                        dataKey="time"
+                                        stroke="#9CA3AF"
+                                        fontSize={9}
+                                        tick={{ fill: '#9CA3AF' }}
+                                        interval="preserveStartEnd"
+                                    />
+                                    <YAxis stroke="#9CA3AF" fontSize={9} tick={{ fill: '#9CA3AF' }} domain={[0, 100]} />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#F3F4F6', fontSize: '11px' }}
+                                        itemStyle={{ color: '#FB923C' }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="pvcUsage"
+                                        stroke="#FB923C"
+                                        fillOpacity={1}
+                                        fill="url(#colorPVC)"
+                                        isAnimationActive={false}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
