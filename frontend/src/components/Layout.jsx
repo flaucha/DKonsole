@@ -1,34 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database, Gauge, Package } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database, Gauge, Package, LogOut } from 'lucide-react';
 import defaultLogo from '../assets/logo-full.svg';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
-import { LogOut } from 'lucide-react';
 
-const SidebarItem = ({ icon: Icon, label, active, onClick, hasChildren, expanded }) => (
-    <div
-        onClick={onClick}
-        className={`flex items-center justify-between px-4 py-2 cursor-pointer rounded-md transition-colors ${active ? 'bg-gray-800 text-white' : 'text-white hover:bg-gray-800'}`}
-    >
-        <div className="flex items-center space-x-3">
-            <Icon size={20} />
-            <span className="font-medium whitespace-nowrap">{label}</span>
-        </div>
-        {hasChildren && (
-            <div className={`transition-transform duration-200 ${expanded ? 'rotate-0' : '-rotate-90'}`}>
-                <ChevronDown size={16} />
+const SidebarItem = ({ icon: Icon, label, to, onClick, hasChildren, expanded }) => {
+    if (hasChildren) {
+        return (
+            <div
+                onClick={onClick}
+                className={`flex items-center justify-between px-4 py-2 cursor-pointer rounded-md transition-colors text-white hover:bg-gray-800`}
+            >
+                <div className="flex items-center space-x-3">
+                    <Icon size={20} />
+                    <span className="font-medium whitespace-nowrap">{label}</span>
+                </div>
+                <div className={`transition-transform duration-200 ${expanded ? 'rotate-0' : '-rotate-90'}`}>
+                    <ChevronDown size={16} />
+                </div>
             </div>
-        )}
-    </div>
-);
+        );
+    }
 
-const SubItem = ({ label, active, onClick }) => (
-    <div
-        onClick={onClick}
-        className={`pl-12 pr-4 py-1.5 cursor-pointer text-sm transition-colors whitespace-nowrap ${active ? 'text-white font-medium' : 'text-white hover:text-gray-300'}`}
+    return (
+        <NavLink
+            to={to}
+            className={({ isActive }) =>
+                `flex items-center justify-between px-4 py-2 cursor-pointer rounded-md transition-colors ${isActive ? 'bg-gray-800 text-white' : 'text-white hover:bg-gray-800'}`
+            }
+        >
+            <div className="flex items-center space-x-3">
+                <Icon size={20} />
+                <span className="font-medium whitespace-nowrap">{label}</span>
+            </div>
+        </NavLink>
+    );
+};
+
+const SubItem = ({ label, to }) => (
+    <NavLink
+        to={to}
+        className={({ isActive }) =>
+            `block pl-12 pr-4 py-1.5 cursor-pointer text-sm transition-colors whitespace-nowrap ${isActive ? 'text-white font-medium' : 'text-white hover:text-gray-300'}`
+        }
     >
         {label}
-    </div>
+    </NavLink>
 );
 
 const SubMenu = ({ isOpen, children }) => (
@@ -41,7 +59,7 @@ const SubMenu = ({ isOpen, children }) => (
     </div>
 );
 
-const Layout = ({ children, currentView, onViewChange, headerContent }) => {
+const Layout = ({ children, headerContent }) => {
     const { currentCluster } = useSettings();
     const { logout, authFetch } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -52,23 +70,54 @@ const Layout = ({ children, currentView, onViewChange, headerContent }) => {
         accessControl: false,
     });
     const [logoSrc, setLogoSrc] = useState(defaultLogo);
+    const location = useLocation();
 
     useEffect(() => {
         authFetch('/api/logo')
             .then(res => {
-                // Only set custom logo if response is OK (200) and has content
                 if (res.ok && res.status === 200) {
                     setLogoSrc('/api/logo');
                 }
-                // If 404 or other error, keep default logo (no action needed)
             })
-            .catch(() => {
-                // Silently handle errors (network, etc.) - keep default logo
-            });
+            .catch(() => { });
     }, []);
 
     const toggleMenu = (menu) => {
         setExpandedMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
+    };
+
+    // Helper to map view names to paths
+    const getPath = (view) => {
+        const kindMap = {
+            'Deployments': 'Deployment',
+            'Pods': 'Pod',
+            'ConfigMaps': 'ConfigMap',
+            'Secrets': 'Secret',
+            'Jobs': 'Job',
+            'CronJobs': 'CronJob',
+            'StatefulSets': 'StatefulSet',
+            'DaemonSets': 'DaemonSet',
+            'HPA': 'HorizontalPodAutoscaler',
+            'Services': 'Service',
+            'Ingresses': 'Ingress',
+            'Network Policies': 'NetworkPolicy',
+            'PVCs': 'PersistentVolumeClaim',
+            'PVs': 'PersistentVolume',
+            'Storage Classes': 'StorageClass',
+            'Nodes': 'Node',
+            'Service Accounts': 'ServiceAccount',
+            'Roles': 'Role',
+            'Cluster Roles': 'ClusterRole',
+            'Role Bindings': 'RoleBinding',
+            'Cluster Role Bindings': 'ClusterRoleBinding'
+        };
+
+        if (kindMap[view]) {
+            return `/dashboard/workloads/${kindMap[view]}`;
+        }
+
+        // Fallback for direct mapping
+        return `/dashboard/${view.toLowerCase().replace(' ', '-')}`;
     };
 
     return (
@@ -100,8 +149,7 @@ const Layout = ({ children, currentView, onViewChange, headerContent }) => {
                         <SidebarItem
                             icon={LayoutDashboard}
                             label="Overview"
-                            active={currentView === 'Overview'}
-                            onClick={() => onViewChange('Overview')}
+                            to="/dashboard/overview"
                         />
 
                         {/* Workloads */}
@@ -117,8 +165,7 @@ const Layout = ({ children, currentView, onViewChange, headerContent }) => {
                                 <SubItem
                                     key={item}
                                     label={item}
-                                    active={currentView === item}
-                                    onClick={() => onViewChange(item)}
+                                    to={getPath(item)}
                                 />
                             ))}
                         </SubMenu>
@@ -136,8 +183,7 @@ const Layout = ({ children, currentView, onViewChange, headerContent }) => {
                                 <SubItem
                                     key={item}
                                     label={item}
-                                    active={currentView === item}
-                                    onClick={() => onViewChange(item)}
+                                    to={getPath(item)}
                                 />
                             ))}
                         </SubMenu>
@@ -155,8 +201,7 @@ const Layout = ({ children, currentView, onViewChange, headerContent }) => {
                                 <SubItem
                                     key={item}
                                     label={item}
-                                    active={currentView === item}
-                                    onClick={() => onViewChange(item)}
+                                    to={getPath(item)}
                                 />
                             ))}
                         </SubMenu>
@@ -174,8 +219,7 @@ const Layout = ({ children, currentView, onViewChange, headerContent }) => {
                                 <SubItem
                                     key={item}
                                     label={item}
-                                    active={currentView === item}
-                                    onClick={() => onViewChange(item)}
+                                    to={getPath(item)}
                                 />
                             ))}
                         </SubMenu>
@@ -183,43 +227,37 @@ const Layout = ({ children, currentView, onViewChange, headerContent }) => {
                         <SidebarItem
                             icon={Server}
                             label="Nodes"
-                            active={currentView === 'Nodes'}
-                            onClick={() => onViewChange('Nodes')}
+                            to={getPath('Nodes')}
                         />
 
                         <SidebarItem
                             icon={Database}
                             label="Namespaces"
-                            active={currentView === 'Namespaces'}
-                            onClick={() => onViewChange('Namespaces')}
+                            to="/dashboard/namespaces"
                         />
 
                         <SidebarItem
                             icon={Gauge}
                             label="Resource Quotas"
-                            active={currentView === 'Resource Quotas'}
-                            onClick={() => onViewChange('Resource Quotas')}
+                            to="/dashboard/resource-quotas"
                         />
 
                         <SidebarItem
                             icon={ListTree}
                             label="API Explorer"
-                            active={currentView === 'API Explorer'}
-                            onClick={() => onViewChange('API Explorer')}
+                            to="/dashboard/api-explorer"
                         />
 
                         <SidebarItem
                             icon={Package}
                             label="Helm Charts"
-                            active={currentView === 'Helm Charts'}
-                            onClick={() => onViewChange('Helm Charts')}
+                            to="/dashboard/helm-charts"
                         />
 
                         <SidebarItem
                             icon={Settings}
                             label="Settings"
-                            active={currentView === 'Settings'}
-                            onClick={() => onViewChange('Settings')}
+                            to="/dashboard/settings"
                         />
                     </nav>
 
@@ -247,3 +285,4 @@ const Layout = ({ children, currentView, onViewChange, headerContent }) => {
 };
 
 export default Layout;
+

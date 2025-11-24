@@ -1,84 +1,36 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Activity, RefreshCw, Tag, Plus, MoreVertical, FileText, Trash2, AlertCircle, Box, Cpu, HardDrive, Globe, MapPin } from 'lucide-react';
+import { Activity, RefreshCw, Tag, Plus, MoreVertical, FileText, Trash2, AlertCircle, Box, Globe, MapPin } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import QuotaEditor from './QuotaEditor';
 import LimitRangeEditor from './LimitRangeEditor';
 import YamlEditor from './YamlEditor';
-import { getStatusBadgeClass } from '../utils/statusBadge';
 import { calculatePercentage } from '../utils/resourceParser';
+import { useResourceQuotas } from '../hooks/useResourceQuotas';
+import { useNamespaces } from '../hooks/useNamespaces';
 
 const ResourceQuotaManager = ({ namespace }) => {
     const { currentCluster } = useSettings();
     const { authFetch } = useAuth();
-    const [quotas, setQuotas] = useState([]);
-    const [limitRanges, setLimitRanges] = useState([]);
-    const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('quotas'); // 'quotas' or 'limits'
     const [editingQuota, setEditingQuota] = useState(null);
     const [editingLimitRange, setEditingLimitRange] = useState(null);
     const [editingYaml, setEditingYaml] = useState(null);
     const [menuOpen, setMenuOpen] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
-    const [namespaces, setNamespaces] = useState([]);
     const [namespaceFilter, setNamespaceFilter] = useState('all'); // 'all' or specific namespace
     const [createMenuOpen, setCreateMenuOpen] = useState(false);
     const createMenuRef = useRef(null);
 
-    const fetchNamespaces = () => {
-        const params = new URLSearchParams();
-        if (currentCluster) params.append('cluster', currentCluster);
+    // Fetch namespaces for the dropdown/create menu
+    const { data: namespaces = [] } = useNamespaces(authFetch, currentCluster);
 
-        authFetch(`/api/namespaces?${params.toString()}`)
-            .then(res => res.json())
-            .then(data => {
-                setNamespaces(data || []);
-            })
-            .catch(() => setNamespaces([]));
-    };
+    // Fetch quotas and limit ranges
+    const { quotas: quotasQuery, limitRanges: limitRangesQuery } = useResourceQuotas(authFetch, namespaceFilter, currentCluster);
 
-    const fetchQuotas = () => {
-        setLoading(true);
-        const params = new URLSearchParams({ kind: 'ResourceQuota', namespace: namespaceFilter });
-        if (currentCluster) params.append('cluster', currentCluster);
-
-        authFetch(`/api/resources?${params.toString()}`)
-            .then(res => res.json())
-            .then(data => {
-                setQuotas(data || []);
-                setLoading(false);
-            })
-            .catch(() => {
-                setQuotas([]);
-                setLoading(false);
-            });
-    };
-
-    const fetchLimitRanges = () => {
-        setLoading(true);
-        const params = new URLSearchParams({ kind: 'LimitRange', namespace: namespaceFilter });
-        if (currentCluster) params.append('cluster', currentCluster);
-
-        authFetch(`/api/resources?${params.toString()}`)
-            .then(res => res.json())
-            .then(data => {
-                setLimitRanges(data || []);
-                setLoading(false);
-            })
-            .catch(() => {
-                setLimitRanges([]);
-                setLoading(false);
-            });
-    };
-
-    const fetchAll = () => {
-        fetchNamespaces();
-        if (activeTab === 'quotas') {
-            fetchQuotas();
-        } else {
-            fetchLimitRanges();
-        }
-    };
+    const quotas = quotasQuery.data || [];
+    const limitRanges = limitRangesQuery.data || [];
+    const loading = quotasQuery.isLoading || limitRangesQuery.isLoading;
 
     // Initialize namespaceFilter from prop
     useEffect(() => {
@@ -101,10 +53,6 @@ const ResourceQuotaManager = ({ namespace }) => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [createMenuOpen]);
-
-    useEffect(() => {
-        fetchAll();
-    }, [currentCluster, activeTab, namespaceFilter]);
 
 
     const handleDelete = async (resource, kind, force = false) => {
@@ -129,15 +77,12 @@ const ResourceQuotaManager = ({ namespace }) => {
             // Close the confirmation modal first
             setConfirmAction(null);
 
-            // Refresh the appropriate list immediately after successful deletion
-            // Use setTimeout to ensure the modal is closed before refreshing
-            setTimeout(() => {
-                if (kind === 'ResourceQuota') {
-                    fetchQuotas();
-                } else {
-                    fetchLimitRanges();
-                }
-            }, 100);
+            // Refresh the appropriate list
+            if (kind === 'ResourceQuota') {
+                quotasQuery.refetch();
+            } else {
+                limitRangesQuery.refetch();
+            }
         } catch (err) {
             alert(`Error deleting ${kind}: ${err.message}`);
             throw err; // Re-throw to allow caller to handle
@@ -347,7 +292,10 @@ const ResourceQuotaManager = ({ namespace }) => {
                         </button>
                     </div>
                     <button
-                        onClick={fetchAll}
+                        onClick={() => {
+                            quotasQuery.refetch();
+                            limitRangesQuery.refetch();
+                        }}
                         className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded-md border border-gray-700 text-sm transition-colors flex items-center"
                         title="Refresh"
                     >
@@ -355,7 +303,7 @@ const ResourceQuotaManager = ({ namespace }) => {
                         Refresh
                     </button>
                     <div className="relative" ref={createMenuRef}>
-                        <button 
+                        <button
                             onClick={() => setCreateMenuOpen(!createMenuOpen)}
                             className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded-md border border-gray-700 text-sm transition-colors flex items-center"
                         >
@@ -461,7 +409,7 @@ const ResourceQuotaManager = ({ namespace }) => {
                     onSaved={() => {
                         setEditingQuota(null);
                         setActiveTab('quotas'); // Ensure we're on the quotas tab
-                        fetchQuotas();
+                        quotasQuery.refetch();
                     }}
                 />
             )}
@@ -473,7 +421,7 @@ const ResourceQuotaManager = ({ namespace }) => {
                     onSaved={() => {
                         setEditingLimitRange(null);
                         setActiveTab('limits'); // Ensure we're on the limits tab
-                        fetchLimitRanges();
+                        limitRangesQuery.refetch();
                     }}
                 />
             )}
@@ -485,9 +433,9 @@ const ResourceQuotaManager = ({ namespace }) => {
                     onSaved={() => {
                         setEditingYaml(null);
                         if (activeTab === 'quotas') {
-                            fetchQuotas();
+                            quotasQuery.refetch();
                         } else {
-                            fetchLimitRanges();
+                            limitRangesQuery.refetch();
                         }
                     }}
                 />

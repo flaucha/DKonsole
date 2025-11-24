@@ -1,16 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Package, RefreshCw, Clock, Tag, MoreVertical, Trash2, CirclePlus, CircleMinus, ArrowUp, X, Info, Download } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { formatDateTimeShort } from '../utils/dateUtils';
 import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
+import { useHelmReleases } from '../hooks/useHelmReleases';
 
 const HelmChartManager = () => {
     const { currentCluster } = useSettings();
     const { authFetch } = useAuth();
-    const [releases, setReleases] = useState([]);
-    const [loading, setLoading] = useState(false);
     const [expandedReleases, setExpandedReleases] = useState({});
     const [menuOpen, setMenuOpen] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
@@ -33,23 +32,7 @@ const HelmChartManager = () => {
     });
     const [installing, setInstalling] = useState(false);
 
-    const fetchReleases = () => {
-        setLoading(true);
-        const params = new URLSearchParams();
-        if (currentCluster) params.append('cluster', currentCluster);
-
-        authFetch(`/api/helm/releases?${params.toString()}`)
-            .then(res => res.json())
-            .then(data => {
-                setReleases(data || []);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    };
-
-    useEffect(() => {
-        fetchReleases();
-    }, [currentCluster]);
+    const { data: releases = [], isLoading: loading, refetch } = useHelmReleases(authFetch, currentCluster);
 
     const toggleExpand = (releaseKey) => {
         setExpandedReleases(prev => ({ ...prev, [releaseKey]: !prev[releaseKey] }));
@@ -102,7 +85,7 @@ const HelmChartManager = () => {
 
             // Refresh the list after deletion
             setTimeout(() => {
-                fetchReleases();
+                refetch();
             }, 500);
         } catch (err) {
             alert(`Error uninstalling Helm release: ${err.message}`);
@@ -142,13 +125,13 @@ const HelmChartManager = () => {
             const result = await res.json();
             setUpgradeRelease(null);
             setUpgradeForm({ chart: '', version: '', repo: '', valuesYaml: '' });
-            
+
             // Show success message
             alert(`Upgrade initiated! Job: ${result.job || 'created'}`);
-            
+
             // Refresh the list after a delay
             setTimeout(() => {
-                fetchReleases();
+                refetch();
             }, 2000);
         } catch (err) {
             alert(`Error upgrading Helm release: ${err.message}`);
@@ -193,13 +176,13 @@ const HelmChartManager = () => {
             const result = await res.json();
             setInstallModalOpen(false);
             setInstallForm({ name: '', namespace: '', chart: '', version: '', repo: '', valuesYaml: '' });
-            
+
             // Show success message
             alert(`Installation initiated! Job: ${result.job || 'created'}`);
-            
+
             // Refresh the list after a delay
             setTimeout(() => {
-                fetchReleases();
+                refetch();
             }, 2000);
         } catch (err) {
             alert(`Error installing Helm chart: ${err.message}`);
@@ -225,7 +208,7 @@ const HelmChartManager = () => {
                         Install Chart
                     </button>
                     <button
-                        onClick={fetchReleases}
+                        onClick={() => refetch()}
                         className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded-md border border-gray-700 text-sm transition-colors flex items-center"
                     >
                         <RefreshCw size={14} className="mr-2" />
