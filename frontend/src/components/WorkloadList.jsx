@@ -89,13 +89,16 @@ const WorkloadList = ({ namespace, kind }) => {
     const [expandedId, setExpandedId] = useState(null);
     const [sortField, setSortField] = useState('name');
     const [sortDirection, setSortDirection] = useState('asc');
-    const { currentCluster } = useSettings();
+    const { currentCluster, itemsPerPage } = useSettings();
     const { authFetch } = useAuth();
     const [filter, setFilter] = useState('');
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [editingResource, setEditingResource] = useState(null);
     const [menuOpen, setMenuOpen] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
+    const [continueToken, setContinueToken] = useState(null);
+    const [allResources, setAllResources] = useState([]);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
 
     // Early return if kind is not provided
     if (!kind) {
@@ -103,16 +106,64 @@ const WorkloadList = ({ namespace, kind }) => {
     }
 
     // Use React Query hook
-    const { data: resourcesData, isLoading: loading, error, refetch } = useWorkloads(authFetch, namespace, kind);
+    const { data: resourcesData, isLoading: loading, error, refetch } = useWorkloads(authFetch, namespace, kind, continueToken);
     
-    // Ensure resources is always an array (handle null/undefined cases)
-    const resources = Array.isArray(resourcesData) ? resourcesData : [];
-
-    // Reset state when view context changes
+    // Handle paginated response
     useEffect(() => {
+        if (resourcesData) {
+            // Check if response is paginated (object with resources array) or legacy array
+            if (resourcesData.resources && Array.isArray(resourcesData.resources)) {
+                // Paginated response - always replace on initial load, append on loadMore
+                if (continueToken === null) {
+                    // First page, replace all resources
+                    setAllResources(resourcesData.resources);
+                } else {
+                    // Loading more, append to existing resources
+                    setAllResources(prev => [...prev, ...resourcesData.resources]);
+                }
+                setContinueToken(resourcesData.continue || null);
+            } else if (Array.isArray(resourcesData)) {
+                // Legacy array response (backward compatibility)
+                setAllResources(resourcesData);
+                setContinueToken(null);
+            }
+        }
+    }, [resourcesData]);
+
+    // Reset when namespace, kind, or cluster changes
+    useEffect(() => {
+        setAllResources([]);
+        setContinueToken(null);
         setExpandedId(null);
         setFilter('');
-    }, [namespace, kind, currentCluster]);
+    }, [namespace, kind, currentCluster, itemsPerPage]);
+
+    // Ensure resources is always an array
+    const resources = allResources;
+
+    const loadMore = async () => {
+        if (!continueToken || isLoadingMore) return;
+        setIsLoadingMore(true);
+        try {
+            const params = new URLSearchParams({ kind });
+            params.append('namespace', namespace);
+            params.append('limit', itemsPerPage.toString());
+            if (continueToken) params.append('continue', continueToken);
+            
+            const response = await authFetch(`/api/resources?${params.toString()}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.resources && Array.isArray(data.resources)) {
+                    setAllResources(prev => [...prev, ...data.resources]);
+                    setContinueToken(data.continue || null);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to load more resources:', err);
+        } finally {
+            setIsLoadingMore(false);
+        }
+    };
 
     const toggleExpand = (uid) => {
         setExpandedId(current => current === uid ? null : uid);
@@ -229,6 +280,11 @@ const WorkloadList = ({ namespace, kind }) => {
 
     const renderDetails = (res) => {
         const onEditYAML = () => setEditingResource(res);
+        const onDataSaved = () => {
+            // Close expanded row and refresh data
+            setExpandedId(null);
+            setTimeout(() => refetch(), 300);
+        };
         if (!res.details) return (
             <div className="p-4 text-gray-500 italic">
                 No details available.
@@ -248,8 +304,8 @@ const WorkloadList = ({ namespace, kind }) => {
             case 'Service': return <ServiceDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'Ingress': return <IngressDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'Pod': return <PodDetails details={res.details} onEditYAML={onEditYAML} pod={res} />;
-            case 'ConfigMap': return <ConfigMapDetails details={res.details} onEditYAML={onEditYAML} />;
-            case 'Secret': return <SecretDetails details={res.details} onEditYAML={onEditYAML} />;
+            case 'ConfigMap': return <ConfigMapDetails details={res.details} onEditYAML={onEditYAML} resource={res} onDataSaved={onDataSaved} />;
+            case 'Secret': return <SecretDetails details={res.details} onEditYAML={onEditYAML} resource={res} onDataSaved={onDataSaved} />;
             case 'NetworkPolicy': return <NetworkPolicyDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'PersistentVolumeClaim':
             case 'PersistentVolume': return <StorageDetails details={res.details} onEditYAML={onEditYAML} />;
@@ -509,6 +565,28 @@ const WorkloadList = ({ namespace, kind }) => {
                     </div>
                 )}
             </div>
+
+            {/* Pagination Controls */}
+            {continueToken && (
+                <div className="border-t border-gray-800 p-4 flex items-center justify-center">
+                    <button
+                        onClick={loadMore}
+                        disabled={isLoadingMore}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-md transition-colors flex items-center gap-2"
+                    >
+                        {isLoadingMore ? (
+                            <>
+                                <RefreshCw size={16} className="animate-spin" />
+                                Loading...
+                            </>
+                        ) : (
+                            <>
+                                Load More ({resources.length} loaded)
+                            </>
+                        )}
+                    </button>
+                </div>
+            )}
             
             {/* YAML Editor Modal */}
             {editingResource && (

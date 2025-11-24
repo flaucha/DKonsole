@@ -13,6 +13,10 @@ export const SettingsProvider = ({ children }) => {
     const [font, setFont] = useState(localStorage.getItem('font') || 'Inter');
     const [fontSize, setFontSize] = useState(localStorage.getItem('fontSize') || 'normal');
     const [borderRadius, setBorderRadius] = useState(localStorage.getItem('borderRadius') || 'md');
+    const [itemsPerPage, setItemsPerPage] = useState(() => {
+        const saved = localStorage.getItem('itemsPerPage');
+        return saved ? parseInt(saved, 10) : 500;
+    });
 
     useEffect(() => {
         fetchClusters();
@@ -37,6 +41,10 @@ export const SettingsProvider = ({ children }) => {
         document.documentElement.setAttribute('data-border-radius', borderRadius);
         localStorage.setItem('borderRadius', borderRadius);
     }, [borderRadius]);
+
+    useEffect(() => {
+        localStorage.setItem('itemsPerPage', itemsPerPage.toString());
+    }, [itemsPerPage]);
 
     const fetchClusters = async () => {
         try {
@@ -65,7 +73,9 @@ export const SettingsProvider = ({ children }) => {
             fontSize,
             setFontSize,
             borderRadius,
-            setBorderRadius
+            setBorderRadius,
+            itemsPerPage,
+            setItemsPerPage
         }}>
             {children}
         </SettingsContext.Provider>

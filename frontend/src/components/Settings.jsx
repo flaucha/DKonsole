@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
-import { Server, Palette, Type, Plus, Check, AlertCircle, Trash2 } from 'lucide-react';
+import { Server, Palette, Type, Plus, Check, AlertCircle, Trash2, Settings as SettingsIcon, Info } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Settings = () => {
     const {
@@ -9,7 +10,8 @@ const Settings = () => {
         theme, setTheme,
         font, setFont,
         fontSize, setFontSize,
-        borderRadius, setBorderRadius
+        borderRadius, setBorderRadius,
+        itemsPerPage, setItemsPerPage
     } = useSettings();
     const { authFetch } = useAuth();
     const [activeTab, setActiveTab] = useState('clusters');
@@ -67,6 +69,18 @@ const Settings = () => {
                 >
                     <Palette size={18} className="mr-2" /> Appearance
                 </button>
+                <button
+                    className={`pb-2 px-4 flex items-center font-medium transition-colors ${activeTab === 'general' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                    onClick={() => setActiveTab('general')}
+                >
+                    <SettingsIcon size={18} className="mr-2" /> General
+                </button>
+                <Link
+                    to="/dashboard/about"
+                    className="pb-2 px-4 flex items-center font-medium transition-colors text-gray-400 hover:text-gray-300"
+                >
+                    <Info size={18} className="mr-2" /> About
+                </Link>
             </div>
 
             {activeTab === 'clusters' && (
@@ -232,6 +246,38 @@ const Settings = () => {
                                         />
                                     </label>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'general' && (
+                <div className="space-y-6">
+                    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
+                        <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
+                            <SettingsIcon size={20} className="mr-2 text-blue-400" /> General Settings
+                        </h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    Items per Page
+                                </label>
+                                <p className="text-xs text-gray-500 mb-2">
+                                    Maximum number of resources to load per page. Lower values improve performance in large clusters.
+                                </p>
+                                <select
+                                    value={itemsPerPage}
+                                    onChange={(e) => setItemsPerPage(parseInt(e.target.value, 10))}
+                                    className="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-md text-gray-200 focus:outline-none focus:border-blue-500"
+                                >
+                                    <option value={100}>100</option>
+                                    <option value={250}>250</option>
+                                    <option value={500}>500</option>
+                                    <option value={1000}>1000</option>
+                                    <option value={2000}>2000</option>
+                                    <option value={5000}>5000</option>
+                                </select>
                             </div>
                         </div>
                     </div>
