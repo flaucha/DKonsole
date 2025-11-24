@@ -59,3 +59,5 @@ export const getExpandableRowRowClasses = (isExpanded) => {
     return `group hover:bg-gray-800/50 transition-colors cursor-pointer ${isExpanded ? 'bg-gray-800/30' : ''}`;
 };
 
+
+
