@@ -5,6 +5,57 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.6] - 2025-01-26
+
+### 🎯 In-Place Editing & Performance Improvements
+
+This release introduces in-place editing for Secrets and ConfigMaps, removes pagination limitations, and adds an About section.
+
+### Added
+
+- **In-Place Editing for Secrets and ConfigMaps**: Direct editing of data fields without YAML
+  - "Edit in place" button for Secrets and ConfigMaps
+  - Unmask secret values for editing
+  - Direct field editing and saving
+  - Automatic base64 encoding/decoding for secrets
+- **About Section**: New About page with version information
+  - Version display
+  - GitHub, email, and BuyMeACoffee links
+  - Features list
+  - Accessible from Settings navigation
+
+### Changed
+
+- **Removed Pagination Limitations**: All resources now load completely without pagination
+  - Removed pagination limits from backend API
+  - Removed items per page configuration from Settings
+  - Removed display limit selector from resource lists
+  - All resources load automatically without manual pagination
+- **Improved Resource Loading**: Simplified resource fetching
+  - Direct array responses from API (no paginated structure)
+  - Automatic loading of all resources
+  - Better performance for large clusters
+
+### Fixed
+
+- **Namespace "all" Support**: Fixed issue where ConfigMaps, Secrets, and Deployments returned empty when selecting "all" namespaces
+- **Dependency Updates**: Updated npm dependencies to resolve memory leak warnings
+  - Updated `inflight` and `glob` dependencies
+  - Fixed deprecated package warnings
+
+### Technical
+
+- **Backend Changes**:
+  - Removed pagination parameters (`limit`, `continue`) from resource listing
+  - Simplified `GetResources` endpoint to return direct array
+  - Removed `PaginatedResources` structure usage
+- **Frontend Changes**:
+  - Removed pagination UI components
+  - Removed `itemsPerPage` from SettingsContext
+  - Simplified `useWorkloads` hook
+  - Added `DataEditor` component for in-place editing
+  - Added `About` component with automatic version reading
+
 ## [1.1.5] - 2025-01-25
 
 ### 🧪 Testing Infrastructure & CI/CD

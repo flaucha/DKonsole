@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="1.1.4"
+VERSION="1.1.6"
 
 echo "=========================================="
 echo "🚀 DKonsole Release v${VERSION}"
@@ -48,15 +48,13 @@ fi
 echo "🏷️  Creating new tag v${VERSION}..."
 git tag -a "v${VERSION}" -m "Release v${VERSION}
 
-UI Refactor & Bug Fixes:
-- Major frontend refactor with consistent list styling across all resource managers
-- Fixed API endpoint issues and undefined kind validation
-- Restored delete menu functionality for all resources
-- Improved empty state display and error handling
-- Enhanced expanded details styling consistency
-- Fixed Edit YAML button functionality
-- Improved log viewer scroll behavior
-- Better error handling for Jobs and CronJobs
+In-Place Editing & Performance Improvements:
+- Added in-place editing for Secrets and ConfigMaps
+- Removed pagination limitations - all resources load completely
+- Added About section with version information
+- Fixed namespace 'all' support for ConfigMaps, Secrets, and Deployments
+- Updated dependencies to resolve memory leak warnings
+- Simplified resource loading without pagination
 
 Docker Image:
 - dkonsole/dkonsole:${VERSION}"

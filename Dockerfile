@@ -8,6 +8,9 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
 
+# Copy VERSION file for build-time injection
+COPY VERSION ../VERSION
+
 # Copy source code and build
 COPY frontend/ .
 RUN npm run build

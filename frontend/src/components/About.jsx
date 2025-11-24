@@ -2,7 +2,8 @@ import React from 'react';
 import { Github, Mail, Coffee, Code } from 'lucide-react';
 
 const About = () => {
-    const version = '1.1.5';
+    // Version is injected at build time from VERSION file via vite.config.js
+    const version = import.meta.env.VITE_APP_VERSION || '1.1.6';
     const githubUrl = 'https://github.com/flaucha/DKonsole';
     const email = 'flaucha@gmail.com';
     const buymeacoffeeUrl = 'https://buymeacoffee.com/flaucha';

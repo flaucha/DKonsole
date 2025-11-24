@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -151,30 +150,15 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 		listNamespace = ""
 	}
 
-	// Get pagination parameters
-	limitStr := r.URL.Query().Get("limit")
-	limit := DefaultListLimit
-	if limitStr != "" {
-		if parsedLimit, err := strconv.ParseInt(limitStr, 10, 64); err == nil && parsedLimit > 0 && parsedLimit <= 5000 {
-			limit = parsedLimit
-		}
-	}
-	continueToken := r.URL.Query().Get("continue")
-
-	// Create ListOptions with limit and continue token for pagination
-	listOpts := metav1.ListOptions{
-		Limit:    limit,
-		Continue: continueToken,
-	}
+	// Create ListOptions - no pagination limits, load all resources
+	listOpts := metav1.ListOptions{}
 
 	var resources []models.Resource
-	var lastContinueToken string
 
 	switch kind {
 	case "Deployment":
 		list, err := client.AppsV1().Deployments(listNamespace).List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				var images []string
 				var ports []int32
@@ -215,7 +199,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "Node":
 		list, err := client.CoreV1().Nodes().List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 			for _, i := range list.Items {
 				conditions := make(map[string]string)
 				for _, c := range i.Status.Conditions {
@@ -268,7 +252,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "Pod":
 		list, err := client.CoreV1().Pods(listNamespace).List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 		}
 		metricsMap := make(map[string]models.PodMetric)
 		if mclient := s.clusterService.GetMetricsClient(r); mclient != nil {
@@ -359,7 +343,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "ConfigMap":
 		list, err := client.CoreV1().ConfigMaps(listNamespace).List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 			for _, i := range list.Items {
 				resources = append(resources, models.Resource{
 					Name:      i.Name,
@@ -377,7 +361,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "Secret":
 		list, err := client.CoreV1().Secrets(listNamespace).List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 			for _, i := range list.Items {
 				data := make(map[string]string)
 				for k, v := range i.Data {
@@ -404,7 +388,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Failed to list Jobs: %v", err), http.StatusInternalServerError)
 			return
 		}
-		lastContinueToken = list.Continue
+
 		for _, i := range list.Items {
 			status := "Running"
 			if i.Status.Succeeded > 0 {
@@ -441,7 +425,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Failed to list CronJobs: %v", err), http.StatusInternalServerError)
 			return
 		}
-		lastContinueToken = list.Continue
+
 		for _, i := range list.Items {
 			var lastSchedule string
 			if i.Status.LastScheduleTime != nil {
@@ -467,7 +451,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "StatefulSet":
 		list, err := client.AppsV1().StatefulSets(listNamespace).List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 			for _, i := range list.Items {
 				details := map[string]interface{}{
 					"replicas":       i.Status.Replicas,
@@ -493,7 +477,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "DaemonSet":
 		list, err := client.AppsV1().DaemonSets(listNamespace).List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 			for _, i := range list.Items {
 				details := map[string]interface{}{
 					"desired":      i.Status.DesiredNumberScheduled,
@@ -518,7 +502,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "HorizontalPodAutoscaler":
 		list, err := client.AutoscalingV2().HorizontalPodAutoscalers(listNamespace).List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 			for _, i := range list.Items {
 				status := fmt.Sprintf("%d/%d replicas", i.Status.CurrentReplicas, i.Status.DesiredReplicas)
 				details := map[string]interface{}{
@@ -543,7 +527,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "Service":
 		list, err := client.CoreV1().Services(listNamespace).List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 			for _, i := range list.Items {
 				var ports []string
 				for _, p := range i.Spec.Ports {
@@ -567,7 +551,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "Ingress":
 		list, err := client.NetworkingV1().Ingresses(listNamespace).List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 			for _, i := range list.Items {
 				var tls []map[string]interface{}
 				for _, t := range i.Spec.TLS {
@@ -709,7 +693,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "NetworkPolicy":
 		list, err := client.NetworkingV1().NetworkPolicies(listNamespace).List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 			for _, i := range list.Items {
 				resources = append(resources, models.Resource{
 					Name:      i.Name,
@@ -728,7 +712,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "PersistentVolumeClaim":
 		list, err := client.CoreV1().PersistentVolumeClaims(listNamespace).List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 			for _, i := range list.Items {
 				requested := ""
 				if i.Spec.Resources.Requests != nil {
@@ -805,7 +789,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "PersistentVolume":
 		list, err := client.CoreV1().PersistentVolumes().List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 			for _, i := range list.Items {
 				resources = append(resources, models.Resource{
 					Name:      i.Name,
@@ -826,7 +810,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "StorageClass":
 		list, err := client.StorageV1().StorageClasses().List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 			for _, i := range list.Items {
 				reclaim := ""
 				if i.ReclaimPolicy != nil {
@@ -857,7 +841,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "ResourceQuota":
 		list, err := client.CoreV1().ResourceQuotas(listNamespace).List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 			for _, i := range list.Items {
 				resources = append(resources, models.Resource{
 					Name:      i.Name,
@@ -876,7 +860,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "LimitRange":
 		list, err := client.CoreV1().LimitRanges(listNamespace).List(ctx, listOpts)
 		if err == nil {
-			lastContinueToken = list.Continue
+
 			for _, i := range list.Items {
 				resources = append(resources, models.Resource{
 					Name:      i.Name,
@@ -900,13 +884,8 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create paginated response
-	response := models.PaginatedResources{
-		Resources: resources,
-		Continue:  lastContinueToken,
-	}
-
+	// Return resources directly (no pagination)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(resources)
 }
 

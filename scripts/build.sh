@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="1.1.6-FEATURE-TEST"
+VERSION="1.1.6"
 
 echo "=========================================="
 echo "🔨 DKonsole Build v${VERSION}"
