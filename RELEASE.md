@@ -365,6 +365,6 @@ Before pushing the tag, verify:
 
 ---
 
-**Last Updated:** 2025-01-26  
-**Current Version:** 1.1.7
+**Last Updated:** 2025-11-24  
+**Current Version:** 1.1.8
 

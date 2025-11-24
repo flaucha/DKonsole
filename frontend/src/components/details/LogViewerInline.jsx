@@ -5,9 +5,29 @@ import { useAuth } from '../../context/AuthContext';
 const LogViewerInline = ({ namespace, pod, container }) => {
     const [logs, setLogs] = useState([]);
     const [isPaused, setIsPaused] = useState(false);
+    const [textColor, setTextColor] = useState(() => {
+        // Cargar color guardado desde localStorage, o usar verde por defecto
+        const savedColor = localStorage.getItem('dkonsole-log-text-color');
+        return savedColor || 'green';
+    });
     const bottomRef = useRef(null);
     const streamRef = useRef(null);
     const { authFetch } = useAuth();
+
+    const colorOptions = [
+        { name: 'gris', value: 'gray', textClass: 'text-gray-400', bgClass: 'bg-gray-500' },
+        { name: 'verde', value: 'green', textClass: 'text-green-400', bgClass: 'bg-green-500' },
+        { name: 'celeste', value: 'cyan', textClass: 'text-cyan-400', bgClass: 'bg-cyan-500' },
+        { name: 'amarillo', value: 'yellow', textClass: 'text-yellow-400', bgClass: 'bg-yellow-500' },
+        { name: 'naranja', value: 'orange', textClass: 'text-orange-400', bgClass: 'bg-orange-500' },
+        { name: 'blanco', value: 'white', textClass: 'text-white', bgClass: 'bg-white' },
+    ];
+
+    // Guardar color seleccionado en localStorage
+    const handleColorChange = (colorValue) => {
+        setTextColor(colorValue);
+        localStorage.setItem('dkonsole-log-text-color', colorValue);
+    };
 
     useEffect(() => {
         setLogs([]); // Clear logs when container changes
@@ -81,33 +101,54 @@ const LogViewerInline = ({ namespace, pod, container }) => {
                     <span className="font-mono text-xs text-gray-200">{pod}</span>
                     {container && <span className="text-xs text-gray-500">({container})</span>}
                 </div>
-                <div className="flex items-center space-x-2">
-                    <button
-                        onClick={() => setIsPaused(!isPaused)}
-                        className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
-                        title={isPaused ? "Resume auto-scroll" : "Pause auto-scroll"}
-                    >
-                        {isPaused ? <Play size={14} /> : <Pause size={14} />}
-                    </button>
-                    <button
-                        onClick={handleClear}
-                        className="px-2 py-1 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-700 transition-colors"
-                        title="Clear logs"
-                    >
-                        Clear
-                    </button>
-                    <button
-                        onClick={handleDownload}
-                        className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
-                        title="Download logs"
-                    >
-                        <Download size={14} />
-                    </button>
+                <div className="flex items-center space-x-4">
+                    {/* Color Selector */}
+                    <div className="flex items-center space-x-2">
+                        <span className="text-xs text-gray-400">Color:</span>
+                        <div className="flex items-center gap-1.5 p-1 bg-gray-900/50 rounded-md border border-gray-700">
+                            {colorOptions.map((color) => (
+                                <button
+                                    key={color.value}
+                                    onClick={() => handleColorChange(color.value)}
+                                    className={`w-6 h-6 rounded border-2 transition-all hover:scale-110 ${
+                                        textColor === color.value
+                                            ? 'border-white scale-110 shadow-lg shadow-white/20'
+                                            : 'border-gray-600 hover:border-gray-400'
+                                    } ${color.bgClass}`}
+                                    title={color.name}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                    {/* Control Buttons */}
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => setIsPaused(!isPaused)}
+                            className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
+                            title={isPaused ? "Resume auto-scroll" : "Pause auto-scroll"}
+                        >
+                            {isPaused ? <Play size={14} /> : <Pause size={14} />}
+                        </button>
+                        <button
+                            onClick={handleClear}
+                            className="px-2 py-1 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-700 transition-colors"
+                            title="Clear logs"
+                        >
+                            Clear
+                        </button>
+                        <button
+                            onClick={handleDownload}
+                            className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
+                            title="Download logs"
+                        >
+                            <Download size={14} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Logs Content */}
-            <div className="flex-1 overflow-auto p-4 font-mono text-xs bg-black text-green-400">
+            <div className={`flex-1 overflow-auto p-4 font-mono text-xs bg-black ${colorOptions.find(c => c.value === textColor)?.textClass || 'text-green-400'}`}>
                 {logs.length === 0 ? (
                     <div className="text-gray-500 italic">Loading logs...</div>
                 ) : (

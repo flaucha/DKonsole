@@ -5,6 +5,18 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.8] - 2025-11-24
+
+### Added
+
+- **Selector de color para logs con persistencia**: Nueva funcionalidad para personalizar el color del texto en los logs
+  - Selector visual mejorado con cuadraditos de color seleccionables
+  - Opciones disponibles: gris, verde, celeste, amarillo, naranja, blanco
+  - Persistencia de selección usando localStorage (la selección se mantiene entre sesiones)
+  - Diseño más armónico con fondo oscuro, mejor espaciado y efectos visuales mejorados
+  - El color seleccionado se aplica a todos los logs en tiempo real
+  - Disponible en todos los visores de logs (LogViewerInline)
+
 ## [1.1.7] - 2025-01-26
 
 ### Fixed
