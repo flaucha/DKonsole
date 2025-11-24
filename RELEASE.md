@@ -37,7 +37,11 @@ Perform the following file updates precisely.
 - **Action 2 (Checkout)**: Update git checkout command regex `git checkout v[0-9.]+` to `git checkout vNEW_VERSION`.
 - **Action 3 (Docker Tag)**: Update Docker tag regex `tag: "[0-9.]+"` to `tag: "NEW_VERSION"`.
 - **Action 4 (Image Ref)**: Update image reference regex `dkonsole:[0-9.]+` to `dkonsole:NEW_VERSION`.
-- **Action 5 (Changelog)**: Add the new changelog entry to the "Changelog" section.
+- **Action 5 (Changelog)**: 
+  - **IMPORTANT**: The README changelog section must contain ONLY the last 3 versions (NEW_VERSION and the 2 previous ones).
+  - Add the new changelog entry at the top of the "Changelog" section.
+  - Remove the oldest version entry if there are more than 3 versions.
+  - Keep the format consistent with CHANGELOG.md entries.
 
 ### 2.4 Helm Chart
 - **File**: `helm/dkonsole/Chart.yaml`

@@ -1,9 +1,13 @@
 #!/bin/bash
 
 # Script para ejecutar todos los tests de DKonsole
-# Uso: ./test-all.sh
+# Uso: ./scripts/test-all.sh
 
 set -e  # Salir si algún comando falla
+
+# Obtener el directorio del script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo "🧪 DKonsole - Ejecutando todos los tests"
 echo "========================================"
@@ -37,10 +41,13 @@ fi
 echo -e "${GREEN}✅ Prerrequisitos verificados${NC}"
 echo ""
 
+# Cambiar al directorio raíz del proyecto
+cd "$PROJECT_ROOT"
+
 # Tests del Backend
 echo "🔧 Ejecutando tests del backend..."
 echo "-----------------------------------"
-if ./scripts/test-backend.sh --verbose; then
+if "$SCRIPT_DIR/test-backend.sh" --verbose; then
     echo -e "${GREEN}✅ Tests del backend pasaron${NC}"
 else
     echo -e "${RED}❌ Tests del backend fallaron${NC}"
@@ -52,7 +59,7 @@ echo ""
 if [ "$SKIP_FRONTEND" = false ]; then
     echo "⚛️  Ejecutando tests del frontend..."
     echo "-----------------------------------"
-    if ./scripts/test-frontend.sh --run; then
+    if "$SCRIPT_DIR/test-frontend.sh" --run; then
         echo -e "${GREEN}✅ Tests del frontend pasaron${NC}"
     else
         echo -e "${RED}❌ Tests del frontend fallaron${NC}"
