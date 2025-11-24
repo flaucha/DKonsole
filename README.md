@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.1.9-green.svg)
+![Version](https://img.shields.io/badge/version-1.1.10-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.1.9
+git checkout v1.1.10
 
 # Install
 helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
@@ -100,18 +100,27 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.1.9"
+  tag: "1.1.10"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.1.9`
+- **Unified**: `dkonsole/dkonsole:1.1.10`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.1.10 (2025-01-27)
+**🔒 Security: Dependency Updates**
+
+- Updated: Dependencies updated to address security vulnerabilities
+  - Kubernetes client libraries updated from v0.29.0 to v0.34.2
+  - JWT library updated to v5.3.0
+  - WebSocket library updated to latest version
+  - Multiple transitive dependencies updated to secure versions
 
 ### v1.1.9 (2025-01-27)
 **🔒 Security Fix: Critical RCE Vulnerability**

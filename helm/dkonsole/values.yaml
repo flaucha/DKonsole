@@ -20,7 +20,7 @@ jwtSecret: ""
 # -----------------------------------------------------------------------------
 image:
   repository: dkonsole/dkonsole
-  tag: "1.1.9"
+  tag: "1.1.10"
   pullPolicy: Always
 
 # Image pull secrets (optional)
@@ -157,18 +157,17 @@ prometheusUrl: ""
 # FULL ACCESS to ALL resources (both cluster-scoped and namespaced) - allows importing ANY Kubernetes resource via YAML
 rbac:
   create: true
-  # Cluster-wide resources - FULL ACCESS to create/update/delete cluster-scoped resources
-  # This allows importing ClusterRole, ClusterRoleBinding, PersistentVolume, StorageClass, etc.
+  # Cluster-wide resources - Default to READ-ONLY
+  # To enable full access (e.g. for importing any resource), change verbs to ["*"]
   clusterResources:
     - apiGroups: ["*"]
       resources: ["*"]
-      verbs: ["*"]
+      verbs: ["get", "list", "watch"]
   nonResourceURLs:
     - "*"
-  # Namespaced resources - FULL ACCESS to all resources in all API groups
-  # This allows importing ANY Kubernetes resource via YAML
+  # Namespaced resources - Default to READ-ONLY
+  # To enable full access (e.g. for editing/deleting resources), change verbs to ["*"]
   namespacedResources:
-    # FULL ACCESS to all namespaced resources in all API groups (including all subresources)
     - apiGroups: ["*"]
       resources: ["*"]
-      verbs: ["*"]
+      verbs: ["get", "list", "watch"]

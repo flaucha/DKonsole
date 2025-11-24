@@ -160,9 +160,26 @@ func (h *Handlers) UploadLogo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid file content (not a PNG)", http.StatusBadRequest)
 		return
 	}
-	// For SVG, we might want to check if it looks like XML/SVG, but DetectContentType is limited.
-	// We'll trust the extension + size limit for SVG for now to avoid breaking valid SVGs,
-	// but in a real high-sec env we'd parse the XML.
+	// For SVG, we perform a basic check for script tags to prevent XSS
+	if ext == ".svg" {
+		// Read the whole file to check content
+		content, err := io.ReadAll(file)
+		if err != nil {
+			http.Error(w, "Error reading file", http.StatusBadRequest)
+			return
+		}
+		// Reset file pointer for later copy
+		file.Seek(0, 0)
+
+		contentStr := strings.ToLower(string(content))
+		if strings.Contains(contentStr, "<script") || 
+		   strings.Contains(contentStr, "javascript:") || 
+		   strings.Contains(contentStr, "onload=") || 
+		   strings.Contains(contentStr, "onerror=") {
+			http.Error(w, "Invalid SVG content: script tags or event handlers are not allowed", http.StatusBadRequest)
+			return
+		}
+	}
 
 	// Ensure data directory exists
 	if err := os.MkdirAll(DataDir, 0755); err != nil {

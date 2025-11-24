@@ -143,7 +143,7 @@ func main() {
 	mux := http.NewServeMux()
 	// Helper for authenticated routes
 	secure := func(h http.HandlerFunc) http.HandlerFunc {
-		return enableCors(RateLimitMiddleware(AuditMiddleware(authService.AuthMiddleware(h))))
+		return enableCors(RateLimitMiddleware(CSRFMiddleware(AuditMiddleware(authService.AuthMiddleware(h)))))
 	}
 
 	// Helper for public routes

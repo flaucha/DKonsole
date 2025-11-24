@@ -5,6 +5,17 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.10] - 2025-01-27
+
+### Security
+
+- **Dependency Updates**: Updated dependencies to address security vulnerabilities
+  - Updated Kubernetes client libraries from v0.29.0 to v0.34.2 (k8s.io/api, k8s.io/apimachinery, k8s.io/client-go, k8s.io/metrics)
+  - Updated JWT library from v5.2.1 to v5.3.0 (github.com/golang-jwt/jwt/v5)
+  - Updated WebSocket library to latest version (github.com/gorilla/websocket)
+  - Updated multiple transitive dependencies to latest secure versions
+  - These updates address known security vulnerabilities in dependencies
+
 ## [1.1.9] - 2025-01-27
 
 ### Security
