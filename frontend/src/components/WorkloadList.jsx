@@ -26,7 +26,7 @@ import { getStatusBadgeClass } from '../utils/statusBadge';
 
 // Import extracted detail components
 import NodeDetails from './details/NodeDetails';
-import ServiceAccountDetails, { RoleDetails, BindingDetails } from './details/RbacDetails';
+import { ServiceAccountDetails, RoleDetails, BindingDetails } from './details/RbacDetails';
 import DeploymentDetails from './details/DeploymentDetails';
 import ServiceDetails from './details/ServiceDetails';
 import IngressDetails from './details/IngressDetails';
