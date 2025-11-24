@@ -5,6 +5,72 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.4] - 2025-01-24
+
+### 🎨 UI Refactor & Bug Fixes
+
+This release includes a major frontend refactor with improved consistency, bug fixes, and enhanced user experience.
+
+### Added
+
+- **Consistent List Style**: Unified list styling across all resource managers
+  - WorkloadList, NamespaceManager, and HelmChartManager now share the same modern design
+  - Consistent toolbar with search, item count, and refresh button
+  - Unified table headers with sorting indicators
+  - Expandable rows with smooth animations and consistent styling
+- **Resource Delete Menu**: Restored three-dot menu for resource management
+  - Delete and Force Delete options for all resources
+  - Confirmation modal with clear warnings for force delete
+  - Consistent menu placement and styling across all resource types
+
+### Changed
+
+- **Frontend API Integration**: Updated to use correct backend endpoint
+  - Changed from `/api/workloads/${kind}` to `/api/resources?kind=${kind}`
+  - Improved error handling and validation
+  - Better error messages for debugging
+- **Expanded Details Styling**: Enhanced visual design for resource details
+  - Improved background colors and borders for better contrast
+  - Better spacing and padding in detail panels
+  - Scrollable content when details exceed viewport height
+  - Consistent styling across all resource types (Workloads, Namespaces, Helm Charts)
+- **Log Viewer**: Improved scroll behavior
+  - Smooth scrolling when opening logs tab
+  - Consistent behavior with terminal tab
+  - Better viewport management
+
+### Fixed
+
+- **API Endpoint Issues**: Fixed 404 errors when viewing resource lists
+  - Added validation to prevent API calls with undefined `kind` parameter
+  - Fixed endpoint mismatch between frontend and backend
+  - Improved error handling for missing resource types
+- **Empty State Display**: Fixed blank screen when no resources exist
+  - Shows informative message with icon when no resources found
+  - Displays refresh button for manual reload
+  - Handles null/undefined resource arrays gracefully
+- **Backend Error Handling**: Improved error propagation for Jobs and CronJobs
+  - Errors are now properly returned instead of silently ignored
+  - Better error messages for debugging
+- **Edit YAML Button**: Fixed non-functional Edit YAML button in WorkloadList
+  - Restored YamlEditor modal integration
+  - Automatic data refresh after saving changes
+- **UI Alignment**: Fixed tab positioning in Pod details
+  - Added padding to tabs container for better visual spacing
+  - Improved alignment with detail panel content
+
+### Technical Improvements
+
+- **Frontend Refactoring**:
+  - Centralized resource fetching logic
+  - Improved state management for expanded rows
+  - Better error boundary handling
+  - Consistent component structure across resource managers
+- **Backend Error Handling**:
+  - Proper error propagation for Batch API resources (Jobs, CronJobs)
+  - Better logging for debugging
+  - Improved error messages in API responses
+
 ## [1.1.3] - 2025-01-23
 
 ### 🚀 Helm Charts Manager & UI Enhancements

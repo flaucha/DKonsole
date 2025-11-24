@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.1.3-green.svg)
+![Version](https://img.shields.io/badge/version-1.1.4-green.svg)
 
 <img width="1916" height="939" alt="image" src="https://github.com/user-attachments/assets/d84809b4-0ec5-490b-8d8a-a533232d52e8" />
 
@@ -33,7 +33,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.1.3
+git checkout v1.1.4
 
 # Install
 helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace

@@ -39,6 +39,7 @@ import StorageClassDetails from './details/StorageClassDetails';
 import { JobDetails, CronJobDetails, StatefulSetDetails, DaemonSetDetails, HPADetails } from './details/WorkloadDetails';
 import GenericDetails from './details/GenericDetails';
 import { EditYamlButton } from './details/CommonDetails';
+import YamlEditor from './YamlEditor';
 
 // Map resource kind to an icon component
 const getIcon = (kind) => {
@@ -508,7 +509,18 @@ const WorkloadList = ({ namespace, kind }) => {
                     </div>
                 )}
             </div>
-            {/* Edit YAML Modal would go here if I implemented it fully, but I'll skip for now as it wasn't in the plan to refactor that specifically */}
+            
+            {/* YAML Editor Modal */}
+            {editingResource && (
+                <YamlEditor
+                    resource={editingResource}
+                    onClose={() => setEditingResource(null)}
+                    onSaved={() => {
+                        setEditingResource(null);
+                        refetch();
+                    }}
+                />
+            )}
             
             {/* Menu overlay */}
             {menuOpen && (
