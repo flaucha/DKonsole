@@ -101,18 +101,30 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.1.3"
+  tag: "1.1.4"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.1.3`
+- **Unified**: `dkonsole/dkonsole:1.1.4`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.1.4 (2025-01-24)
+**🎨 UI Refactor & Bug Fixes**
+
+- ✅ **Consistent List Style**: Unified styling across WorkloadList, NamespaceManager, and HelmChartManager
+- ✅ **Resource Delete Menu**: Restored three-dot menu with Delete and Force Delete options
+- ✅ **API Endpoint Fixes**: Fixed 404 errors and endpoint mismatches
+- ✅ **Empty State Display**: Fixed blank screens when no resources exist
+- ✅ **Edit YAML Button**: Fixed non-functional Edit YAML in WorkloadList
+- ✅ **Expanded Details Styling**: Enhanced visual design with better contrast and spacing
+- ✅ **Log Viewer**: Improved scroll behavior for smoother experience
+- ✅ **Error Handling**: Better error propagation and messages
 
 ### v1.1.3 (2025-01-23)
 **🚀 Helm Charts Manager & UI Enhancements**
@@ -137,16 +149,7 @@ The official image is available at:
 - ✅ **Template Namespace**: New resources use selected namespace
 - ✅ **Color Consistency**: Removed colorful elements for gray-scale design
 
-### v1.1.1 (2024-12-19)
-**🐛 Bug Fixes and Improvements**
-
-- ✅ **Fixed Resource Import**: Now accepts ANY Kubernetes resource (including CRDs)
-- ✅ **Fixed HPA YAML Viewing**: Resolved issue with HorizontalPodAutoscaler YAML viewing
-- ✅ **Added Resource Aliases**: Support for common aliases (HPA, PVC, PV, etc.)
-- ✅ **Dynamic Resource Discovery**: Uses Kubernetes Discovery API for automatic resource resolution
-- ✅ **Enhanced RBAC**: Full access to all resources for import functionality
-
-### v1.1.0 (2024-12-19)
+For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## 📊 Prometheus Metrics
 
