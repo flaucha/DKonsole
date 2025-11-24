@@ -9,27 +9,12 @@ const Settings = () => {
         theme, setTheme,
         font, setFont,
         fontSize, setFontSize,
-        borderRadius, setBorderRadius,
-        addCluster
+        borderRadius, setBorderRadius
     } = useSettings();
     const { authFetch } = useAuth();
     const [activeTab, setActiveTab] = useState('clusters');
-    const [newCluster, setNewCluster] = useState({ name: '', host: '', token: '', insecure: false });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-
-    const handleAddCluster = async (e) => {
-        e.preventDefault();
-        setError('');
-        setSuccess('');
-        try {
-            await addCluster(newCluster);
-            setSuccess('Cluster added successfully!');
-            setNewCluster({ name: '', host: '', token: '', insecure: false });
-        } catch (err) {
-            setError(err.message);
-        }
-    };
 
     const handleResetDefaults = () => {
         setTheme('default');
@@ -85,102 +70,30 @@ const Settings = () => {
             </div>
 
             {activeTab === 'clusters' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="space-y-6">
-                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
-                            <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
-                                <Server size={20} className="mr-2 text-blue-400" /> Configured Clusters
-                            </h2>
-                            <div className="space-y-3">
-                                {clusters.map(cluster => (
-                                    <div key={cluster} className={`flex items-center justify-between p-4 rounded-lg border transition-all ${cluster === currentCluster ? 'bg-blue-900/20 border-blue-500/50' : 'bg-gray-750 border-gray-700'}`}>
-                                        <div className="flex items-center">
-                                            <div className={`w-2 h-2 rounded-full mr-3 ${cluster === currentCluster ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]' : 'bg-gray-500'}`}></div>
-                                            <span className={`font-medium ${cluster === currentCluster ? 'text-white' : 'text-gray-300'}`}>{cluster}</span>
-                                        </div>
-                                        {cluster !== currentCluster ? (
-                                            <button
-                                                onClick={() => setCurrentCluster(cluster)}
-                                                className="text-xs bg-gray-700 hover:bg-gray-600 text-blue-300 px-3 py-1.5 rounded transition-colors"
-                                            >
-                                                Switch
-                                            </button>
-                                        ) : (
-                                            <span className="text-xs bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full border border-blue-500/30">Active</span>
-                                        )}
+                <div className="space-y-6">
+                    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
+                        <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
+                            <Server size={20} className="mr-2 text-blue-400" /> Configured Clusters
+                        </h2>
+                        <div className="space-y-3">
+                            {clusters.map(cluster => (
+                                <div key={cluster} className={`flex items-center justify-between p-4 rounded-lg border transition-all ${cluster === currentCluster ? 'bg-blue-900/20 border-blue-500/50' : 'bg-gray-750 border-gray-700'}`}>
+                                    <div className="flex items-center">
+                                        <div className={`w-2 h-2 rounded-full mr-3 ${cluster === currentCluster ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]' : 'bg-gray-500'}`}></div>
+                                        <span className={`font-medium ${cluster === currentCluster ? 'text-white' : 'text-gray-300'}`}>{cluster}</span>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-6">
-                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
-                            <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
-                                <Plus size={20} className="mr-2 text-green-400" /> Add New Cluster
-                            </h2>
-                            <form onSubmit={handleAddCluster} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Cluster Name</label>
-                                    <input
-                                        type="text"
-                                        value={newCluster.name}
-                                        onChange={e => setNewCluster({ ...newCluster, name: e.target.value })}
-                                        className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                                        placeholder="e.g., production-us-east"
-                                        required
-                                    />
+                                    {cluster !== currentCluster ? (
+                                        <button
+                                            onClick={() => setCurrentCluster(cluster)}
+                                            className="text-xs bg-gray-700 hover:bg-gray-600 text-blue-300 px-3 py-1.5 rounded transition-colors"
+                                        >
+                                            Switch
+                                        </button>
+                                    ) : (
+                                        <span className="text-xs bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full border border-blue-500/30">Active</span>
+                                    )}
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">API Server URL</label>
-                                    <input
-                                        type="text"
-                                        value={newCluster.host}
-                                        onChange={e => setNewCluster({ ...newCluster, host: e.target.value })}
-                                        className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                                        placeholder="https://api.k8s.example.com"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Bearer Token</label>
-                                    <textarea
-                                        value={newCluster.token}
-                                        onChange={e => setNewCluster({ ...newCluster, token: e.target.value })}
-                                        className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500 h-24 font-mono text-xs transition-colors"
-                                        placeholder="ey..."
-                                        required
-                                    />
-                                </div>
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="insecure"
-                                        checked={newCluster.insecure}
-                                        onChange={e => setNewCluster({ ...newCluster, insecure: e.target.checked })}
-                                        className="h-4 w-4 bg-gray-900 border-gray-700 rounded text-blue-500 focus:ring-0 cursor-pointer"
-                                    />
-                                    <label htmlFor="insecure" className="ml-2 text-sm text-gray-400 cursor-pointer select-none">Skip TLS Verification (Insecure)</label>
-                                </div>
-
-                                {error && (
-                                    <div className="flex items-center text-red-400 text-sm bg-red-900/20 p-3 rounded border border-red-900/50">
-                                        <AlertCircle size={16} className="mr-2 flex-shrink-0" /> {error}
-                                    </div>
-                                )}
-                                {success && (
-                                    <div className="flex items-center text-green-400 text-sm bg-green-900/20 p-3 rounded border border-green-900/50">
-                                        <Check size={16} className="mr-2 flex-shrink-0" /> {success}
-                                    </div>
-                                )}
-
-                                <button
-                                    type="submit"
-                                    className="flex items-center justify-center w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-all hover:shadow-lg hover:shadow-blue-900/20"
-                                >
-                                    <Plus size={18} className="mr-2" /> Add Cluster
-                                </button>
-                            </form>
+                            ))}
                         </div>
                     </div>
                 </div>

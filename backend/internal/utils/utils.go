@@ -1,0 +1,177 @@
+package utils
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"regexp"
+	"strings"
+	"time"
+
+	corev1 "k8s.io/api/core/v1"
+)
+
+// HandleError logs detailed error internally and returns sanitized message to user
+func HandleError(w http.ResponseWriter, err error, userMessage string, statusCode int) {
+	// Log the full error internally with context
+	log.Printf("Error [%s]: %v", userMessage, err)
+
+	// Send generic message to user (don't expose internal details)
+	http.Error(w, userMessage, statusCode)
+}
+
+// CreateTimeoutContext creates a context with a timeout for Kubernetes operations
+// Default timeout is 30 seconds, but can be customized via environment variable
+func CreateTimeoutContext() (context.Context, context.CancelFunc) {
+	timeout := 30 * time.Second
+	if timeoutStr := os.Getenv("K8S_OPERATION_TIMEOUT"); timeoutStr != "" {
+		if parsed, err := time.ParseDuration(timeoutStr); err == nil {
+			timeout = parsed
+		}
+	}
+	return context.WithTimeout(context.Background(), timeout)
+}
+
+// CreateRequestContext creates a context from HTTP request with timeout
+// This ensures that if the user cancels the HTTP request, Kubernetes API calls are also cancelled
+func CreateRequestContext(r *http.Request) (context.Context, context.CancelFunc) {
+	timeout := 30 * time.Second
+	if timeoutStr := os.Getenv("K8S_OPERATION_TIMEOUT"); timeoutStr != "" {
+		if parsed, err := time.ParseDuration(timeoutStr); err == nil {
+			timeout = parsed
+		}
+	}
+	// Use request context as parent so cancellation propagates
+	return context.WithTimeout(r.Context(), timeout)
+}
+
+// IsSystemNamespace checks if a namespace is a system namespace
+func IsSystemNamespace(ns string) bool {
+	systemNamespaces := map[string]bool{
+		"kube-system":     true,
+		"kube-public":     true,
+		"kube-node-lease": true,
+	}
+	return systemNamespaces[ns]
+}
+
+// ValidateK8sName validates a Kubernetes resource name according to RFC 1123
+func ValidateK8sName(name, paramName string) error {
+	if name == "" {
+		return fmt.Errorf("%s is required", paramName)
+	}
+
+	// Validate length
+	if len(name) > 253 {
+		return fmt.Errorf("invalid %s: too long (max 253 characters)", paramName)
+	}
+
+	// Validate according to RFC 1123 (Kubernetes names) using regex
+	// Lowercase alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character.
+	var dns1123SubdomainRegexp = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
+	if !dns1123SubdomainRegexp.MatchString(name) {
+		return fmt.Errorf("invalid %s: must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character", paramName)
+	}
+
+	return nil
+}
+
+// CheckQuotaLimits validates CPU and memory requests/limits against quota
+func CheckQuotaLimits(quota corev1.ResourceQuota, requests, limits map[string]interface{}) error {
+	// Get quota limits
+	hard := quota.Spec.Hard
+	_ = quota.Status.Used // Available for future use in full validation
+
+	// Check CPU
+	if cpuReq, ok := requests["cpu"].(string); ok && hard != nil {
+		if hardCPU, exists := hard[corev1.ResourceRequestsCPU]; exists {
+			// Parse and compare (simplified - would need proper quantity parsing in production)
+			// For now, we'll let Kubernetes handle the validation and just log
+			log.Printf("Checking CPU request %s against quota limit %s", cpuReq, hardCPU.String())
+		}
+	}
+
+	// Check Memory
+	if memReq, ok := requests["memory"].(string); ok && hard != nil {
+		if hardMem, exists := hard[corev1.ResourceRequestsMemory]; exists {
+			log.Printf("Checking memory request %s against quota limit %s", memReq, hardMem.String())
+		}
+	}
+
+	// Note: Full validation would require parsing Kubernetes resource quantities
+	// For now, we rely on Kubernetes API server to reject if quota is exceeded
+	// This function serves as a pre-check and audit point
+	return nil
+}
+
+// CheckStorageQuota validates storage requests against quota
+func CheckStorageQuota(quota corev1.ResourceQuota, storage string) error {
+	hard := quota.Spec.Hard
+	if hard == nil {
+		return nil
+	}
+
+	if hardStorage, exists := hard[corev1.ResourceRequestsStorage]; exists {
+		// Parse and compare storage (simplified)
+		log.Printf("Checking storage request %s against quota limit %s", storage, hardStorage.String())
+		// Full validation would require parsing Kubernetes resource quantities
+	}
+
+	return nil
+}
+
+// GetClientIP extracts the real client IP from request, handling proxies
+func GetClientIP(r *http.Request) string {
+	// Try X-Real-IP first (set by nginx, traefik, etc.)
+	if ip := r.Header.Get("X-Real-IP"); ip != "" {
+		return strings.TrimSpace(ip)
+	}
+	// Try X-Forwarded-For (may contain multiple IPs, take the first)
+	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
+		// X-Forwarded-For can contain multiple IPs: "client, proxy1, proxy2"
+		ips := strings.Split(ip, ",")
+		if len(ips) > 0 {
+			return strings.TrimSpace(ips[0])
+		}
+	}
+	// Fallback to RemoteAddr (remove port if present)
+	ip, _, _ := strings.Cut(r.RemoteAddr, ":")
+	return ip
+}
+
+// AuditLog logs detailed audit information for critical actions
+// Note: This function requires Claims type from auth package, so we'll keep it simple
+// or move it to a package that has access to Claims
+func AuditLog(r *http.Request, action, resourceKind, resourceName, namespace string, success bool, err error, details map[string]interface{}) {
+	user := "anonymous"
+	// Try to get user from context - this will need to be adapted based on how Claims is structured
+	// For now, we'll use a simple approach
+	if userVal := r.Context().Value("user"); userVal != nil {
+		// This will need to be updated when we move auth to its own package
+		if claims, ok := userVal.(interface{ Username() string }); ok {
+			user = claims.Username()
+		}
+	}
+
+	// Get real client IP (handles proxies)
+	clientIP := GetClientIP(r)
+
+	logMsg := fmt.Sprintf("[AUDIT] Action=%s | Resource=%s/%s | Namespace=%s | User=%s | IP=%s | Success=%v",
+		action, resourceKind, resourceName, namespace, user, clientIP, success)
+
+	if err != nil {
+		logMsg += fmt.Sprintf(" | Error=%v", err)
+	}
+
+	if len(details) > 0 {
+		logMsg += " | Details="
+		for k, v := range details {
+			logMsg += fmt.Sprintf("%s:%v ", k, v)
+		}
+	}
+
+	log.Printf(logMsg)
+}
+

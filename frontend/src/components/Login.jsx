@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User } from 'lucide-react';
-import defaultLogo from '../assets/logo-full.svg';
+import defaultLogo from '../assets/logo-full.svg?url';
 
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [logoSrc, setLogoSrc] = useState(defaultLogo);
+    const [logoError, setLogoError] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
@@ -27,6 +28,14 @@ const Login = () => {
             });
     }, []);
 
+    const handleLogoError = () => {
+        // If logo fails to load, fallback to default logo
+        if (logoSrc !== defaultLogo && !logoError) {
+            setLogoError(true);
+            setLogoSrc(defaultLogo);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -41,8 +50,16 @@ const Login = () => {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-900">
             <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md border border-gray-700">
-                <div className="text-center mb-8 flex justify-center">
-                    <img src={logoSrc} alt="DKonsole Logo" className="h-20 w-auto object-contain" />
+                <div className="text-center mb-8 flex justify-center items-center min-h-[80px]">
+                    {logoSrc && (
+                        <img 
+                            src={logoSrc} 
+                            alt="DKonsole Logo" 
+                            className="h-20 w-auto max-w-full object-contain" 
+                            onError={handleLogoError}
+                            style={{ display: 'block' }}
+                        />
+                    )}
                 </div>
 
                 {error && (

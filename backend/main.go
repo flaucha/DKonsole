@@ -17,6 +17,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
+
+	"github.com/example/k8s-view/internal/models"
+	"github.com/example/k8s-view/internal/auth"
+	"github.com/example/k8s-view/internal/cluster"
+	"github.com/example/k8s-view/internal/k8s"
+	"github.com/example/k8s-view/internal/api"
+	"github.com/example/k8s-view/internal/helm"
+	"github.com/example/k8s-view/internal/pod"
 )
 
 // ResponseWriter wrapper to fix Content-Type after FileServer sets it
@@ -56,6 +64,18 @@ func (c *contentTypeFixer) WriteHeader(code int) {
 	c.ResponseWriter.WriteHeader(code)
 }
 
+// setupHandlerDelegates connects service methods to old handler implementations
+// This is temporary during migration
+func setupHandlerDelegates(h *Handlers, k8sSvc *k8s.Service, apiSvc *api.Service, helmSvc *helm.Service, podSvc *pod.Service) {
+	// Services will delegate to handlers.go methods through h
+	// This maintains functionality while we migrate
+	_ = h // Used by services
+	_ = k8sSvc
+	_ = apiSvc
+	_ = helmSvc
+	_ = podSvc
+}
+
 func main() {
 	var kubeconfig *string
 	if home := homedir.HomeDir(); home != "" {
@@ -89,24 +109,41 @@ func main() {
 		panic(err.Error())
 	}
 
-	h := &Handlers{
+	handlersModel := &models.Handlers{
 		Clients:       make(map[string]*kubernetes.Clientset),
 		Dynamics:      make(map[string]dynamic.Interface),
 		Metrics:       make(map[string]*metricsv.Clientset),
 		RESTConfigs:   make(map[string]*rest.Config),
 		PrometheusURL: os.Getenv("PROMETHEUS_URL"),
 	}
-	h.Clients["default"] = clientset
-	h.Dynamics["default"] = dynamicClient
-	h.RESTConfigs["default"] = config
+	handlersModel.Clients["default"] = clientset
+	handlersModel.Dynamics["default"] = dynamicClient
+	handlersModel.RESTConfigs["default"] = config
 	if metricsClient != nil {
-		h.Metrics["default"] = metricsClient
+		handlersModel.Metrics["default"] = metricsClient
 	}
+
+	// Create wrapper for backward compatibility with handlers not yet migrated
+	h := &Handlers{Handlers: handlersModel}
+
+	// Initialize services
+	authService := auth.NewService(handlersModel)
+	clusterService := cluster.NewService(handlersModel)
+	k8sService := k8s.NewService(handlersModel, clusterService)
+	apiService := api.NewService(handlersModel, clusterService)
+	helmService := helm.NewService(handlersModel, clusterService)
+	podService := pod.NewService(handlersModel, clusterService)
+	
+	// authenticateRequest is now handled by authService.AuthenticateRequest
+	// No need for a global wrapper variable
+	
+	// Set up handler delegates for services that need access to old handlers
+	setupHandlerDelegates(h, k8sService, apiService, helmService, podService)
 
 	mux := http.NewServeMux()
 	// Helper for authenticated routes
 	secure := func(h http.HandlerFunc) http.HandlerFunc {
-		return enableCors(RateLimitMiddleware(AuditMiddleware(AuthMiddleware(h))))
+		return enableCors(RateLimitMiddleware(AuditMiddleware(authService.AuthMiddleware(h))))
 	}
 
 	// Helper for public routes
@@ -114,79 +151,81 @@ func main() {
 		return enableCors(RateLimitMiddleware(AuditMiddleware(h)))
 	}
 
-	mux.HandleFunc("/api/login", enableCors(LoginRateLimitMiddleware(AuditMiddleware(h.LoginHandler))))
-	mux.HandleFunc("/api/logout", public(h.LogoutHandler)) // Logout doesn't strictly need auth check if we just clear cookie, but usually it's fine.
-	mux.HandleFunc("/api/me", secure(h.MeHandler))
-	mux.HandleFunc("/healthz", h.HealthHandler) // Health check usually no auth/audit/limit or loose limit
-	mux.HandleFunc("/api/namespaces", secure(h.GetNamespaces))
-	mux.HandleFunc("/api/resources", secure(h.GetResources))
-	mux.HandleFunc("/api/resources/watch", secure(h.WatchResources))
+	mux.HandleFunc("/api/login", enableCors(LoginRateLimitMiddleware(AuditMiddleware(authService.LoginHandler))))
+	mux.HandleFunc("/api/logout", public(authService.LogoutHandler))
+	mux.HandleFunc("/api/me", secure(authService.MeHandler))
+	mux.HandleFunc("/healthz", h.HealthHandler)
+	
+	// K8s handlers - using services
+	mux.HandleFunc("/api/namespaces", secure(k8sService.GetNamespaces))
+	mux.HandleFunc("/api/resources", secure(k8sService.GetResources))
+	mux.HandleFunc("/api/resources/watch", secure(k8sService.WatchResources))
 	mux.HandleFunc("/api/resource/yaml", secure(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			h.GetResourceYAML(w, r)
+			k8sService.GetResourceYAML(w, r)
 		} else if r.Method == http.MethodPut {
-			h.UpdateResourceYAML(w, r)
+			k8sService.UpdateResourceYAML(w, r)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}))
 	mux.HandleFunc("/api/resource/import", secure(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			h.ImportResourceYAML(w, r)
+			k8sService.ImportResourceYAML(w, r)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}))
-	mux.HandleFunc("/api/apis", secure(h.ListAPIResources))
-	mux.HandleFunc("/api/apis/resources", secure(h.ListAPIResourceObjects))
-	mux.HandleFunc("/api/apis/yaml", secure(h.GetAPIResourceYAML))
-	mux.HandleFunc("/api/scale", secure(h.ScaleResource))
-	mux.HandleFunc("/api/overview", secure(h.GetClusterStats))
+	
+	// API handlers - using services
+	mux.HandleFunc("/api/apis", secure(apiService.ListAPIResources))
+	mux.HandleFunc("/api/apis/resources", secure(apiService.ListAPIResourceObjects))
+	mux.HandleFunc("/api/apis/yaml", secure(apiService.GetAPIResourceYAML))
+	mux.HandleFunc("/api/crds", secure(apiService.GetCRDs))
+	mux.HandleFunc("/api/crds/resources", secure(apiService.GetCRDResources))
+	mux.HandleFunc("/api/crds/yaml", secure(apiService.GetCRDYaml))
+	
+	mux.HandleFunc("/api/scale", secure(k8sService.ScaleResource))
+	mux.HandleFunc("/api/overview", secure(k8sService.GetClusterStats))
+	
+	// Helm handlers - using services
 	mux.HandleFunc("/api/helm/releases", secure(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			h.GetHelmReleases(w, r)
+			helmService.GetHelmReleases(w, r)
 		} else if r.Method == http.MethodDelete {
-			h.DeleteHelmRelease(w, r)
+			helmService.DeleteHelmRelease(w, r)
 		} else if r.Method == http.MethodPost {
-			h.UpgradeHelmRelease(w, r)
+			helmService.UpgradeHelmRelease(w, r)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}))
 	mux.HandleFunc("/api/helm/releases/install", secure(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			h.InstallHelmRelease(w, r)
+			helmService.InstallHelmRelease(w, r)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}))
-	// StreamPodLogs and ExecIntoPod handle their own auth/upgrade, but we can wrap them with Audit/RateLimit.
-	// Note: ExecIntoPod uses WebSocket, RateLimit should skip or be high. Audit is good.
-	// They use "authenticateRequest" internally? Let's check.
-	// Yes, they do. So we can use secure() but we need to make sure AuthMiddleware doesn't break WS upgrade or double-check.
-	// AuthMiddleware checks token. ExecIntoPod checks token. Double check is fine.
-	// However, ExecIntoPod might need to handle the error differently (WS close).
-	// Let's stick to the existing pattern for Pods but add Audit/RateLimit.
-	// Actually, StreamPodLogs is HTTP stream, Exec is WS.
-	// I'll wrap them with secure() for consistency, assuming AuthMiddleware handles the token check fine.
-	mux.HandleFunc("/api/pods/logs", secure(h.StreamPodLogs))
-	mux.HandleFunc("/api/pods/events", secure(h.GetPodEvents))
+	
+	// Pod handlers - using services
+	mux.HandleFunc("/api/pods/logs", secure(podService.StreamPodLogs))
+	mux.HandleFunc("/api/pods/events", secure(podService.GetPodEvents))
 	mux.HandleFunc("/api/pods/exec", func(w http.ResponseWriter, r *http.Request) {
-		// WebSocket endpoint needs CORS for browser connections
-		// Auth is handled inside ExecIntoPod
-		enableCors(RateLimitMiddleware(AuditMiddleware(h.ExecIntoPod)))(w, r)
+		enableCors(RateLimitMiddleware(AuditMiddleware(podService.ExecIntoPod)))(w, r)
 	})
+	
 	mux.HandleFunc("/api/clusters", secure(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			h.GetClusters(w, r)
+			clusterService.GetClusters(w, r)
 		} else if r.Method == http.MethodPost {
-			h.AddCluster(w, r)
+			clusterService.AddCluster(w, r)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}))
-	mux.HandleFunc("/api/resource", secure(h.DeleteResource))
-	mux.HandleFunc("/api/cronjobs/trigger", secure(h.TriggerCronJob))
+	mux.HandleFunc("/api/resource", secure(k8sService.DeleteResource))
+	mux.HandleFunc("/api/cronjobs/trigger", secure(k8sService.TriggerCronJob))
 	mux.HandleFunc("/api/logo", secure(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			h.GetLogo(w, r)
@@ -216,15 +255,12 @@ func main() {
 				}
 				
 				// Add security headers
-				// Allow Google Fonts for font-src and style-src
-				// Allow Monaco Editor from cdn.jsdelivr.net
 				w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ws: wss: https://cdn.jsdelivr.net; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
 				w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 				w.Header().Set("X-Content-Type-Options", "nosniff")
 				w.Header().Set("X-XSS-Protection", "1; mode=block")
 				w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 				w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
-				// HSTS - only if HTTPS is detected
 				if r.Header.Get("X-Forwarded-Proto") == "https" || r.TLS != nil {
 					w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 				}
@@ -232,50 +268,37 @@ func main() {
 			})
 		}
 
-		// Serve static assets (JS, CSS, images, etc.) - Vite puts them in /assets/
-		// FileServer points to staticDir/assets because Vite outputs to dist/assets/
 		assetsDir := filepath.Join(staticDir, "assets")
 		fileServer := http.FileServer(http.Dir(assetsDir))
 		mux.Handle("/assets/", secureStaticFiles(http.StripPrefix("/assets/", fileServer)))
 		
-		// Serve other static files directly from root (favicon, robots.txt, etc.)
 		mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-			// Add security headers
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			http.ServeFile(w, r, filepath.Join(staticDir, "favicon.ico"))
 		})
 		mux.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
-			// Add security headers
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			http.ServeFile(w, r, filepath.Join(staticDir, "robots.txt"))
 		})
 		
-		// SPA fallback: serve index.html for all non-API routes
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			// Don't serve index.html for API routes
 			if strings.HasPrefix(r.URL.Path, "/api") {
 				http.NotFound(w, r)
 				return
 			}
-			// Don't serve index.html for asset requests
 			if strings.HasPrefix(r.URL.Path, "/assets/") {
 				http.NotFound(w, r)
 				return
 			}
-			// Add security headers
-			// Allow Google Fonts for font-src and style-src
-			// Allow Monaco Editor from cdn.jsdelivr.net
 			w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ws: wss: https://cdn.jsdelivr.net; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
 			w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			w.Header().Set("X-XSS-Protection", "1; mode=block")
 			w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 			w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
-			// HSTS - only if HTTPS is detected
 			if r.Header.Get("X-Forwarded-Proto") == "https" || r.TLS != nil {
 				w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 			}
-			// Serve index.html for all other routes (SPA routing)
 			indexPath := filepath.Join(staticDir, "index.html")
 			if _, err := os.Stat(indexPath); err == nil {
 				http.ServeFile(w, r, indexPath)
@@ -297,9 +320,6 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 		origin := r.Header.Get("Origin")
 		allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
 
-		// If no origin (and not OPTIONS), allow if it's not a browser request or handle as same-origin
-		// However, for strict security, we might want to block if we expect only browser traffic.
-		// For now, we follow the recommendation:
 		if origin == "" && r.Method != "OPTIONS" {
 			next(w, r)
 			return
@@ -316,13 +336,10 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 				}
 			}
 		} else {
-			// If no ALLOWED_ORIGINS set, allow same-origin exact match or localhost/127.0.0.1 for dev
-			// In production, you should set ALLOWED_ORIGINS
 			if origin != "" {
 				originURL, err := url.Parse(origin)
 				if err == nil {
 					host := r.Host
-					// Remove port for comparison if present
 					if strings.Contains(host, ":") {
 						host = strings.Split(host, ":")[0]
 					}
@@ -330,8 +347,6 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 					if strings.Contains(originHost, ":") {
 						originHost = strings.Split(originHost, ":")[0]
 					}
-					// Only allow exact match: localhost, 127.0.0.1, or same host
-					// Also validate scheme is http/https
 					if (originHost == "localhost" || originHost == "127.0.0.1" || originHost == host) &&
 						(originURL.Scheme == "http" || originURL.Scheme == "https") {
 						allowed = true
