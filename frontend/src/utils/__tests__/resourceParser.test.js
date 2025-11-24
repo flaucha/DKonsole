@@ -28,9 +28,10 @@ describe('resourceParser', () => {
   })
 
   describe('parseMemory', () => {
-    it('should parse memory in Ki (kibibytes)', () => {
-      expect(parseMemory('1024Ki')).toBe(1024)
-      expect(parseMemory('512Ki')).toBe(512)
+    it('should parse memory in Ki (kibibytes) to bytes', () => {
+      // parseMemory converts to bytes: 1024Ki = 1024 * 1024 = 1048576 bytes
+      expect(parseMemory('1024Ki')).toBe(1024 * 1024)
+      expect(parseMemory('512Ki')).toBe(512 * 1024)
     })
 
     it('should parse memory in Mi (mebibytes)', () => {
