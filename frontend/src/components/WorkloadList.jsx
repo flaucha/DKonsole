@@ -293,6 +293,8 @@ import PodMetrics from './PodMetrics';
 
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { formatDateTime, formatDateTimeShort, formatDate } from '../utils/dateUtils';
+import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowStyles, getExpandableRowRowClasses } from '../utils/expandableRow';
 
 // Map resource kind to an icon component
 const getIcon = (kind) => {
@@ -854,8 +856,11 @@ const IngressDetails = ({ details, onEditYAML }) => {
 };
 
 const PodDetails = ({ details, onEditYAML, pod }) => {
+    const { authFetch } = useAuth();
     const [activeTab, setActiveTab] = useState('details');
     const [selectedContainer, setSelectedContainer] = useState(null);
+    const [events, setEvents] = useState([]);
+    const [loadingEvents, setLoadingEvents] = useState(false);
     const containers = details.containers || [];
     const metrics = details.metrics || {};
     const terminalContainerRef = useRef(null);
@@ -876,6 +881,24 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
             }, 100);
         }
     }, [activeTab]);
+
+    // Fetch events when events tab is activated
+    useEffect(() => {
+        if (activeTab === 'events' && pod && !loadingEvents && events.length === 0) {
+            setLoadingEvents(true);
+            authFetch(`/api/pods/events?namespace=${pod.namespace}&pod=${pod.name}`)
+                .then(res => res.json())
+                .then(data => {
+                    setEvents(data || []);
+                    setLoadingEvents(false);
+                })
+                .catch(err => {
+                    console.error('Error fetching events:', err);
+                    setEvents([]);
+                    setLoadingEvents(false);
+                });
+        }
+    }, [activeTab, pod, authFetch, loadingEvents, events.length]);
 
     // Determine if we should use full height (for logs/terminal tabs)
     const isFullHeightTab = activeTab === 'logs' || activeTab === 'terminal';
@@ -908,6 +931,12 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                     onClick={() => setActiveTab('metrics')}
                 >
                     Metrics
+                </button>
+                <button
+                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'events' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                    onClick={() => setActiveTab('events')}
+                >
+                    Events
                 </button>
             </div>
 
@@ -984,9 +1013,145 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                             </div>
                         )}
                     </div>
-                ) : (
+                ) : activeTab === 'metrics' ? (
                     <div className="animate-fadeIn">
                         {pod && <PodMetrics pod={{ name: pod.name }} namespace={pod.namespace} />}
+                    </div>
+                ) : (
+                    <div className="animate-fadeIn p-4 bg-gray-900/50 rounded-md">
+                        <div className="space-y-4">
+                            {/* Events Section */}
+                            <div>
+                                <h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center">
+                                    <Activity size={16} className="mr-2" />
+                                    Pod Events
+                                </h4>
+                                {loadingEvents ? (
+                                    <div className="text-gray-500 italic">Loading events...</div>
+                                ) : events.length === 0 ? (
+                                    <div className="text-gray-500 italic">No events available</div>
+                                ) : (
+                                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                                        {events.map((event, idx) => (
+                                            <div key={idx} className={`p-3 rounded-md border ${event.type === 'Warning' ? 'bg-yellow-900/20 border-yellow-700' : 'bg-blue-900/20 border-blue-700'}`}>
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center space-x-2 mb-1">
+                                                            <span className={`text-xs font-semibold ${event.type === 'Warning' ? 'text-yellow-400' : 'text-blue-400'}`}>
+                                                                {event.type}
+                                                            </span>
+                                                            <span className="text-xs text-gray-400">•</span>
+                                                            <span className="text-xs font-medium text-gray-300">{event.reason}</span>
+                                                            {event.count > 1 && (
+                                                                <>
+                                                                    <span className="text-xs text-gray-400">•</span>
+                                                                    <span className="text-xs text-gray-500">x{event.count}</span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-xs text-gray-300 mb-1">{event.message}</p>
+                                                        {event.source && (
+                                                            <p className="text-xs text-gray-500">Source: {event.source}</p>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 ml-4 text-right">
+                                                        <div>{formatDateTime(event.lastSeen)}</div>
+                                                        {event.firstSeen !== event.lastSeen && (
+                                                            <div className="text-gray-600 mt-1">
+                                                                First seen: {formatDateTimeShort(event.firstSeen)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Container Status Timeline */}
+                            <div>
+                                <h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center">
+                                    <Clock size={16} className="mr-2" />
+                                    Container Status Timeline
+                                </h4>
+                                {details.containerStatuses && details.containerStatuses.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {details.containerStatuses.map((containerStatus, idx) => (
+                                            <div key={idx} className="p-3 bg-gray-800 rounded-md border border-gray-700">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center space-x-2">
+                                                        <span className="text-sm font-medium text-white">{containerStatus.name}</span>
+                                                        <span className={`px-2 py-0.5 text-xs rounded ${containerStatus.ready ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+                                                            {containerStatus.ready ? 'Ready' : 'Not Ready'}
+                                                        </span>
+                                                        <span className={`px-2 py-0.5 text-xs rounded ${
+                                                            containerStatus.state === 'Running' ? 'bg-blue-900/30 text-blue-400' :
+                                                            containerStatus.state === 'Waiting' ? 'bg-yellow-900/30 text-yellow-400' :
+                                                            containerStatus.state === 'Terminated' ? 'bg-gray-700 text-gray-400' :
+                                                            'bg-gray-700 text-gray-400'
+                                                        }`}>
+                                                            {containerStatus.state || 'Unknown'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        Restarts: {containerStatus.restartCount || 0}
+                                                    </div>
+                                                </div>
+                                                
+                                                {containerStatus.state === 'Waiting' && containerStatus.reason && (
+                                                    <div className="mt-2 text-xs text-yellow-300">
+                                                        <span className="font-medium">Reason:</span> {containerStatus.reason}
+                                                        {containerStatus.message && (
+                                                            <span className="block mt-1 text-gray-400">{containerStatus.message}</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                
+                                                {containerStatus.state === 'Running' && containerStatus.startedAt && (
+                                                    <div className="mt-2 text-xs text-gray-400">
+                                                        Started: {formatDateTime(containerStatus.startedAt)}
+                                                    </div>
+                                                )}
+                                                
+                                                {containerStatus.state === 'Terminated' && (
+                                                    <div className="mt-2 space-y-1">
+                                                        {containerStatus.reason && (
+                                                            <div className="text-xs text-red-300">
+                                                                <span className="font-medium">Reason:</span> {containerStatus.reason}
+                                                            </div>
+                                                        )}
+                                                        {containerStatus.exitCode !== undefined && (
+                                                            <div className="text-xs text-gray-400">
+                                                                Exit Code: {containerStatus.exitCode}
+                                                            </div>
+                                                        )}
+                                                        {containerStatus.startedAt && (
+                                                            <div className="text-xs text-gray-400">
+                                                                Started: {formatDateTime(containerStatus.startedAt)}
+                                                            </div>
+                                                        )}
+                                                        {containerStatus.finishedAt && (
+                                                            <div className="text-xs text-gray-400">
+                                                                Finished: {formatDateTime(containerStatus.finishedAt)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                
+                                                {containerStatus.image && (
+                                                    <div className="mt-2 text-xs text-gray-500">
+                                                        Image: {containerStatus.image}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-gray-500 italic">No container status information available</div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
@@ -1034,17 +1199,24 @@ const NetworkPolicyDetails = ({ details, onEditYAML }) => (
 
 const StorageDetails = ({ details, onEditYAML }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">
-        <DetailRow label="Access Modes" value={details.accessModes} icon={Tag} />
-        <DetailRow label="Capacity" value={details.capacity} icon={HardDrive} />
-        <DetailRow label="Storage Class" value={details.storageClassName} icon={Layers} />
-        {details.volumeName && <DetailRow label="Volume" value={details.volumeName} icon={HardDrive} />}
-        {details.claimRef && (
-            <DetailRow
-                label="Claim Ref"
-                value={`${details.claimRef.namespace}/${details.claimRef.name}`}
-                icon={FileText}
-            />
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <DetailRow label="Access Modes" value={details.accessModes} icon={Tag} />
+            <DetailRow label="Storage Class" value={details.storageClassName} icon={Layers} />
+            {details.requested && (
+                <DetailRow label="Requested" value={details.requested} icon={HardDrive} />
+            )}
+            {details.capacity && (
+                <DetailRow label="Capacity" value={details.capacity} icon={HardDrive} />
+            )}
+            {details.volumeName && <DetailRow label="Volume" value={details.volumeName} icon={HardDrive} />}
+            {details.claimRef && (
+                <DetailRow
+                    label="Claim Ref"
+                    value={`${details.claimRef.namespace}/${details.claimRef.name}`}
+                    icon={FileText}
+                />
+            )}
+        </div>
         <div className="flex justify-end mt-4">
             <EditYamlButton onClick={onEditYAML} />
         </div>
@@ -1185,6 +1357,37 @@ const WorkloadList = ({ namespace, kind }) => {
                     if (memStr.includes('MI')) return num;
                     if (memStr.includes('KI')) return num / 1024;
                     return num;
+                }
+                case 'size': {
+                    if (kind !== 'PersistentVolumeClaim') return 0;
+                    const sizeStr = (item.details?.capacity || item.details?.requested || '').toUpperCase().trim();
+                    if (!sizeStr || sizeStr === '—') return 0;
+                    const num = parseFloat(sizeStr);
+                    if (isNaN(num)) return 0;
+                    // Convert to MiB for consistent comparison
+                    if (sizeStr.includes('TI') || sizeStr.includes('T')) return num * 1024 * 1024;
+                    if (sizeStr.includes('GI') || sizeStr.includes('G')) return num * 1024;
+                    if (sizeStr.includes('MI') || sizeStr.includes('M')) return num;
+                    if (sizeStr.includes('KI') || sizeStr.includes('K')) return num / 1024;
+                    // Assume bytes if no unit
+                    return num / (1024 * 1024);
+                }
+                case 'ready': {
+                    if (kind !== 'Pod' || !item.details?.ready) return -1; // Put missing values at the end
+                    const readyStr = item.details.ready.toString();
+                    // Parse format like "2/2" or "1/2"
+                    const parts = readyStr.split('/');
+                    if (parts.length === 2) {
+                        const ready = parseFloat(parts[0]) || 0;
+                        const total = parseFloat(parts[1]) || 0;
+                        // Return percentage of ready containers, or -1 if no containers
+                        return total > 0 ? (ready / total) : -1;
+                    }
+                    return -1;
+                }
+                case 'restarts': {
+                    if (kind !== 'Pod') return 0;
+                    return item.details?.restarts || 0;
                 }
                 default:
                     return '';
@@ -1491,57 +1694,73 @@ const WorkloadList = ({ namespace, kind }) => {
                     </button>
                 </div>
             </div>
-            <div className="bg-gray-800 rounded-lg border border-gray-700">
+            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-x-auto">
                 <table className="min-w-full border-separate border-spacing-0">
                     <thead>
                         <tr>
-                            <th className="w-8 px-4 py-3 bg-gray-900 rounded-tl-lg border-b border-gray-700"></th>
+                            <th className="w-8 px-2 md:px-4 py-3 bg-gray-900 rounded-tl-lg border-b border-gray-700"></th>
                             <th
                                 scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none bg-gray-900 border-b border-gray-700"
+                                className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none bg-gray-900 border-b border-gray-700"
                                 onClick={() => handleSort('name')}
                             >
                                 Name <span className="inline-block text-[10px]">{renderSortIndicator('name')}</span>
                             </th>
                             <th
                                 scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none bg-gray-900 border-b border-gray-700"
-                                onClick={() => handleSort('kind')}
-                            >
-                                Kind <span className="inline-block text-[10px]">{renderSortIndicator('kind')}</span>
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none bg-gray-900 border-b border-gray-700"
+                                className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none bg-gray-900 border-b border-gray-700"
                                 onClick={() => handleSort('status')}
                             >
                                 Status <span className="inline-block text-[10px]">{renderSortIndicator('status')}</span>
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none bg-gray-900 border-b border-gray-700"
-                                onClick={() => handleSort('created')}
-                            >
-                                Created <span className="inline-block text-[10px]">{renderSortIndicator('created')}</span>
                             </th>
                             {kind === 'Pod' && (
                                 <>
                                     <th
                                         scope="col"
-                                        className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none bg-gray-900 border-b border-gray-700"
+                                        className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none bg-gray-900 border-b border-gray-700"
+                                        onClick={() => handleSort('ready')}
+                                    >
+                                        Ready <span className="inline-block text-[10px]">{renderSortIndicator('ready')}</span>
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none bg-gray-900 border-b border-gray-700"
+                                        onClick={() => handleSort('restarts')}
+                                    >
+                                        Restarts <span className="inline-block text-[10px]">{renderSortIndicator('restarts')}</span>
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none bg-gray-900 border-b border-gray-700"
                                         onClick={() => handleSort('cpu')}
                                     >
                                         CPU <span className="inline-block text-[10px]">{renderSortIndicator('cpu')}</span>
                                     </th>
                                     <th
                                         scope="col"
-                                        className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none bg-gray-900 border-b border-gray-700"
+                                        className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none bg-gray-900 border-b border-gray-700"
                                         onClick={() => handleSort('memory')}
                                     >
                                         Memory <span className="inline-block text-[10px]">{renderSortIndicator('memory')}</span>
                                     </th>
                                 </>
                             )}
+                            {kind === 'PersistentVolumeClaim' && (
+                                <th
+                                    scope="col"
+                                    className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none bg-gray-900 border-b border-gray-700"
+                                    onClick={() => handleSort('size')}
+                                >
+                                    Size <span className="inline-block text-[10px]">{renderSortIndicator('size')}</span>
+                                </th>
+                            )}
+                            <th
+                                scope="col"
+                                className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer select-none bg-gray-900 border-b border-gray-700"
+                                onClick={() => handleSort('created')}
+                            >
+                                Created <span className="inline-block text-[10px]">{renderSortIndicator('created')}</span>
+                            </th>
                             <th className="w-10 px-4 py-3 bg-gray-900 rounded-tr-lg border-b border-gray-700"></th>
                         </tr>
                     </thead>
@@ -1550,12 +1769,12 @@ const WorkloadList = ({ namespace, kind }) => {
                             <React.Fragment key={res.uid}>
                                 <tr
                                     onClick={() => toggleExpand(res.uid)}
-                                    className={`group hover:bg-gray-800/50 transition-colors cursor-pointer ${expandedId === res.uid ? 'bg-gray-800/30' : ''}`}
+                                    className={getExpandableRowRowClasses(expandedId === res.uid)}
                                 >
-                                    <td className="px-4 py-3 whitespace-nowrap text-gray-400 text-center">
+                                    <td className="px-2 md:px-4 py-3 whitespace-nowrap text-gray-400 text-center">
                                         {expandedId === res.uid ? <CircleMinus size={16} /> : <CirclePlus size={16} />}
                                     </td>
-                                    <td className="px-6 py-3 whitespace-nowrap">
+                                    <td className="px-3 md:px-6 py-3 whitespace-nowrap">
                                         <div className="flex items-center">
                                             <div className="flex-shrink-0 h-6 w-6 bg-gray-700 rounded flex items-center justify-center text-gray-400">
                                                 <Icon size={14} />
@@ -1565,27 +1784,35 @@ const WorkloadList = ({ namespace, kind }) => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-3 whitespace-nowrap">
-                                        <div className="text-sm text-gray-300">{res.kind}</div>
-                                    </td>
-                                    <td className="px-6 py-3 whitespace-nowrap">
+                                    <td className="px-2 md:px-6 py-3 whitespace-nowrap">
                                         <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(res.status)}`}>
                                             {res.status}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-400">
-                                        {new Date(res.created).toLocaleDateString()}
-                                    </td>
                                     {kind === 'Pod' && (
                                         <>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                                            <td className="px-2 md:px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                                                {res.details?.ready || '—'}
+                                            </td>
+                                            <td className="px-2 md:px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                                                {res.details?.restarts || 0}
+                                            </td>
+                                            <td className="px-2 md:px-4 py-3 whitespace-nowrap text-sm text-gray-300">
                                                 {res.details?.metrics?.cpu || '—'}
                                             </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                                            <td className="px-2 md:px-4 py-3 whitespace-nowrap text-sm text-gray-300">
                                                 {res.details?.metrics?.memory || '—'}
                                             </td>
                                         </>
                                     )}
+                                    {kind === 'PersistentVolumeClaim' && (
+                                        <td className="px-2 md:px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                                            {res.details?.capacity || res.details?.requested || '—'}
+                                        </td>
+                                    )}
+                                    <td className="px-2 md:px-6 py-3 whitespace-nowrap text-sm text-gray-400">
+                                        {formatDateTimeShort(res.created)}
+                                    </td>
                                     <td className="px-4 py-3 whitespace-nowrap text-gray-300" onClick={(e) => e.stopPropagation()}>
                                         <div className="relative flex items-center justify-end space-x-1">
                                             {res.kind === 'CronJob' && (
@@ -1632,10 +1859,10 @@ const WorkloadList = ({ namespace, kind }) => {
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td colSpan={kind === 'Pod' ? 8 : 6} className={`px-6 pt-0 bg-gray-800 border-0 ${expandedId === res.uid ? 'border-b border-gray-700' : ''}`}>
+                                    <td colSpan={kind === 'Pod' ? 9 : (kind === 'PersistentVolumeClaim' ? 7 : 6)} className={getExpandableCellClasses(expandedId === res.uid, kind === 'Pod' ? 9 : (kind === 'PersistentVolumeClaim' ? 7 : 6))}>
                                         <div
-                                            className={`pl-12 transition-all duration-300 ease-in-out ${expandedId === res.uid ? 'opacity-100 pb-4' : 'max-h-0 opacity-0 overflow-hidden'}`}
-                                            style={expandedId === res.uid && res.kind === 'Pod' ? { maxHeight: 'calc(100vh - 250px)' } : {}}
+                                            className={getExpandableRowClasses(expandedId === res.uid, true)}
+                                            style={getExpandableRowStyles(expandedId === res.uid, res.kind)}
                                         >
                                             {expandedId === res.uid && renderDetails(res)}
                                         </div>

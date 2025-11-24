@@ -4,6 +4,8 @@ import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import YamlEditor from './YamlEditor';
 import { getStatusBadgeClass } from '../utils/statusBadge';
+import { formatDateTimeShort } from '../utils/dateUtils';
+import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 
 const NamespaceManager = () => {
     const { currentCluster } = useSettings();
@@ -48,10 +50,6 @@ const NamespaceManager = () => {
         return `${minutes}m`;
     };
 
-    const formatDate = (dateString) => {
-        if (!dateString) return 'Unknown';
-        return new Date(dateString).toLocaleString();
-    };
 
     const handleDelete = async (namespace, force = false) => {
         const params = new URLSearchParams({
@@ -103,29 +101,29 @@ const NamespaceManager = () => {
                 </button>
             </div>
 
-            <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+            <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-x-auto">
                 <table className="min-w-full border-separate border-spacing-0">
                     <thead>
                         <tr>
-                            <th className="w-10 px-4 py-3 bg-gray-900 rounded-tl-lg border-b border-gray-700"></th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Name</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Labels</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Age</th>
-                            <th className="w-10 px-4 py-3 bg-gray-900 rounded-tr-lg border-b border-gray-700"></th>
+                            <th className="w-10 px-2 md:px-4 py-3 bg-gray-900 rounded-tl-lg border-b border-gray-700"></th>
+                            <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Name</th>
+                            <th className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Status</th>
+                            <th className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Labels</th>
+                            <th className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Age</th>
+                            <th className="w-10 px-2 md:px-4 py-3 bg-gray-900 rounded-tr-lg border-b border-gray-700"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800">
                         {namespaces.map((ns) => (
                             <React.Fragment key={ns.name}>
                                 <tr
-                                    className={`group hover:bg-gray-800/50 transition-colors cursor-pointer ${expandedNs[ns.name] ? 'bg-gray-800/30' : ''}`}
+                                    className={getExpandableRowRowClasses(expandedNs[ns.name])}
                                     onClick={() => toggleExpand(ns.name)}
                                 >
-                                    <td className="px-4 py-3 whitespace-nowrap text-gray-400 text-center">
+                                    <td className="px-2 md:px-4 py-3 whitespace-nowrap text-gray-400 text-center">
                                         {expandedNs[ns.name] ? <CircleMinus size={16} /> : <CirclePlus size={16} />}
                                     </td>
-                                    <td className="px-6 py-3">
+                                    <td className="px-3 md:px-6 py-3">
                                         <div className="flex items-center min-w-0">
                                             <div className="flex-shrink-0 h-6 w-6 bg-gray-700 rounded flex items-center justify-center text-gray-400">
                                                 <Database size={14} />
@@ -135,15 +133,15 @@ const NamespaceManager = () => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-3 whitespace-nowrap">
+                                    <td className="px-2 md:px-6 py-3 whitespace-nowrap">
                                         <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(ns.status)}`}>
                                             {ns.status || 'Unknown'}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-400">
+                                    <td className="px-2 md:px-6 py-3 whitespace-nowrap text-sm text-gray-400">
                                         {ns.labels ? Object.keys(ns.labels).length : 0}
                                     </td>
-                                    <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-400">{getAge(ns.created)}</td>
+                                    <td className="px-2 md:px-6 py-3 whitespace-nowrap text-sm text-gray-400">{getAge(ns.created)}</td>
                                     <td className="px-4 py-3 whitespace-nowrap text-gray-300" onClick={(e) => e.stopPropagation()}>
                                         <div className="relative flex items-center justify-end">
                                             <button
@@ -189,10 +187,8 @@ const NamespaceManager = () => {
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td colSpan="6" className={`px-6 pt-0 bg-gray-800 border-0 ${expandedNs[ns.name] ? 'border-b border-gray-700' : ''}`}>
-                                        <div
-                                            className={`transition-all duration-300 ease-in-out ${expandedNs[ns.name] ? 'opacity-100 pb-4' : 'max-h-0 opacity-0 overflow-hidden'}`}
-                                        >
+                                    <td colSpan="6" className={getExpandableCellClasses(expandedNs[ns.name], 6)}>
+                                        <div className={getExpandableRowClasses(expandedNs[ns.name], false)}>
                                             {expandedNs[ns.name] && (
                                                 <div className="p-4 bg-gray-900/50 rounded-md space-y-6">
                                                 {/* Basic Information */}
@@ -202,7 +198,7 @@ const NamespaceManager = () => {
                                                             <Clock size={12} className="mr-1" />
                                                             Creation Time
                                                         </h4>
-                                                        <div className="text-sm text-gray-300">{formatDate(ns.created)}</div>
+                                                        <div className="text-sm text-gray-300">{formatDateTimeShort(ns.created)}</div>
                                                     </div>
                                                     <div>
                                                         <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">

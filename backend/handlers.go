@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -498,8 +501,45 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 				}
 
 				restarts := int32(0)
+				readyCount := int32(0)
+				totalContainers := int32(len(i.Spec.Containers))
+				var containerStatuses []map[string]interface{}
+				
 				for _, s := range i.Status.ContainerStatuses {
 					restarts += s.RestartCount
+					if s.Ready {
+						readyCount++
+					}
+					
+					// Store container status for timeline
+					containerStatus := map[string]interface{}{
+						"name":         s.Name,
+						"ready":         s.Ready,
+						"restartCount":  s.RestartCount,
+						"image":         s.Image,
+					}
+					
+					// Add state information
+					if s.State.Waiting != nil {
+						containerStatus["state"] = "Waiting"
+						containerStatus["reason"] = s.State.Waiting.Reason
+						containerStatus["message"] = s.State.Waiting.Message
+					} else if s.State.Running != nil {
+						containerStatus["state"] = "Running"
+						containerStatus["startedAt"] = s.State.Running.StartedAt.Format(time.RFC3339)
+					} else if s.State.Terminated != nil {
+						containerStatus["state"] = "Terminated"
+						containerStatus["reason"] = s.State.Terminated.Reason
+						containerStatus["exitCode"] = s.State.Terminated.ExitCode
+						if !s.State.Terminated.StartedAt.IsZero() {
+							containerStatus["startedAt"] = s.State.Terminated.StartedAt.Format(time.RFC3339)
+						}
+						if !s.State.Terminated.FinishedAt.IsZero() {
+							containerStatus["finishedAt"] = s.State.Terminated.FinishedAt.Format(time.RFC3339)
+						}
+					}
+					
+					containerStatuses = append(containerStatuses, containerStatus)
 				}
 
 				resources = append(resources, Resource{
@@ -510,12 +550,16 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
 					UID:       string(i.UID),
 					Details: map[string]interface{}{
-						"node":       i.Spec.NodeName,
-						"ip":         i.Status.PodIP,
-						"restarts":   restarts,
-						"containers": containers,
-						"metrics":    metricsMap[i.Name],
-						"labels":     i.Labels,
+						"node":              i.Spec.NodeName,
+						"ip":                i.Status.PodIP,
+						"restarts":          restarts,
+						"ready":             fmt.Sprintf("%d/%d", readyCount, totalContainers),
+						"readyCount":        readyCount,
+						"totalContainers":   totalContainers,
+						"containers":        containers,
+						"containerStatuses": containerStatuses,
+						"metrics":          metricsMap[i.Name],
+						"labels":            i.Labels,
 					},
 				})
 			}
@@ -896,6 +940,74 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 		err = e
 		if err == nil {
 			for _, i := range list.Items {
+				// Get requested capacity
+				requested := ""
+				if i.Spec.Resources.Requests != nil {
+					if storage, ok := i.Spec.Resources.Requests[corev1.ResourceStorage]; ok {
+						requested = storage.String()
+					}
+				}
+				
+				// Get allocated capacity (from status)
+				allocated := ""
+				if i.Status.Capacity != nil {
+					if storage, ok := i.Status.Capacity[corev1.ResourceStorage]; ok {
+						allocated = storage.String()
+					}
+				}
+				
+				// Try to get usage from Prometheus if available
+				var usedBytes int64
+				var totalBytes int64
+				var usagePercent float64
+				
+				if h.PrometheusURL != "" && allocated != "" {
+					// Query Prometheus for PVC usage
+					// Format: kubelet_volume_stats_used_bytes{persistentvolumeclaim="pvc-name",namespace="ns"}
+					validatedNamespace, _ := validatePromQLParam(i.Namespace, "namespace")
+					validatedPVCName, _ := validatePromQLParam(i.Name, "pvc")
+					
+					usedQuery := fmt.Sprintf(
+						`kubelet_volume_stats_used_bytes{persistentvolumeclaim="%s",namespace="%s"}`,
+						validatedPVCName, validatedNamespace,
+					)
+					capacityQuery := fmt.Sprintf(
+						`kubelet_volume_stats_capacity_bytes{persistentvolumeclaim="%s",namespace="%s"}`,
+						validatedPVCName, validatedNamespace,
+					)
+					
+					// Get current usage (not range, just latest value)
+					usedResult := h.queryPrometheusInstant(usedQuery)
+					capacityResult := h.queryPrometheusInstant(capacityQuery)
+					
+					if len(usedResult) > 0 && len(capacityResult) > 0 {
+						if usedVal, ok := usedResult[0]["value"].(float64); ok {
+							usedBytes = int64(usedVal)
+						}
+						if capVal, ok := capacityResult[0]["value"].(float64); ok {
+							totalBytes = int64(capVal)
+							if totalBytes > 0 {
+								usagePercent = (float64(usedBytes) / float64(totalBytes)) * 100
+							}
+						}
+					}
+				}
+				
+				details := map[string]interface{}{
+					"accessModes":      i.Spec.AccessModes,
+					"capacity":         allocated,
+					"requested":        requested,
+					"storageClassName": i.Spec.StorageClassName,
+					"volumeName":       i.Spec.VolumeName,
+				}
+				
+				// Add usage information if available
+				if usedBytes > 0 && totalBytes > 0 {
+					details["used"] = fmt.Sprintf("%.2fGi", float64(usedBytes)/(1024*1024*1024))
+					details["total"] = fmt.Sprintf("%.2fGi", float64(totalBytes)/(1024*1024*1024))
+					details["usagePercent"] = usagePercent
+				}
+				
 				resources = append(resources, Resource{
 					Name:      i.Name,
 					Namespace: i.Namespace,
@@ -903,12 +1015,7 @@ func (h *Handlers) GetResources(w http.ResponseWriter, r *http.Request) {
 					Status:    string(i.Status.Phase),
 					Created:   i.CreationTimestamp.Format(time.RFC3339),
 					UID:       string(i.UID),
-					Details: map[string]interface{}{
-						"accessModes":      i.Spec.AccessModes,
-						"capacity":         i.Status.Capacity.Storage().String(),
-						"storageClassName": i.Spec.StorageClassName,
-						"volumeName":       i.Spec.VolumeName,
-					},
+					Details:   details,
 				})
 			}
 		}
@@ -2215,6 +2322,75 @@ func (h *Handlers) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handlers) GetPodEvents(w http.ResponseWriter, r *http.Request) {
+	client, err := h.getClient(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ns := r.URL.Query().Get("namespace")
+	podName := r.URL.Query().Get("pod")
+
+	if ns == "" || podName == "" {
+		http.Error(w, "Missing namespace or pod parameter", http.StatusBadRequest)
+		return
+	}
+
+	if err := validateK8sName(ns, "namespace"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := validateK8sName(podName, "pod"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
+
+	// Get events for the pod
+	events, err := client.CoreV1().Events(ns).List(ctx, metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("involvedObject.name=%s,involvedObject.kind=Pod", podName),
+	})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get pod events: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Format events
+	type EventInfo struct {
+		Type      string    `json:"type"`
+		Reason    string    `json:"reason"`
+		Message   string    `json:"message"`
+		Count     int32     `json:"count"`
+		FirstSeen time.Time `json:"firstSeen"`
+		LastSeen  time.Time `json:"lastSeen"`
+		Source    string    `json:"source,omitempty"`
+	}
+
+	var eventList []EventInfo
+	for _, event := range events.Items {
+		eventList = append(eventList, EventInfo{
+			Type:      event.Type,
+			Reason:    event.Reason,
+			Message:   event.Message,
+			Count:     event.Count,
+			FirstSeen: event.FirstTimestamp.Time,
+			LastSeen:  event.LastTimestamp.Time,
+			Source:    fmt.Sprintf("%s/%s", event.Source.Component, event.Source.Host),
+		})
+	}
+
+	// Sort by last seen (most recent first)
+	sort.Slice(eventList, func(i, j int) bool {
+		return eventList[i].LastSeen.After(eventList[j].LastSeen)
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(eventList)
+}
+
 func (h *Handlers) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 	// Authenticate before WebSocket upgrade
 	claims, err := authenticateRequest(r)
@@ -3018,4 +3194,1101 @@ func (h *Handlers) validateLimitRange(ctx context.Context, client *kubernetes.Cl
 	// Note: Full validation requires parsing Kubernetes resource quantities
 	// Kubernetes API server will enforce LimitRange, this serves as pre-check
 	return nil
+}
+
+// HelmRelease represents a Helm release
+type HelmRelease struct {
+	Name         string    `json:"name"`
+	Namespace    string    `json:"namespace"`
+	Chart        string    `json:"chart"`
+	Version      string    `json:"version"`
+	Status       string    `json:"status"`
+	Revision     int       `json:"revision"`
+	Updated      string    `json:"updated"`
+	AppVersion   string    `json:"appVersion,omitempty"`
+	Description  string    `json:"description,omitempty"`
+}
+
+// GetHelmReleases lists all Helm releases in the cluster
+func (h *Handlers) GetHelmReleases(w http.ResponseWriter, r *http.Request) {
+	client, err := h.getClient(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
+
+	releasesMap := make(map[string]*HelmRelease)
+
+	// Helm 3 stores releases in Secrets (default) or ConfigMaps
+	// We'll check both to be comprehensive
+
+	// Check Secrets across all namespaces
+	// Helm 3 stores releases in Secrets with label "owner=helm"
+	secrets, err := client.CoreV1().Secrets("").List(ctx, metav1.ListOptions{
+		LabelSelector: "owner=helm",
+	})
+	if err == nil {
+		for _, secret := range secrets.Items {
+			// Extract release name from labels or annotations
+			releaseName := secret.Labels["name"]
+			if releaseName == "" {
+				releaseName = secret.Annotations["meta.helm.sh/release-name"]
+			}
+			releaseNamespace := secret.Namespace
+			if releaseNamespace == "" {
+				releaseNamespace = secret.Annotations["meta.helm.sh/release-namespace"]
+			}
+			
+			if releaseName != "" && releaseNamespace != "" {
+				key := fmt.Sprintf("%s/%s", releaseNamespace, releaseName)
+				
+				// Parse Helm release data from secret
+				// Helm stores data as base64-encoded, gzip-compressed JSON
+				// Note: secret.Data from Kubernetes API is already base64 decoded once
+				if releaseData, ok := secret.Data["release"]; ok {
+					// Helm stores the data as base64 string inside the Secret
+					// Kubernetes decodes it once, so we need to decode it again
+					decoded := releaseData
+					
+					// Try to decode as base64 string first
+					if decodedStr, err := base64.StdEncoding.DecodeString(string(releaseData)); err == nil && len(decodedStr) > 0 {
+						decoded = decodedStr
+					}
+					
+					// Try to decompress gzip
+					reader := bytes.NewReader(decoded)
+					gzReader, err := gzip.NewReader(reader)
+					var releaseInfo map[string]interface{}
+					
+					if err == nil {
+						// Successfully created gzip reader, decompress
+						decompressed, err := io.ReadAll(gzReader)
+						gzReader.Close()
+						if err == nil {
+							decoded = decompressed
+						}
+					}
+					
+					// Try to parse as JSON (either from gzip or direct)
+					if err := json.Unmarshal(decoded, &releaseInfo); err != nil {
+						log.Printf("Failed to unmarshal release JSON for %s/%s: %v (tried gzip and direct)", releaseNamespace, releaseName, err)
+						continue
+					}
+					
+					chartName := ""
+					chartVersion := ""
+					appVersion := ""
+					
+					if chart, ok := releaseInfo["chart"].(map[string]interface{}); ok {
+						if metadata, ok := chart["metadata"].(map[string]interface{}); ok {
+							if name, ok := metadata["name"].(string); ok {
+								chartName = name
+							}
+							if version, ok := metadata["version"].(string); ok {
+								chartVersion = version
+							}
+							if av, ok := metadata["appVersion"].(string); ok {
+								appVersion = av
+							}
+						}
+					}
+					
+					// Get status and revision from labels first (more reliable)
+					status := secret.Labels["status"]
+					if status == "" {
+						status = "unknown"
+					}
+					
+					revision := 0
+					if revStr, ok := secret.Labels["version"]; ok {
+						if rev, err := strconv.Atoi(revStr); err == nil {
+							revision = rev
+						}
+					}
+					
+					updated := ""
+					description := ""
+					
+					if info, ok := releaseInfo["info"].(map[string]interface{}); ok {
+						// Override status from JSON if available and label status is empty or "superseded"
+						if status == "" || status == "superseded" {
+							if s, ok := info["status"].(string); ok {
+								status = s
+							}
+						}
+						
+						// Override revision from JSON if available
+						if revision == 0 {
+							if r, ok := info["revision"].(float64); ok {
+								revision = int(r)
+							}
+						}
+						
+						if u, ok := info["last_deployed"].(map[string]interface{}); ok {
+							// last_deployed is a time.Time in JSON, try to get as string first
+							if uStr, ok := u["Time"].(string); ok {
+								updated = uStr
+							} else if uStr, ok := info["last_deployed"].(string); ok {
+								updated = uStr
+							}
+						} else if uStr, ok := info["last_deployed"].(string); ok {
+							updated = uStr
+						}
+						
+						if d, ok := info["description"].(string); ok {
+							description = d
+						}
+					}
+					
+					// Only update if this is a newer revision or doesn't exist
+					// Prefer "deployed" status over "superseded"
+					if existing, exists := releasesMap[key]; !exists || revision > existing.Revision || (revision == existing.Revision && status == "deployed" && existing.Status != "deployed") {
+						releasesMap[key] = &HelmRelease{
+							Name:        releaseName,
+							Namespace:   releaseNamespace,
+							Chart:       chartName,
+							Version:     chartVersion,
+							Status:      status,
+							Revision:    revision,
+							Updated:     updated,
+							AppVersion:  appVersion,
+							Description: description,
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Also check ConfigMaps (some Helm installations use ConfigMaps)
+	configMaps, err := client.CoreV1().ConfigMaps("").List(ctx, metav1.ListOptions{
+		LabelSelector: "owner=helm",
+	})
+	if err == nil {
+		for _, cm := range configMaps.Items {
+			// Extract release name from labels or annotations
+			releaseName := cm.Labels["name"]
+			if releaseName == "" {
+				releaseName = cm.Annotations["meta.helm.sh/release-name"]
+			}
+			releaseNamespace := cm.Namespace
+			if releaseNamespace == "" {
+				releaseNamespace = cm.Annotations["meta.helm.sh/release-namespace"]
+			}
+			
+			if releaseName != "" && releaseNamespace != "" {
+				key := fmt.Sprintf("%s/%s", releaseNamespace, releaseName)
+				
+				// If we already have this release from Secrets, skip (Secrets are more authoritative)
+				if _, exists := releasesMap[key]; exists {
+					continue
+				}
+				
+				// For ConfigMaps, extract info from labels
+				chartName := cm.Labels["name"]
+				chartVersion := cm.Labels["version"]
+				
+				status := cm.Labels["status"]
+				if status == "" {
+					status = "unknown"
+				}
+				
+				revision := 0
+				if revStr, ok := cm.Labels["version"]; ok {
+					if rev, err := strconv.Atoi(revStr); err == nil {
+						revision = rev
+					}
+				}
+				
+				releasesMap[key] = &HelmRelease{
+					Name:      releaseName,
+					Namespace: releaseNamespace,
+					Chart:     chartName,
+					Version:   chartVersion,
+					Status:    status,
+					Revision:  revision,
+					Updated:   cm.CreationTimestamp.Format(time.RFC3339),
+				}
+			}
+		}
+	}
+
+	// Convert map to slice
+	releases := make([]HelmRelease, 0, len(releasesMap))
+	for _, release := range releasesMap {
+		releases = append(releases, *release)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(releases)
+}
+
+// DeleteHelmRelease uninstalls a Helm release by deleting its Secrets
+func (h *Handlers) DeleteHelmRelease(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	client, err := h.getClient(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	releaseName := r.URL.Query().Get("name")
+	namespace := r.URL.Query().Get("namespace")
+
+	if releaseName == "" || namespace == "" {
+		http.Error(w, "Missing name or namespace parameter", http.StatusBadRequest)
+		return
+	}
+
+	if err := validateK8sName(releaseName, "name"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := validateK8sName(namespace, "namespace"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
+
+	// Find all Secrets related to this Helm release
+	// Helm 3 stores releases in Secrets with format: sh.helm.release.v1.{release-name}.v{revision}
+	secrets, err := client.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to list secrets: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	deletedCount := 0
+	for _, secret := range secrets.Items {
+		// Check if this secret belongs to the Helm release
+		releaseNameFromAnnotation := secret.Annotations["meta.helm.sh/release-name"]
+		releaseNamespaceFromAnnotation := secret.Annotations["meta.helm.sh/release-namespace"]
+		
+		// Also check if the secret name matches the Helm release pattern
+		secretNameMatches := strings.HasPrefix(secret.Name, fmt.Sprintf("sh.helm.release.v1.%s.v", releaseName))
+		
+		if (releaseNameFromAnnotation == releaseName && releaseNamespaceFromAnnotation == namespace) || secretNameMatches {
+			if err := client.CoreV1().Secrets(namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{}); err != nil {
+				if !apierrors.IsNotFound(err) {
+					log.Printf("Failed to delete Helm release secret %s: %v", secret.Name, err)
+				}
+			} else {
+				deletedCount++
+			}
+		}
+	}
+
+	// Also check ConfigMaps (some Helm installations use ConfigMaps)
+	configMaps, err := client.CoreV1().ConfigMaps(namespace).List(ctx, metav1.ListOptions{})
+	if err == nil {
+		for _, cm := range configMaps.Items {
+			releaseNameFromAnnotation := cm.Annotations["meta.helm.sh/release-name"]
+			releaseNamespaceFromAnnotation := cm.Annotations["meta.helm.sh/release-namespace"]
+			
+			if releaseNameFromAnnotation == releaseName && releaseNamespaceFromAnnotation == namespace {
+				if err := client.CoreV1().ConfigMaps(namespace).Delete(ctx, cm.Name, metav1.DeleteOptions{}); err != nil {
+					if !apierrors.IsNotFound(err) {
+						log.Printf("Failed to delete Helm release configmap %s: %v", cm.Name, err)
+					}
+				} else {
+					deletedCount++
+				}
+			}
+		}
+	}
+
+	if deletedCount == 0 {
+		http.Error(w, "No Helm release secrets found", http.StatusNotFound)
+		return
+	}
+
+	auditLog(r, "delete", "HelmRelease", releaseName, namespace, true, nil, map[string]interface{}{
+		"secrets_deleted": deletedCount,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status": "deleted",
+		"secrets_deleted": deletedCount,
+	})
+}
+
+// UpgradeHelmRelease upgrades a Helm release to a new version
+func (h *Handlers) UpgradeHelmRelease(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Name      string                 `json:"name"`
+		Namespace string                 `json:"namespace"`
+		Chart     string                 `json:"chart,omitempty"`      // Chart name (e.g., "nginx")
+		Version   string                 `json:"version,omitempty"`    // Chart version to upgrade to
+		Repo      string                 `json:"repo,omitempty"`        // Helm repository URL
+		Values    map[string]interface{} `json:"values,omitempty"`      // Values to override
+		ValuesYAML string                `json:"valuesYaml,omitempty"` // Values as YAML string
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if req.Name == "" || req.Namespace == "" {
+		http.Error(w, "Missing name or namespace", http.StatusBadRequest)
+		return
+	}
+
+	if err := validateK8sName(req.Name, "name"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := validateK8sName(req.Namespace, "namespace"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Get REST config for the cluster
+	cluster := r.URL.Query().Get("cluster")
+	if cluster == "" {
+		cluster = "default"
+	}
+	
+	h.mu.RLock()
+	restConfig := h.RESTConfigs[cluster]
+	h.mu.RUnlock()
+
+	if restConfig == nil {
+		http.Error(w, "REST config not found for cluster", http.StatusBadRequest)
+		return
+	}
+
+	// Create a Kubernetes Job to execute helm upgrade
+	// This requires helm to be available in the cluster
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
+
+	client, err := h.getClient(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// If chart not specified, get it from the existing release
+	chartName := req.Chart
+	var existingRepo string
+	
+	// Always try to get chart name and repo from existing release if not provided
+	if chartName == "" || req.Repo == "" {
+		// Find the release secret to get the chart name and repo
+		secrets, err := client.CoreV1().Secrets(req.Namespace).List(ctx, metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("owner=helm,name=%s", req.Name),
+		})
+		if err == nil && len(secrets.Items) > 0 {
+			// Get the latest revision (highest version number)
+			var latestSecret *corev1.Secret
+			latestRevision := 0
+			for i := range secrets.Items {
+				secret := &secrets.Items[i]
+				if revStr, ok := secret.Labels["version"]; ok {
+					if rev, err := strconv.Atoi(revStr); err == nil && rev > latestRevision {
+						latestRevision = rev
+						latestSecret = secret
+					}
+				}
+			}
+			
+			if latestSecret != nil {
+				// Try to extract chart name and repo from the release data
+				if releaseData, ok := latestSecret.Data["release"]; ok {
+					// Decode and decompress
+					decoded := releaseData
+					if decodedStr, err := base64.StdEncoding.DecodeString(string(releaseData)); err == nil && len(decodedStr) > 0 {
+						decoded = decodedStr
+					}
+					
+					reader := bytes.NewReader(decoded)
+					if gzReader, err := gzip.NewReader(reader); err == nil {
+						if decompressed, err := io.ReadAll(gzReader); err == nil {
+							gzReader.Close()
+							decoded = decompressed
+						}
+					}
+					
+					var releaseInfo map[string]interface{}
+					if err := json.Unmarshal(decoded, &releaseInfo); err == nil {
+						if chart, ok := releaseInfo["chart"].(map[string]interface{}); ok {
+							if metadata, ok := chart["metadata"].(map[string]interface{}); ok {
+								if name, ok := metadata["name"].(string); ok && chartName == "" {
+									chartName = name
+								}
+								// Try to get repo from chart metadata - this is the most reliable source
+								if repo, ok := metadata["repository"].(string); ok {
+									if repo != "" {
+										existingRepo = repo
+									}
+								}
+							}
+							// Also try to get repo from chart.sources if available
+							if sources, ok := chart["sources"].([]interface{}); ok && existingRepo == "" {
+								for _, source := range sources {
+									if sourceStr, ok := source.(string); ok && sourceStr != "" {
+										// Check if it looks like a repo URL
+										if strings.HasPrefix(sourceStr, "http://") || strings.HasPrefix(sourceStr, "https://") {
+											existingRepo = sourceStr
+											break
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				
+				// Fallback to label if available
+				if chartName == "" {
+					chartName = latestSecret.Labels["name"]
+				}
+			}
+		}
+		
+		if chartName == "" {
+			http.Error(w, "Chart name is required for upgrade. Could not determine chart from existing release.", http.StatusBadRequest)
+			return
+		}
+	}
+	
+	// Always use repo from existing release if we found it
+	if existingRepo != "" {
+		req.Repo = existingRepo
+	}
+	
+	// Use the ServiceAccount from dkonsole namespace (which already has cluster-admin permissions)
+	// This avoids creating new ServiceAccounts and RBAC resources
+	dkonsoleNamespace := "dkonsole"
+	saName := "dkonsole" // The ServiceAccount used by the dkonsole pod
+	
+	// Verify the ServiceAccount exists in dkonsole namespace
+	_, err = client.CoreV1().ServiceAccounts(dkonsoleNamespace).Get(ctx, saName, metav1.GetOptions{})
+	if err != nil {
+		log.Printf("Warning: ServiceAccount %s/%s not found, trying 'default': %v", dkonsoleNamespace, saName, err)
+		// Fallback to default ServiceAccount
+		saName = "default"
+		_, err = client.CoreV1().ServiceAccounts(dkonsoleNamespace).Get(ctx, saName, metav1.GetOptions{})
+		if err != nil {
+			log.Printf("Error: Could not find ServiceAccount in namespace %s: %v", dkonsoleNamespace, err)
+			http.Error(w, fmt.Sprintf("ServiceAccount not found in namespace %s", dkonsoleNamespace), http.StatusInternalServerError)
+			return
+		}
+	}
+	
+	// Create Job to execute helm upgrade
+	jobName := fmt.Sprintf("helm-upgrade-%s-%d", req.Name, time.Now().Unix())
+	jobTimestamp := time.Now().Unix()
+	
+	// Create a ConfigMap with values if provided (in dkonsole namespace where the Job will run)
+	valuesCMName := ""
+	if req.ValuesYAML != "" {
+		valuesCMName = fmt.Sprintf("helm-upgrade-%s-%d", req.Name, jobTimestamp)
+		valuesCM := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      valuesCMName,
+				Namespace: dkonsoleNamespace, // Create in dkonsole namespace where Job runs
+			},
+			Data: map[string]string{
+				"values.yaml": req.ValuesYAML,
+			},
+		}
+		
+		_, err = client.CoreV1().ConfigMaps(dkonsoleNamespace).Create(ctx, valuesCM, metav1.CreateOptions{})
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to create values ConfigMap: %v", err), http.StatusInternalServerError)
+			return
+		}
+	}
+	
+	// If repo still not specified, we'll let Helm search for it in common repos
+	// The Job will try to find the chart in common repositories automatically
+	
+	// Build helm upgrade command
+	// If repo is specified, we need to add the repo first, then use repo/chart format
+	// If no repo, we'll search in common repos and use the first match
+	var helmCmd []string
+	var repoName string
+	
+	// Common Helm repositories to search if repo is not specified
+	commonRepos := []struct {
+		name string
+		url  string
+	}{
+		{"prometheus-community", "https://prometheus-community.github.io/helm-charts"},
+		{"bitnami", "https://charts.bitnami.com/bitnami"},
+		{"ingress-nginx", "https://kubernetes.github.io/ingress-nginx"},
+		{"nfs-subdir-external-provisioner", "https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner"},
+		{"external-secrets", "https://charts.external-secrets.io"},
+		{"hashicorp", "https://helm.releases.hashicorp.com"},
+		{"jetstack", "https://charts.jetstack.io"},
+		{"grafana", "https://grafana.github.io/helm-charts"},
+		{"argo", "https://argoproj.github.io/argo-helm"},
+		{"stable", "https://charts.helm.sh/stable"},
+		{"elastic", "https://helm.elastic.co"},
+		{"datadog", "https://helm.datadoghq.com"},
+		{"cert-manager", "https://charts.jetstack.io"},
+		{"traefik", "https://helm.traefik.io/traefik"},
+		{"longhorn", "https://charts.longhorn.io"},
+		{"rook", "https://charts.rook.io/release"},
+		{"metallb", "https://metallb.github.io/metallb"},
+		{"kube-state-metrics", "https://prometheus-community.github.io/helm-charts"},
+		{"jaeger", "https://jaegertracing.github.io/helm-charts"},
+		{"istio", "https://istio-release.storage.googleapis.com/charts"},
+	}
+	
+	// If we have a repo URL, extract repo name and use repo/chart format
+	if req.Repo != "" {
+		// Extract repo name from URL - try to get a meaningful name
+		repoURL := strings.ToLower(req.Repo)
+		
+		// Common repo patterns
+		if strings.Contains(repoURL, "prometheus-community") {
+			repoName = "prometheus-community"
+		} else if strings.Contains(repoURL, "bitnami") {
+			repoName = "bitnami"
+		} else if strings.Contains(repoURL, "kubernetes-sigs") {
+			// For kubernetes-sigs repos, try to extract a meaningful name
+			if strings.Contains(repoURL, "nfs-subdir") {
+				repoName = "nfs-subdir-external-provisioner"
+			} else {
+				// Extract the last meaningful part of the path
+				parts := strings.Split(strings.Trim(req.Repo, "/"), "/")
+				if len(parts) > 0 {
+					lastPart := parts[len(parts)-1]
+					repoName = strings.ReplaceAll(lastPart, ".github.io", "")
+					repoName = strings.ReplaceAll(repoName, "-charts", "")
+					repoName = strings.ReplaceAll(repoName, "-helm-charts", "")
+				} else {
+					repoName = "kubernetes-sigs"
+				}
+			}
+		} else if strings.Contains(repoURL, "kubernetes.github.io") {
+			// Extract org name from kubernetes.github.io repos
+			if strings.Contains(repoURL, "ingress-nginx") {
+				repoName = "ingress-nginx"
+			} else {
+				parts := strings.Split(strings.Trim(req.Repo, "/"), "/")
+				if len(parts) > 0 {
+					repoName = parts[len(parts)-1]
+				} else {
+					repoName = "kubernetes"
+				}
+			}
+		} else if strings.Contains(repoURL, "stable") {
+			repoName = "stable"
+		} else {
+			// Generate a simple name from URL - extract the meaningful part
+			// Remove protocol
+			repoName = strings.ReplaceAll(strings.ReplaceAll(req.Repo, "https://", ""), "http://", "")
+			// Remove .github.io and similar
+			repoName = strings.ReplaceAll(repoName, ".github.io", "")
+			repoName = strings.ReplaceAll(repoName, "/helm-charts", "")
+			repoName = strings.ReplaceAll(repoName, "-charts", "")
+			
+			// Split by / and take the last meaningful part
+			parts := strings.Split(strings.Trim(repoName, "/"), "/")
+			if len(parts) > 0 {
+				repoName = parts[len(parts)-1]
+			}
+			
+			// Clean up
+			repoName = strings.ReplaceAll(repoName, ".", "-")
+			repoName = strings.Trim(repoName, "-")
+			if len(repoName) > 50 {
+				repoName = repoName[:50]
+			}
+			if repoName == "" {
+				repoName = "temp-repo"
+			}
+		}
+		
+		// Build command: add repo, update, then upgrade using repo/chart format
+		upgradeCmd := fmt.Sprintf("helm upgrade %s %s/%s --namespace %s", req.Name, repoName, chartName, req.Namespace)
+		
+		if req.Version != "" {
+			upgradeCmd += fmt.Sprintf(" --version %s", req.Version)
+		}
+		
+		if req.ValuesYAML != "" && valuesCMName != "" {
+			upgradeCmd += " -f /tmp/values/values.yaml"
+		}
+		
+		cmdParts := []string{
+			fmt.Sprintf("helm repo add %s %s 2>/dev/null || true", repoName, req.Repo),
+			"helm repo update",
+			upgradeCmd,
+		}
+		
+		helmCmd = []string{"/bin/sh", "-c", strings.Join(cmdParts, " && ")}
+	} else {
+		// No repo specified - add common repos, search for chart, and upgrade
+		// Build a command that adds common repos, searches for the chart, and upgrades
+		repoAddCmds := []string{}
+		for _, repo := range commonRepos {
+			repoAddCmds = append(repoAddCmds, fmt.Sprintf("helm repo add %s %s 2>/dev/null || true", repo.name, repo.url))
+		}
+		
+		// Search for the chart in all repos - helm search returns "repo/chart" format in the name field
+		// Extract the repo name from the search results (format: "name": "repo/chart")
+		searchCmd := fmt.Sprintf("CHART_REPO=$(helm search repo %s --output json 2>/dev/null | grep -o '\"name\":\"[^\"]*/%s\"' | head -1 | sed 's/\"name\":\"\\([^/]*\\)\\/.*/\\1/') || echo ''", chartName, chartName)
+		
+		// Build upgrade command - try repo/chart format if found, otherwise try chart name directly
+		upgradeCmd := fmt.Sprintf("if [ -n \"$CHART_REPO\" ] && [ \"$CHART_REPO\" != \"\" ]; then helm upgrade %s $CHART_REPO/%s --namespace %s", req.Name, chartName, req.Namespace)
+		if req.Version != "" {
+			upgradeCmd += fmt.Sprintf(" --version %s", req.Version)
+		}
+		if req.ValuesYAML != "" && valuesCMName != "" {
+			upgradeCmd += " -f /tmp/values/values.yaml"
+		}
+		upgradeCmd += fmt.Sprintf("; else helm upgrade %s %s --namespace %s", req.Name, chartName, req.Namespace)
+		if req.Version != "" {
+			upgradeCmd += fmt.Sprintf(" --version %s", req.Version)
+		}
+		if req.ValuesYAML != "" && valuesCMName != "" {
+			upgradeCmd += " -f /tmp/values/values.yaml"
+		}
+		upgradeCmd += "; fi"
+		
+		cmdParts := []string{
+			strings.Join(repoAddCmds, " && "),
+			"helm repo update",
+			searchCmd,
+			upgradeCmd,
+		}
+		
+		helmCmd = []string{"/bin/sh", "-c", strings.Join(cmdParts, " && ")}
+	}
+
+	// Create Job to execute helm upgrade in dkonsole namespace (where the ServiceAccount with permissions exists)
+	// The helm upgrade command will target the release namespace
+	job := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      jobName,
+			Namespace: dkonsoleNamespace, // Run in dkonsole namespace to use its ServiceAccount
+		},
+		Spec: batchv1.JobSpec{
+			TTLSecondsAfterFinished: func() *int32 { t := int32(300); return &t }(), // Clean up after 5 minutes
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					ServiceAccountName: saName, // Use dkonsole's ServiceAccount which has cluster-admin
+					RestartPolicy:      corev1.RestartPolicyNever,
+					Containers: []corev1.Container{
+						{
+							Name:  "helm",
+							Image: "alpine/helm:latest", // Helm image
+						},
+					},
+				},
+			},
+		},
+	}
+	
+	// Set command and args based on whether we're using shell or direct command
+	if len(helmCmd) == 3 && helmCmd[0] == "/bin/sh" && helmCmd[1] == "-c" {
+		// Shell command (when repo is specified)
+		job.Spec.Template.Spec.Containers[0].Command = []string{"/bin/sh", "-c"}
+		job.Spec.Template.Spec.Containers[0].Args = []string{helmCmd[2]}
+	} else {
+		// Direct command (when no repo)
+		job.Spec.Template.Spec.Containers[0].Command = helmCmd[0:1]
+		job.Spec.Template.Spec.Containers[0].Args = helmCmd[1:]
+	}
+
+	// Add volume mount for values if provided
+	if req.ValuesYAML != "" && valuesCMName != "" {
+		job.Spec.Template.Spec.Volumes = []corev1.Volume{
+			{
+				Name: "values",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: valuesCMName,
+						},
+					},
+				},
+			},
+		}
+		job.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
+			{
+				Name:      "values",
+				MountPath: "/tmp/values",
+			},
+		}
+	}
+
+	// Create the Job in dkonsole namespace
+	_, err = client.BatchV1().Jobs(dkonsoleNamespace).Create(ctx, job, metav1.CreateOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to create upgrade job: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	auditLog(r, "upgrade", "HelmRelease", req.Name, req.Namespace, true, nil, map[string]interface{}{
+		"chart":   req.Chart,
+		"version": req.Version,
+		"job":     jobName,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":  "upgrade_initiated",
+		"message": fmt.Sprintf("Helm upgrade job created: %s", jobName),
+		"job":     jobName,
+	})
+}
+
+// InstallHelmRelease installs a new Helm chart
+func (h *Handlers) InstallHelmRelease(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Name      string                 `json:"name"`
+		Namespace string                 `json:"namespace"`
+		Chart     string                 `json:"chart"`              // Chart name (required)
+		Version   string                 `json:"version,omitempty"` // Chart version to install
+		Repo      string                 `json:"repo,omitempty"`    // Helm repository URL
+		Values    map[string]interface{} `json:"values,omitempty"`  // Values to override
+		ValuesYAML string                `json:"valuesYaml,omitempty"` // Values as YAML string
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if req.Name == "" || req.Namespace == "" || req.Chart == "" {
+		http.Error(w, "Missing required fields: name, namespace, or chart", http.StatusBadRequest)
+		return
+	}
+
+	if err := validateK8sName(req.Name, "name"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := validateK8sName(req.Namespace, "namespace"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Get REST config for the cluster
+	cluster := r.URL.Query().Get("cluster")
+	if cluster == "" {
+		cluster = "default"
+	}
+	
+	h.mu.RLock()
+	restConfig := h.RESTConfigs[cluster]
+	h.mu.RUnlock()
+
+	if restConfig == nil {
+		http.Error(w, "REST config not found for cluster", http.StatusBadRequest)
+		return
+	}
+
+	// Create a Kubernetes Job to execute helm install
+	ctx, cancel := createTimeoutContext()
+	defer cancel()
+
+	client, err := h.getClient(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	chartName := req.Chart
+
+	// Use the ServiceAccount from dkonsole namespace (which already has cluster-admin permissions)
+	dkonsoleNamespace := "dkonsole"
+	saName := "dkonsole" // The ServiceAccount used by the dkonsole pod
+	
+	// Verify the ServiceAccount exists in dkonsole namespace
+	_, err = client.CoreV1().ServiceAccounts(dkonsoleNamespace).Get(ctx, saName, metav1.GetOptions{})
+	if err != nil {
+		log.Printf("Warning: ServiceAccount %s/%s not found, trying 'default': %v", dkonsoleNamespace, saName, err)
+		// Fallback to default ServiceAccount
+		saName = "default"
+		_, err = client.CoreV1().ServiceAccounts(dkonsoleNamespace).Get(ctx, saName, metav1.GetOptions{})
+		if err != nil {
+			log.Printf("Error: Could not find ServiceAccount in namespace %s: %v", dkonsoleNamespace, err)
+			http.Error(w, fmt.Sprintf("ServiceAccount not found in namespace %s", dkonsoleNamespace), http.StatusInternalServerError)
+			return
+		}
+	}
+	
+	// Create Job to execute helm install
+	jobName := fmt.Sprintf("helm-install-%s-%d", req.Name, time.Now().Unix())
+	jobTimestamp := time.Now().Unix()
+	
+	// Create a ConfigMap with values if provided (in dkonsole namespace where the Job will run)
+	valuesCMName := ""
+	if req.ValuesYAML != "" {
+		valuesCMName = fmt.Sprintf("helm-install-%s-%d", req.Name, jobTimestamp)
+		valuesCM := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      valuesCMName,
+				Namespace: dkonsoleNamespace, // Create in dkonsole namespace where Job runs
+			},
+			Data: map[string]string{
+				"values.yaml": req.ValuesYAML,
+			},
+		}
+		
+		_, err = client.CoreV1().ConfigMaps(dkonsoleNamespace).Create(ctx, valuesCM, metav1.CreateOptions{})
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to create values ConfigMap: %v", err), http.StatusInternalServerError)
+			return
+		}
+	}
+	
+	// Common Helm repositories to search if repo is not specified
+	commonRepos := []struct {
+		name string
+		url  string
+	}{
+		{"prometheus-community", "https://prometheus-community.github.io/helm-charts"},
+		{"bitnami", "https://charts.bitnami.com/bitnami"},
+		{"ingress-nginx", "https://kubernetes.github.io/ingress-nginx"},
+		{"nfs-subdir-external-provisioner", "https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner"},
+		{"external-secrets", "https://charts.external-secrets.io"},
+		{"hashicorp", "https://helm.releases.hashicorp.com"},
+		{"jetstack", "https://charts.jetstack.io"},
+		{"grafana", "https://grafana.github.io/helm-charts"},
+		{"argo", "https://argoproj.github.io/argo-helm"},
+		{"stable", "https://charts.helm.sh/stable"},
+		{"elastic", "https://helm.elastic.co"},
+		{"datadog", "https://helm.datadoghq.com"},
+		{"cert-manager", "https://charts.jetstack.io"},
+		{"traefik", "https://helm.traefik.io/traefik"},
+		{"longhorn", "https://charts.longhorn.io"},
+		{"rook", "https://charts.rook.io/release"},
+		{"metallb", "https://metallb.github.io/metallb"},
+		{"kube-state-metrics", "https://prometheus-community.github.io/helm-charts"},
+		{"jaeger", "https://jaegertracing.github.io/helm-charts"},
+		{"istio", "https://istio-release.storage.googleapis.com/charts"},
+	}
+	
+	// Build helm install command
+	var helmCmd []string
+	var repoName string
+	
+	// If we have a repo URL, extract repo name and use repo/chart format
+	if req.Repo != "" {
+		// Extract repo name from URL - try to get a meaningful name
+		repoURL := strings.ToLower(req.Repo)
+		
+		// Common repo patterns
+		if strings.Contains(repoURL, "prometheus-community") {
+			repoName = "prometheus-community"
+		} else if strings.Contains(repoURL, "bitnami") {
+			repoName = "bitnami"
+		} else if strings.Contains(repoURL, "kubernetes-sigs") {
+			// For kubernetes-sigs repos, try to extract a meaningful name
+			if strings.Contains(repoURL, "nfs-subdir") {
+				repoName = "nfs-subdir-external-provisioner"
+			} else {
+				// Extract the last meaningful part of the path
+				parts := strings.Split(strings.Trim(req.Repo, "/"), "/")
+				if len(parts) > 0 {
+					lastPart := parts[len(parts)-1]
+					repoName = strings.ReplaceAll(lastPart, ".github.io", "")
+					repoName = strings.ReplaceAll(repoName, "-charts", "")
+					repoName = strings.ReplaceAll(repoName, "-helm-charts", "")
+				} else {
+					repoName = "kubernetes-sigs"
+				}
+			}
+		} else if strings.Contains(repoURL, "kubernetes.github.io") {
+			// Extract org name from kubernetes.github.io repos
+			if strings.Contains(repoURL, "ingress-nginx") {
+				repoName = "ingress-nginx"
+			} else {
+				parts := strings.Split(strings.Trim(req.Repo, "/"), "/")
+				if len(parts) > 0 {
+					repoName = parts[len(parts)-1]
+				} else {
+					repoName = "kubernetes"
+				}
+			}
+		} else if strings.Contains(repoURL, "stable") {
+			repoName = "stable"
+		} else {
+			// Generate a simple name from URL - extract the meaningful part
+			// Remove protocol
+			repoName = strings.ReplaceAll(strings.ReplaceAll(req.Repo, "https://", ""), "http://", "")
+			// Remove .github.io and similar
+			repoName = strings.ReplaceAll(repoName, ".github.io", "")
+			repoName = strings.ReplaceAll(repoName, "/helm-charts", "")
+			repoName = strings.ReplaceAll(repoName, "-charts", "")
+			
+			// Split by / and take the last meaningful part
+			parts := strings.Split(strings.Trim(repoName, "/"), "/")
+			if len(parts) > 0 {
+				repoName = parts[len(parts)-1]
+			}
+			
+			// Clean up
+			repoName = strings.ReplaceAll(repoName, ".", "-")
+			repoName = strings.Trim(repoName, "-")
+			if len(repoName) > 50 {
+				repoName = repoName[:50]
+			}
+			if repoName == "" {
+				repoName = "temp-repo"
+			}
+		}
+		
+		// Build command: add repo, update, then install using repo/chart format
+		installCmd := fmt.Sprintf("helm install %s %s/%s --namespace %s --create-namespace", req.Name, repoName, chartName, req.Namespace)
+		
+		if req.Version != "" {
+			installCmd += fmt.Sprintf(" --version %s", req.Version)
+		}
+		
+		if req.ValuesYAML != "" && valuesCMName != "" {
+			installCmd += " -f /tmp/values/values.yaml"
+		}
+		
+		cmdParts := []string{
+			fmt.Sprintf("helm repo add %s %s 2>/dev/null || true", repoName, req.Repo),
+			"helm repo update",
+			installCmd,
+		}
+		
+		helmCmd = []string{"/bin/sh", "-c", strings.Join(cmdParts, " && ")}
+	} else {
+		// No repo specified - add common repos, search for chart, and install
+		repoAddCmds := []string{}
+		for _, repo := range commonRepos {
+			repoAddCmds = append(repoAddCmds, fmt.Sprintf("helm repo add %s %s 2>/dev/null || true", repo.name, repo.url))
+		}
+		
+		// Search for the chart in all repos - helm search returns "repo/chart" format in the name field
+		// Extract the repo name from the search results (format: "name": "repo/chart")
+		searchCmd := fmt.Sprintf("CHART_REPO=$(helm search repo %s --output json 2>/dev/null | grep -o '\"name\":\"[^\"]*/%s\"' | head -1 | sed 's/\"name\":\"\\([^/]*\\)\\/.*/\\1/') || echo ''", chartName, chartName)
+		
+		// Build install command - try repo/chart format if found, otherwise try chart name directly
+		installCmd := fmt.Sprintf("if [ -n \"$CHART_REPO\" ] && [ \"$CHART_REPO\" != \"\" ]; then helm install %s $CHART_REPO/%s --namespace %s --create-namespace", req.Name, chartName, req.Namespace)
+		if req.Version != "" {
+			installCmd += fmt.Sprintf(" --version %s", req.Version)
+		}
+		if req.ValuesYAML != "" && valuesCMName != "" {
+			installCmd += " -f /tmp/values/values.yaml"
+		}
+		installCmd += fmt.Sprintf("; else helm install %s %s --namespace %s --create-namespace", req.Name, chartName, req.Namespace)
+		if req.Version != "" {
+			installCmd += fmt.Sprintf(" --version %s", req.Version)
+		}
+		if req.ValuesYAML != "" && valuesCMName != "" {
+			installCmd += " -f /tmp/values/values.yaml"
+		}
+		installCmd += "; fi"
+		
+		cmdParts := []string{
+			strings.Join(repoAddCmds, " && "),
+			"helm repo update",
+			searchCmd,
+			installCmd,
+		}
+		
+		helmCmd = []string{"/bin/sh", "-c", strings.Join(cmdParts, " && ")}
+	}
+
+	// Create Job to execute helm install in dkonsole namespace (where the ServiceAccount with permissions exists)
+	job := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      jobName,
+			Namespace: dkonsoleNamespace, // Run in dkonsole namespace to use its ServiceAccount
+		},
+		Spec: batchv1.JobSpec{
+			TTLSecondsAfterFinished: func() *int32 { t := int32(300); return &t }(), // Clean up after 5 minutes
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					ServiceAccountName: saName, // Use dkonsole's ServiceAccount which has cluster-admin
+					RestartPolicy:      corev1.RestartPolicyNever,
+					Containers: []corev1.Container{
+						{
+							Name:  "helm",
+							Image: "alpine/helm:latest", // Helm image
+						},
+					},
+				},
+			},
+		},
+	}
+	
+	// Set command and args based on whether we're using shell or direct command
+	if len(helmCmd) == 3 && helmCmd[0] == "/bin/sh" && helmCmd[1] == "-c" {
+		// Shell command (when repo is specified or searching)
+		job.Spec.Template.Spec.Containers[0].Command = []string{"/bin/sh", "-c"}
+		job.Spec.Template.Spec.Containers[0].Args = []string{helmCmd[2]}
+	} else {
+		// Direct command (when no repo)
+		job.Spec.Template.Spec.Containers[0].Command = helmCmd[0:1]
+		job.Spec.Template.Spec.Containers[0].Args = helmCmd[1:]
+	}
+
+	// Add volume mount for values if provided
+	if req.ValuesYAML != "" && valuesCMName != "" {
+		job.Spec.Template.Spec.Volumes = []corev1.Volume{
+			{
+				Name: "values",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: valuesCMName,
+						},
+					},
+				},
+			},
+		}
+		job.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
+			{
+				Name:      "values",
+				MountPath: "/tmp/values",
+			},
+		}
+	}
+
+	// Create the Job in dkonsole namespace
+	_, err = client.BatchV1().Jobs(dkonsoleNamespace).Create(ctx, job, metav1.CreateOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to create install job: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	auditLog(r, "install", "HelmRelease", req.Name, req.Namespace, true, nil, map[string]interface{}{
+		"chart":   req.Chart,
+		"version": req.Version,
+		"job":     jobName,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":  "install_initiated",
+		"message": fmt.Sprintf("Helm install job created: %s", jobName),
+		"job":     jobName,
+	})
 }

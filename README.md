@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.1.2-green.svg)
+![Version](https://img.shields.io/badge/version-1.1.3-green.svg)
 
 <img width="1916" height="928" alt="image" src="https://github.com/user-attachments/assets/ef3ae6e6-ca3f-4955-9980-3dfae895c1ad" />
 
@@ -33,7 +33,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.1.2
+git checkout v1.1.3
 
 # Install
 helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
@@ -101,18 +101,29 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.1.2"
+  tag: "1.1.3"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.1.2`
+- **Unified**: `dkonsole/dkonsole:1.1.3`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.1.3 (2025-01-23)
+**🚀 Helm Charts Manager & UI Enhancements**
+
+- ✅ **Helm Charts Manager**: Complete Helm release management interface
+- ✅ **Pod Events & Timeline**: New events tab in pod details
+- ✅ **UI State Persistence**: Browser remembers selected namespace and current view
+- ✅ **Responsive Tables**: Scroll horizontal when window is narrow
+- ✅ **Pod Table Enhancements**: Added Ready and Restarts columns
+- ✅ **PVC Enhancements**: Added Size column with sorting
+- ✅ **Date Formatting**: Standardized across all components
 
 ### v1.1.2 (2025-01-23)
 **✨ Resource Quota Manager Improvements**
@@ -178,6 +189,17 @@ cd frontend && npm run dev
 ```
 
 ## 📝 Changelog
+
+### v1.1.3 (2025-01-23)
+**🚀 Helm Charts Manager & UI Enhancements**
+
+- ✅ **Helm Charts Manager**: Complete Helm release management interface
+- ✅ **Pod Events & Timeline**: New events tab in pod details
+- ✅ **UI State Persistence**: Browser remembers selected namespace and current view
+- ✅ **Responsive Tables**: Scroll horizontal when window is narrow
+- ✅ **Pod Table Enhancements**: Added Ready and Restarts columns
+- ✅ **PVC Enhancements**: Added Size column with sorting
+- ✅ **Date Formatting**: Standardized across all components
 
 ### v1.1.2 (2025-01-23)
 **✨ Resource Quota Manager Improvements**
