@@ -34,6 +34,9 @@ cd DKonsole
 # Checkout the latest stable version
 git checkout v1.1.10
 
+# EDIT VALUES WITH YOUR FAVORITE EDITOR.
+$ vim ./helm/dkonsole/values.yaml
+
 # Install
 helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
 ```
