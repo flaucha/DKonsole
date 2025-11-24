@@ -39,11 +39,22 @@ const LogViewerInline = ({ namespace, pod, container }) => {
         };
     }, [namespace, pod, container, authFetch]);
 
+    const containerRef = useRef(null);
+
     useEffect(() => {
         if (!isPaused && bottomRef.current) {
-            bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+            bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     }, [logs, isPaused]);
+
+    // Scroll into view when component mounts (like terminal does)
+    useEffect(() => {
+        if (containerRef.current) {
+            requestAnimationFrame(() => {
+                containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        }
+    }, [namespace, pod, container]);
 
     const handleDownload = () => {
         const blob = new Blob([logs.join('\n')], { type: 'text/plain' });
@@ -62,7 +73,7 @@ const LogViewerInline = ({ namespace, pod, container }) => {
     };
 
     return (
-        <div className="bg-gray-900 border border-gray-700 rounded-lg flex flex-col h-full overflow-hidden">
+        <div ref={containerRef} className="bg-gray-900 border border-gray-700 rounded-lg flex flex-col h-full overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 bg-gray-800">
                 <div className="flex items-center space-x-2">

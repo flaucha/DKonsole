@@ -15,7 +15,8 @@ import {
     Lock,
     Users,
     Search,
-    RefreshCw
+    RefreshCw,
+    MoreVertical
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -92,6 +93,8 @@ const WorkloadList = ({ namespace, kind }) => {
     const [filter, setFilter] = useState('');
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [editingResource, setEditingResource] = useState(null);
+    const [menuOpen, setMenuOpen] = useState(null);
+    const [confirmAction, setConfirmAction] = useState(null);
 
     // Early return if kind is not provided
     if (!kind) {
@@ -99,7 +102,10 @@ const WorkloadList = ({ namespace, kind }) => {
     }
 
     // Use React Query hook
-    const { data: resources = [], isLoading: loading, error, refetch } = useWorkloads(authFetch, namespace, kind);
+    const { data: resourcesData, isLoading: loading, error, refetch } = useWorkloads(authFetch, namespace, kind);
+    
+    // Ensure resources is always an array (handle null/undefined cases)
+    const resources = Array.isArray(resourcesData) ? resourcesData : [];
 
     // Reset state when view context changes
     useEffect(() => {
@@ -200,6 +206,26 @@ const WorkloadList = ({ namespace, kind }) => {
         return sortDirection === 'asc' ? '↑' : '↓';
     };
 
+    const handleDelete = async (res, force = false) => {
+        const params = new URLSearchParams({ kind: res.kind, name: res.name });
+        if (res.namespace) params.append('namespace', res.namespace);
+        if (currentCluster) params.append('cluster', currentCluster);
+        if (force) params.append('force', 'true');
+
+        try {
+            const response = await authFetch(`/api/resource?${params.toString()}`, { method: 'DELETE' });
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => 'Delete failed');
+                throw new Error(errorText || 'Delete failed');
+            }
+            refetch();
+        } catch (err) {
+            alert(err.message || 'Failed to delete resource');
+        } finally {
+            setConfirmAction(null);
+        }
+    };
+
     const renderDetails = (res) => {
         const onEditYAML = () => setEditingResource(res);
         if (!res.details) return (
@@ -236,19 +262,85 @@ const WorkloadList = ({ namespace, kind }) => {
         }
     };
 
+    const Icon = getIcon(kind);
+
+    // Show loading state
     if (loading && resources.length === 0) {
         return <div className="text-gray-400 animate-pulse p-6">Loading {kind}s...</div>;
     }
 
+    // Show error state
     if (error) {
-        return <div className="text-red-400 p-6">Error loading {kind}s: {error.message}</div>;
+        return (
+            <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900/50">
+                    <div className="flex items-center space-x-4 flex-1">
+                        <span className="text-sm text-gray-500">0 items</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => refetch()}
+                            className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
+                            title="Refresh"
+                        >
+                            <RefreshCw size={16} />
+                        </button>
+                    </div>
+                </div>
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-red-400 text-center">
+                        <p className="text-lg font-semibold mb-2">Error loading {kind}s</p>
+                        <p className="text-sm text-gray-500">{error.message}</p>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
-    if (resources.length === 0 && !filter) {
-        return <div className="text-gray-500 italic p-6">No {kind}s found in this namespace.</div>;
+    // Show empty state if no resources and no filter (and not loading)
+    if (!loading && resources.length === 0 && !filter) {
+        return (
+            <div className="flex flex-col h-full">
+                {/* Toolbar */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900/50">
+                    <div className="flex items-center space-x-4 flex-1">
+                        <div className={`relative transition-all duration-300 ${isSearchFocused ? 'w-96' : 'w-64'}`}>
+                            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors duration-300 ${isSearchFocused ? 'text-blue-400' : 'text-gray-500'}`} size={16} />
+                            <input
+                                type="text"
+                                placeholder={`Filter ${kind}s...`}
+                                value={filter}
+                                onChange={(e) => setFilter(e.target.value)}
+                                onFocus={() => setIsSearchFocused(true)}
+                                onBlur={() => setIsSearchFocused(false)}
+                                className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded-md pl-10 pr-4 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-300"
+                            />
+                        </div>
+                        <span className="text-sm text-gray-500">
+                            0 items
+                        </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => refetch()}
+                            className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
+                            title="Refresh"
+                        >
+                            <RefreshCw size={16} />
+                        </button>
+                    </div>
+                </div>
+                {/* Empty state message */}
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-gray-500 italic text-center">
+                        <Icon size={48} className="mx-auto mb-4 text-gray-600" />
+                        <p className="text-lg">No {kind}s found in this namespace.</p>
+                        <p className="text-sm mt-2">Try selecting a different namespace or check if resources exist.</p>
+                    </div>
+                </div>
+            </div>
+        );
     }
-
-    const Icon = getIcon(kind);
 
     return (
         <div className="flex flex-col h-full">
@@ -290,7 +382,7 @@ const WorkloadList = ({ namespace, kind }) => {
                 <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('status')}>
                     Status {renderSortIndicator('status')}
                 </div>
-                <div className="col-span-3 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('created')}>
+                <div className={`${kind === 'Pod' ? 'col-span-2' : 'col-span-3'} cursor-pointer hover:text-gray-300 flex items-center`} onClick={() => handleSort('created')}>
                     Age {renderSortIndicator('created')}
                 </div>
                 {kind === 'Pod' && (
@@ -311,6 +403,7 @@ const WorkloadList = ({ namespace, kind }) => {
                         Size {renderSortIndicator('size')}
                     </div>
                 )}
+                <div className="col-span-1"></div>
             </div>
 
             {/* Table Body */}
@@ -336,7 +429,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                         {res.status}
                                     </span>
                                 </div>
-                                <div className="col-span-3 text-sm text-gray-400">
+                                <div className={`${kind === 'Pod' ? 'col-span-2' : 'col-span-3'} text-sm text-gray-400`}>
                                     {formatDateTime(res.created)}
                                 </div>
                                 {kind === 'Pod' && (
@@ -357,24 +450,110 @@ const WorkloadList = ({ namespace, kind }) => {
                                         {res.details?.capacity || res.details?.requested || '-'}
                                     </div>
                                 )}
+                                {kind !== 'Pod' && kind !== 'PersistentVolumeClaim' && (
+                                    <div className="col-span-1"></div>
+                                )}
+                                <div className="col-span-1 flex justify-end" onClick={(e) => e.stopPropagation()}>
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setMenuOpen(menuOpen === res.uid ? null : res.uid)}
+                                            className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white transition-colors"
+                                        >
+                                            <MoreVertical size={16} />
+                                        </button>
+                                        {menuOpen === res.uid && (
+                                            <div className="absolute right-0 mt-1 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
+                                                <div className="flex flex-col">
+                                                    <button
+                                                        onClick={() => {
+                                                            setConfirmAction({ res, force: false });
+                                                            setMenuOpen(null);
+                                                        }}
+                                                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setConfirmAction({ res, force: true });
+                                                            setMenuOpen(null);
+                                                        }}
+                                                        className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"
+                                                    >
+                                                        Force Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Expanded Details */}
-                            <div className={`${getExpandableRowClasses(isExpanded)}`}>
-                                <div className={getExpandableCellClasses()}>
-                                    {renderDetails(res)}
-                                </div>
+                            <div className={`${getExpandableRowClasses(isExpanded, false)}`}>
+                                {isExpanded && (
+                                    <div className="px-6 py-4 bg-gray-900/30 border-t border-gray-800">
+                                        <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden">
+                                            {renderDetails(res)}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     );
                 })}
-                {sortedResources.length === 0 && (
+                {sortedResources.length === 0 && filter && (
                     <div className="p-8 text-center text-gray-500">
                         No resources match your filter.
                     </div>
                 )}
             </div>
             {/* Edit YAML Modal would go here if I implemented it fully, but I'll skip for now as it wasn't in the plan to refactor that specifically */}
+            
+            {/* Menu overlay */}
+            {menuOpen && (
+                <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setMenuOpen(null)}
+                ></div>
+            )}
+
+            {/* Delete confirmation modal */}
+            {confirmAction && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-md shadow-xl">
+                        <h3 className="text-lg font-semibold text-white mb-2">
+                            Confirm delete
+                        </h3>
+                        <p className="text-sm text-gray-300 mb-4">
+                            {confirmAction.force ? 'Force delete' : 'Delete'} {confirmAction.res.kind} "{confirmAction.res.name}"?
+                            {confirmAction.force && (
+                                <span className="block mt-2 text-xs text-red-400">
+                                    Warning: Force delete will immediately terminate the resource without graceful shutdown.
+                                </span>
+                            )}
+                        </p>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={() => setConfirmAction(null)}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleDelete(confirmAction.res, confirmAction.force)}
+                                className={`px-4 py-2 rounded-md text-white transition-colors ${
+                                    confirmAction.force 
+                                        ? 'bg-red-700 hover:bg-red-800' 
+                                        : 'bg-orange-600 hover:bg-orange-700'
+                                }`}
+                            >
+                                {confirmAction.force ? 'Force Delete' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -380,63 +380,67 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 		}
 	case "Job":
 		list, err := client.BatchV1().Jobs(listNamespace).List(ctx, listOpts)
-		if err == nil {
-			for _, i := range list.Items {
-				status := "Running"
-				if i.Status.Succeeded > 0 {
-					status = "Completed"
-				} else if i.Status.Failed > 0 {
-					status = "Failed"
-				}
-				details := map[string]interface{}{
-					"active":         i.Status.Active,
-					"succeeded":      i.Status.Succeeded,
-					"failed":         i.Status.Failed,
-					"startTime":      i.Status.StartTime,
-					"completionTime": i.Status.CompletionTime,
-					"parallelism":    i.Spec.Parallelism,
-					"completions":    i.Spec.Completions,
-					"backoffLimit":   i.Spec.BackoffLimit,
-					"activeDeadline": i.Spec.ActiveDeadlineSeconds,
-					"podSelector":    i.Spec.Selector,
-					"podTemplate":    i.Spec.Template.Spec,
-				}
-				resources = append(resources, models.Resource{
-					Name:      i.Name,
-					Namespace: i.Namespace,
-					Kind:      "Job",
-					Status:    status,
-					Created:   i.CreationTimestamp.Format(time.RFC3339),
-					UID:       string(i.UID),
-					Details:   details,
-				})
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to list Jobs: %v", err), http.StatusInternalServerError)
+			return
+		}
+		for _, i := range list.Items {
+			status := "Running"
+			if i.Status.Succeeded > 0 {
+				status = "Completed"
+			} else if i.Status.Failed > 0 {
+				status = "Failed"
 			}
+			details := map[string]interface{}{
+				"active":         i.Status.Active,
+				"succeeded":      i.Status.Succeeded,
+				"failed":         i.Status.Failed,
+				"startTime":      i.Status.StartTime,
+				"completionTime": i.Status.CompletionTime,
+				"parallelism":    i.Spec.Parallelism,
+				"completions":    i.Spec.Completions,
+				"backoffLimit":   i.Spec.BackoffLimit,
+				"activeDeadline": i.Spec.ActiveDeadlineSeconds,
+				"podSelector":    i.Spec.Selector,
+				"podTemplate":    i.Spec.Template.Spec,
+			}
+			resources = append(resources, models.Resource{
+				Name:      i.Name,
+				Namespace: i.Namespace,
+				Kind:      "Job",
+				Status:    status,
+				Created:   i.CreationTimestamp.Format(time.RFC3339),
+				UID:       string(i.UID),
+				Details:   details,
+			})
 		}
 	case "CronJob":
 		list, err := client.BatchV1().CronJobs(listNamespace).List(ctx, listOpts)
-		if err == nil {
-			for _, i := range list.Items {
-				var lastSchedule string
-				if i.Status.LastScheduleTime != nil {
-					lastSchedule = i.Status.LastScheduleTime.Format(time.RFC3339)
-				}
-				details := map[string]interface{}{
-					"schedule":         i.Spec.Schedule,
-					"suspend":          i.Spec.Suspend,
-					"concurrency":      i.Spec.ConcurrencyPolicy,
-					"startingDeadline": i.Spec.StartingDeadlineSeconds,
-					"lastSchedule":     lastSchedule,
-				}
-				resources = append(resources, models.Resource{
-					Name:      i.Name,
-					Namespace: i.Namespace,
-					Kind:      "CronJob",
-					Status:    i.Spec.Schedule,
-					Created:   i.CreationTimestamp.Format(time.RFC3339),
-					UID:       string(i.UID),
-					Details:   details,
-				})
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to list CronJobs: %v", err), http.StatusInternalServerError)
+			return
+		}
+		for _, i := range list.Items {
+			var lastSchedule string
+			if i.Status.LastScheduleTime != nil {
+				lastSchedule = i.Status.LastScheduleTime.Format(time.RFC3339)
 			}
+			details := map[string]interface{}{
+				"schedule":         i.Spec.Schedule,
+				"suspend":          i.Spec.Suspend,
+				"concurrency":      i.Spec.ConcurrencyPolicy,
+				"startingDeadline": i.Spec.StartingDeadlineSeconds,
+				"lastSchedule":     lastSchedule,
+			}
+			resources = append(resources, models.Resource{
+				Name:      i.Name,
+				Namespace: i.Namespace,
+				Kind:      "CronJob",
+				Status:    i.Spec.Schedule,
+				Created:   i.CreationTimestamp.Format(time.RFC3339),
+				UID:       string(i.UID),
+				Details:   details,
+			})
 		}
 	case "StatefulSet":
 		list, err := client.AppsV1().StatefulSets(listNamespace).List(ctx, listOpts)

@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
-import { Package, RefreshCw, Clock, Tag, MoreVertical, Trash2, CirclePlus, CircleMinus, ArrowUp, X, Info, Download } from 'lucide-react';
+import { Package, RefreshCw, Clock, Tag, MoreVertical, Trash2, ArrowUp, X, Info, Download, ChevronDown, Search } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
-import { formatDateTimeShort } from '../utils/dateUtils';
+import { formatDateTime } from '../utils/dateUtils';
 import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 import { useHelmReleases } from '../hooks/useHelmReleases';
 
 const HelmChartManager = () => {
     const { currentCluster } = useSettings();
     const { authFetch } = useAuth();
-    const [expandedReleases, setExpandedReleases] = useState({});
+    const [expandedId, setExpandedId] = useState(null);
+    const [sortField, setSortField] = useState('name');
+    const [sortDirection, setSortDirection] = useState('asc');
+    const [filter, setFilter] = useState('');
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [menuOpen, setMenuOpen] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
     const [upgradeRelease, setUpgradeRelease] = useState(null);
@@ -35,8 +39,63 @@ const HelmChartManager = () => {
     const { data: releases = [], isLoading: loading, refetch } = useHelmReleases(authFetch, currentCluster);
 
     const toggleExpand = (releaseKey) => {
-        setExpandedReleases(prev => ({ ...prev, [releaseKey]: !prev[releaseKey] }));
+        setExpandedId(current => current === releaseKey ? null : releaseKey);
     };
+
+    const handleSort = (field) => {
+        setSortField((prevField) => {
+            if (prevField === field) {
+                setSortDirection((prevDir) => (prevDir === 'asc' ? 'desc' : 'asc'));
+                return prevField;
+            }
+            setSortDirection('asc');
+            return field;
+        });
+    };
+
+    const renderSortIndicator = (field) => {
+        if (sortField !== field) return null;
+        return sortDirection === 'asc' ? '↑' : '↓';
+    };
+
+    const filteredReleases = releases.filter(release => {
+        if (!filter) return true;
+        const searchText = filter.toLowerCase();
+        return (
+            release.name.toLowerCase().includes(searchText) ||
+            release.chart?.toLowerCase().includes(searchText) ||
+            release.namespace.toLowerCase().includes(searchText) ||
+            release.status?.toLowerCase().includes(searchText)
+        );
+    });
+
+    const sortedReleases = [...filteredReleases].sort((a, b) => {
+        const dir = sortDirection === 'asc' ? 1 : -1;
+        const getVal = (item) => {
+            switch (sortField) {
+                case 'name':
+                    return item.name || '';
+                case 'chart':
+                    return item.chart || '';
+                case 'namespace':
+                    return item.namespace || '';
+                case 'status':
+                    return item.status || '';
+                case 'version':
+                    return item.version || '';
+                case 'updated':
+                    return new Date(item.updated).getTime() || 0;
+                default:
+                    return '';
+            }
+        };
+        const va = getVal(a);
+        const vb = getVal(b);
+        if (typeof va === 'number' && typeof vb === 'number') {
+            return (va - vb) * dir;
+        }
+        return String(va).localeCompare(String(vb)) * dir;
+    });
 
     const getStatusBadge = (status) => {
         const statusLower = (status || 'unknown').toLowerCase();
@@ -50,22 +109,6 @@ const HelmChartManager = () => {
             return <span className="px-2 py-1 text-xs rounded-full bg-gray-700 text-gray-300 border border-gray-600">{status || 'Unknown'}</span>;
         }
     };
-
-    const getAge = (updated) => {
-        if (!updated) return 'Unknown';
-        try {
-            const diff = Date.now() - new Date(updated).getTime();
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            if (days > 0) return `${days}d`;
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            if (hours > 0) return `${hours}h`;
-            const minutes = Math.floor(diff / (1000 * 60));
-            return `${minutes}m`;
-        } catch {
-            return 'Unknown';
-        }
-    };
-
 
     const handleDelete = async (release) => {
         const params = new URLSearchParams({
@@ -191,13 +234,30 @@ const HelmChartManager = () => {
         }
     };
 
+    if (loading && releases.length === 0) {
+        return <div className="text-gray-400 animate-pulse p-6">Loading Helm releases...</div>;
+    }
+
     return (
-        <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-2">
-                    <Package className="text-blue-400" size={20} />
-                    <h1 className="text-xl font-semibold text-white">Helm Charts</h1>
-                    {loading && <RefreshCw size={16} className="animate-spin text-gray-400" />}
+        <div className="flex flex-col h-full">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900/50">
+                <div className="flex items-center space-x-4 flex-1">
+                    <div className={`relative transition-all duration-300 ${isSearchFocused ? 'w-96' : 'w-64'}`}>
+                        <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors duration-300 ${isSearchFocused ? 'text-blue-400' : 'text-gray-500'}`} size={16} />
+                        <input
+                            type="text"
+                            placeholder="Filter releases..."
+                            value={filter}
+                            onChange={(e) => setFilter(e.target.value)}
+                            onFocus={() => setIsSearchFocused(true)}
+                            onBlur={() => setIsSearchFocused(false)}
+                            className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded-md pl-10 pr-4 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-300"
+                        />
+                    </div>
+                    <span className="text-sm text-gray-500">
+                        {filteredReleases.length} {filteredReleases.length === 1 ? 'item' : 'items'}
+                    </span>
                 </div>
                 <div className="flex items-center space-x-2">
                     <button
@@ -209,182 +269,185 @@ const HelmChartManager = () => {
                     </button>
                     <button
                         onClick={() => refetch()}
-                        className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded-md border border-gray-700 text-sm transition-colors flex items-center"
+                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
+                        title="Refresh"
                     >
-                        <RefreshCw size={14} className="mr-2" />
-                        Refresh
+                        <RefreshCw size={16} />
                     </button>
                 </div>
             </div>
 
-            <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-x-auto">
-                <table className="min-w-full border-separate border-spacing-0">
-                    <thead>
-                        <tr>
-                            <th className="w-10 px-2 md:px-4 py-3 bg-gray-900 rounded-tl-lg border-b border-gray-700"></th>
-                            <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Release</th>
-                            <th className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Chart</th>
-                            <th className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Version</th>
-                            <th className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Namespace</th>
-                            <th className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Status</th>
-                            <th className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Revision</th>
-                            <th className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-900 border-b border-gray-700">Updated</th>
-                            <th className="w-10 px-2 md:px-4 py-3 bg-gray-900 rounded-tr-lg border-b border-gray-700"></th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-800">
-                        {releases.map((release) => {
-                            const releaseKey = `${release.namespace}/${release.name}`;
-                            return (
-                                <React.Fragment key={releaseKey}>
-                                    <tr
-                                        className={getExpandableRowRowClasses(expandedReleases[releaseKey])}
-                                        onClick={() => toggleExpand(releaseKey)}
-                                    >
-                                        <td className="px-2 md:px-4 py-3 whitespace-nowrap text-gray-400 text-center">
-                                            {expandedReleases[releaseKey] ? <CircleMinus size={16} /> : <CirclePlus size={16} />}
-                                        </td>
-                                        <td className="px-3 md:px-6 py-3 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <div className="flex-shrink-0 h-6 w-6 bg-gray-700 rounded flex items-center justify-center text-gray-400">
-                                                    <Package size={14} />
+            {/* Table Header */}
+            <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-800 bg-gray-900/50 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <div className="col-span-3 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('name')}>
+                    Release {renderSortIndicator('name')}
+                </div>
+                <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('chart')}>
+                    Chart {renderSortIndicator('chart')}
+                </div>
+                <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('version')}>
+                    Version {renderSortIndicator('version')}
+                </div>
+                <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('namespace')}>
+                    Namespace {renderSortIndicator('namespace')}
+                </div>
+                <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('status')}>
+                    Status {renderSortIndicator('status')}
+                </div>
+                <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('updated')}>
+                    Updated {renderSortIndicator('updated')}
+                </div>
+                <div className="col-span-1"></div>
+            </div>
+
+            {/* Table Body */}
+            <div className="flex-1 overflow-y-auto">
+                {sortedReleases.map((release) => {
+                    const releaseKey = `${release.namespace}/${release.name}`;
+                    const isExpanded = expandedId === releaseKey;
+                    return (
+                        <div key={releaseKey} className="border-b border-gray-800 last:border-0">
+                            <div
+                                onClick={() => toggleExpand(releaseKey)}
+                                className={`grid grid-cols-12 gap-4 px-6 py-4 cursor-pointer transition-colors duration-200 items-center ${getExpandableRowRowClasses(isExpanded)}`}
+                            >
+                                <div className="col-span-3 flex items-center font-medium text-sm text-gray-200">
+                                    <ChevronDown
+                                        size={16}
+                                        className={`mr-2 text-gray-500 transition-transform duration-200 ${isExpanded ? 'transform rotate-180' : ''}`}
+                                    />
+                                    <Package size={16} className="mr-3 text-gray-500" />
+                                    <div className="min-w-0 flex-1">
+                                        <span className="truncate block" title={release.name}>{release.name}</span>
+                                        {release.description && (
+                                            <div className="text-xs text-gray-500 truncate">{release.description}</div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="col-span-2 text-sm text-gray-300">
+                                    {release.chart || '-'}
+                                    {release.appVersion && (
+                                        <div className="text-xs text-gray-500">App: {release.appVersion}</div>
+                                    )}
+                                </div>
+                                <div className="col-span-1 text-sm text-gray-300">{release.version || '-'}</div>
+                                <div className="col-span-1 text-sm text-gray-300">{release.namespace}</div>
+                                <div className="col-span-2">
+                                    {getStatusBadge(release.status)}
+                                </div>
+                                <div className="col-span-2 text-sm text-gray-400">
+                                    {formatDateTime(release.updated)}
+                                </div>
+                                <div className="col-span-1 flex justify-end" onClick={(e) => e.stopPropagation()}>
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setMenuOpen(menuOpen === releaseKey ? null : releaseKey)}
+                                            className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white transition-colors"
+                                        >
+                                            <MoreVertical size={16} />
+                                        </button>
+                                        {menuOpen === releaseKey && (
+                                            <div className="absolute right-0 mt-1 w-40 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
+                                                <div className="flex flex-col">
+                                                    <button
+                                                        onClick={() => {
+                                                            setUpgradeRelease(release);
+                                                            setUpgradeForm({
+                                                                chart: release.chart || '',
+                                                                version: '',
+                                                                repo: '',
+                                                                valuesYaml: ''
+                                                            });
+                                                            setMenuOpen(null);
+                                                        }}
+                                                        className="w-full text-left px-4 py-2 text-sm text-blue-300 hover:bg-blue-900/40 flex items-center"
+                                                    >
+                                                        <ArrowUp size={14} className="mr-2" />
+                                                        Upgrade
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setConfirmAction({ release });
+                                                            setMenuOpen(null);
+                                                        }}
+                                                        className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40 flex items-center"
+                                                    >
+                                                        <Trash2 size={14} className="mr-2" />
+                                                        Uninstall
+                                                    </button>
                                                 </div>
-                                                <div className="ml-4">
-                                                    <div className="text-sm font-medium text-white">{release.name}</div>
-                                                    {release.description && (
-                                                        <div className="text-xs text-gray-400 truncate max-w-xs">{release.description}</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Expanded Details */}
+                            <div className={`${getExpandableRowClasses(isExpanded, false)}`}>
+                                {isExpanded && (
+                                    <div className="px-6 py-4 bg-gray-900/30 border-t border-gray-800">
+                                        <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden">
+                                            <div className="p-4 space-y-6">
+                                            {/* Basic Information */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                        <Package size={12} className="mr-1" />
+                                                        Chart
+                                                    </h4>
+                                                    <div className="text-sm text-gray-300">{release.chart || '-'}</div>
+                                                    {release.appVersion && (
+                                                        <div className="text-xs text-gray-500 mt-1">App Version: {release.appVersion}</div>
                                                     )}
                                                 </div>
+                                                <div>
+                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                        <Tag size={12} className="mr-1" />
+                                                        Version
+                                                    </h4>
+                                                    <div className="text-sm text-gray-300">{release.version || '-'}</div>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                        <Clock size={12} className="mr-1" />
+                                                        Last Updated
+                                                    </h4>
+                                                    <div className="text-sm text-gray-300">{formatDateTime(release.updated)}</div>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                        <Tag size={12} className="mr-1" />
+                                                        Revision
+                                                    </h4>
+                                                    <div className="text-sm text-gray-300">{release.revision || '-'}</div>
+                                                </div>
                                             </div>
-                                        </td>
-                                        <td className="px-2 md:px-6 py-3 whitespace-nowrap">
-                                            <div className="text-sm text-gray-300">{release.chart || '-'}</div>
-                                            {release.appVersion && (
-                                                <div className="text-xs text-gray-500">App: {release.appVersion}</div>
+
+                                            {/* Description */}
+                                            {release.description && (
+                                                <div>
+                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</h4>
+                                                    <div className="text-sm text-gray-300">{release.description}</div>
+                                                </div>
                                             )}
-                                        </td>
-                                        <td className="px-2 md:px-6 py-3 whitespace-nowrap text-sm text-gray-300">{release.version || '-'}</td>
-                                        <td className="px-2 md:px-6 py-3 whitespace-nowrap text-sm text-gray-300">{release.namespace}</td>
-                                        <td className="px-2 md:px-6 py-3 whitespace-nowrap">
-                                            {getStatusBadge(release.status)}
-                                        </td>
-                                        <td className="px-2 md:px-6 py-3 whitespace-nowrap text-sm text-gray-300">{release.revision || '-'}</td>
-                                        <td className="px-2 md:px-6 py-3 whitespace-nowrap text-sm text-gray-400">
-                                            <div className="flex items-center space-x-1">
-                                                <Clock size={12} />
-                                                <span>{getAge(release.updated)}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 whitespace-nowrap text-gray-300" onClick={(e) => e.stopPropagation()}>
-                                            <div className="relative flex items-center justify-end">
-                                                <button
-                                                    onClick={() => setMenuOpen(menuOpen === releaseKey ? null : releaseKey)}
-                                                    className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
-                                                >
-                                                    <MoreVertical size={16} />
-                                                </button>
-                                                {menuOpen === releaseKey && (
-                                                    <div className="absolute right-0 mt-1 w-40 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
-                                                        <div className="flex flex-col">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setUpgradeRelease(release);
-                                                                    setUpgradeForm({
-                                                                        chart: release.chart || '',
-                                                                        version: '',
-                                                                        repo: '',
-                                                                        valuesYaml: ''
-                                                                    });
-                                                                    setMenuOpen(null);
-                                                                }}
-                                                                className="w-full text-left px-4 py-2 text-sm text-blue-300 hover:bg-blue-900/40 flex items-center"
-                                                            >
-                                                                <ArrowUp size={14} className="mr-2" />
-                                                                Upgrade
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setConfirmAction({ release });
-                                                                    setMenuOpen(null);
-                                                                }}
-                                                                className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40 flex items-center"
-                                                            >
-                                                                <Trash2 size={14} className="mr-2" />
-                                                                Uninstall
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td colSpan="9" className={getExpandableCellClasses(expandedReleases[releaseKey], 9)}>
-                                            <div className={getExpandableRowClasses(expandedReleases[releaseKey], false)}>
-                                                {expandedReleases[releaseKey] && (
-                                                    <div className="p-4 bg-gray-900/50 rounded-md space-y-6">
-                                                        {/* Basic Information */}
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div>
-                                                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
-                                                                    <Package size={12} className="mr-1" />
-                                                                    Chart
-                                                                </h4>
-                                                                <div className="text-sm text-gray-300">{release.chart || '-'}</div>
-                                                                {release.appVersion && (
-                                                                    <div className="text-xs text-gray-500 mt-1">App Version: {release.appVersion}</div>
-                                                                )}
-                                                            </div>
-                                                            <div>
-                                                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
-                                                                    <Tag size={12} className="mr-1" />
-                                                                    Version
-                                                                </h4>
-                                                                <div className="text-sm text-gray-300">{release.version || '-'}</div>
-                                                            </div>
-                                                            <div>
-                                                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
-                                                                    <Clock size={12} className="mr-1" />
-                                                                    Last Updated
-                                                                </h4>
-                                                                <div className="text-sm text-gray-300">{formatDateTimeShort(release.updated)}</div>
-                                                                <div className="text-xs text-gray-500 mt-1">Age: {getAge(release.updated)}</div>
-                                                            </div>
-                                                            <div>
-                                                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
-                                                                    <Tag size={12} className="mr-1" />
-                                                                    Revision
-                                                                </h4>
-                                                                <div className="text-sm text-gray-300">{release.revision || '-'}</div>
-                                                            </div>
-                                                        </div>
 
-                                                        {/* Description */}
-                                                        {release.description && (
-                                                            <div>
-                                                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</h4>
-                                                                <div className="text-sm text-gray-300">{release.description}</div>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Status */}
-                                                        <div>
-                                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Status</h4>
-                                                            {getStatusBadge(release.status)}
-                                                        </div>
-                                                    </div>
-                                                )}
+                                            {/* Status */}
+                                            <div>
+                                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Status</h4>
+                                                {getStatusBadge(release.status)}
                                             </div>
-                                        </td>
-                                    </tr>
-                                </React.Fragment>
-                            );
-                        })}
-                    </tbody>
-                </table>
-
-                {releases.length === 0 && !loading && (
-                    <div className="p-6 text-center text-gray-500">No Helm releases found</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+                {sortedReleases.length === 0 && (
+                    <div className="p-8 text-center text-gray-500">
+                        {filter ? 'No releases match your filter.' : 'No Helm releases found.'}
+                    </div>
                 )}
             </div>
 

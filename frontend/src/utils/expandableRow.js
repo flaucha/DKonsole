@@ -12,7 +12,7 @@ export const getExpandableRowClasses = (isExpanded, hasPadding = true) => {
     const baseClasses = 'transition-all duration-300 ease-in-out';
     const paddingClass = hasPadding ? 'pl-12' : '';
     const stateClasses = isExpanded 
-        ? 'opacity-100 pb-4' 
+        ? 'opacity-100 max-h-[80vh] overflow-y-auto' 
         : 'max-h-0 opacity-0 overflow-hidden';
     
     return `${baseClasses} ${paddingClass} ${stateClasses}`.trim();
