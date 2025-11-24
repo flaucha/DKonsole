@@ -93,6 +93,11 @@ const WorkloadList = ({ namespace, kind }) => {
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [editingResource, setEditingResource] = useState(null);
 
+    // Early return if kind is not provided
+    if (!kind) {
+        return <div className="text-red-400 p-6">Error: Resource type not specified.</div>;
+    }
+
     // Use React Query hook
     const { data: resources = [], isLoading: loading, error, refetch } = useWorkloads(authFetch, namespace, kind);
 
