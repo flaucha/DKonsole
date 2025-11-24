@@ -69,6 +69,13 @@ type Resource struct {
 	Details   interface{} `json:"details,omitempty"`
 }
 
+// PaginatedResources representa una respuesta paginada de recursos
+type PaginatedResources struct {
+	Resources []Resource `json:"resources"`
+	Continue  string     `json:"continue,omitempty"` // Token para la siguiente página
+	Remaining int        `json:"remaining,omitempty"` // Cantidad estimada de recursos restantes
+}
+
 // DeploymentDetails contiene detalles específicos de un Deployment
 type DeploymentDetails struct {
 	Replicas  int32             `json:"replicas"`

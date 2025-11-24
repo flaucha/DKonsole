@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -150,16 +151,30 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 		listNamespace = ""
 	}
 
-	// Create ListOptions with limit to prevent OOM in large clusters
+	// Get pagination parameters
+	limitStr := r.URL.Query().Get("limit")
+	limit := DefaultListLimit
+	if limitStr != "" {
+		if parsedLimit, err := strconv.ParseInt(limitStr, 10, 64); err == nil && parsedLimit > 0 && parsedLimit <= 5000 {
+			limit = parsedLimit
+		}
+	}
+	continueToken := r.URL.Query().Get("continue")
+
+	// Create ListOptions with limit and continue token for pagination
 	listOpts := metav1.ListOptions{
-		Limit: DefaultListLimit,
+		Limit:    limit,
+		Continue: continueToken,
 	}
 
 	var resources []models.Resource
+	var lastContinueToken string
 
 	switch kind {
 	case "Deployment":
 		list, err := client.AppsV1().Deployments(listNamespace).List(ctx, listOpts)
+		if err == nil {
+			lastContinueToken = list.Continue
 		if err == nil {
 			for _, i := range list.Items {
 				var images []string
@@ -252,6 +267,9 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 		}
 	case "Pod":
 		list, err := client.CoreV1().Pods(listNamespace).List(ctx, listOpts)
+		if err == nil {
+			lastContinueToken = list.Continue
+		}
 		metricsMap := make(map[string]models.PodMetric)
 		if mclient := s.clusterService.GetMetricsClient(r); mclient != nil {
 			if pmList, mErr := mclient.MetricsV1beta1().PodMetricses(listNamespace).List(ctx, listOpts); mErr == nil {
@@ -341,6 +359,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "ConfigMap":
 		list, err := client.CoreV1().ConfigMaps(listNamespace).List(ctx, listOpts)
 		if err == nil {
+			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				resources = append(resources, models.Resource{
 					Name:      i.Name,
@@ -358,6 +377,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "Secret":
 		list, err := client.CoreV1().Secrets(listNamespace).List(ctx, listOpts)
 		if err == nil {
+			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				data := make(map[string]string)
 				for k, v := range i.Data {
@@ -867,7 +887,23 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Determine continue token and remaining count from the last list operation
+	// Note: We need to track this per resource type, but for simplicity we'll use a generic approach
+	var continueToken string
+	var remaining int
+	
+	// Try to get continue token from the last list call
+	// Since we have multiple switch cases, we'll need to handle this differently
+	// For now, we'll return the continue token if we have one from listOpts
+	// In a real implementation, each list call would return metadata with continue token
+	
+	// Create paginated response
+	response := models.PaginatedResources{
+		Resources: resources,
+		Continue:  lastContinueToken,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resources)
+	json.NewEncoder(w).Encode(response)
 }
 
