@@ -8,16 +8,20 @@ echo "🔨 DKonsole Build v${VERSION}"
 echo "=========================================="
 echo ""
 
+# Change to project root directory (where Dockerfile is located)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
 # Build Unified Docker Image (Backend + Frontend)
 echo "📦 Building Unified Image (Backend + Frontend)..."
 docker build -t dkonsole/dkonsole:$VERSION .
 echo "✅ Unified image built successfully"
 echo ""
 
-# Also tag as latest for local testing
-echo "🏷️  Tagging as 'latest' for local testing..."
-docker tag dkonsole/dkonsole:$VERSION dkonsole/dkonsole:latest
-echo "✅ Tagged as latest"
+# Push to Docker Hub
+echo "🚀 Pushing Unified Image to Docker Hub..."
+docker push dkonsole/dkonsole:$VERSION
+echo "✅ Unified image pushed successfully"
 echo ""
 
 echo "=========================================="
@@ -26,7 +30,6 @@ echo "=========================================="
 echo ""
 echo "📦 Docker Image:"
 echo "   - dkonsole/dkonsole:${VERSION}"
-echo "   - dkonsole/dkonsole:latest"
 echo ""
 echo "🧪 To test locally:"
 echo "   docker run -p 8080:8080 dkonsole/dkonsole:${VERSION}"
