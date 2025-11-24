@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import NamespaceSelector from './components/NamespaceSelector';
 import WorkloadList from './components/WorkloadList';
@@ -21,63 +21,32 @@ const ProtectedRoute = ({ children }) => {
     return children;
 };
 
+const WorkloadListWrapper = ({ namespace }) => {
+    const { kind } = useParams();
+    return <WorkloadList namespace={namespace} kind={kind} />;
+};
+
 const Dashboard = () => {
     // Load saved state from localStorage on mount
     const [selectedNamespace, setSelectedNamespace] = useState(() => {
         const saved = localStorage.getItem('dkonsole_selectedNamespace');
         return saved || 'default';
     });
-    const [currentView, setCurrentView] = useState(() => {
-        const saved = localStorage.getItem('dkonsole_currentView');
-        return saved || 'Overview';
-    });
     const [showImporter, setShowImporter] = useState(false);
+    const location = useLocation();
 
     // Save to localStorage when namespace changes
     useEffect(() => {
         localStorage.setItem('dkonsole_selectedNamespace', selectedNamespace);
     }, [selectedNamespace]);
 
-    // Save to localStorage when view changes
-    useEffect(() => {
-        localStorage.setItem('dkonsole_currentView', currentView);
-    }, [currentView]);
-
-    // Map view names to API kinds
-    const getKind = (view) => {
-        const map = {
-            'Deployments': 'Deployment',
-            'Pods': 'Pod',
-            'ConfigMaps': 'ConfigMap',
-            'Secrets': 'Secret',
-            'Jobs': 'Job',
-            'CronJobs': 'CronJob',
-            'StatefulSets': 'StatefulSet',
-            'DaemonSets': 'DaemonSet',
-            'HPA': 'HorizontalPodAutoscaler',
-            'Services': 'Service',
-            'Ingresses': 'Ingress',
-            'Network Policies': 'NetworkPolicy',
-            'PVCs': 'PersistentVolumeClaim',
-            'PVs': 'PersistentVolume',
-            'Storage Classes': 'StorageClass',
-            'Nodes': 'Node',
-            'Service Accounts': 'ServiceAccount',
-            'Roles': 'Role',
-            'Cluster Roles': 'ClusterRole',
-            'Role Bindings': 'RoleBinding',
-            'Cluster Role Bindings': 'ClusterRoleBinding'
-        };
-        return map[view] || '';
-    };
+    const isSettings = location.pathname.includes('/settings');
 
     return (
         <SettingsProvider>
             <Layout
-                currentView={currentView}
-                onViewChange={setCurrentView}
                 headerContent={
-                    currentView !== 'Settings' && (
+                    !isSettings && (
                         <div className="flex items-center space-x-3">
                             <NamespaceSelector
                                 selected={selectedNamespace}
@@ -93,36 +62,18 @@ const Dashboard = () => {
                     )
                 }
             >
-                {currentView === 'Settings' ? (
-                    <Settings />
-                ) : currentView === 'API Explorer' ? (
-                    <div className="p-0">
-                        <ApiExplorer namespace={selectedNamespace} />
-                    </div>
-                ) : currentView === 'Namespaces' ? (
-                    <div className="p-0">
-                        <NamespaceManager />
-                    </div>
-                ) : currentView === 'Resource Quotas' ? (
-                    <div className="p-0">
-                        <ResourceQuotaManager namespace={selectedNamespace} />
-                    </div>
-                ) : currentView === 'Helm Charts' ? (
-                    <div className="p-0">
-                        <HelmChartManager />
-                    </div>
-                ) : (
-                    <div className="p-6">
-                        {currentView === 'Overview' ? (
-                            <ClusterOverview />
-                        ) : (
-                            <WorkloadList
-                                namespace={selectedNamespace}
-                                kind={getKind(currentView)}
-                            />
-                        )}
-                    </div>
-                )}
+                <Routes>
+                    <Route path="/" element={<Navigate to="overview" replace />} />
+                    <Route path="overview" element={<ClusterOverview />} />
+                    <Route path="workloads/:kind" element={<WorkloadListWrapper namespace={selectedNamespace} />} />
+                    <Route path="settings" element={<Settings />} />
+                    <Route path="api-explorer" element={<ApiExplorer namespace={selectedNamespace} />} />
+                    <Route path="namespaces" element={<NamespaceManager />} />
+                    <Route path="resource-quotas" element={<ResourceQuotaManager namespace={selectedNamespace} />} />
+                    <Route path="helm-charts" element={<HelmChartManager />} />
+                    {/* Fallback */}
+                    <Route path="*" element={<Navigate to="overview" replace />} />
+                </Routes>
                 {showImporter && <YamlImporter onClose={() => setShowImporter(false)} />}
             </Layout>
         </SettingsProvider>
@@ -135,11 +86,13 @@ function App() {
             <BrowserRouter>
                 <Routes>
                     <Route path="/login" element={<Login />} />
-                    <Route path="/*" element={
+                    <Route path="/dashboard/*" element={
                         <ProtectedRoute>
                             <Dashboard />
                         </ProtectedRoute>
                     } />
+                    <Route path="/" element={<Navigate to="/dashboard/overview" replace />} />
+                    <Route path="*" element={<Navigate to="/dashboard/overview" replace />} />
                 </Routes>
             </BrowserRouter>
         </AuthProvider>
@@ -147,3 +100,4 @@ function App() {
 }
 
 export default App;
+

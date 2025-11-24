@@ -1,39 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { Database, RefreshCw, CirclePlus, CircleMinus, Tag, Calendar, Clock, MoreVertical, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { Database, RefreshCw, CirclePlus, CircleMinus, Tag, Clock, MoreVertical, FileText } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import YamlEditor from './YamlEditor';
 import { getStatusBadgeClass } from '../utils/statusBadge';
 import { formatDateTimeShort } from '../utils/dateUtils';
 import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
+import { useNamespaces } from '../hooks/useNamespaces';
 
 const NamespaceManager = () => {
     const { currentCluster } = useSettings();
     const { authFetch } = useAuth();
-    const [namespaces, setNamespaces] = useState([]);
-    const [loading, setLoading] = useState(false);
     const [expandedNs, setExpandedNs] = useState({});
     const [menuOpen, setMenuOpen] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
     const [editingYaml, setEditingYaml] = useState(null);
 
-    const fetchNamespaces = () => {
-        setLoading(true);
-        const params = new URLSearchParams();
-        if (currentCluster) params.append('cluster', currentCluster);
-
-        authFetch(`/api/namespaces?${params.toString()}`)
-            .then(res => res.json())
-            .then(data => {
-                setNamespaces(data || []);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    };
-
-    useEffect(() => {
-        fetchNamespaces();
-    }, [currentCluster]);
+    const { data: namespaces = [], isLoading: loading, refetch } = useNamespaces(authFetch, currentCluster);
 
     const toggleExpand = (nsName) => {
         setExpandedNs(prev => ({ ...prev, [nsName]: !prev[nsName] }));
@@ -68,7 +51,7 @@ const NamespaceManager = () => {
                 throw new Error('Failed to delete namespace');
             }
 
-            fetchNamespaces();
+            refetch();
         } catch (err) {
             alert(`Error deleting namespace: ${err.message}`);
         }
@@ -93,7 +76,7 @@ const NamespaceManager = () => {
                     {loading && <RefreshCw size={16} className="animate-spin text-gray-400" />}
                 </div>
                 <button
-                    onClick={fetchNamespaces}
+                    onClick={() => refetch()}
                     className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded-md border border-gray-700 text-sm transition-colors flex items-center"
                 >
                     <RefreshCw size={14} className="mr-2" />
@@ -191,62 +174,62 @@ const NamespaceManager = () => {
                                         <div className={getExpandableRowClasses(expandedNs[ns.name], false)}>
                                             {expandedNs[ns.name] && (
                                                 <div className="p-4 bg-gray-900/50 rounded-md space-y-6">
-                                                {/* Basic Information */}
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div>
-                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
-                                                            <Clock size={12} className="mr-1" />
-                                                            Creation Time
-                                                        </h4>
-                                                        <div className="text-sm text-gray-300">{formatDateTimeShort(ns.created)}</div>
+                                                    {/* Basic Information */}
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                                <Clock size={12} className="mr-1" />
+                                                                Creation Time
+                                                            </h4>
+                                                            <div className="text-sm text-gray-300">{formatDateTimeShort(ns.created)}</div>
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                                <Tag size={12} className="mr-1" />
+                                                                Age
+                                                            </h4>
+                                                            <div className="text-sm text-gray-300">{getAge(ns.created)}</div>
+                                                        </div>
                                                     </div>
+
+                                                    {/* Labels Section */}
                                                     <div>
                                                         <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
                                                             <Tag size={12} className="mr-1" />
-                                                            Age
+                                                            Labels
                                                         </h4>
-                                                        <div className="text-sm text-gray-300">{getAge(ns.created)}</div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Labels Section */}
-                                                <div>
-                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
-                                                        <Tag size={12} className="mr-1" />
-                                                        Labels
-                                                    </h4>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {ns.labels && Object.keys(ns.labels).length > 0 ? (
-                                                            Object.entries(ns.labels).map(([k, v]) => (
-                                                                <span key={k} className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-300">
-                                                                    {k}={v}
-                                                                </span>
-                                                            ))
-                                                        ) : (
-                                                            <span className="text-sm text-gray-500 italic">No labels</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                {/* Annotations Section */}
-                                                {ns.annotations && Object.keys(ns.annotations).length > 0 && (
-                                                    <div>
-                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Annotations</h4>
-                                                        <div className="space-y-1">
-                                                            {Object.entries(ns.annotations).map(([k, v]) => (
-                                                                <div key={k} className="bg-gray-800 border border-gray-700 rounded p-2 text-xs">
-                                                                    <span className="font-medium text-gray-400">{k}:</span>
-                                                                    <span className="ml-2 text-gray-300 break-words">{v}</span>
-                                                                </div>
-                                                            ))}
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {ns.labels && Object.keys(ns.labels).length > 0 ? (
+                                                                Object.entries(ns.labels).map(([k, v]) => (
+                                                                    <span key={k} className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-300">
+                                                                        {k}={v}
+                                                                    </span>
+                                                                ))
+                                                            ) : (
+                                                                <span className="text-sm text-gray-500 italic">No labels</span>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                )}
 
-                                                {/* Actions */}
-                                                <div className="flex justify-end mt-4">
-                                                    <EditYamlButton onClick={() => setEditingYaml({ name: ns.name, kind: 'Namespace', namespaced: false })} />
-                                                </div>
+                                                    {/* Annotations Section */}
+                                                    {ns.annotations && Object.keys(ns.annotations).length > 0 && (
+                                                        <div>
+                                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Annotations</h4>
+                                                            <div className="space-y-1">
+                                                                {Object.entries(ns.annotations).map(([k, v]) => (
+                                                                    <div key={k} className="bg-gray-800 border border-gray-700 rounded p-2 text-xs">
+                                                                        <span className="font-medium text-gray-400">{k}:</span>
+                                                                        <span className="ml-2 text-gray-300 break-words">{v}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Actions */}
+                                                    <div className="flex justify-end mt-4">
+                                                        <EditYamlButton onClick={() => setEditingYaml({ name: ns.name, kind: 'Namespace', namespaced: false })} />
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -275,7 +258,7 @@ const NamespaceManager = () => {
                     onClose={() => setEditingYaml(null)}
                     onSaved={() => {
                         setEditingYaml(null);
-                        fetchNamespaces();
+                        refetch();
                     }}
                 />
             )}

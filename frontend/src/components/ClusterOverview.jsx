@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Server, Layers, Box, Network, Globe, HardDrive, Activity, Database, Cpu, TrendingUp, AlertTriangle } from 'lucide-react';
+import React from 'react';
+import { Server, Layers, Box, Network, Globe, HardDrive, Activity, Database, Cpu, TrendingUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { useClusterOverview } from '../hooks/useClusterOverview';
 
 const StatCard = ({ icon: Icon, label, value, color, trend }) => (
     <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 flex items-center shadow-lg">
@@ -45,88 +46,28 @@ const ProgressBar = ({ value, color }) => {
 };
 
 const ClusterOverview = () => {
-    const [stats, setStats] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [prometheusEnabled, setPrometheusEnabled] = useState(false);
-    const [nodeMetrics, setNodeMetrics] = useState([]);
-    const [clusterStats, setClusterStats] = useState(null);
     const { authFetch } = useAuth();
     const { currentCluster } = useSettings();
 
-    // Check Prometheus status
-    useEffect(() => {
-        const checkPrometheus = async () => {
-            try {
-                const params = new URLSearchParams();
-                if (currentCluster) params.append('cluster', currentCluster);
+    const { overview, prometheusStatus, metrics } = useClusterOverview(authFetch, currentCluster);
 
-                const response = await authFetch(`/api/prometheus/status?${params.toString()}`);
-                const status = await response.json();
-                setPrometheusEnabled(status.enabled);
-            } catch (error) {
-                console.error('Error checking Prometheus status:', error);
-                setPrometheusEnabled(false);
-            }
-        };
+    const stats = overview.data;
+    const loading = overview.isLoading;
+    const error = overview.error;
 
-        checkPrometheus();
-    }, [currentCluster, authFetch]);
-
-    // Fetch basic cluster stats
-    useEffect(() => {
-        authFetch('/api/overview')
-            .then(res => res.json())
-            .then(data => {
-                setStats(data);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error('Failed to fetch cluster stats:', err);
-                setLoading(false);
-            });
-    }, [authFetch]);
-
-    // Fetch Prometheus metrics if enabled
-    useEffect(() => {
-        if (!prometheusEnabled) return;
-
-        const fetchClusterMetrics = async () => {
-            try {
-                const params = new URLSearchParams();
-                if (currentCluster) params.append('cluster', currentCluster);
-
-                const response = await authFetch(`/api/prometheus/cluster-overview?${params.toString()}`);
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Error fetching cluster metrics:', response.status, errorText);
-                    setNodeMetrics([]);
-                    setClusterStats(null);
-                    return;
-                }
-
-                const data = await response.json();
-                console.log('Cluster metrics data:', data);
-
-                setNodeMetrics(data.nodeMetrics || []);
-                setClusterStats(data.clusterStats || null);
-            } catch (error) {
-                console.error('Error fetching cluster metrics:', error);
-                setNodeMetrics([]);
-                setClusterStats(null);
-            }
-        };
-
-        fetchClusterMetrics();
-    }, [prometheusEnabled, currentCluster, authFetch]);
+    const prometheusEnabled = prometheusStatus.data?.enabled || false;
+    const clusterStats = metrics.data?.clusterStats;
+    const nodeMetrics = metrics.data?.nodeMetrics || [];
 
     if (loading) {
         return <div className="text-gray-400 animate-pulse p-6">Loading cluster overview...</div>;
     }
 
-    if (!stats) {
+    if (error) {
         return <div className="text-red-400 p-6">Failed to load cluster statistics.</div>;
     }
+
+    if (!stats) return null;
 
     return (
         <div className="p-6 space-y-6">
