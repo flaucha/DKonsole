@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="1.1.3"
+VERSION="1.1.4-a1"
 
 echo "=========================================="
 echo "🔨 DKonsole Build v${VERSION}"

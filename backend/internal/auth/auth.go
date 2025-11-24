@@ -1,7 +1,8 @@
-package main
+package auth
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,39 +12,25 @@ import (
 	"time"
 
 	"crypto/subtle"
-	"encoding/base64"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/argon2"
+
+	"github.com/example/k8s-view/internal/models"
 )
 
 var (
-	// Secret key for signing tokens. In production, this should be loaded from env.
+	// jwtSecret is the secret key for signing tokens
 	jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 )
 
 func init() {
 	jwtSecretStr := os.Getenv("JWT_SECRET")
 	if len(jwtSecretStr) == 0 {
-		// In production this must be fatal.
-		// For development convenience we might warn, but the request was to fix it.
-		// Given the critical severity, we should enforce it or at least generate a random one if not present (but persistence issues).
-		// The requirement says: "log.Fatal".
-		// However, to avoid breaking the user's immediate local run if they haven't set it,
-		// I will check if we are in a "production" mode or similar, but the prompt asked to fix it.
-		// I will follow the solution:
 		fmt.Println("CRITICAL: JWT_SECRET environment variable must be set")
-		// If we want to be strict as requested:
 		if os.Getenv("GO_ENV") == "production" {
 			log.Fatal("JWT_SECRET is required in production")
 		}
-		// Fallback for dev only if absolutely necessary, but better to fail or warn loudly.
-		// The prompt solution used log.Fatal. I will use log.Fatal to be safe as requested.
-		// But wait, if I break the app now, the user might complain.
-		// I'll use a strong warning and maybe a default for dev if not set, OR just Fatal as requested.
-		// The user said "soluciona todo lo que se pueda".
-		// I'll stick to the requested solution but maybe allow a bypass for dev if needed?
-		// No, let's be secure.
 		if len(jwtSecretStr) == 0 {
 			log.Fatal("CRITICAL: JWT_SECRET environment variable must be set")
 		}
@@ -54,20 +41,27 @@ func init() {
 	jwtSecret = []byte(jwtSecretStr)
 }
 
-type Credentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type Claims struct {
-	Username string `json:"username"`
-	Role     string `json:"role"`
+// AuthClaims extends models.Claims with JWT registered claims
+type AuthClaims struct {
+	models.Claims
 	jwt.RegisteredClaims
 }
 
+// Service provides authentication operations
+type Service struct {
+	handlers *models.Handlers
+}
+
+// NewService creates a new auth service
+func NewService(h *models.Handlers) *Service {
+	return &Service{
+		handlers: h,
+	}
+}
+
 // LoginHandler handles user authentication
-func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	var creds Credentials
+func (s *Service) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	var creds models.Credentials
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -78,8 +72,6 @@ func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	adminPassHash := os.Getenv("ADMIN_PASSWORD")
 
 	if adminUser == "" || adminPassHash == "" {
-		// In production, this should be a fatal error.
-		// For now, we return 500 to prevent unauthorized access.
 		fmt.Println("Critical: ADMIN_USER or ADMIN_PASSWORD not set")
 		http.Error(w, "Server configuration error", http.StatusInternalServerError)
 		return
@@ -104,9 +96,11 @@ func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Generate JWT
 	expirationTime := time.Now().Add(24 * time.Hour)
-	claims := &Claims{
-		Username: creds.Username,
-		Role:     "admin",
+	claims := &AuthClaims{
+		Claims: models.Claims{
+			Username: creds.Username,
+			Role:     "admin",
+		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
@@ -136,7 +130,7 @@ func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // LogoutHandler clears the session cookie
-func (h *Handlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Service) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
 		Value:    "",
@@ -152,17 +146,82 @@ func (h *Handlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // MeHandler returns current user info if authenticated
-func (h *Handlers) MeHandler(w http.ResponseWriter, r *http.Request) {
-	claims, ok := r.Context().Value("user").(*Claims)
-	if !ok {
+func (s *Service) MeHandler(w http.ResponseWriter, r *http.Request) {
+	userVal := r.Context().Value("user")
+	if userVal == nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Try to extract username and role from the claims
+	var username, role string
+	if claims, ok := userVal.(*AuthClaims); ok {
+		username = claims.Username
+		role = claims.Role
+	} else if claims, ok := userVal.(map[string]interface{}); ok {
+		if u, ok := claims["username"].(string); ok {
+			username = u
+		}
+		if r, ok := claims["role"].(string); ok {
+			role = r
+		}
+	}
+
+	if username == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	json.NewEncoder(w).Encode(map[string]string{
-		"username": claims.Username,
-		"role":     claims.Role,
+		"username": username,
+		"role":     role,
 	})
+}
+
+// AuthMiddleware protects routes
+func (s *Service) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Allow OPTIONS for CORS
+		if r.Method == "OPTIONS" {
+			next(w, r)
+			return
+		}
+
+		claims, err := s.AuthenticateRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "user", claims)
+		next(w, r.WithContext(ctx))
+	}
+}
+
+// AuthenticateRequest extracts and validates JWT from header, query, or cookie
+func (s *Service) AuthenticateRequest(r *http.Request) (*AuthClaims, error) {
+	tokenString := ""
+	if authHeader := r.Header.Get("Authorization"); authHeader != "" {
+		tokenString = strings.Replace(authHeader, "Bearer ", "", 1)
+	} else if q := r.URL.Query().Get("token"); q != "" {
+		tokenString = q
+	} else if c, err := r.Cookie("token"); err == nil {
+		tokenString = c.Value
+	}
+
+	if tokenString == "" {
+		return nil, fmt.Errorf("authorization token required")
+	}
+
+	claims := &AuthClaims{}
+
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+
+	if err != nil || !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+	return claims, nil
 }
 
 func verifyPassword(password, encodedHash string) (bool, error) {
@@ -214,50 +273,4 @@ func verifyPassword(password, encodedHash string) (bool, error) {
 	comparisonHash := hashFunc([]byte(password), salt, time, memory, threads, keyLen)
 
 	return subtle.ConstantTimeCompare(decodedHash, comparisonHash) == 1, nil
-}
-
-// AuthMiddleware protects routes
-func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Allow OPTIONS for CORS
-		if r.Method == "OPTIONS" {
-			next(w, r)
-			return
-		}
-
-		claims, err := authenticateRequest(r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		ctx := context.WithValue(r.Context(), "user", claims)
-		next(w, r.WithContext(ctx))
-	}
-}
-
-// authenticateRequest extracts and validates JWT from header, query, or cookie.
-func authenticateRequest(r *http.Request) (*Claims, error) {
-	tokenString := ""
-	if authHeader := r.Header.Get("Authorization"); authHeader != "" {
-		tokenString = strings.Replace(authHeader, "Bearer ", "", 1)
-	} else if q := r.URL.Query().Get("token"); q != "" {
-		tokenString = q
-	} else if c, err := r.Cookie("token"); err == nil {
-		tokenString = c.Value
-	}
-
-	if tokenString == "" {
-		return nil, fmt.Errorf("authorization token required")
-	}
-
-	claims := &Claims{}
-
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
-	})
-
-	if err != nil || !token.Valid {
-		return nil, fmt.Errorf("invalid token")
-	}
-	return claims, nil
 }

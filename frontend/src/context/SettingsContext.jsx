@@ -53,28 +53,6 @@ export const SettingsProvider = ({ children }) => {
         }
     };
 
-    const addCluster = async (config) => {
-        try {
-            const res = await authFetch('/api/clusters', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(config),
-            });
-            if (res.ok) {
-                await fetchClusters();
-                return true;
-            } else {
-                const text = await res.text();
-                throw new Error(text);
-            }
-        } catch (error) {
-            console.error('Failed to add cluster:', error);
-            throw error;
-        }
-    };
-
     return (
         <SettingsContext.Provider value={{
             clusters,
@@ -87,8 +65,7 @@ export const SettingsProvider = ({ children }) => {
             fontSize,
             setFontSize,
             borderRadius,
-            setBorderRadius,
-            addCluster
+            setBorderRadius
         }}>
             {children}
         </SettingsContext.Provider>

@@ -65,8 +65,24 @@ func AuditMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		// Extract user if available (set by AuthMiddleware or handler)
 		user := "anonymous"
-		if claims, ok := r.Context().Value("user").(*Claims); ok {
-			user = claims.Username
+		userVal := r.Context().Value("user")
+		if userVal != nil {
+			// Try different claim types for compatibility
+			if claims, ok := userVal.(map[string]interface{}); ok {
+				if u, ok := claims["username"].(string); ok {
+					user = u
+				}
+			} else if claims, ok := userVal.(interface{ Username() string }); ok {
+				user = claims.Username()
+			} else {
+				// Try to extract via reflection or type assertion
+				// This handles both old Claims and new AuthClaims
+				if claimsMap, ok := userVal.(map[string]interface{}); ok {
+					if u, ok := claimsMap["username"].(string); ok {
+						user = u
+					}
+				}
+			}
 		}
 
 		// Get status code
