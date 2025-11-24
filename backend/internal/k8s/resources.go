@@ -175,7 +175,6 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 		list, err := client.AppsV1().Deployments(listNamespace).List(ctx, listOpts)
 		if err == nil {
 			lastContinueToken = list.Continue
-		if err == nil {
 			for _, i := range list.Items {
 				var images []string
 				var ports []int32
@@ -216,6 +215,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "Node":
 		list, err := client.CoreV1().Nodes().List(ctx, listOpts)
 		if err == nil {
+			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				conditions := make(map[string]string)
 				for _, c := range i.Status.Conditions {
@@ -404,6 +404,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Failed to list Jobs: %v", err), http.StatusInternalServerError)
 			return
 		}
+		lastContinueToken = list.Continue
 		for _, i := range list.Items {
 			status := "Running"
 			if i.Status.Succeeded > 0 {
@@ -440,6 +441,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Failed to list CronJobs: %v", err), http.StatusInternalServerError)
 			return
 		}
+		lastContinueToken = list.Continue
 		for _, i := range list.Items {
 			var lastSchedule string
 			if i.Status.LastScheduleTime != nil {
@@ -465,6 +467,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "StatefulSet":
 		list, err := client.AppsV1().StatefulSets(listNamespace).List(ctx, listOpts)
 		if err == nil {
+			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				details := map[string]interface{}{
 					"replicas":       i.Status.Replicas,
@@ -490,6 +493,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "DaemonSet":
 		list, err := client.AppsV1().DaemonSets(listNamespace).List(ctx, listOpts)
 		if err == nil {
+			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				details := map[string]interface{}{
 					"desired":      i.Status.DesiredNumberScheduled,
@@ -514,6 +518,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "HorizontalPodAutoscaler":
 		list, err := client.AutoscalingV2().HorizontalPodAutoscalers(listNamespace).List(ctx, listOpts)
 		if err == nil {
+			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				status := fmt.Sprintf("%d/%d replicas", i.Status.CurrentReplicas, i.Status.DesiredReplicas)
 				details := map[string]interface{}{
@@ -538,6 +543,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "Service":
 		list, err := client.CoreV1().Services(listNamespace).List(ctx, listOpts)
 		if err == nil {
+			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				var ports []string
 				for _, p := range i.Spec.Ports {
@@ -561,6 +567,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "Ingress":
 		list, err := client.NetworkingV1().Ingresses(listNamespace).List(ctx, listOpts)
 		if err == nil {
+			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				var tls []map[string]interface{}
 				for _, t := range i.Spec.TLS {
@@ -702,6 +709,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "NetworkPolicy":
 		list, err := client.NetworkingV1().NetworkPolicies(listNamespace).List(ctx, listOpts)
 		if err == nil {
+			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				resources = append(resources, models.Resource{
 					Name:      i.Name,
@@ -720,6 +728,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "PersistentVolumeClaim":
 		list, err := client.CoreV1().PersistentVolumeClaims(listNamespace).List(ctx, listOpts)
 		if err == nil {
+			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				requested := ""
 				if i.Spec.Resources.Requests != nil {
@@ -796,6 +805,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "PersistentVolume":
 		list, err := client.CoreV1().PersistentVolumes().List(ctx, listOpts)
 		if err == nil {
+			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				resources = append(resources, models.Resource{
 					Name:      i.Name,
@@ -816,6 +826,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "StorageClass":
 		list, err := client.StorageV1().StorageClasses().List(ctx, listOpts)
 		if err == nil {
+			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				reclaim := ""
 				if i.ReclaimPolicy != nil {
@@ -846,6 +857,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "ResourceQuota":
 		list, err := client.CoreV1().ResourceQuotas(listNamespace).List(ctx, listOpts)
 		if err == nil {
+			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				resources = append(resources, models.Resource{
 					Name:      i.Name,
@@ -864,6 +876,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	case "LimitRange":
 		list, err := client.CoreV1().LimitRanges(listNamespace).List(ctx, listOpts)
 		if err == nil {
+			lastContinueToken = list.Continue
 			for _, i := range list.Items {
 				resources = append(resources, models.Resource{
 					Name:      i.Name,
@@ -887,16 +900,6 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Determine continue token and remaining count from the last list operation
-	// Note: We need to track this per resource type, but for simplicity we'll use a generic approach
-	var continueToken string
-	var remaining int
-	
-	// Try to get continue token from the last list call
-	// Since we have multiple switch cases, we'll need to handle this differently
-	// For now, we'll return the continue token if we have one from listOpts
-	// In a real implementation, each list call would return metadata with continue token
-	
 	// Create paginated response
 	response := models.PaginatedResources{
 		Resources: resources,
