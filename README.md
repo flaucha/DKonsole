@@ -124,7 +124,7 @@ The official image is available at:
   - Frontend: 23 tests across 5 test files (dateUtils, resourceParser, statusBadge, expandableRow, k8sApi)
   - Backend: Multiple tests for utils and models packages
 - ✅ **CI/CD Pipeline**: GitHub Actions workflow configured
-  - Automated testing on push to `main` and `1.1.5-rc` branches
+  - Automated testing on push to `main` branch
   - Automated testing on Pull Requests
   - Coverage reports generated for both frontend and backend
   - Build verification step included
