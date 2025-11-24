@@ -29,7 +29,7 @@ This release introduces comprehensive testing infrastructure, unit tests, and au
     - `utils_test.go`: Tests for utility functions
     - `models_test.go`: Tests for shared models and types
 - **CI/CD Pipeline**: GitHub Actions workflow configured
-  - Automated testing on push to `main` and `1.1.5-rc` branches
+  - Automated testing on push to `main` branch
   - Automated testing on Pull Requests to `main`
   - Coverage reports generated for both frontend and backend
   - Build verification step to ensure code compiles
@@ -526,7 +526,6 @@ This release focuses on addressing critical security vulnerabilities and impleme
 
 ---
 
-[1.1.5]: https://github.com/flaucha/DKonsole/compare/v1.1.4...v1.1.5
 [1.1.5]: https://github.com/flaucha/DKonsole/compare/v1.1.4...v1.1.5
 [1.1.4]: https://github.com/flaucha/DKonsole/compare/v1.1.3...v1.1.4
 [1.1.3]: https://github.com/flaucha/DKonsole/compare/v1.1.2...v1.1.3
