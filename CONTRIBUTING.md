@@ -272,3 +272,4 @@ Si tienes preguntas o necesitas ayuda:
 
 ¡Gracias por contribuir a DKonsole! Tu ayuda hace que este proyecto sea mejor para todos.
 
+
