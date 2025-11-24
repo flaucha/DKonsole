@@ -5,11 +5,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestIsSystemNamespace(t *testing.T) {
@@ -98,7 +96,13 @@ func TestCreateTimeoutContext(t *testing.T) {
 func TestCreateRequestContext(t *testing.T) {
 	// Save original env
 	originalTimeout := os.Getenv("K8S_OPERATION_TIMEOUT")
-	defer os.Setenv("K8S_OPERATION_TIMEOUT", originalTimeout)
+	defer func() {
+		if originalTimeout != "" {
+			os.Setenv("K8S_OPERATION_TIMEOUT", originalTimeout)
+		} else {
+			os.Unsetenv("K8S_OPERATION_TIMEOUT")
+		}
+	}()
 
 	req := httptest.NewRequest("GET", "/test", nil)
 	ctx, cancel := CreateRequestContext(req)
@@ -108,12 +112,17 @@ func TestCreateRequestContext(t *testing.T) {
 	if cancel == nil {
 		t.Error("CreateRequestContext() returned nil cancel function")
 	}
-	cancel()
 
-	// Verify context is derived from request context
-	if ctx.Err() != nil {
+	// Verify context is derived from request context and not cancelled initially
+	select {
+	case <-ctx.Done():
 		t.Error("CreateRequestContext() context should not be cancelled initially")
+	default:
+		// Context is not cancelled, which is what we want
 	}
+
+	// Clean up
+	cancel()
 }
 
 func TestHandleError(t *testing.T) {

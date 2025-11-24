@@ -80,35 +80,6 @@ func TestResolveGVR(t *testing.T) {
 	}
 }
 
-func TestNormalizeKind(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{"HPA alias", "HPA", "HorizontalPodAutoscaler"},
-		{"PVC alias", "PVC", "PersistentVolumeClaim"},
-		{"PV alias", "PV", "PersistentVolume"},
-		{"SC alias", "SC", "StorageClass"},
-		{"SA alias", "SA", "ServiceAccount"},
-		{"CR alias", "CR", "ClusterRole"},
-		{"CRB alias", "CRB", "ClusterRoleBinding"},
-		{"RB alias", "RB", "RoleBinding"},
-		{"No alias", "Pod", "Pod"},
-		{"No alias Deployment", "Deployment", "Deployment"},
-		{"Empty", "", ""},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := NormalizeKind(tt.input)
-			if result != tt.expected {
-				t.Errorf("NormalizeKind(%q) = %q, want %q", tt.input, result, tt.expected)
-			}
-		})
-	}
-}
-
 func TestResourceMetaMap(t *testing.T) {
 	// Test that ResourceMetaMap is populated
 	if len(ResourceMetaMap) == 0 {

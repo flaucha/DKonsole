@@ -172,6 +172,6 @@ func AuditLog(r *http.Request, action, resourceKind, resourceName, namespace str
 		}
 	}
 
-	log.Printf(logMsg)
+	log.Print(logMsg)
 }
 
