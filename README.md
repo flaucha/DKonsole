@@ -133,12 +133,6 @@ The official image is available at:
   - `scripts/test-frontend.sh`: Frontend testing script
   - `scripts/test-backend.sh`: Backend testing script
   - `scripts/test-backend-docker.sh`: Docker-based backend testing alternative
-- ✅ **Documentation**: Comprehensive testing and CI/CD documentation
-  - `TESTING.md`: Complete testing guide
-  - `COMO_PROBAR.md`: Quick testing guide
-  - `GITHUB_ACTIONS_GUIA.md`: GitHub Actions guide
-  - `COMO_VER_RESULTADOS_GITHUB.md`: Visual guide for viewing results
-- ✅ **Go Update**: Backend updated to Go 1.25.4
 - ✅ **CI Optimization**: Workflow excludes documentation and script changes to reduce unnecessary runs
 
 ### v1.1.4 (2025-01-24)
