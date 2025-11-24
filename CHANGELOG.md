@@ -137,7 +137,7 @@ This release introduces comprehensive testing infrastructure, unit tests, and au
   - Build verification step to ensure code compiles
   - Workflow excludes documentation (`.md`) and script changes to reduce unnecessary runs
 - **Testing Scripts**: Automation scripts for easy testing
-  - `test-all.sh`: Run all tests with a single command
+  - `scripts/test-all.sh`: Run all tests with a single command
   - `scripts/test-frontend.sh`: Frontend testing script with watch mode support
   - `scripts/test-backend.sh`: Backend testing script with verbose output
   - `scripts/test-backend-docker.sh`: Docker-based backend testing alternative
