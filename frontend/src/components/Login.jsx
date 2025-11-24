@@ -1,14 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User } from 'lucide-react';
+import defaultLogo from '../assets/logo-full.svg';
 
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [logoSrc, setLogoSrc] = useState(defaultLogo);
     const { login } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        // Try to load custom logo from API (no auth required for logo endpoint)
+        fetch('/api/logo')
+            .then(res => {
+                // Only set custom logo if response is OK (200) and has content
+                if (res.ok && res.status === 200) {
+                    setLogoSrc('/api/logo');
+                }
+                // If 404 or other error, keep default logo (no action needed)
+            })
+            .catch(() => {
+                // Silently handle errors (network, etc.) - keep default logo
+            });
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -25,7 +42,7 @@ const Login = () => {
         <div className="min-h-screen flex items-center justify-center bg-gray-900">
             <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md border border-gray-700">
                 <div className="text-center mb-8 flex justify-center">
-                    <img src="/logo.svg" alt="DKonsole Logo" className="h-20 w-auto" />
+                    <img src={logoSrc} alt="DKonsole Logo" className="h-20 w-auto object-contain" />
                 </div>
 
                 {error && (
