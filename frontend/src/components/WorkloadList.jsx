@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Box,
     FileText,
@@ -104,10 +104,40 @@ const WorkloadList = ({ namespace, kind }) => {
     }
 
     // Use React Query hook to fetch all resources
-    const { data: resourcesData, isLoading: loading, error, refetch } = useWorkloads(authFetch, namespace, kind, null);
+    const { data: resourcesData, isLoading: loading, error, refetch } = useWorkloads(authFetch, namespace, kind, currentCluster);
+    
+    // Track previous kind to detect changes
+    const prevKindRef = useRef(kind);
+    const prevNamespaceRef = useRef(namespace);
+    const prevClusterRef = useRef(currentCluster);
+    
+    // Reset when namespace, kind, or cluster changes - MUST happen before data handling
+    useEffect(() => {
+        const kindChanged = prevKindRef.current !== kind;
+        const namespaceChanged = prevNamespaceRef.current !== namespace;
+        const clusterChanged = prevClusterRef.current !== currentCluster;
+        
+        if (kindChanged || namespaceChanged || clusterChanged) {
+            // Clear state immediately when switching
+            setAllResources([]);
+            setExpandedId(null);
+            setFilter('');
+            
+            // Update refs
+            prevKindRef.current = kind;
+            prevNamespaceRef.current = namespace;
+            prevClusterRef.current = currentCluster;
+            
+            // Force refetch when kind/namespace/cluster changes to ensure fresh data
+            if (namespace && kind) {
+                refetch();
+            }
+        }
+    }, [namespace, kind, currentCluster, refetch]);
     
     // Handle resources data - always expect an array now (no pagination)
     useEffect(() => {
+        // Only update if we have data
         if (resourcesData) {
             if (Array.isArray(resourcesData)) {
                 setAllResources(resourcesData);
@@ -115,15 +145,11 @@ const WorkloadList = ({ namespace, kind }) => {
                 // Backward compatibility with paginated response
                 setAllResources(resourcesData.resources);
             }
+        } else if (!loading) {
+            // Only clear if we're not loading (to avoid flickering)
+            setAllResources([]);
         }
-    }, [resourcesData]);
-
-    // Reset when namespace, kind, or cluster changes
-    useEffect(() => {
-        setAllResources([]);
-        setExpandedId(null);
-        setFilter('');
-    }, [namespace, kind, currentCluster]);
+    }, [resourcesData, loading]);
 
     // Ensure resources is always an array
     const resources = allResources;

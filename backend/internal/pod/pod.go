@@ -186,10 +186,8 @@ func (s *Service) GetPodEvents(w http.ResponseWriter, r *http.Request) {
 
 // ExecIntoPod provides WebSocket-based terminal access to a pod
 func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
-	// Authenticate before WebSocket upgrade
-	// Note: authenticateRequest is set up in main.go
-	// For now, we'll handle auth through middleware
-	// This will be updated when auth is fully migrated
+	// Authentication is handled by secure() middleware in main.go
+	// This ensures only authenticated users can execute commands in pods
 
 	client, err := s.clusterService.GetClient(r)
 	if err != nil {

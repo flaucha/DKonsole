@@ -5,6 +5,25 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.9] - 2025-01-27
+
+### Security
+
+- **Fixed Critical RCE Vulnerability**: Fixed unauthenticated pod execution endpoint
+  - The `/api/pods/exec` endpoint was not protected with authentication middleware
+  - Now properly wrapped with `secure()` middleware requiring authentication
+  - Prevents unauthenticated attackers from executing arbitrary commands in pods
+  - This was a critical security vulnerability that allowed Remote Code Execution (RCE)
+
+### Fixed
+
+- **Resource Loading Issue**: Fixed problem where resources wouldn't load when switching between sections
+  - Added `currentCluster` to React Query `queryKey` to properly invalidate cache
+  - Improved state management when switching between resource types (Pods, ConfigMaps, etc.)
+  - Added forced refetch when `kind`, `namespace`, or `cluster` changes
+  - Configured React Query with `staleTime: 0` and `refetchOnMount: true` for fresh data
+  - Resources now load correctly without requiring manual page refresh
+
 ## [1.1.8] - 2025-11-24
 
 ### Added

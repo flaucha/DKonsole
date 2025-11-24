@@ -20,7 +20,7 @@ jwtSecret: ""
 # -----------------------------------------------------------------------------
 image:
   repository: dkonsole/dkonsole
-  tag: "1.1.8"
+  tag: "1.1.9"
   pullPolicy: Always
 
 # Image pull secrets (optional)

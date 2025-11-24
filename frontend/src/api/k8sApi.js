@@ -1,4 +1,4 @@
-export const fetchWorkloads = async (fetcher, namespace, kind) => {
+export const fetchWorkloads = async (fetcher, namespace, kind, currentCluster) => {
     if (!kind) {
         throw new Error('Resource kind is required');
     }
@@ -9,6 +9,9 @@ export const fetchWorkloads = async (fetcher, namespace, kind) => {
     // Use /api/resources endpoint which expects kind as query parameter
     const params = new URLSearchParams({ kind });
     params.append('namespace', namespace);
+    if (currentCluster) {
+        params.append('cluster', currentCluster);
+    }
     const response = await f(`/api/resources?${params.toString()}`);
     if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');

@@ -211,9 +211,7 @@ func main() {
 	// Pod handlers - using services
 	mux.HandleFunc("/api/pods/logs", secure(podService.StreamPodLogs))
 	mux.HandleFunc("/api/pods/events", secure(podService.GetPodEvents))
-	mux.HandleFunc("/api/pods/exec", func(w http.ResponseWriter, r *http.Request) {
-		enableCors(RateLimitMiddleware(AuditMiddleware(podService.ExecIntoPod)))(w, r)
-	})
+	mux.HandleFunc("/api/pods/exec", secure(podService.ExecIntoPod))
 	
 	mux.HandleFunc("/api/clusters", secure(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
