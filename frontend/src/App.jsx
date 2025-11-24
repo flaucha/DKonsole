@@ -23,6 +23,9 @@ const ProtectedRoute = ({ children }) => {
 
 const WorkloadListWrapper = ({ namespace }) => {
     const { kind } = useParams();
+    if (!kind) {
+        return <div className="text-red-400 p-6">Error: Resource type not specified in URL.</div>;
+    }
     return <WorkloadList namespace={namespace} kind={kind} />;
 };
 
@@ -80,22 +83,28 @@ const Dashboard = () => {
     );
 };
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
+
 function App() {
     return (
-        <AuthProvider>
-            <BrowserRouter>
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/dashboard/*" element={
-                        <ProtectedRoute>
-                            <Dashboard />
-                        </ProtectedRoute>
-                    } />
-                    <Route path="/" element={<Navigate to="/dashboard/overview" replace />} />
-                    <Route path="*" element={<Navigate to="/dashboard/overview" replace />} />
-                </Routes>
-            </BrowserRouter>
-        </AuthProvider>
+        <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+                <BrowserRouter>
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/dashboard/*" element={
+                            <ProtectedRoute>
+                                <Dashboard />
+                            </ProtectedRoute>
+                        } />
+                        <Route path="/" element={<Navigate to="/dashboard/overview" replace />} />
+                        <Route path="*" element={<Navigate to="/dashboard/overview" replace />} />
+                    </Routes>
+                </BrowserRouter>
+            </AuthProvider>
+        </QueryClientProvider>
     );
 }
 

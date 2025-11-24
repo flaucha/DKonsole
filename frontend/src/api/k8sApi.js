@@ -1,4 +1,10 @@
 export const fetchWorkloads = async (fetcher, namespace, kind) => {
+    if (!kind) {
+        throw new Error('Resource kind is required');
+    }
+    if (!namespace) {
+        throw new Error('Namespace is required');
+    }
     const f = fetcher || fetch;
     const response = await f(`/api/workloads/${kind}?namespace=${namespace}`);
     if (!response.ok) {
