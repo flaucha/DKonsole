@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="1.1.3"
+VERSION="1.1.4"
 
 echo "=========================================="
 echo "🚀 DKonsole Release v${VERSION}"
@@ -48,15 +48,15 @@ fi
 echo "🏷️  Creating new tag v${VERSION}..."
 git tag -a "v${VERSION}" -m "Release v${VERSION}
 
-Resource Quota Manager Improvements:
-- Added namespace selector with All/Selected toggle
-- Automatic refresh after create/edit/delete operations
-- UI consistency improvements matching other pages
-- Streamlined menu (Edit YAML and Delete only)
-- YAML editor now uses kubectl apply (Server-Side Apply)
-- Create menu changed from hover to click
-- New resource templates use selected namespace
-- Consistent gray-scale color scheme
+UI Refactor & Bug Fixes:
+- Major frontend refactor with consistent list styling across all resource managers
+- Fixed API endpoint issues and undefined kind validation
+- Restored delete menu functionality for all resources
+- Improved empty state display and error handling
+- Enhanced expanded details styling consistency
+- Fixed Edit YAML button functionality
+- Improved log viewer scroll behavior
+- Better error handling for Jobs and CronJobs
 
 Docker Image:
 - dkonsole/dkonsole:${VERSION}"
