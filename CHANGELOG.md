@@ -5,6 +5,73 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.5] - 2025-01-25
+
+### 🧪 Testing Infrastructure & CI/CD
+
+This release introduces comprehensive testing infrastructure, unit tests, and automated CI/CD pipeline.
+
+### Added
+
+- **Testing Framework Setup**: Complete testing infrastructure for both frontend and backend
+  - Vitest configured with React Testing Library for frontend
+  - Go testing framework configured for backend
+  - Test setup files and utilities created
+  - Test configuration in `vite.config.js` and Go test files
+- **Unit Tests**: Comprehensive test suite added
+  - **Frontend Tests** (23 tests across 5 files):
+    - `dateUtils.test.js`: Tests for date formatting utilities
+    - `resourceParser.test.js`: Tests for resource parsing functions
+    - `statusBadge.test.js`: Tests for status badge utilities
+    - `expandableRow.test.js`: Tests for expandable row styling
+    - `k8sApi.test.js`: Tests for Kubernetes API client
+  - **Backend Tests**:
+    - `utils_test.go`: Tests for utility functions
+    - `models_test.go`: Tests for shared models and types
+- **CI/CD Pipeline**: GitHub Actions workflow configured
+  - Automated testing on push to `main` and `1.1.5-rc` branches
+  - Automated testing on Pull Requests to `main`
+  - Coverage reports generated for both frontend and backend
+  - Build verification step to ensure code compiles
+  - Workflow excludes documentation (`.md`) and script changes to reduce unnecessary runs
+- **Testing Scripts**: Automation scripts for easy testing
+  - `test-all.sh`: Run all tests with a single command
+  - `scripts/test-frontend.sh`: Frontend testing script with watch mode support
+  - `scripts/test-backend.sh`: Backend testing script with verbose output
+  - `scripts/test-backend-docker.sh`: Docker-based backend testing alternative
+  - `scripts/update-go.sh`: Script to update Go version
+  - `scripts/install-go.sh`: Script to install Go
+- **Documentation**: Comprehensive testing and CI/CD documentation
+  - `TESTING.md`: Complete testing guide with examples
+  - `COMO_PROBAR.md`: Quick testing guide in Spanish
+  - `GITHUB_ACTIONS_GUIA.md`: GitHub Actions guide
+  - `COMO_VER_RESULTADOS_GITHUB.md`: Visual guide for viewing CI results
+  - `scripts/README_TESTS.md`: Scripts documentation
+  - `ACTUALIZAR_GO_AHORA.md`: Go update instructions
+  - `INSTRUCCIONES_ACTUALIZAR_GO.md`: Detailed Go update instructions
+
+### Changed
+
+- **Go Version**: Backend updated to Go 1.25.4
+- **CI Optimization**: GitHub Actions workflow now ignores changes to `.md` files and `scripts/` directory
+- **Project Structure**: Added test directories and configuration files
+
+### Technical Improvements
+
+- **Frontend Testing**:
+  - Vitest configured with React Testing Library
+  - Test setup file with proper mocks and utilities
+  - Coverage reporting configured
+- **Backend Testing**:
+  - Go test framework properly configured
+  - Test utilities for common testing scenarios
+  - Coverage reporting with `go tool cover`
+- **CI/CD**:
+  - Parallel job execution for faster feedback
+  - Caching of dependencies (Go modules, npm packages)
+  - Conditional job execution based on file changes
+  - Coverage upload to codecov
+
 ## [1.1.4] - 2025-01-24
 
 ### 🎨 UI Refactor & Bug Fixes
@@ -459,6 +526,8 @@ This release focuses on addressing critical security vulnerabilities and impleme
 
 ---
 
+[1.1.5]: https://github.com/flaucha/DKonsole/compare/v1.1.4...v1.1.5
+[1.1.4]: https://github.com/flaucha/DKonsole/compare/v1.1.3...v1.1.4
 [1.1.1]: https://github.com/flaucha/DKonsole/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/flaucha/DKonsole/compare/v1.0.7...v1.1.0
 [1.0.7]: https://github.com/flaucha/DKonsole/compare/v1.0.6...v1.0.7

@@ -7,9 +7,15 @@ on:
       - '1.1.5-rc'  # También ejecutar en el branch de release candidate
     tags:
       - 'v*'  # Tags de versión (ej: v1.1.5)
+    paths-ignore:
+      - '**.md'
+      - 'scripts/**'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - 'scripts/**'
 
 jobs:
   test-backend:
