@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - '1.1.5-rc'  # También ejecutar en el branch de release candidate
     tags:
       - 'v*'  # Tags de versión (ej: v1.1.5)
     paths-ignore:
@@ -150,6 +149,37 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for tags
+
+      - name: Determine version
+        id: version
+        run: |
+          # Priority 1: If it's a tag push, extract version from tag
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            # Remove 'refs/tags/' prefix and 'v' prefix if present
+            VERSION=${GITHUB_REF#refs/tags/}
+            VERSION=${VERSION#v}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "✅ Using version from tag: $VERSION"
+          # Priority 2: Read from VERSION file
+          elif [ -f VERSION ]; then
+            VERSION=$(cat VERSION | tr -d '[:space:]')
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "✅ Using version from VERSION file: $VERSION"
+          # Priority 3: Fallback to git describe
+          else
+            VERSION=$(git describe --tags --always 2>/dev/null | sed 's/^v//' || echo "dev")
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "⚠️  Using fallback version from git: $VERSION"
+          fi
+          
+          # Validate version format (basic check)
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "⚠️  Warning: Version '$VERSION' doesn't match semver pattern (x.y.z)"
+          fi
+          
+          echo "📦 Final version: $VERSION"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -160,17 +190,30 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata for tags
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/dkonsole
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix=sha-,enable=${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      - name: Determine image tags
+        id: tags
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/dkonsole"
+          
+          # Always tag with the version
+          TAGS="$IMAGE:$VERSION"
+          
+          # If pushing to main, also tag as latest
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TAGS="$TAGS,$IMAGE:latest"
+            echo "📌 Tagging as latest (main branch)"
+          fi
+          
+          # If it's a tag push, also add major.minor tag
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            MAJOR_MINOR=$(echo $VERSION | cut -d. -f1,2)
+            TAGS="$TAGS,$IMAGE:$MAJOR_MINOR"
+            echo "📌 Tagging as $MAJOR_MINOR (tag push)"
+          fi
+          
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          echo "🏷️  Docker image tags: $TAGS"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -178,7 +221,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.tags.outputs.tags }}
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/dkonsole:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/dkonsole:buildcache,mode=max
