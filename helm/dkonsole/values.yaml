@@ -157,17 +157,17 @@ prometheusUrl: ""
 # FULL ACCESS to ALL resources (both cluster-scoped and namespaced) - allows importing ANY Kubernetes resource via YAML
 rbac:
   create: true
-  # Cluster-wide resources - Default to READ-ONLY
-  # To enable full access (e.g. for importing any resource), change verbs to ["*"]
+  # Cluster-wide resources - FULL ACCESS to create/update/delete cluster-scoped resources
+  # This allows importing ClusterRole, ClusterRoleBinding, PersistentVolume, StorageClass, etc.
   clusterResources:
     - apiGroups: ["*"]
       resources: ["*"]
-      verbs: ["get", "list", "watch"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   nonResourceURLs:
     - "*"
-  # Namespaced resources - Default to READ-ONLY
-  # To enable full access (e.g. for editing/deleting resources), change verbs to ["*"]
+  # Namespaced resources - FULL ACCESS to all resources in all API groups
+  # This allows importing ANY Kubernetes resource via YAML
   namespacedResources:
     - apiGroups: ["*"]
       resources: ["*"]
-      verbs: ["get", "list", "watch"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
