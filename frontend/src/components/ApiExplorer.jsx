@@ -4,6 +4,7 @@ import YamlEditor from './YamlEditor';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { getStatusBadgeClass } from '../utils/statusBadge';
+import { formatDate } from '../utils/dateUtils';
 
 const ApiExplorer = ({ namespace }) => {
     const { currentCluster } = useSettings();
@@ -205,23 +206,23 @@ const ApiExplorer = ({ namespace }) => {
                             <table className="min-w-full">
                                 <thead className="bg-gray-900">
                                     <tr>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
+                                        <th className="px-3 md:px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
                                         {selected.namespaced && (
-                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Namespace</th>
+                                            <th className="px-2 md:px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Namespace</th>
                                         )}
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Created</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                                        <th className="px-2 md:px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                                        <th className="px-2 md:px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Created</th>
+                                        <th className="px-2 md:px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-gray-800 divide-y divide-gray-700">
                                     {objects.map((obj) => (
                                         <tr key={`${obj.namespace}-${obj.name}`}>
-                                            <td className="px-4 py-2 text-sm text-gray-200">{obj.name}</td>
+                                            <td className="px-3 md:px-4 py-2 text-sm text-gray-200">{obj.name}</td>
                                             {selected.namespaced && (
-                                                <td className="px-4 py-2 text-sm text-gray-300">{obj.namespace || '-'}</td>
+                                                <td className="px-2 md:px-4 py-2 text-sm text-gray-300">{obj.namespace || '-'}</td>
                                             )}
-                                            <td className="px-4 py-2">
+                                            <td className="px-2 md:px-4 py-2">
                                                 {obj.status ? (
                                                     <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(obj.status)}`}>
                                                         {obj.status}
@@ -230,10 +231,10 @@ const ApiExplorer = ({ namespace }) => {
                                                     <span className="text-sm text-gray-300">—</span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-2 text-sm text-gray-400">
-                                                {obj.created ? new Date(obj.created).toLocaleDateString() : '—'}
+                                            <td className="px-2 md:px-4 py-2 text-sm text-gray-400">
+                                                {obj.created ? formatDate(obj.created) : '—'}
                                             </td>
-                                            <td className="px-4 py-2 text-sm text-gray-300">
+                                            <td className="px-2 md:px-4 py-2 text-sm text-gray-300">
                                                 <button
                                                     onClick={() => handleViewYaml(obj)}
                                                     className="flex items-center px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-md border border-gray-700 text-xs transition-colors"

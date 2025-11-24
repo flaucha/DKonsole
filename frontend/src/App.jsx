@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import NamespaceSelector from './components/NamespaceSelector';
@@ -11,6 +11,7 @@ import YamlImporter from './components/YamlImporter';
 import ApiExplorer from './components/ApiExplorer';
 import NamespaceManager from './components/NamespaceManager';
 import ResourceQuotaManager from './components/ResourceQuotaManager';
+import HelmChartManager from './components/HelmChartManager';
 import Login from './components/Login';
 
 const ProtectedRoute = ({ children }) => {
@@ -21,9 +22,26 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const Dashboard = () => {
-    const [selectedNamespace, setSelectedNamespace] = useState('default');
-    const [currentView, setCurrentView] = useState('Overview');
+    // Load saved state from localStorage on mount
+    const [selectedNamespace, setSelectedNamespace] = useState(() => {
+        const saved = localStorage.getItem('dkonsole_selectedNamespace');
+        return saved || 'default';
+    });
+    const [currentView, setCurrentView] = useState(() => {
+        const saved = localStorage.getItem('dkonsole_currentView');
+        return saved || 'Overview';
+    });
     const [showImporter, setShowImporter] = useState(false);
+
+    // Save to localStorage when namespace changes
+    useEffect(() => {
+        localStorage.setItem('dkonsole_selectedNamespace', selectedNamespace);
+    }, [selectedNamespace]);
+
+    // Save to localStorage when view changes
+    useEffect(() => {
+        localStorage.setItem('dkonsole_currentView', currentView);
+    }, [currentView]);
 
     // Map view names to API kinds
     const getKind = (view) => {
@@ -88,6 +106,10 @@ const Dashboard = () => {
                 ) : currentView === 'Resource Quotas' ? (
                     <div className="p-0">
                         <ResourceQuotaManager namespace={selectedNamespace} />
+                    </div>
+                ) : currentView === 'Helm Charts' ? (
+                    <div className="p-0">
+                        <HelmChartManager />
                     </div>
                 ) : (
                     <div className="p-6">

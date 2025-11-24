@@ -5,6 +5,99 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3] - 2025-01-23
+
+### 🚀 Helm Charts Manager & UI Enhancements
+
+This release introduces a complete Helm Charts Manager and significant UI improvements across the application.
+
+### Added
+
+- **Helm Charts Manager**: Complete interface for managing Helm releases
+  - View all installed Helm releases across all namespaces
+  - Install new Helm charts with automatic repository detection
+  - Upgrade existing releases with Monaco YAML editor for values
+  - Uninstall releases with confirmation modal
+  - Expandable rows showing detailed release information (Chart, Version, App Version, Revision, Status, Description, Last Updated)
+  - Automatic repository URL and version detection from existing releases
+  - Dynamic repository discovery using `helm search repo` when needed
+  - Safe hint suggesting to specify repo URL and version for best results
+- **Pod Events & Timeline Tab**: New tab in pod details view
+  - Kubernetes events with type (Warning/Normal), reason, message, source, count, and timestamps
+  - Container status timeline showing all state transitions (Running, Waiting, Terminated)
+  - Detailed restart information with exit codes
+  - Image information and timestamps for all container states
+  - All text in English for consistency
+- **UI State Persistence**: Browser-level persistence using localStorage
+  - Remembers selected namespace across page refreshes
+  - Remembers current view/page across refreshes
+  - Improves user experience by maintaining context
+- **Responsive Tables**: Horizontal scroll when window is narrow
+  - All tables now support horizontal scrolling when content exceeds viewport width
+  - Applied to WorkloadList, HelmChartManager, NamespaceManager, ApiExplorer, CRDExplorer
+- **Pod Table Enhancements**:
+  - Added "Ready" column showing ready containers vs total (e.g., "2/2")
+  - Added "Restarts" column with numeric count
+  - Removed "Kind" column as requested
+  - Improved date formatting using standardized format
+  - Sorting support for Ready and Restarts columns
+- **PVC Table Enhancements**:
+  - Added "Size" column displaying capacity or requested storage
+  - Sorting support for Size column (parses Gi, Mi, Ki units)
+  - Removed usage progress bar from details view
+- **Date Formatting Standardization**:
+  - Created `dateUtils.js` utility with consistent date formatting functions
+  - `formatDateTime`, `formatDateTimeShort`, `formatDate`, `formatRelativeTime`, `formatAge`
+  - Applied across all components for consistency
+- **Expandable Row Standardization**:
+  - Created `expandableRow.js` utility with consistent styling functions
+  - Smooth animations and consistent appearance across all tables
+  - Applied to WorkloadList, HelmChartManager, NamespaceManager
+
+### Changed
+
+- **Namespace Manager**: Fixed line break issues and added smooth slide animations
+  - Applied `min-w-0` and `truncate` to prevent line breaks
+  - Added smooth transition animations for expandable details
+  - Improved table border rendering
+- **WorkloadList**: Enhanced pod details with container status information
+  - Added `containerStatuses` to pod details API response
+  - Includes state, ready status, restart count, timestamps, reasons, exit codes, images
+- **Helm Upgrade/Install**: Improved repository detection logic
+  - Extracts repository URL from existing Helm release metadata
+  - Falls back to dynamic `helm search repo` when needed
+  - Adds common Helm repositories automatically for search
+  - Better handling of various repository URL patterns
+- **PVC Details**: Removed usage progress bar, added Requested and Capacity as detail rows
+
+### Fixed
+
+- **Helm Charts Manager**: Fixed missing "Install Chart" button visibility
+- **Namespace Manager**: Fixed line break in table header/first row
+- **Date Formats**: Standardized all date displays across the application
+- **Expandable Rows**: Consistent styling and animations across all components
+
+### Technical Improvements
+
+- **Backend Helm Support**:
+  - New endpoints: `/api/helm/releases` (GET, POST for upgrade, DELETE for uninstall)
+  - New endpoint: `/api/helm/releases/install` (POST)
+  - Helm release parsing from Kubernetes Secrets with base64 and gzip decompression
+  - Kubernetes Job creation for Helm operations using `dkonsole` ServiceAccount
+  - ConfigMap creation for values YAML in `dkonsole` namespace
+  - Automatic chart name detection from existing releases
+  - Robust repository URL extraction and normalization
+- **Backend Pod Events**:
+  - New endpoint: `/api/pods/events` for fetching Kubernetes events
+  - Returns events with type, reason, message, source, count, timestamps
+- **Backend PVC Metrics**:
+  - Enhanced PVC details with `requested` and `capacity` fields
+  - Prometheus integration for PVC usage metrics (if configured)
+- **Frontend Utilities**:
+  - `dateUtils.js`: Centralized date formatting functions
+  - `expandableRow.js`: Centralized expandable row styling functions
+- **State Management**: Improved localStorage integration for UI state persistence
+
 ## [1.1.2] - 2025-01-23
 
 ### ✨ Resource Quota Manager Improvements

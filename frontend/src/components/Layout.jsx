@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database, Gauge } from 'lucide-react';
+import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database, Gauge, Package } from 'lucide-react';
 import defaultLogo from '../assets/logo-full.svg';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -206,6 +206,13 @@ const Layout = ({ children, currentView, onViewChange, headerContent }) => {
                             label="API Explorer"
                             active={currentView === 'API Explorer'}
                             onClick={() => onViewChange('API Explorer')}
+                        />
+
+                        <SidebarItem
+                            icon={Package}
+                            label="Helm Charts"
+                            active={currentView === 'Helm Charts'}
+                            onClick={() => onViewChange('Helm Charts')}
                         />
 
                         <SidebarItem

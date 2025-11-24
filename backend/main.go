@@ -142,6 +142,24 @@ func main() {
 	mux.HandleFunc("/api/apis/yaml", secure(h.GetAPIResourceYAML))
 	mux.HandleFunc("/api/scale", secure(h.ScaleResource))
 	mux.HandleFunc("/api/overview", secure(h.GetClusterStats))
+	mux.HandleFunc("/api/helm/releases", secure(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			h.GetHelmReleases(w, r)
+		} else if r.Method == http.MethodDelete {
+			h.DeleteHelmRelease(w, r)
+		} else if r.Method == http.MethodPost {
+			h.UpgradeHelmRelease(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}))
+	mux.HandleFunc("/api/helm/releases/install", secure(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			h.InstallHelmRelease(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}))
 	// StreamPodLogs and ExecIntoPod handle their own auth/upgrade, but we can wrap them with Audit/RateLimit.
 	// Note: ExecIntoPod uses WebSocket, RateLimit should skip or be high. Audit is good.
 	// They use "authenticateRequest" internally? Let's check.
@@ -152,6 +170,7 @@ func main() {
 	// Actually, StreamPodLogs is HTTP stream, Exec is WS.
 	// I'll wrap them with secure() for consistency, assuming AuthMiddleware handles the token check fine.
 	mux.HandleFunc("/api/pods/logs", secure(h.StreamPodLogs))
+	mux.HandleFunc("/api/pods/events", secure(h.GetPodEvents))
 	mux.HandleFunc("/api/pods/exec", func(w http.ResponseWriter, r *http.Request) {
 		// WebSocket endpoint needs CORS for browser connections
 		// Auth is handled inside ExecIntoPod
