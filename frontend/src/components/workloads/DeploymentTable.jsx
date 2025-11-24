@@ -376,3 +376,4 @@ const DeploymentTable = ({ namespace, resources, loading, onReload }) => {
 
 export default DeploymentTable;
 
+

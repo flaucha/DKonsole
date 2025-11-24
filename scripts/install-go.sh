@@ -35,3 +35,4 @@ echo "   export PATH=\$PATH:/usr/local/go/bin"
 echo ""
 echo "📝 O simplemente abre una nueva terminal (el PATH ya está en .bashrc)"
 
+
