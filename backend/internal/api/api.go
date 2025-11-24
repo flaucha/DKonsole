@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -120,6 +121,16 @@ func (s *Service) ListAPIResourceObjects(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Get pagination parameters
+	limitStr := r.URL.Query().Get("limit")
+	limit := DefaultListLimit
+	if limitStr != "" {
+		if parsedLimit, err := strconv.ParseInt(limitStr, 10, 64); err == nil && parsedLimit > 0 && parsedLimit <= 5000 {
+			limit = parsedLimit
+		}
+	}
+	continueToken := r.URL.Query().Get("continue")
+
 	gvr := schema.GroupVersionResource{
 		Group:    group,
 		Version:  version,
@@ -134,9 +145,10 @@ func (s *Service) ListAPIResourceObjects(w http.ResponseWriter, r *http.Request)
 		res = dynamicClient.Resource(gvr).Namespace(namespace)
 	}
 
-	// Create ListOptions with limit to prevent OOM in large clusters
+	// Create ListOptions with limit and continue token for pagination
 	listOpts := metav1.ListOptions{
-		Limit: DefaultListLimit,
+		Limit:    limit,
+		Continue: continueToken,
 	}
 
 	list, err := res.List(ctx, listOpts)
@@ -174,8 +186,17 @@ func (s *Service) ListAPIResourceObjects(w http.ResponseWriter, r *http.Request)
 		objects = append(objects, obj)
 	}
 
+	// Return paginated response
+	response := map[string]interface{}{
+		"resources": objects,
+	}
+	// Access Continue from UnstructuredList's embedded ListMeta
+	if list.GetContinue() != "" {
+		response["continue"] = list.GetContinue()
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(objects)
+	json.NewEncoder(w).Encode(response)
 }
 
 // GetAPIResourceYAML returns the YAML representation of an API resource
@@ -343,13 +364,24 @@ func (s *Service) GetCRDResources(w http.ResponseWriter, r *http.Request) {
 
 	var unstructuredList *unstructured.UnstructuredList
 
+	// Get pagination parameters
+	limitStr := r.URL.Query().Get("limit")
+	limit := DefaultListLimit
+	if limitStr != "" {
+		if parsedLimit, err := strconv.ParseInt(limitStr, 10, 64); err == nil && parsedLimit > 0 && parsedLimit <= 5000 {
+			limit = parsedLimit
+		}
+	}
+	continueToken := r.URL.Query().Get("continue")
+
 	// Use request context with timeout
 	ctx, cancel := utils.CreateRequestContext(r)
 	defer cancel()
 	
-	// Create ListOptions with limit to prevent OOM in large clusters
+	// Create ListOptions with limit and continue token for pagination
 	listOpts := metav1.ListOptions{
-		Limit: DefaultListLimit,
+		Limit:    limit,
+		Continue: continueToken,
 	}
 	
 	if namespaced && namespace != "" {
@@ -373,8 +405,17 @@ func (s *Service) GetCRDResources(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	// Return paginated response
+	response := map[string]interface{}{
+		"resources": instances,
+	}
+	// Access Continue from UnstructuredList's embedded ListMeta
+	if unstructuredList.GetContinue() != "" {
+		response["continue"] = unstructuredList.GetContinue()
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(instances)
+	json.NewEncoder(w).Encode(response)
 }
 
 // GetCRDYaml returns the YAML representation of a CRD instance

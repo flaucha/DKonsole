@@ -4,7 +4,7 @@ import Layout from './components/Layout';
 import NamespaceSelector from './components/NamespaceSelector';
 import WorkloadList from './components/WorkloadList';
 import Settings from './components/Settings';
-import AcercaDe from './components/AcercaDe';
+import About from './components/About';
 import ClusterOverview from './components/ClusterOverview';
 import { SettingsProvider } from './context/SettingsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -71,7 +71,7 @@ const Dashboard = () => {
                     <Route path="overview" element={<ClusterOverview />} />
                     <Route path="workloads/:kind" element={<WorkloadListWrapper namespace={selectedNamespace} />} />
                     <Route path="settings" element={<Settings />} />
-                    <Route path="about" element={<AcercaDe />} />
+                    <Route path="about" element={<About />} />
                     <Route path="api-explorer" element={<ApiExplorer namespace={selectedNamespace} />} />
                     <Route path="namespaces" element={<NamespaceManager />} />
                     <Route path="resource-quotas" element={<ResourceQuotaManager namespace={selectedNamespace} />} />

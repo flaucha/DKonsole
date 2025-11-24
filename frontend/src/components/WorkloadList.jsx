@@ -105,22 +105,18 @@ const WorkloadList = ({ namespace, kind }) => {
         return <div className="text-red-400 p-6">Error: Resource type not specified.</div>;
     }
 
-    // Use React Query hook
-    const { data: resourcesData, isLoading: loading, error, refetch } = useWorkloads(authFetch, namespace, kind, continueToken);
+    // Use React Query hook - only for initial load (always pass null for continueToken)
+    // loadMore handles subsequent pages manually
+    const { data: resourcesData, isLoading: loading, error, refetch } = useWorkloads(authFetch, namespace, kind, null);
     
-    // Handle paginated response
+    // Handle paginated response from initial load only
     useEffect(() => {
-        if (resourcesData) {
+        if (resourcesData && continueToken === null) {
+            // Only handle initial load here, not manual loadMore
             // Check if response is paginated (object with resources array) or legacy array
             if (resourcesData.resources && Array.isArray(resourcesData.resources)) {
-                // Paginated response - always replace on initial load, append on loadMore
-                if (continueToken === null) {
-                    // First page, replace all resources
-                    setAllResources(resourcesData.resources);
-                } else {
-                    // Loading more, append to existing resources
-                    setAllResources(prev => [...prev, ...resourcesData.resources]);
-                }
+                // Paginated response - replace all resources on initial load
+                setAllResources(resourcesData.resources);
                 setContinueToken(resourcesData.continue || null);
             } else if (Array.isArray(resourcesData)) {
                 // Legacy array response (backward compatibility)
