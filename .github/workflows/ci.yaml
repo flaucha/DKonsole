@@ -65,13 +65,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # Cache solo si package-lock.json existe
-          cache: ${{ hashFiles('frontend/package-lock.json') != '' && 'npm' || '' }}
-          cache-dependency-path: ${{ hashFiles('frontend/package-lock.json') != '' && 'frontend/package-lock.json' || 'frontend/package.json' }}
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('frontend/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       - name: Install dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: npm install
 
       - name: Run linter
         working-directory: ./frontend
@@ -106,9 +111,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # Cache solo si package-lock.json existe
-          cache: ${{ hashFiles('frontend/package-lock.json') != '' && 'npm' || '' }}
-          cache-dependency-path: ${{ hashFiles('frontend/package-lock.json') != '' && 'frontend/package-lock.json' || 'frontend/package.json' }}
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('frontend/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       - name: Build backend
         working-directory: ./backend
@@ -120,5 +130,5 @@ jobs:
       - name: Build frontend
         working-directory: ./frontend
         run: |
-          npm ci
+          npm install
           npm run build
