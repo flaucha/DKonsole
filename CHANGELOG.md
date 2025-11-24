@@ -527,7 +527,10 @@ This release focuses on addressing critical security vulnerabilities and impleme
 ---
 
 [1.1.5]: https://github.com/flaucha/DKonsole/compare/v1.1.4...v1.1.5
+[1.1.5]: https://github.com/flaucha/DKonsole/compare/v1.1.4...v1.1.5
 [1.1.4]: https://github.com/flaucha/DKonsole/compare/v1.1.3...v1.1.4
+[1.1.3]: https://github.com/flaucha/DKonsole/compare/v1.1.2...v1.1.3
+[1.1.2]: https://github.com/flaucha/DKonsole/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/flaucha/DKonsole/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/flaucha/DKonsole/compare/v1.0.7...v1.1.0
 [1.0.7]: https://github.com/flaucha/DKonsole/compare/v1.0.6...v1.0.7
