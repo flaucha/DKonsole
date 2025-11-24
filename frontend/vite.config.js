@@ -1,10 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { readFileSync } from 'fs'
-import { resolve } from 'path'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 // Read version from VERSION file
-const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
+let version = '1.1.6' // default
+try {
+  version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
+} catch (e) {
+  console.warn('Could not read VERSION file, using default:', version)
+}
 
 // https://vite.dev/config/
 export default defineConfig({
