@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.1.6-green.svg)
+![Version](https://img.shields.io/badge/version-1.1.7-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.1.6
+git checkout v1.1.7
 
 # Install
 helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
@@ -100,18 +100,24 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.1.6"
+  tag: "1.1.7"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.1.6`
+- **Unified**: `dkonsole/dkonsole:1.1.7`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.1.7 (2025-01-26)
+**🔧 Hotfix: Settings UI Improvements**
+
+- Fixed: Moved About section to Settings tab for better navigation
+- Added: General tab with Languages placeholder
 
 ### v1.1.6 (2025-01-26)
 **🧪 Testing Infrastructure & CI/CD**
