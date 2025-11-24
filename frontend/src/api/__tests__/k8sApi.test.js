@@ -331,7 +331,7 @@ describe('k8sApi', () => {
         ok: false
       })
 
-      await expect(fetchHelmReleases(mockFetcher, null)).rejects.toThrow('Failed to fetch Helm releases')
+      await expect(fetchHelmReleases(mockFetcher, null)).rejects.toThrow('Failed to fetch helm releases')
     })
   })
 })
