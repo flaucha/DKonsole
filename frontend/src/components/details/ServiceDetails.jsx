@@ -18,7 +18,7 @@ const ServiceDetails = ({ details, onEditYAML }) => {
     };
 
     return (
-        <div className="p-4 bg-gray-900/50 rounded-md mt-2 space-y-4">
+        <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getTypeColor(type)}`}>
@@ -29,30 +29,30 @@ const ServiceDetails = ({ details, onEditYAML }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">IP Addresses</h4>
+                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">IP Addresses</h4>
                     <div className="space-y-2">
-                        <div className="flex items-center justify-between bg-gray-800 px-3 py-2 rounded border border-gray-700">
-                            <span className="text-xs text-gray-400">Cluster IP</span>
-                            <span className="text-sm font-mono text-white">{clusterIP}</span>
+                        <div className="flex items-center justify-between bg-gray-800/50 px-4 py-3 rounded-md border border-gray-700/50 hover:bg-gray-800/70 transition-colors">
+                            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Cluster IP</span>
+                            <span className="text-sm font-mono text-gray-200">{clusterIP}</span>
                         </div>
                         {externalIPs.map((ip, i) => (
-                            <div key={i} className="flex items-center justify-between bg-gray-800 px-3 py-2 rounded border border-gray-700">
-                                <span className="text-xs text-gray-400">External IP</span>
-                                <span className="text-sm font-mono text-white">{ip}</span>
+                            <div key={i} className="flex items-center justify-between bg-gray-800/50 px-4 py-3 rounded-md border border-gray-700/50 hover:bg-gray-800/70 transition-colors">
+                                <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">External IP</span>
+                                <span className="text-sm font-mono text-gray-200">{ip}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
                 <div>
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Selector</h4>
+                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Selector</h4>
                     <div className="flex flex-wrap gap-2">
                         {Object.keys(selector).length > 0 ? (
                             Object.entries(selector).map(([k, v]) => (
-                                <div key={k} className="flex items-center px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-300">
-                                    <Tag size={12} className="mr-1.5 text-gray-500" />
+                                <div key={k} className="flex items-center px-3 py-1.5 bg-gray-800/50 border border-gray-700/50 rounded-md text-xs text-gray-200 hover:bg-gray-800/70 transition-colors">
+                                    <Tag size={12} className="mr-1.5 text-gray-400" />
                                     <span className="text-gray-400 mr-1">{k}:</span>
-                                    <span className="text-white">{v}</span>
+                                    <span className="text-gray-200">{v}</span>
                                 </div>
                             ))
                         ) : (
@@ -63,7 +63,7 @@ const ServiceDetails = ({ details, onEditYAML }) => {
             </div>
 
             <div>
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Ports</h4>
+                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Ports</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {ports.map((port, i) => {
                         if (typeof port !== 'string') return null;
@@ -75,10 +75,10 @@ const ServiceDetails = ({ details, onEditYAML }) => {
                         const targetPort = portMap[1] || portNum;
 
                         return (
-                            <div key={i} className="flex items-center justify-between bg-gray-800 px-3 py-2 rounded border border-gray-700">
+                            <div key={i} className="flex items-center justify-between bg-gray-800/50 px-4 py-3 rounded-md border border-gray-700/50 hover:bg-gray-800/70 transition-colors">
                                 <div className="flex items-center">
                                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></div>
-                                    <span className="text-sm font-mono text-white">{portNum}</span>
+                                    <span className="text-sm font-mono text-gray-200">{portNum}</span>
                                     {portNum !== targetPort && (
                                         <>
                                             <span className="text-gray-500 mx-1">→</span>
@@ -86,7 +86,7 @@ const ServiceDetails = ({ details, onEditYAML }) => {
                                         </>
                                     )}
                                 </div>
-                                <span className="text-[10px] font-bold text-gray-500 bg-gray-900 px-1.5 py-0.5 rounded">
+                                <span className="text-[10px] font-bold text-gray-400 bg-gray-900/50 px-1.5 py-0.5 rounded">
                                     {protocol}
                                 </span>
                             </div>
@@ -94,7 +94,7 @@ const ServiceDetails = ({ details, onEditYAML }) => {
                     })}
                 </div>
             </div>
-            <div className="flex justify-end mt-4">
+            <div className="flex justify-end mt-6">
                 <EditYamlButton onClick={onEditYAML} />
             </div>
         </div>

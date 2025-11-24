@@ -16,6 +16,7 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
     const containers = details.containers || [];
     const metrics = details.metrics || {};
     const terminalContainerRef = useRef(null);
+    const logsContainerRef = useRef(null);
 
     // Set default container when component mounts or containers change
     useEffect(() => {
@@ -24,12 +25,17 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
         }
     }, [containers, selectedContainer]);
 
-    // Scroll into view when terminal tab is activated
+    // Scroll into view when terminal or logs tab is activated
     useEffect(() => {
         if (activeTab === 'terminal' && terminalContainerRef.current) {
             // Use setTimeout to ensure DOM is updated
             setTimeout(() => {
                 terminalContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        } else if (activeTab === 'logs' && logsContainerRef.current) {
+            // Use setTimeout to ensure DOM is updated
+            setTimeout(() => {
+                logsContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }, 100);
         }
     }, [activeTab]);
@@ -59,7 +65,7 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
 
     return (
         <div className="mt-2 flex flex-col" style={{ height: isFullHeightTab ? fullHeight : 'auto' }}>
-            <div className="flex space-x-4 border-b border-gray-700 mb-4 flex-shrink-0">
+            <div className="flex space-x-4 border-b border-gray-700 mb-4 flex-shrink-0 pl-2">
                 <button
                     className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'details' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
                     onClick={() => setActiveTab('details')}
@@ -114,7 +120,7 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                         </div>
                     </div>
                 ) : activeTab === 'logs' ? (
-                    <div className="animate-fadeIn flex-1 flex flex-col min-h-0">
+                    <div ref={logsContainerRef} className="animate-fadeIn flex-1 flex flex-col min-h-0">
                         {containers.length > 1 && (
                             <div className="mb-3 flex items-center space-x-2 flex-shrink-0">
                                 <label className="text-xs text-gray-400">Container:</label>

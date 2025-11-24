@@ -4,7 +4,7 @@ import { DetailRow, EditYamlButton } from './CommonDetails';
 
 const DeploymentDetails = ({ details, onScale, scaling, res, onEditYAML }) => {
     return (
-        <div className="p-4 bg-gray-900/50 rounded-md mt-2">
+        <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <div className="mb-2">

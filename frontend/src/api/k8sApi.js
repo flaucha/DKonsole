@@ -6,9 +6,13 @@ export const fetchWorkloads = async (fetcher, namespace, kind) => {
         throw new Error('Namespace is required');
     }
     const f = fetcher || fetch;
-    const response = await f(`/api/workloads/${kind}?namespace=${namespace}`);
+    // Use /api/resources endpoint which expects kind as query parameter
+    const params = new URLSearchParams({ kind });
+    params.append('namespace', namespace);
+    const response = await f(`/api/resources?${params.toString()}`);
     if (!response.ok) {
-        throw new Error(`Failed to fetch ${kind}`);
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`Failed to fetch ${kind}: ${errorText}`);
     }
     return response.json();
 };
