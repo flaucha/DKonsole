@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.1.10-green.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.1.10
+git checkout v1.2.0
 
 # EDIT VALUES WITH YOUR FAVORITE EDITOR.
 $ vim ./helm/dkonsole/values.yaml
@@ -103,18 +103,43 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.1.10"
+  tag: "1.2.0"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.1.10`
+- **Unified**: `dkonsole/dkonsole:1.2.0`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.2.0 (2025-01-27)
+**🧹 Major Refactoring & Code Cleanup**
+
+This release includes a comprehensive codebase cleanup and refactoring to improve maintainability, remove obsolete code, and organize components better.
+
+- **Changed**: Frontend component organization
+  - Extracted resource detail components into modular structure
+  - All resource detail components moved to `components/details/` directory
+  - Improved separation of concerns with dedicated detail components
+  - Better code organization and reusability
+- **Changed**: Backend architecture cleanup
+  - Removed obsolete `GetResources_OLD` function (~760 lines)
+  - Removed unused Prometheus helper functions (now handled by `internal/prometheus/` package)
+  - Removed unused constants and imports
+  - Cleaned up `resources.go` file
+- **Removed**: Obsolete components and temporary files
+  - Removed deprecated `DeploymentTable.jsx` and `PodTable.jsx` (replaced by unified `WorkloadList.jsx`)
+  - Removed duplicate `AcercaDe.jsx` (duplicate of `About.jsx`)
+  - Removed example ingress and certificate files
+- **Technical**: Code quality improvements
+  - Removed ~850+ lines of obsolete code
+  - Eliminated code duplication
+  - Improved maintainability
+  - Updated release script to read version from VERSION file
 
 ### v1.1.10 (2025-01-27)
 **🔒 Security: Dependency Updates**
