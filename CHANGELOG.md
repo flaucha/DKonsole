@@ -5,6 +5,104 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-11-24
+
+### 🔒 Security
+
+- **HTTP Security Headers**: Implemented comprehensive security headers middleware
+  - Added `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`
+  - Added `Strict-Transport-Security` (HSTS) for HTTPS enforcement
+  - Added `Content-Security-Policy` (CSP) with differentiated policies for API and static content
+  - Added `Referrer-Policy` and `Permissions-Policy`
+  - Applied to all routes including static files and WebSocket endpoints
+- **Stricter Input Validation**: Enhanced validation for Kubernetes resource names and paths
+  - Added RFC 1123 validation for K8s names
+  - Added DNS-1123 Label validation for namespaces
+  - Added path traversal prevention
+  - Applied validation to critical endpoints (`/api/pods/exec`, `/api/pods/logs`, `/api/k8s/resources/*`)
+
+### 🧪 Testing
+
+- **Backend Test Coverage**: Added comprehensive tests
+  - Complete test suite for authentication (`AuthService`, `JWTService`, password verification)
+  - Tests for K8s resource operations (`ResourceService`) with mocks
+  - Security tests for pod exec to prevent command injection
+  - Input validation tests
+
+### 🧹 Code Quality
+
+- **Frontend Cleanup**: Removed console.logs from production
+  - Created conditional logger that only outputs in development
+  - Replaced all `console.log` and `console.error` with structured logger
+- **Code Splitting**: Implemented lazy loading for large components
+  - Added `React.lazy()` and `Suspense` for `WorkloadList`, `HelmChartManager`, `ClusterOverview`, and others
+  - Reduced initial bundle size significantly
+
+### ⚡ Performance
+
+- **Prometheus Timeouts**: Added configurable timeouts for Prometheus queries
+  - Configurable via `PROMETHEUS_QUERY_TIMEOUT` environment variable (default: 30s)
+  - All queries use `context.WithTimeout` for proper cancellation
+- **WebSocket Limits**: Implemented connection limiting per IP
+  - Maximum 5 concurrent WebSocket connections per IP (configurable)
+  - Applied to `/api/pods/exec` and `/api/pods/logs` endpoints
+
+### 🏗️ Infrastructure
+
+- **Dockerfile Improvements**: Enhanced container configuration
+  - Added `HEALTHCHECK` instruction with wget
+  - Changed base image from `alpine:latest` to `alpine:3.19` for reproducibility
+  - Added `/health` endpoint (in addition to `/healthz`)
+
+### 📚 Documentation & Logging
+
+- **Structured Logging**: Implemented JSON structured logging with logrus
+  - Logs include contextual fields: `user`, `ip`, `action`, `resource`, `namespace`, `status`, `duration`
+  - Configurable log level via `LOG_LEVEL` environment variable
+  - Migrated all `log.Printf` to structured logging functions
+- **Code Documentation**: Added comprehensive Godoc comments
+  - Documented all public functions in `auth`, `k8s`, `pod`, and `helm` packages
+  - Added descriptions, parameters, and examples
+- **API Documentation**: Added Swagger/OpenAPI documentation
+  - Generated interactive API documentation available at `/swagger/`
+  - OpenAPI specification in JSON and YAML formats
+- **Architecture Decision Records**: Created ADRs for key decisions
+  - ADR 0001: Modular architecture with separated layers
+  - ADR 0002: JWT-based authentication
+  - ADR 0003: React Query for server state management
+
+### 🔧 Technical Improvements
+
+- **CI/CD Enhancements**: Improved automation and security scanning
+  - Added `golangci-lint` for Go code linting
+  - Added Trivy for SAST vulnerability scanning
+  - Added `npm audit` for frontend dependency scanning
+  - Added `govulncheck` for Go vulnerability checking
+
+### Added
+
+- New validation functions in `backend/internal/utils/validation.go`
+- Security headers middleware in `backend/internal/middleware/security.go`
+- WebSocket connection limiter middleware
+- Structured logger with logrus
+- Swagger documentation generation
+- Architecture Decision Records (ADRs)
+
+### Changed
+
+- All logging migrated to structured JSON format
+- Frontend console.logs replaced with conditional logger
+- Prometheus queries now use context with timeout
+- WebSocket endpoints have connection limits
+- Base Docker image pinned to alpine:3.19
+
+### Fixed
+
+- Input validation now prevents path traversal attacks
+- Command injection prevention in pod exec verified with tests
+
+---
+
 ## [1.2.0] - 2025-01-27
 
 ### 🧹 Major Refactoring & Code Cleanup

@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.2.0-green.svg)
+![Version](https://img.shields.io/badge/version-1.2.1-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -20,7 +20,7 @@ This entire project, from backend to frontend and infrastructure code, was gener
 - 💻 **Terminal Access**: Execute commands directly in pod containers
 - ✏️ **YAML Editor**: Edit resources with a built-in YAML editor
 - 🔐 **Secure Authentication**: Argon2 password hashing and JWT-based sessions
-- 🌐 **Multi-Cluster Support**: Manage multiple Kubernetes clusters from a single interface
+
 
 ## 🚀 Quick Start
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.2.0
+git checkout v1.2.1
 
 # EDIT VALUES WITH YOUR FAVORITE EDITOR.
 $ vim ./helm/dkonsole/values.yaml
@@ -103,18 +103,31 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.2.0"
+  tag: "1.2.1"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.2.0`
+- **Unified**: `dkonsole/dkonsole:1.2.1`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.2.1 (2025-11-24)
+**🔒 Security, Testing, Performance & Documentation Improvements**
+
+This release focuses on security hardening, comprehensive testing, performance improvements, and enhanced documentation.
+
+- **Security**: HTTP security headers (Helmet-like), stricter input validation, security tests
+- **Testing**: Complete test coverage for authentication, K8s services, and pod exec security
+- **Code Quality**: Removed console.logs from production, implemented code splitting
+- **Performance**: Prometheus query timeouts, WebSocket connection limits
+- **Infrastructure**: Healthcheck in Dockerfile, pinned base image (alpine:3.19)
+- **Documentation**: Structured JSON logging, comprehensive Godoc, Swagger/OpenAPI, Architecture Decision Records
+- **CI/CD**: Added linting, vulnerability scanning (Trivy, npm audit, govulncheck)
 
 ### v1.2.0 (2025-01-27)
 **🧹 Major Refactoring & Code Cleanup + Architecture Improvements (thanks Kkoder from redit)**
