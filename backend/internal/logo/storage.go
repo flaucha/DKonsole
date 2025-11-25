@@ -86,3 +86,5 @@ func (s *FileSystemLogoStorage) RemoveAll(ctx context.Context) error {
 	return nil
 }
 
+
+
