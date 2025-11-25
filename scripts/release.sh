@@ -16,7 +16,13 @@ echo "🚀 DKonsole Release v${VERSION}"
 echo "=========================================="
 echo ""
 
-# 1. Commit and Push Changes
+# 1. Pull latest changes first
+echo "📥 Pulling latest changes from remote..."
+git pull --rebase origin main 2>&1 || git pull origin main
+echo "✅ Remote changes synced"
+echo ""
+
+# 2. Commit and Push Changes
 echo "📦 Preparing Git..."
 if [[ -n $(git status -s) ]]; then
     echo "📝 Committing changes..."
