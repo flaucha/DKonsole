@@ -21,9 +21,12 @@ func init() {
 		if os.Getenv("GO_ENV") == "production" {
 			log.Fatal("JWT_SECRET is required in production")
 		}
-		if len(jwtSecretStr) == 0 {
-			log.Fatal("CRITICAL: JWT_SECRET environment variable must be set")
-		}
+		// In non-production environments, use a default for testing/development
+		// This allows tests to run without setting JWT_SECRET
+		jwtSecretStr = "default-secret-key-for-testing-only-change-in-production"
+		utils.LogWarn("Using default JWT_SECRET (INSECURE - for testing only)", map[string]interface{}{
+			"level": "warning",
+		})
 	}
 	if len(jwtSecretStr) < 32 {
 		log.Fatal("CRITICAL: JWT_SECRET must be at least 32 characters long")
