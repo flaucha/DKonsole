@@ -46,12 +46,8 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create repository and resolver
-	resourceRepo := NewK8sResourceRepository(dynamicClient)
-	gvrResolver := NewK8sGVRResolver()
-
-	// Create service
-	resourceService := NewResourceService(resourceRepo, gvrResolver)
+	// Create service using factory (dependency injection)
+	resourceService := s.serviceFactory.CreateResourceService(dynamicClient)
 
 	// Create context
 	ctx, cancel := utils.CreateTimeoutContext()
@@ -106,12 +102,8 @@ func (s *Service) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create repository and resolver
-	resourceRepo := NewK8sResourceRepository(dynamicClient)
-	gvrResolver := NewK8sGVRResolver()
-
-	// Create import service
-	importService := NewImportService(resourceRepo, gvrResolver, client)
+	// Create service using factory (dependency injection)
+	importService := s.serviceFactory.CreateImportService(dynamicClient, client)
 
 	// Create context
 	ctx, cancel := utils.CreateTimeoutContext()
@@ -201,12 +193,8 @@ func (s *Service) DeleteResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create repository and resolver
-	resourceRepo := NewK8sResourceRepository(dynamicClient)
-	gvrResolver := NewK8sGVRResolver()
-
-	// Create service
-	resourceService := NewResourceService(resourceRepo, gvrResolver)
+	// Create service using factory (dependency injection)
+	resourceService := s.serviceFactory.CreateResourceService(dynamicClient)
 
 	// Create context
 	ctx, cancel := utils.CreateTimeoutContext()
@@ -265,9 +253,8 @@ func (s *Service) WatchResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create GVR resolver and watch service
-	gvrResolver := NewK8sGVRResolver()
-	watchService := NewWatchService(gvrResolver)
+	// Create service using factory (dependency injection)
+	watchService := s.serviceFactory.CreateWatchService()
 
 	// Create context (use request context to allow cancellation)
 	ctx := r.Context()
@@ -308,7 +295,7 @@ func (s *Service) WatchResources(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
-			
+
 			// Transform event (business logic layer)
 			result, err := watchService.TransformEvent(event)
 			if err != nil {
@@ -423,11 +410,11 @@ func (s *Service) validateLimitRange(ctx context.Context, client *kubernetes.Cli
 					resources, found, _ := unstructured.NestedMap(containerMap, "resources")
 					if found && resources != nil {
 						for _, lr := range limitRanges.Items {
-					for _, limit := range lr.Spec.Limits {
-						if limit.Type == corev1.LimitTypeContainer {
-							log.Printf("Validating container resources against LimitRange %s", lr.Name)
-						}
-					}
+							for _, limit := range lr.Spec.Limits {
+								if limit.Type == corev1.LimitTypeContainer {
+									log.Printf("Validating container resources against LimitRange %s", lr.Name)
+								}
+							}
 						}
 					}
 				}
@@ -437,4 +424,3 @@ func (s *Service) validateLimitRange(ctx context.Context, client *kubernetes.Cli
 
 	return nil
 }
-

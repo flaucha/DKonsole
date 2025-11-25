@@ -27,11 +27,8 @@ func (s *Service) TriggerCronJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create repository
-	cronJobRepo := NewK8sCronJobRepository(client)
-
-	// Create service
-	cronJobService := NewCronJobService(cronJobRepo)
+	// Create service using factory (dependency injection)
+	cronJobService := s.serviceFactory.CreateCronJobService(client)
 
 	// Create context
 	ctx, cancel := utils.CreateTimeoutContext()
@@ -47,4 +44,3 @@ func (s *Service) TriggerCronJob(w http.ResponseWriter, r *http.Request) {
 	// Write JSON response (HTTP layer)
 	utils.JSONResponse(w, http.StatusCreated, map[string]string{"jobName": jobName})
 }
-

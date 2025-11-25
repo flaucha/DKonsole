@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/example/k8s-view/internal/models"
 	"github.com/example/k8s-view/internal/cluster"
+	"github.com/example/k8s-view/internal/models"
 	"github.com/example/k8s-view/internal/utils"
 )
 
@@ -14,6 +14,7 @@ import (
 type Service struct {
 	handlers       *models.Handlers
 	clusterService *cluster.Service
+	serviceFactory *ServiceFactory
 }
 
 // NewService creates a new Kubernetes service
@@ -21,6 +22,7 @@ func NewService(h *models.Handlers, cs *cluster.Service) *Service {
 	return &Service{
 		handlers:       h,
 		clusterService: cs,
+		serviceFactory: NewServiceFactory(),
 	}
 }
 
@@ -35,11 +37,8 @@ func (s *Service) GetNamespaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create repository for this request
-	namespaceRepo := NewK8sNamespaceRepository(client)
-
-	// Create service with repository
-	namespaceService := NewNamespaceService(namespaceRepo)
+	// Create service using factory (dependency injection)
+	namespaceService := s.serviceFactory.CreateNamespaceService(client)
 
 	// Create context with timeout
 	ctx, cancel := utils.CreateTimeoutContext()
@@ -161,11 +160,8 @@ func (s *Service) ScaleResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create repository
-	deploymentRepo := NewK8sDeploymentRepository(client)
-
-	// Create service
-	deploymentService := NewDeploymentService(deploymentRepo)
+	// Create service using factory (dependency injection)
+	deploymentService := s.serviceFactory.CreateDeploymentService(client)
 
 	// Create context
 	ctx, cancel := utils.CreateTimeoutContext()
@@ -199,11 +195,8 @@ func (s *Service) GetClusterStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create repository for this request
-	statsRepo := NewK8sClusterStatsRepository(client)
-
-	// Create service with repository
-	statsService := NewClusterStatsService(statsRepo)
+	// Create service using factory (dependency injection)
+	statsService := s.serviceFactory.CreateClusterStatsService(client)
 
 	// Call service to get cluster stats (business logic layer)
 	stats, err := statsService.GetClusterStats(ctx)

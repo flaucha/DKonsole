@@ -18,14 +18,15 @@ import (
 	"k8s.io/client-go/util/homedir"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 
-	"github.com/example/k8s-view/internal/models"
+	"github.com/example/k8s-view/internal/api"
 	"github.com/example/k8s-view/internal/auth"
 	"github.com/example/k8s-view/internal/cluster"
-	"github.com/example/k8s-view/internal/prometheus"
-	"github.com/example/k8s-view/internal/k8s"
-	"github.com/example/k8s-view/internal/api"
 	"github.com/example/k8s-view/internal/helm"
+	"github.com/example/k8s-view/internal/k8s"
+	"github.com/example/k8s-view/internal/logo"
+	"github.com/example/k8s-view/internal/models"
 	"github.com/example/k8s-view/internal/pod"
+	"github.com/example/k8s-view/internal/prometheus"
 )
 
 // ResponseWriter wrapper to fix Content-Type after FileServer sets it
@@ -135,10 +136,11 @@ func main() {
 	helmService := helm.NewService(handlersModel, clusterService)
 	podService := pod.NewService(handlersModel, clusterService)
 	prometheusService := prometheus.NewHTTPHandler(handlersModel.PrometheusURL, clusterService)
-	
+	logoService := logo.NewService("./data")
+
 	// authenticateRequest is now handled by authService.AuthenticateRequest
 	// No need for a global wrapper variable
-	
+
 	// Set up handler delegates for services that need access to old handlers
 	setupHandlerDelegates(h, k8sService, apiService, helmService, podService)
 
@@ -157,7 +159,7 @@ func main() {
 	mux.HandleFunc("/api/logout", public(authService.LogoutHandler))
 	mux.HandleFunc("/api/me", secure(authService.MeHandler))
 	mux.HandleFunc("/healthz", h.HealthHandler)
-	
+
 	// K8s handlers - using services
 	mux.HandleFunc("/api/namespaces", secure(k8sService.GetNamespaces))
 	mux.HandleFunc("/api/resources", secure(k8sService.GetResources))
@@ -178,7 +180,7 @@ func main() {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}))
-	
+
 	// API handlers - using services
 	mux.HandleFunc("/api/apis", secure(apiService.ListAPIResources))
 	mux.HandleFunc("/api/apis/resources", secure(apiService.ListAPIResourceObjects))
@@ -186,10 +188,10 @@ func main() {
 	mux.HandleFunc("/api/crds", secure(apiService.GetCRDs))
 	mux.HandleFunc("/api/crds/resources", secure(apiService.GetCRDResources))
 	mux.HandleFunc("/api/crds/yaml", secure(apiService.GetCRDYaml))
-	
+
 	mux.HandleFunc("/api/scale", secure(k8sService.ScaleResource))
 	mux.HandleFunc("/api/overview", secure(k8sService.GetClusterStats))
-	
+
 	// Helm handlers - using services
 	mux.HandleFunc("/api/helm/releases", secure(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
@@ -209,19 +211,20 @@ func main() {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}))
-	
+
 	// Pod handlers - using services
 	mux.HandleFunc("/api/pods/logs", secure(podService.StreamPodLogs))
 	mux.HandleFunc("/api/pods/events", secure(podService.GetPodEvents))
 	mux.HandleFunc("/api/pods/exec", secure(podService.ExecIntoPod))
-	
+
 	mux.HandleFunc("/api/resource", secure(k8sService.DeleteResource))
 	mux.HandleFunc("/api/cronjobs/trigger", secure(k8sService.TriggerCronJob))
+	// Logo handlers - using service
 	mux.HandleFunc("/api/logo", secure(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			h.GetLogo(w, r)
+			logoService.GetLogo(w, r)
 		} else if r.Method == http.MethodPost {
-			h.UploadLogo(w, r)
+			logoService.UploadLogo(w, r)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -245,7 +248,7 @@ func main() {
 					ResponseWriter: w,
 					path:           r.URL.Path,
 				}
-				
+
 				// Add security headers
 				w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ws: wss: https://cdn.jsdelivr.net; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
 				w.Header().Set("X-Frame-Options", "SAMEORIGIN")
@@ -263,7 +266,7 @@ func main() {
 		assetsDir := filepath.Join(staticDir, "assets")
 		fileServer := http.FileServer(http.Dir(assetsDir))
 		mux.Handle("/assets/", secureStaticFiles(http.StripPrefix("/assets/", fileServer)))
-		
+
 		mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			http.ServeFile(w, r, filepath.Join(staticDir, "favicon.ico"))
@@ -272,7 +275,7 @@ func main() {
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			http.ServeFile(w, r, filepath.Join(staticDir, "robots.txt"))
 		})
-		
+
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasPrefix(r.URL.Path, "/api") {
 				http.NotFound(w, r)

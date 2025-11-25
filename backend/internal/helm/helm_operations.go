@@ -64,13 +64,8 @@ func (s *Service) UpgradeHelmRelease(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := utils.CreateTimeoutContext()
 	defer cancel()
 
-	// Create repositories
-	releaseRepo := NewK8sHelmReleaseRepository(client)
-	jobRepo := NewK8sHelmJobRepository(client)
-
-	// Create services
-	jobService := NewHelmJobService(jobRepo)
-	upgradeService := NewHelmUpgradeService(releaseRepo, jobService)
+	// Create service using factory (dependency injection)
+	upgradeService := s.serviceFactory.CreateHelmUpgradeService(client)
 
 	// Determine dkonsole namespace and service account
 	dkonsoleNamespace := "dkonsole"
@@ -78,14 +73,14 @@ func (s *Service) UpgradeHelmRelease(w http.ResponseWriter, r *http.Request) {
 
 	// Prepare upgrade request
 	upgradeReq := UpgradeHelmReleaseRequest{
-		Name:            req.Name,
-		Namespace:       req.Namespace,
-		Chart:           req.Chart,
-		Version:         req.Version,
-		Repo:            req.Repo,
-		ValuesYAML:      req.ValuesYAML,
-		DkonsoleNS:      dkonsoleNamespace,
-		ServiceAccount:  saName,
+		Name:           req.Name,
+		Namespace:      req.Namespace,
+		Chart:          req.Chart,
+		Version:        req.Version,
+		Repo:           req.Repo,
+		ValuesYAML:     req.ValuesYAML,
+		DkonsoleNS:     dkonsoleNamespace,
+		ServiceAccount: saName,
 	}
 
 	// Call service to upgrade Helm release (business logic layer)
@@ -160,12 +155,8 @@ func (s *Service) InstallHelmRelease(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := utils.CreateTimeoutContext()
 	defer cancel()
 
-	// Create repositories
-	jobRepo := NewK8sHelmJobRepository(client)
-
-	// Create services
-	jobService := NewHelmJobService(jobRepo)
-	installService := NewHelmInstallService(jobService)
+	// Create service using factory (dependency injection)
+	installService := s.serviceFactory.CreateHelmInstallService(client)
 
 	// Determine dkonsole namespace and service account
 	dkonsoleNamespace := "dkonsole"
@@ -204,4 +195,3 @@ func (s *Service) InstallHelmRelease(w http.ResponseWriter, r *http.Request) {
 		"job":     result.JobName,
 	})
 }
-

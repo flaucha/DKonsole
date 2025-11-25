@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/example/k8s-view/internal/models"
 	"github.com/example/k8s-view/internal/cluster"
+	"github.com/example/k8s-view/internal/models"
 	"github.com/example/k8s-view/internal/utils"
 )
 
@@ -13,6 +13,7 @@ import (
 type Service struct {
 	handlers       *models.Handlers
 	clusterService *cluster.Service
+	serviceFactory *ServiceFactory
 }
 
 // NewService creates a new Helm service
@@ -20,6 +21,7 @@ func NewService(h *models.Handlers, cs *cluster.Service) *Service {
 	return &Service{
 		handlers:       h,
 		clusterService: cs,
+		serviceFactory: NewServiceFactory(),
 	}
 }
 
@@ -33,11 +35,8 @@ func (s *Service) GetHelmReleases(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create repository
-	helmRepo := NewK8sHelmReleaseRepository(client)
-
-	// Create service
-	helmService := NewHelmReleaseService(helmRepo)
+	// Create service using factory (dependency injection)
+	helmService := s.serviceFactory.CreateHelmReleaseService(client)
 
 	// Create context
 	ctx, cancel := utils.CreateTimeoutContext()
@@ -89,11 +88,8 @@ func (s *Service) DeleteHelmRelease(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create repository
-	helmRepo := NewK8sHelmReleaseRepository(client)
-
-	// Create service
-	helmService := NewHelmReleaseService(helmRepo)
+	// Create service using factory (dependency injection)
+	helmService := s.serviceFactory.CreateHelmReleaseService(client)
 
 	// Create context
 	ctx, cancel := utils.CreateTimeoutContext()
@@ -119,7 +115,7 @@ func (s *Service) DeleteHelmRelease(w http.ResponseWriter, r *http.Request) {
 
 	// Write JSON response (HTTP layer)
 	utils.JSONResponse(w, http.StatusOK, map[string]interface{}{
-		"status":         "deleted",
+		"status":          "deleted",
 		"secrets_deleted": result.SecretsDeleted,
 	})
 }
