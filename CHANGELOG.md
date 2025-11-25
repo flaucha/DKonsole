@@ -5,6 +5,58 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-01-27
+
+### 🧹 Major Refactoring & Code Cleanup
+
+This release includes a comprehensive codebase cleanup and refactoring to improve maintainability, remove obsolete code, and organize components better.
+
+### Changed
+
+- **Frontend Component Organization**: Extracted resource detail components into modular structure
+  - All resource detail components moved to `components/details/` directory
+  - Improved separation of concerns with dedicated detail components
+  - Better code organization and reusability
+- **Backend Architecture**: Cleaned up legacy code and unused functions
+  - Removed obsolete `GetResources_OLD` function (~760 lines)
+  - Removed unused Prometheus helper functions (now handled by `internal/prometheus/` package)
+  - Removed unused constants and imports
+  - Cleaned up `resources.go` file
+
+### Removed
+
+- **Obsolete Components**: Removed deprecated frontend components
+  - `DeploymentTable.jsx` (replaced by unified `WorkloadList.jsx`)
+  - `PodTable.jsx` (replaced by unified `WorkloadList.jsx`)
+  - `AcercaDe.jsx` (duplicate of `About.jsx`)
+  - Empty `workloads/` directory
+- **Temporary Files**: Removed example and temporary configuration files
+  - `README-INGRESS.md` (example ingress documentation)
+  - `generate-tls-cert.sh` (example certificate script)
+  - `ingress-dkonsole-lan.yaml` (example ingress manifest)
+  - `ingress-dkonsole-lan-alternative.yaml` (example ingress manifest)
+  - `secret-tls-dkonsole.yaml` (example TLS secret manifest)
+- **Unused Imports**: Cleaned up unused imports in `WorkloadList.jsx`
+  - Removed `getExpandableCellClasses` import
+
+### Technical Improvements
+
+- **Code Quality**: Significant code cleanup
+  - Removed ~850+ lines of obsolete code
+  - Eliminated code duplication
+  - Improved maintainability
+  - Better component organization
+- **Build Process**: Updated release script to read version from VERSION file
+  - Consistent versioning across build and release scripts
+  - Improved automation
+
+### Fixed
+
+- **Import Cleanup**: Removed all unused imports and functions
+- **Component Structure**: Improved organization of detail components
+
+---
+
 ## [1.1.10] - 2025-01-27
 
 ### Security

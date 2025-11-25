@@ -48,16 +48,14 @@ export const SettingsProvider = ({ children }) => {
 
     const fetchClusters = async () => {
         try {
-            const res = await authFetch('/api/clusters');
-            if (res.ok) {
-                const data = await res.json();
-                setClusters(data);
-                if (!data.includes(currentCluster)) {
-                    setCurrentCluster(data[0] || 'default');
-                }
-            }
+            // Multi-cluster support was removed, always use 'default' cluster
+            setClusters(['default']);
+            setCurrentCluster('default');
         } catch (error) {
-            console.error('Failed to fetch clusters:', error);
+            console.error('Failed to initialize clusters:', error);
+            // Fallback to default
+            setClusters(['default']);
+            setCurrentCluster('default');
         }
     };
 

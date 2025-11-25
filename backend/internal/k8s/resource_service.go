@@ -1,0 +1,198 @@
+package k8s
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/yaml"
+
+	"github.com/example/k8s-view/internal/models"
+)
+
+// ResourceService provides business logic for resource operations
+type ResourceService struct {
+	resourceRepo ResourceRepository
+	gvrResolver  GVRResolver
+}
+
+// NewResourceService creates a new ResourceService
+func NewResourceService(resourceRepo ResourceRepository, gvrResolver GVRResolver) *ResourceService {
+	return &ResourceService{
+		resourceRepo: resourceRepo,
+		gvrResolver:  gvrResolver,
+	}
+}
+
+// UpdateResourceRequest represents parameters for updating a resource
+type UpdateResourceRequest struct {
+	YAMLContent string
+	Kind        string
+	Name        string
+	Namespace   string
+	Namespaced  bool
+}
+
+// UpdateResource updates a Kubernetes resource from YAML
+func (s *ResourceService) UpdateResource(ctx context.Context, req UpdateResourceRequest) error {
+	// Parse YAML to JSON
+	jsonData, err := yaml.YAMLToJSON([]byte(req.YAMLContent))
+	if err != nil {
+		return fmt.Errorf("invalid YAML: %w", err)
+	}
+
+	// Unmarshal to unstructured
+	var obj unstructured.Unstructured
+	if err := json.Unmarshal(jsonData, &obj.Object); err != nil {
+		return fmt.Errorf("failed to parse resource: %w", err)
+	}
+
+	normalizedKind := models.NormalizeKind(req.Kind)
+	if obj.GetKind() != "" {
+		normalizedKind = models.NormalizeKind(obj.GetKind())
+	}
+
+	// Resolve GVR
+	gvr, meta, err := s.gvrResolver.ResolveGVR(ctx, normalizedKind, obj.GetAPIVersion(), fmt.Sprintf("%t", req.Namespaced))
+	if err != nil {
+		return fmt.Errorf("failed to resolve GVR: %w", err)
+	}
+
+	if req.Namespaced {
+		meta.Namespaced = true
+	}
+
+	// Normalize name and namespace
+	if req.Name != "" {
+		obj.SetName(req.Name)
+	}
+	if req.Namespace != "" && meta.Namespaced {
+		obj.SetNamespace(req.Namespace)
+	} else if !meta.Namespaced {
+		obj.SetNamespace("")
+	}
+
+	// Cleanup metadata
+	unstructured.RemoveNestedField(obj.Object, "metadata", "managedFields")
+	unstructured.RemoveNestedField(obj.Object, "metadata", "creationTimestamp")
+	unstructured.RemoveNestedField(obj.Object, "metadata", "resourceVersion")
+	unstructured.RemoveNestedField(obj.Object, "metadata", "uid")
+
+	// Marshal for patch
+	patchData, err := json.Marshal(obj.Object)
+	if err != nil {
+		return fmt.Errorf("failed to marshal patch: %w", err)
+	}
+
+	// Apply patch
+	force := true
+	patchOptions := metav1.PatchOptions{
+		FieldManager: "dkonsole",
+		Force:        &force,
+	}
+
+	_, err = s.resourceRepo.Patch(ctx, gvr, obj.GetName(), obj.GetNamespace(), meta.Namespaced, patchData, types.ApplyPatchType, patchOptions)
+	if err != nil {
+		return fmt.Errorf("failed to update resource: %w", err)
+	}
+
+	return nil
+}
+
+// DeleteResourceRequest represents parameters for deleting a resource
+type DeleteResourceRequest struct {
+	Kind      string
+	Name      string
+	Namespace string
+	Force     bool
+}
+
+// DeleteResource deletes a Kubernetes resource
+func (s *ResourceService) DeleteResource(ctx context.Context, req DeleteResourceRequest) error {
+	normalizedKind := models.NormalizeKind(req.Kind)
+
+	gvr, meta, err := s.gvrResolver.ResolveGVR(ctx, normalizedKind, "", "")
+	if err != nil {
+		return fmt.Errorf("failed to resolve GVR: %w", err)
+	}
+
+	if meta.Namespaced && req.Namespace == "" {
+		return fmt.Errorf("namespace is required for namespaced resource deletion")
+	}
+
+	var grace int64 = 30
+	propagation := metav1.DeletePropagationForeground
+	if req.Force {
+		grace = 0
+		propagation = metav1.DeletePropagationBackground
+	}
+
+	delOpts := metav1.DeleteOptions{
+		GracePeriodSeconds: &grace,
+		PropagationPolicy:  &propagation,
+	}
+
+	err = s.resourceRepo.Delete(ctx, gvr, req.Name, req.Namespace, meta.Namespaced, delOpts)
+	if err != nil {
+		return fmt.Errorf("failed to delete resource: %w", err)
+	}
+	return nil
+}
+
+// GetResourceRequest represents parameters for getting a resource
+type GetResourceRequest struct {
+	Kind         string
+	Name         string
+	Namespace    string
+	AllNamespaces bool
+	Group        string
+	Version      string
+	Resource     string
+	Namespaced   bool
+}
+
+// GetResourceYAML fetches a resource and returns its YAML representation
+func (s *ResourceService) GetResourceYAML(ctx context.Context, req GetResourceRequest, discoveryClient interface{}) (string, error) {
+	normalizedKind := models.NormalizeKind(req.Kind)
+
+	apiVersion := ""
+	if req.Group != "" && req.Version != "" {
+		apiVersion = fmt.Sprintf("%s/%s", req.Group, req.Version)
+	} else if req.Version != "" {
+		apiVersion = req.Version
+	}
+
+	gvr, meta, err := s.gvrResolver.ResolveGVR(ctx, normalizedKind, apiVersion, fmt.Sprintf("%t", req.Namespaced))
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve GVR: %w", err)
+	}
+
+	if req.Namespaced {
+		meta.Namespaced = true
+	}
+
+	namespace := req.Namespace
+	if meta.Namespaced && namespace == "" && !req.AllNamespaces {
+		namespace = "default"
+	}
+
+	obj, err := s.resourceRepo.Get(ctx, gvr, req.Name, namespace, meta.Namespaced)
+	if err != nil {
+		return "", fmt.Errorf("failed to get resource: %w", err)
+	}
+
+	jsonData, err := obj.MarshalJSON()
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal resource: %w", err)
+	}
+
+	yamlData, err := yaml.JSONToYAML(jsonData)
+	if err != nil {
+		return "", fmt.Errorf("failed to convert to YAML: %w", err)
+	}
+
+	return string(yamlData), nil
+}

@@ -1,13 +1,9 @@
 package k8s
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/example/k8s-view/internal/models"
 	"github.com/example/k8s-view/internal/cluster"
@@ -29,47 +25,101 @@ func NewService(h *models.Handlers, cs *cluster.Service) *Service {
 }
 
 // GetNamespaces returns a list of all namespaces
+// Refactored to use layered architecture:
+// Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
 func (s *Service) GetNamespaces(w http.ResponseWriter, r *http.Request) {
+	// Get Kubernetes client for this request
 	client, err := s.clusterService.GetClient(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
+	// Create repository for this request
+	namespaceRepo := NewK8sNamespaceRepository(client)
+
+	// Create service with repository
+	namespaceService := NewNamespaceService(namespaceRepo)
+
+	// Create context with timeout
 	ctx, cancel := utils.CreateTimeoutContext()
 	defer cancel()
-	namespaces, err := client.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+
+	// Call service to get namespaces (business logic layer)
+	namespaces, err := namespaceService.GetNamespaces(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get namespaces: %v", err))
 		return
 	}
 
-	var result []models.Namespace
-	for _, ns := range namespaces.Items {
-		result = append(result, models.Namespace{
-			Name:    ns.Name,
-			Status:  string(ns.Status.Phase),
-			Labels:  ns.Labels,
-			Created: ns.CreationTimestamp.Format(time.RFC3339),
-		})
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	// Write JSON response (HTTP layer)
+	utils.JSONResponse(w, http.StatusOK, namespaces)
 }
 
-// GetResources is implemented in resources.go
+// GetResources lists resources of a specific kind
+// Refactored to use layered architecture:
+// Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
+func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
+	// Parse HTTP parameters
+	ns := r.URL.Query().Get("namespace")
+	kind := r.URL.Query().Get("kind")
+	allNamespaces := ns == "all"
+
+	if kind == "" {
+		utils.ErrorResponse(w, http.StatusBadRequest, "Missing kind parameter")
+		return
+	}
+
+	// Normalize kind (handle aliases like HPA -> HorizontalPodAutoscaler)
+	normalizedKind := models.NormalizeKind(kind)
+
+	// Get clients
+	client, err := s.clusterService.GetClient(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	metricsClient := s.clusterService.GetMetricsClient(r)
+
+	// Create service
+	resourceListService := NewResourceListService(s.clusterService, s.handlers.PrometheusURL)
+
+	// Create context
+	ctx, cancel := utils.CreateRequestContext(r)
+	defer cancel()
+
+	// Prepare request
+	req := ListResourcesRequest{
+		Kind:          normalizedKind,
+		Namespace:     ns,
+		AllNamespaces: allNamespaces,
+		Client:        client,
+		MetricsClient: metricsClient,
+	}
+
+	// Call service to get resources (business logic layer)
+	resources, err := resourceListService.ListResources(ctx, req)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to list resources: %v", err))
+		return
+	}
+
+	// Write JSON response (HTTP layer)
+	utils.JSONResponse(w, http.StatusOK, resources)
+}
 
 // ScaleResource scales a deployment
+// Refactored to use utils helpers
 func (s *Service) ScaleResource(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		utils.ErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	client, err := s.clusterService.GetClient(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -79,21 +129,21 @@ func (s *Service) ScaleResource(w http.ResponseWriter, r *http.Request) {
 	deltaStr := r.URL.Query().Get("delta")
 
 	if kind != "Deployment" {
-		http.Error(w, "Scaling supported only for Deployments", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Scaling supported only for Deployments")
 		return
 	}
 	if name == "" {
-		http.Error(w, "Missing name", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Missing name")
 		return
 	}
 
 	if err := utils.ValidateK8sName(name, "name"); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	if namespace != "" {
 		if err := utils.ValidateK8sName(namespace, "namespace"); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 			return
 		}
 	}
@@ -102,98 +152,70 @@ func (s *Service) ScaleResource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	delta, err := strconv.Atoi(deltaStr)
-	if err != nil || delta == 0 {
-		http.Error(w, "Invalid delta", http.StatusBadRequest)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Invalid delta: %v", err))
+		return
+	}
+	if delta == 0 {
+		utils.ErrorResponse(w, http.StatusBadRequest, "Delta cannot be zero")
 		return
 	}
 
+	// Create repository
+	deploymentRepo := NewK8sDeploymentRepository(client)
+
+	// Create service
+	deploymentService := NewDeploymentService(deploymentRepo)
+
+	// Create context
 	ctx, cancel := utils.CreateTimeoutContext()
 	defer cancel()
-	scale, err := client.AppsV1().Deployments(namespace).GetScale(ctx, name, metav1.GetOptions{})
+
+	// Call service to scale deployment (business logic layer)
+	newReplicas, err := deploymentService.ScaleDeployment(ctx, namespace, name, delta)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get scale: %v", err), http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to scale deployment: %v", err))
 		return
 	}
 
-	newReplicas := int(scale.Spec.Replicas) + delta
-	if newReplicas < 0 {
-		newReplicas = 0
-	}
-	scale.Spec.Replicas = int32(newReplicas)
-
-	if _, err := client.AppsV1().Deployments(namespace).UpdateScale(ctx, name, scale, metav1.UpdateOptions{}); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to update scale: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(fmt.Sprintf(`{"replicas":%d}`, newReplicas)))
+	// Write JSON response (HTTP layer)
+	utils.JSONResponse(w, http.StatusOK, map[string]int32{"replicas": newReplicas})
 }
 
 // WatchResources is implemented in resource_operations.go
 
 // GetClusterStats returns cluster statistics
+// Refactored to use layered architecture:
+// Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
 func (s *Service) GetClusterStats(w http.ResponseWriter, r *http.Request) {
 	// Use request context with timeout so cancellation propagates
 	ctx, cancel := utils.CreateRequestContext(r)
 	defer cancel()
-	
+
+	// Get Kubernetes client for this request
 	client, err := s.clusterService.GetClient(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	stats := models.ClusterStats{}
+	// Create repository for this request
+	statsRepo := NewK8sClusterStatsRepository(client)
 
-	// Create ListOptions with limit to prevent OOM in large clusters
-	// Note: For stats we only need counts, so we can use a reasonable limit
-	listOpts := metav1.ListOptions{
-		Limit: 500, // Limit to prevent OOM, but enough for accurate counts
+	// Create service with repository
+	statsService := NewClusterStatsService(statsRepo)
+
+	// Call service to get cluster stats (business logic layer)
+	stats, err := statsService.GetClusterStats(ctx)
+	if err != nil {
+		// Note: GetClusterStats handles errors gracefully and returns partial stats
+		// If we want to be stricter, we could use GetClusterStatsWithErrors
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get cluster stats: %v", err))
+		return
 	}
 
-	// Nodes
-	if nodes, err := client.CoreV1().Nodes().List(ctx, listOpts); err == nil {
-		stats.Nodes = len(nodes.Items)
-	}
-
-	// Namespaces
-	if namespaces, err := client.CoreV1().Namespaces().List(ctx, listOpts); err == nil {
-		stats.Namespaces = len(namespaces.Items)
-	}
-
-	// Pods
-	if pods, err := client.CoreV1().Pods("").List(ctx, listOpts); err == nil {
-		stats.Pods = len(pods.Items)
-	}
-
-	// Deployments
-	if deployments, err := client.AppsV1().Deployments("").List(ctx, listOpts); err == nil {
-		stats.Deployments = len(deployments.Items)
-	}
-
-	// Services
-	if services, err := client.CoreV1().Services("").List(ctx, listOpts); err == nil {
-		stats.Services = len(services.Items)
-	}
-
-	// Ingresses
-	if ingresses, err := client.NetworkingV1().Ingresses("").List(ctx, listOpts); err == nil {
-		stats.Ingresses = len(ingresses.Items)
-	}
-
-	// PVCs
-	if pvcs, err := client.CoreV1().PersistentVolumeClaims("").List(ctx, listOpts); err == nil {
-		stats.PVCs = len(pvcs.Items)
-	}
-
-	// PVs
-	if pvs, err := client.CoreV1().PersistentVolumes().List(ctx, listOpts); err == nil {
-		stats.PVs = len(pvs.Items)
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stats)
+	// Write JSON response (HTTP layer)
+	utils.JSONResponse(w, http.StatusOK, stats)
 }
 
 // TriggerCronJob is implemented in cronjob.go

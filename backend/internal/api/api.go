@@ -1,19 +1,9 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
-	"time"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
-	"sigs.k8s.io/yaml"
 
 	"github.com/example/k8s-view/internal/models"
 	"github.com/example/k8s-view/internal/cluster"
@@ -60,52 +50,48 @@ type APIResourceObject struct {
 }
 
 // ListAPIResources lists all available API resources in the cluster
+// Refactored to use layered architecture: Handler -> Service -> Repository
 func (s *Service) ListAPIResources(w http.ResponseWriter, r *http.Request) {
 	client, err := s.clusterService.GetClient(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	lists, err := client.Discovery().ServerPreferredResources()
-	if err != nil && !discovery.IsGroupDiscoveryFailedError(err) {
-		http.Error(w, fmt.Sprintf("Failed to discover APIs: %v", err), http.StatusInternalServerError)
+	// Create repository
+	discoveryRepo := NewK8sDiscoveryRepository(client)
+
+	// Create service
+	apiService := NewAPIService(discoveryRepo, nil)
+
+	// Create context
+	ctx, cancel := utils.CreateRequestContext(r)
+	defer cancel()
+
+	// Call service (business logic layer)
+	result, err := apiService.ListAPIResources(ctx)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to discover APIs: %v", err))
 		return
 	}
 
-	var result []APIResourceInfo
-	for _, l := range lists {
-		gv, _ := schema.ParseGroupVersion(l.GroupVersion)
-		for _, ar := range l.APIResources {
-			if strings.Contains(ar.Name, "/") { // skip subresources
-				continue
-			}
-			result = append(result, APIResourceInfo{
-				Group:      gv.Group,
-				Version:    gv.Version,
-				Resource:   ar.Name,
-				Kind:       ar.Kind,
-				Namespaced: ar.Namespaced,
-			})
-		}
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	// Write JSON response (HTTP layer)
+	utils.JSONResponse(w, http.StatusOK, result)
 }
 
 // ListAPIResourceObjects lists instances of a specific API resource
+// Refactored to use layered architecture: Handler -> Service -> Repository
 func (s *Service) ListAPIResourceObjects(w http.ResponseWriter, r *http.Request) {
-	// Use request context with timeout so cancellation propagates to Kubernetes API calls
 	ctx, cancel := utils.CreateRequestContext(r)
 	defer cancel()
-	
+
 	dynamicClient, err := s.clusterService.GetDynamicClient(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
+	// Parse HTTP parameters
 	group := r.URL.Query().Get("group")
 	version := r.URL.Query().Get("version")
 	resource := r.URL.Query().Get("resource")
@@ -117,7 +103,7 @@ func (s *Service) ListAPIResourceObjects(w http.ResponseWriter, r *http.Request)
 	}
 
 	if resource == "" || version == "" {
-		http.Error(w, "Missing resource or version", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Missing resource or version")
 		return
 	}
 
@@ -131,82 +117,46 @@ func (s *Service) ListAPIResourceObjects(w http.ResponseWriter, r *http.Request)
 	}
 	continueToken := r.URL.Query().Get("continue")
 
-	gvr := schema.GroupVersionResource{
-		Group:    group,
-		Version:  version,
-		Resource: resource,
+	// Create repository
+	resourceRepo := NewK8sDynamicResourceRepository(dynamicClient)
+
+	// Create service
+	apiService := NewAPIService(nil, resourceRepo)
+
+	// Prepare request
+	listReq := ListAPIResourceObjectsRequest{
+		Group:         group,
+		Version:       version,
+		Resource:      resource,
+		Namespace:     namespace,
+		Namespaced:    namespacedParam,
+		Limit:         limit,
+		ContinueToken: continueToken,
 	}
 
-	var res dynamic.ResourceInterface
-	// Cluster-scoped resources or namespaced resources across all namespaces
-	if !namespacedParam || namespace == "all" || namespace == "" {
-		res = dynamicClient.Resource(gvr)
-	} else {
-		res = dynamicClient.Resource(gvr).Namespace(namespace)
-	}
-
-	// Create ListOptions with limit and continue token for pagination
-	listOpts := metav1.ListOptions{
-		Limit:    limit,
-		Continue: continueToken,
-	}
-
-	list, err := res.List(ctx, listOpts)
+	// Call service (business logic layer)
+	result, err := apiService.ListAPIResourceObjects(ctx, listReq)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to list resource: %v", err), http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to list resource: %v", err))
 		return
 	}
 
-	var objects []APIResourceObject
-	for _, item := range list.Items {
-		obj := APIResourceObject{
-			Name:      item.GetName(),
-			Namespace: item.GetNamespace(),
-			Kind:      item.GetKind(),
-			Created:   item.GetCreationTimestamp().Format(time.RFC3339),
-		}
-		if status, ok := item.Object["status"]; ok {
-			if statusMap, ok := status.(map[string]interface{}); ok {
-				if phase, ok := statusMap["phase"].(string); ok {
-					obj.Status = phase
-				} else if conditions, ok := statusMap["conditions"].([]interface{}); ok && len(conditions) > 0 {
-					last := conditions[len(conditions)-1]
-					if cond, ok := last.(map[string]interface{}); ok {
-						if t, ok := cond["type"].(string); ok {
-							obj.Status = t
-							if s, ok := cond["status"].(string); ok && s != "" {
-								obj.Status += fmt.Sprintf(" (%s)", s)
-							}
-						}
-					}
-				}
-			}
-		}
-		obj.Raw = item.Object
-		objects = append(objects, obj)
-	}
-
-	// Return paginated response
+	// Build response with pagination
 	response := map[string]interface{}{
-		"resources": objects,
+		"resources": result.Resources,
 	}
-	// Access Continue from UnstructuredList's embedded ListMeta
-	if list.GetContinue() != "" {
-		response["continue"] = list.GetContinue()
+	if result.Continue != "" {
+		response["continue"] = result.Continue
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	// Write JSON response (HTTP layer)
+	utils.JSONResponse(w, http.StatusOK, response)
 }
 
 // GetAPIResourceYAML returns the YAML representation of an API resource
+// Refactored to use layered architecture: Handler -> Service -> Repository
 func (s *Service) GetAPIResourceYAML(w http.ResponseWriter, r *http.Request) {
-	dynamicClient, err := s.clusterService.GetDynamicClient(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
+	// Parse HTTP parameters
 	group := r.URL.Query().Get("group")
 	version := r.URL.Query().Get("version")
 	resource := r.URL.Query().Get("resource")
@@ -215,130 +165,89 @@ func (s *Service) GetAPIResourceYAML(w http.ResponseWriter, r *http.Request) {
 	namespaced := r.URL.Query().Get("namespaced") == "true"
 
 	if resource == "" || version == "" || name == "" {
-		http.Error(w, "Missing resource, version, or name", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Missing resource, version, or name")
 		return
 	}
 
-	if namespaced && namespace == "" {
-		namespace = "default"
+	// Get dynamic client
+	dynamicClient, err := s.clusterService.GetDynamicClient(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	gvr := schema.GroupVersionResource{
-		Group:    group,
-		Version:  version,
-		Resource: resource,
-	}
+	// Create repository
+	resourceRepo := NewK8sDynamicResourceRepository(dynamicClient)
 
-	var res dynamic.ResourceInterface
-	if namespaced {
-		res = dynamicClient.Resource(gvr).Namespace(namespace)
-	} else {
-		res = dynamicClient.Resource(gvr)
-	}
+	// Create service
+	apiService := NewAPIService(nil, resourceRepo)
 
+	// Create context
 	ctx, cancel := utils.CreateTimeoutContext()
 	defer cancel()
 
-	obj, err := res.Get(ctx, name, metav1.GetOptions{})
+	// Prepare request
+	getReq := GetResourceYAMLRequest{
+		Group:      group,
+		Version:    version,
+		Resource:   resource,
+		Name:       name,
+		Namespace:  namespace,
+		Namespaced: namespaced,
+	}
+
+	// Call service to get resource YAML (business logic layer)
+	yamlData, err := apiService.GetResourceYAML(ctx, getReq)
 	if err != nil {
-		utils.HandleError(w, err, fmt.Sprintf("Failed to fetch resource"), http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to fetch resource YAML: %v", err))
 		return
 	}
 
-	jsonData, err := obj.MarshalJSON()
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to marshal resource: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	yamlData, err := yaml.JSONToYAML(jsonData)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode YAML: %v", err), http.StatusInternalServerError)
-		return
-	}
-
+	// Write YAML response (HTTP layer)
 	w.Header().Set("Content-Type", "application/x-yaml")
-	w.Write(yamlData)
-}
-
-// CRD represents a Custom Resource Definition
-type CRD struct {
-	Name    string `json:"name"`
-	Group   string `json:"group"`
-	Version string `json:"version"`
-	Kind    string `json:"kind"`
-	Scope   string `json:"scope"`
+	w.Write([]byte(yamlData))
 }
 
 // GetCRDs returns a list of all Custom Resource Definitions in the cluster
+// Refactored to use layered architecture: Handler -> Service -> Repository
 func (s *Service) GetCRDs(w http.ResponseWriter, r *http.Request) {
-	// Use request context with timeout
-	ctx, cancel := utils.CreateRequestContext(r)
-	defer cancel()
-	
+	// Get dynamic client
 	dynamicClient, err := s.clusterService.GetDynamicClient(r)
 	if err != nil {
-		http.Error(w, "Dynamic client not found", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Dynamic client not found")
 		return
 	}
 
-	gvr := schema.GroupVersionResource{
-		Group:    "apiextensions.k8s.io",
-		Version:  "v1",
-		Resource: "customresourcedefinitions",
-	}
+	// Create repository
+	crdRepo := NewK8sCRDRepository(dynamicClient)
 
-	// Create ListOptions with limit to prevent OOM in large clusters
-	listOpts := metav1.ListOptions{
+	// Create service
+	crdService := NewCRDService(crdRepo)
+
+	// Create context
+	ctx, cancel := utils.CreateRequestContext(r)
+	defer cancel()
+
+	// Prepare request
+	getReq := GetCRDsRequest{
 		Limit: DefaultListLimit,
 	}
 
-	unstructuredList, err := dynamicClient.Resource(gvr).List(ctx, listOpts)
+	// Call service to get CRDs (business logic layer)
+	crds, err := crdService.GetCRDs(ctx, getReq)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get CRDs: %v", err))
 		return
 	}
 
-	crds := []CRD{}
-	for _, item := range unstructuredList.Items {
-		spec, _ := item.Object["spec"].(map[string]interface{})
-		group, _ := spec["group"].(string)
-		names, _ := spec["names"].(map[string]interface{})
-		kind, _ := names["kind"].(string)
-		scope, _ := spec["scope"].(string)
-
-		// Get versions
-		versions, _ := spec["versions"].([]interface{})
-		for _, v := range versions {
-			vMap, _ := v.(map[string]interface{})
-			version, _ := vMap["name"].(string)
-			served, _ := vMap["served"].(bool)
-			if served {
-				crds = append(crds, CRD{
-					Name:    item.GetName(),
-					Group:   group,
-					Version: version,
-					Kind:    kind,
-					Scope:   scope,
-				})
-			}
-		}
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(crds)
-}
-
-// CRInstance represents an instance of a Custom Resource
-type CRInstance struct {
-	Name      string                 `json:"name"`
-	Namespace string                 `json:"namespace,omitempty"`
-	Created   string                 `json:"created"`
-	Raw       map[string]interface{} `json:"raw"`
+	// Write JSON response (HTTP layer)
+	utils.JSONResponse(w, http.StatusOK, crds)
 }
 
 // GetCRDResources returns instances of a specific CRD
+// Refactored to use layered architecture: Handler -> Service -> Repository
 func (s *Service) GetCRDResources(w http.ResponseWriter, r *http.Request) {
+	// Parse HTTP parameters
 	group := r.URL.Query().Get("group")
 	version := r.URL.Query().Get("version")
 	resource := r.URL.Query().Get("resource")
@@ -346,23 +255,9 @@ func (s *Service) GetCRDResources(w http.ResponseWriter, r *http.Request) {
 	namespaced := r.URL.Query().Get("namespaced") == "true"
 
 	if resource == "" || version == "" {
-		http.Error(w, "Missing required parameters", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Missing required parameters")
 		return
 	}
-
-	dynamicClient, err := s.clusterService.GetDynamicClient(r)
-	if err != nil {
-		http.Error(w, "Dynamic client not found", http.StatusInternalServerError)
-		return
-	}
-
-	gvr := schema.GroupVersionResource{
-		Group:    group,
-		Version:  version,
-		Resource: resource,
-	}
-
-	var unstructuredList *unstructured.UnstructuredList
 
 	// Get pagination parameters
 	limitStr := r.URL.Query().Get("limit")
@@ -374,56 +269,57 @@ func (s *Service) GetCRDResources(w http.ResponseWriter, r *http.Request) {
 	}
 	continueToken := r.URL.Query().Get("continue")
 
-	// Use request context with timeout
-	ctx, cancel := utils.CreateRequestContext(r)
-	defer cancel()
-	
-	// Create ListOptions with limit and continue token for pagination
-	listOpts := metav1.ListOptions{
-		Limit:    limit,
-		Continue: continueToken,
-	}
-	
-	if namespaced && namespace != "" {
-		unstructuredList, err = dynamicClient.Resource(gvr).Namespace(namespace).List(ctx, listOpts)
-	} else {
-		unstructuredList, err = dynamicClient.Resource(gvr).List(ctx, listOpts)
-	}
-
+	// Get dynamic client
+	dynamicClient, err := s.clusterService.GetDynamicClient(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Dynamic client not found")
 		return
 	}
 
-	instances := []CRInstance{}
-	for _, item := range unstructuredList.Items {
-		instances = append(instances, CRInstance{
-			Name:      item.GetName(),
-			Namespace: item.GetNamespace(),
-			Created:   item.GetCreationTimestamp().Format(time.RFC3339),
-			Raw:       item.Object,
-		})
+	// Create repository
+	resourceRepo := NewK8sDynamicResourceRepository(dynamicClient)
+
+	// Create service
+	apiService := NewAPIService(nil, resourceRepo)
+
+	// Create context
+	ctx, cancel := utils.CreateRequestContext(r)
+	defer cancel()
+
+	// Prepare request
+	listReq := GetCRDResourcesRequest{
+		Group:         group,
+		Version:       version,
+		Resource:      resource,
+		Namespace:     namespace,
+		Namespaced:    namespaced,
+		Limit:         limit,
+		ContinueToken: continueToken,
 	}
 
-	// Return paginated response
+	// Call service to get CRD resources (business logic layer)
+	result, err := apiService.GetCRDResources(ctx, listReq)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get CRD resources: %v", err))
+		return
+	}
+
+	// Build response with pagination
 	response := map[string]interface{}{
-		"resources": instances,
+		"resources": result.Resources,
 	}
-	// Access Continue from UnstructuredList's embedded ListMeta
-	if unstructuredList.GetContinue() != "" {
-		response["continue"] = unstructuredList.GetContinue()
+	if result.Continue != "" {
+		response["continue"] = result.Continue
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	// Write JSON response (HTTP layer)
+	utils.JSONResponse(w, http.StatusOK, response)
 }
 
 // GetCRDYaml returns the YAML representation of a CRD instance
+// Refactored to use layered architecture: Handler -> Service -> Repository
 func (s *Service) GetCRDYaml(w http.ResponseWriter, r *http.Request) {
-	// Use request context with timeout
-	ctx, cancel := utils.CreateRequestContext(r)
-	defer cancel()
-	
+	// Parse HTTP parameters
 	group := r.URL.Query().Get("group")
 	version := r.URL.Query().Get("version")
 	resource := r.URL.Query().Get("resource")
@@ -432,55 +328,59 @@ func (s *Service) GetCRDYaml(w http.ResponseWriter, r *http.Request) {
 	namespaced := r.URL.Query().Get("namespaced") == "true"
 
 	if resource == "" || version == "" || name == "" {
-		http.Error(w, "Missing required parameters", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Missing required parameters")
 		return
 	}
 
-	// Add validation for name and namespace
+	// Validate parameters
 	if err := utils.ValidateK8sName(name, "name"); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// Only validate namespace if it's provided and relevant
 	if namespaced && namespace != "" {
 		if err := utils.ValidateK8sName(namespace, "namespace"); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 			return
 		}
 	}
 
+	// Get dynamic client
 	dynamicClient, err := s.clusterService.GetDynamicClient(r)
 	if err != nil {
-		http.Error(w, "Dynamic client not found", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Dynamic client not found")
 		return
 	}
 
-	gvr := schema.GroupVersionResource{
-		Group:    group,
-		Version:  version,
-		Resource: resource,
+	// Create repository
+	resourceRepo := NewK8sDynamicResourceRepository(dynamicClient)
+
+	// Create service
+	apiService := NewAPIService(nil, resourceRepo)
+
+	// Create context
+	ctx, cancel := utils.CreateRequestContext(r)
+	defer cancel()
+
+	// Prepare request
+	getReq := GetResourceYAMLRequest{
+		Group:      group,
+		Version:    version,
+		Resource:   resource,
+		Name:       name,
+		Namespace:  namespace,
+		Namespaced: namespaced,
 	}
 
-	var obj *unstructured.Unstructured
-
-	if namespaced && namespace != "" {
-		obj, err = dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
-	} else {
-		obj, err = dynamicClient.Resource(gvr).Get(ctx, name, metav1.GetOptions{})
-	}
-
+	// Call service to get CRD YAML (business logic layer)
+	yamlData, err := apiService.GetResourceYAML(ctx, getReq)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to fetch CRD YAML: %v", err))
 		return
 	}
 
-	yamlBytes, err := yaml.Marshal(obj.Object)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
+	// Write YAML response (HTTP layer)
 	w.Header().Set("Content-Type", "application/x-yaml")
-	w.Write(yamlBytes)
+	w.Write([]byte(yamlData))
 }

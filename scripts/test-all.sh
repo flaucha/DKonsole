@@ -77,3 +77,6 @@ echo -e "${GREEN}✅ Todos los tests completados${NC}"
 echo ""
 echo "Para más información, consulta TESTING.md"
 
+
+
+

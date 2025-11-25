@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -173,5 +174,60 @@ func AuditLog(r *http.Request, action, resourceKind, resourceName, namespace str
 	}
 
 	log.Print(logMsg)
+}
+
+// JSONResponse writes a JSON response with the given status code and data
+func JSONResponse(w http.ResponseWriter, statusCode int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		log.Printf("Error writing JSON response: %v", err)
+		// Fallback to a plain text error if JSON encoding fails
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}
+
+// ErrorResponse writes a consistent JSON error response
+func ErrorResponse(w http.ResponseWriter, statusCode int, message string) {
+	JSONResponse(w, statusCode, map[string]string{"error": message})
+}
+
+// PodParams holds common parameters for pod-related requests
+type PodParams struct {
+	Namespace string
+	PodName   string
+	Container string
+	Cluster   string
+}
+
+// ParsePodParams extracts and validates pod-related parameters from an HTTP request
+func ParsePodParams(r *http.Request) (*PodParams, error) {
+	ns := r.URL.Query().Get("namespace")
+	podName := r.URL.Query().Get("pod")
+	container := r.URL.Query().Get("container")
+	cluster := r.URL.Query().Get("cluster")
+
+	if ns == "" || podName == "" {
+		return nil, fmt.Errorf("missing namespace or pod parameter")
+	}
+
+	if err := ValidateK8sName(ns, "namespace"); err != nil {
+		return nil, err
+	}
+	if err := ValidateK8sName(podName, "pod"); err != nil {
+		return nil, err
+	}
+	if container != "" {
+		if err := ValidateK8sName(container, "container"); err != nil {
+			return nil, err
+		}
+	}
+
+	return &PodParams{
+		Namespace: ns,
+		PodName:   podName,
+		Container: container,
+		Cluster:   cluster,
+	}, nil
 }
 

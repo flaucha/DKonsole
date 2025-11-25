@@ -21,6 +21,7 @@ import (
 	"github.com/example/k8s-view/internal/models"
 	"github.com/example/k8s-view/internal/auth"
 	"github.com/example/k8s-view/internal/cluster"
+	"github.com/example/k8s-view/internal/prometheus"
 	"github.com/example/k8s-view/internal/k8s"
 	"github.com/example/k8s-view/internal/api"
 	"github.com/example/k8s-view/internal/helm"
@@ -133,6 +134,7 @@ func main() {
 	apiService := api.NewService(handlersModel, clusterService)
 	helmService := helm.NewService(handlersModel, clusterService)
 	podService := pod.NewService(handlersModel, clusterService)
+	prometheusService := prometheus.NewHTTPHandler(handlersModel.PrometheusURL, clusterService)
 	
 	// authenticateRequest is now handled by authService.AuthenticateRequest
 	// No need for a global wrapper variable
@@ -213,15 +215,6 @@ func main() {
 	mux.HandleFunc("/api/pods/events", secure(podService.GetPodEvents))
 	mux.HandleFunc("/api/pods/exec", secure(podService.ExecIntoPod))
 	
-	mux.HandleFunc("/api/clusters", secure(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			clusterService.GetClusters(w, r)
-		} else if r.Method == http.MethodPost {
-			clusterService.AddCluster(w, r)
-		} else {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}))
 	mux.HandleFunc("/api/resource", secure(k8sService.DeleteResource))
 	mux.HandleFunc("/api/cronjobs/trigger", secure(k8sService.TriggerCronJob))
 	mux.HandleFunc("/api/logo", secure(func(w http.ResponseWriter, r *http.Request) {
@@ -233,10 +226,11 @@ func main() {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}))
-	mux.HandleFunc("/api/prometheus/status", secure(h.GetPrometheusStatus))
-	mux.HandleFunc("/api/prometheus/metrics", secure(h.GetPrometheusMetrics))
-	mux.HandleFunc("/api/prometheus/pod-metrics", secure(h.GetPrometheusPodMetrics))
-	mux.HandleFunc("/api/prometheus/cluster-overview", secure(h.GetPrometheusClusterOverview))
+	// Prometheus handlers - using services
+	mux.HandleFunc("/api/prometheus/status", secure(prometheusService.GetStatus))
+	mux.HandleFunc("/api/prometheus/metrics", secure(prometheusService.GetMetrics))
+	mux.HandleFunc("/api/prometheus/pod-metrics", secure(prometheusService.GetPodMetrics))
+	mux.HandleFunc("/api/prometheus/cluster-overview", secure(prometheusService.GetClusterOverview))
 
 	// Serve static files from frontend build
 	staticDir := "./static"

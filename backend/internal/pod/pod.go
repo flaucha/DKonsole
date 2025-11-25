@@ -1,22 +1,15 @@
 package pod
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"sort"
 	"strings"
-	"time"
 
 	"github.com/gorilla/websocket"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
 
 	"github.com/example/k8s-view/internal/cluster"
@@ -24,7 +17,7 @@ import (
 	"github.com/example/k8s-view/internal/utils"
 )
 
-// Service provides pod-specific operations
+// Service provides pod-specific HTTP handlers
 type Service struct {
 	handlers       *models.Handlers
 	clusterService *cluster.Service
@@ -35,70 +28,68 @@ func NewService(h *models.Handlers, cs *cluster.Service) *Service {
 	return &Service{
 		handlers:       h,
 		clusterService: cs,
+		// PodService will be created on-demand in handlers that need it
+		// This maintains backward compatibility while allowing refactoring
 	}
 }
 
 // StreamPodLogs streams logs from a pod
+// Refactored to use layered architecture:
+// Handler (HTTP Streaming) -> Service (Business Logic) -> Repository (Data Access)
 func (s *Service) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
-	// Note: authenticateRequest is handled by middleware
+	// Parse and validate HTTP parameters
+	params, err := utils.ParsePodParams(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
+	// Get Kubernetes client for this request
 	client, err := s.clusterService.GetClient(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	ns := r.URL.Query().Get("namespace")
-	podName := r.URL.Query().Get("pod")
-	container := r.URL.Query().Get("container")
+	// Create repository for this request
+	logRepo := NewK8sLogRepository(client)
 
-	if ns == "" || podName == "" {
-		http.Error(w, "Missing namespace or pod parameter", http.StatusBadRequest)
-		return
-	}
+	// Create service with repository
+	logService := NewLogService(logRepo)
 
-	if err := utils.ValidateK8sName(ns, "namespace"); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err := utils.ValidateK8sName(podName, "pod"); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if container != "" {
-		if err := utils.ValidateK8sName(container, "container"); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-	}
-
-	opts := &corev1.PodLogOptions{
-		Follow: true,
-	}
-	if container != "" {
-		opts.Container = container
-	}
-
-	req := client.CoreV1().Pods(ns).GetLogs(podName, opts)
+	// Create context with timeout
 	ctx, cancel := utils.CreateTimeoutContext()
 	defer cancel()
-	stream, err := req.Stream(ctx)
+
+	// Prepare request
+	streamReq := StreamLogsRequest{
+		Namespace: params.Namespace,
+		PodName:   params.PodName,
+		Container: params.Container,
+		Follow:    true,
+	}
+
+	// Call service to get log stream (business logic layer)
+	stream, err := logService.StreamLogs(ctx, streamReq)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to open log stream: %v", err), http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to open log stream: %v", err))
 		return
 	}
 	defer stream.Close()
 
+	// Set HTTP headers for streaming
 	w.Header().Set("Content-Type", "text/plain")
 	w.Header().Set("Transfer-Encoding", "chunked")
 	w.Header().Set("Connection", "keep-alive")
 
+	// Check if streaming is supported
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Streaming not supported")
 		return
 	}
 
+	// Stream logs (HTTP layer - streaming loop remains here for efficiency)
 	buf := make([]byte, 1024)
 	for {
 		n, err := stream.Read(buf)
@@ -114,112 +105,88 @@ func (s *Service) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// EventInfo represents pod event information
-type EventInfo struct {
-	Type      string    `json:"type"`
-	Reason    string    `json:"reason"`
-	Message   string    `json:"message"`
-	Count     int32     `json:"count"`
-	FirstSeen time.Time `json:"firstSeen"`
-	LastSeen  time.Time `json:"lastSeen"`
-	Source    string    `json:"source,omitempty"`
-}
-
 // GetPodEvents returns events for a specific pod
+// Refactored to use layered architecture:
+// Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
 func (s *Service) GetPodEvents(w http.ResponseWriter, r *http.Request) {
+	// Parse and validate HTTP parameters
+	params, err := utils.ParsePodParams(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Get Kubernetes client for this request
 	client, err := s.clusterService.GetClient(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	ns := r.URL.Query().Get("namespace")
-	podName := r.URL.Query().Get("pod")
+	// Create repository for this request
+	eventRepo := NewK8sEventRepository(client)
 
-	if ns == "" || podName == "" {
-		http.Error(w, "Missing namespace or pod parameter", http.StatusBadRequest)
-		return
-	}
+	// Create service with repository
+	podService := NewPodService(eventRepo)
 
-	if err := utils.ValidateK8sName(ns, "namespace"); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err := utils.ValidateK8sName(podName, "pod"); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
+	// Create context with timeout
 	ctx, cancel := utils.CreateTimeoutContext()
 	defer cancel()
 
-	// Get events for the pod
-	events, err := client.CoreV1().Events(ns).List(ctx, metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("involvedObject.name=%s,involvedObject.kind=Pod", podName),
-	})
+	// Call service to get events (business logic layer)
+	events, err := podService.GetPodEvents(ctx, params.Namespace, params.PodName)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get pod events: %v", err), http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get pod events: %v", err))
 		return
 	}
 
-	var eventList []EventInfo
-	for _, event := range events.Items {
-		eventList = append(eventList, EventInfo{
-			Type:      event.Type,
-			Reason:    event.Reason,
-			Message:   event.Message,
-			Count:     event.Count,
-			FirstSeen: event.FirstTimestamp.Time,
-			LastSeen:  event.LastTimestamp.Time,
-			Source:    fmt.Sprintf("%s/%s", event.Source.Component, event.Source.Host),
-		})
-	}
-
-	// Sort by last seen (most recent first)
-	sort.Slice(eventList, func(i, j int) bool {
-		return eventList[i].LastSeen.After(eventList[j].LastSeen)
-	})
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(eventList)
+	// Write JSON response (HTTP layer)
+	utils.JSONResponse(w, http.StatusOK, events)
 }
 
 // ExecIntoPod provides WebSocket-based terminal access to a pod
+// Refactored to use layered architecture:
+// Handler (HTTP/WebSocket) -> Service (Business Logic) -> Repository (Data Access)
 func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
-	// Authentication is handled by secure() middleware in main.go
-	// This ensures only authenticated users can execute commands in pods
+	// Parse and validate HTTP parameters
+	params, err := utils.ParsePodParams(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
+	// Get Kubernetes client for this request
 	client, err := s.clusterService.GetClient(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	ns := r.URL.Query().Get("namespace")
-	podName := r.URL.Query().Get("pod")
-	container := r.URL.Query().Get("container")
-
-	if ns == "" || podName == "" {
-		http.Error(w, "Missing namespace or pod parameter", http.StatusBadRequest)
+	// Get REST config for exec
+	restConfig, err := s.clusterService.GetRESTConfig(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := utils.ValidateK8sName(ns, "namespace"); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err := utils.ValidateK8sName(podName, "pod"); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if container != "" {
-		if err := utils.ValidateK8sName(container, "container"); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
+	// Create exec service
+	execService := NewExecService()
+
+	// Prepare exec request
+	execReq := ExecRequest{
+		Namespace: params.Namespace,
+		PodName:   params.PodName,
+		Container: params.Container,
 	}
 
-	// Upgrade HTTP connection to WebSocket
+	// Create executor (business logic layer)
+	executor, _, err := execService.CreateExecutor(client, restConfig, execReq)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create executor: %v", err))
+		return
+	}
+
+	// Upgrade HTTP connection to WebSocket (HTTP layer - WebSocket handling remains here)
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -301,49 +268,13 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	log.Printf("WebSocket upgraded successfully for pod: %s/%s", ns, podName)
-
-	// Create exec request
-	req := client.CoreV1().RESTClient().Post().
-		Resource("pods").
-		Name(podName).
-		Namespace(ns).
-		SubResource("exec")
-
-	req.VersionedParams(&corev1.PodExecOptions{
-		Container: container,
-		Command:   []string{"/bin/sh", "-c", "TERM=xterm-256color; export TERM; [ -x /bin/bash ] && ([ -x /usr/bin/script ] && /usr/bin/script -q -c \"/bin/bash\" /dev/null || exec /bin/bash) || exec /bin/sh"},
-		Stdin:     true,
-		Stdout:    true,
-		Stderr:    true,
-		TTY:       true,
-	}, runtime.NewParameterCodec(clientgoscheme.Scheme))
-
-	// Get REST config for exec
-	cluster := r.URL.Query().Get("cluster")
-	if cluster == "" {
-		cluster = "default"
-	}
-	s.handlers.RLock()
-	restConfig := s.handlers.RESTConfigs[cluster]
-	s.handlers.RUnlock()
-
-	if restConfig == nil {
-		conn.WriteMessage(websocket.TextMessage, []byte("REST config not found for cluster"))
-		return
-	}
-
-	exec, err := remotecommand.NewSPDYExecutor(restConfig, "POST", req.URL())
-	if err != nil {
-		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Failed to create executor: %v", err)))
-		return
-	}
+	log.Printf("WebSocket upgraded successfully for pod: %s/%s", params.Namespace, params.PodName)
 
 	// Create pipes for stdin/stdout/stderr
 	stdinReader, stdinWriter := io.Pipe()
 	stdoutReader, stdoutWriter := io.Pipe()
 
-	// Handle WebSocket messages (send to pod stdin)
+	// Handle WebSocket messages (send to pod stdin) - HTTP layer
 	go func() {
 		defer stdinWriter.Close()
 		for {
@@ -355,7 +286,7 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	// Read from pod stdout and send to WebSocket
+	// Read from pod stdout and send to WebSocket - HTTP layer
 	go func() {
 		defer stdoutReader.Close()
 		buf := make([]byte, 8192)
@@ -373,7 +304,7 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Execute the command
-	err = exec.Stream(remotecommand.StreamOptions{
+	err = executor.Stream(remotecommand.StreamOptions{
 		Stdin:  stdinReader,
 		Stdout: stdoutWriter,
 		Stderr: stdoutWriter,

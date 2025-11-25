@@ -22,7 +22,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { useWorkloads } from '../hooks/useWorkloads';
 import { formatDateTime } from '../utils/dateUtils';
-import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
+import { getExpandableRowClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 import { getStatusBadgeClass } from '../utils/statusBadge';
 
 // Import extracted detail components
@@ -97,6 +97,7 @@ const WorkloadList = ({ namespace, kind }) => {
     const [menuOpen, setMenuOpen] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
     const [allResources, setAllResources] = useState([]);
+    const [scaling, setScaling] = useState(null);
 
     // Early return if kind is not provided
     if (!kind) {
@@ -243,7 +244,7 @@ const WorkloadList = ({ namespace, kind }) => {
     });
 
     // No display limit - show all resources
-    const limitedResources = sortedResources;
+    const limitedResources = sortedResources; // Alias for clarity in code readability
 
     const renderSortIndicator = (field) => {
         if (sortField !== field) return null;
@@ -270,6 +271,31 @@ const WorkloadList = ({ namespace, kind }) => {
         }
     };
 
+    const handleScale = async (res, delta) => {
+        if (!res.namespace) return;
+        setScaling(res.name);
+        const params = new URLSearchParams({
+            kind: 'Deployment',
+            name: res.name,
+            namespace: res.namespace,
+            delta: String(delta),
+        });
+        if (currentCluster) params.append('cluster', currentCluster);
+
+        try {
+            const resp = await authFetch(`/api/scale?${params.toString()}`, { method: 'POST' });
+            if (!resp.ok) {
+                const errorText = await resp.text().catch(() => 'Scale failed');
+                throw new Error(errorText || 'Scale failed');
+            }
+            refetch();
+        } catch (err) {
+            alert(err.message || 'Failed to scale deployment');
+        } finally {
+            setScaling(null);
+        }
+    };
+
     const renderDetails = (res) => {
         const onEditYAML = () => setEditingResource(res);
         const onDataSaved = () => {
@@ -292,7 +318,7 @@ const WorkloadList = ({ namespace, kind }) => {
             case 'ClusterRole': return <RoleDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'RoleBinding':
             case 'ClusterRoleBinding': return <BindingDetails details={res.details} onEditYAML={onEditYAML} />;
-            case 'Deployment': return <DeploymentDetails details={res.details} onScale={(delta) => console.log('Scale', delta)} scaling={false} res={res} onEditYAML={onEditYAML} />;
+            case 'Deployment': return <DeploymentDetails details={res.details} onScale={(delta) => handleScale(res, delta)} scaling={scaling === res.name} res={res} onEditYAML={onEditYAML} />;
             case 'Service': return <ServiceDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'Ingress': return <IngressDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'Pod': return <PodDetails details={res.details} onEditYAML={onEditYAML} pod={res} />;

@@ -1,7 +1,15 @@
 #!/bin/bash
 set -e
 
-VERSION="1.1.6"
+# Read version from VERSION file or use default
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+if [ -f "VERSION" ]; then
+    VERSION=$(cat VERSION | tr -d '[:space:]')
+else
+    VERSION="1.1.9"
+fi
 
 echo "=========================================="
 echo "🚀 DKonsole Release v${VERSION}"
@@ -48,13 +56,16 @@ fi
 echo "🏷️  Creating new tag v${VERSION}..."
 git tag -a "v${VERSION}" -m "Release v${VERSION}
 
-In-Place Editing & Performance Improvements:
-- Added in-place editing for Secrets and ConfigMaps
-- Removed pagination limitations - all resources load completely
-- Added About section with version information
-- Fixed namespace 'all' support for ConfigMaps, Secrets, and Deployments
-- Updated dependencies to resolve memory leak warnings
-- Simplified resource loading without pagination
+Major Refactoring & Code Cleanup:
+- Extracted resource detail components into modular structure
+- Removed obsolete components (DeploymentTable, PodTable)
+- Cleaned up legacy code and unused functions
+- Removed duplicate files (AcercaDe.jsx)
+- Cleaned up ingress and certificate example files
+- Improved code organization and maintainability
+- Removed unused imports and functions
+- Backend refactoring: removed GetResources_OLD function (~760 lines)
+- Frontend refactoring: componentized all resource details
 
 Docker Image:
 - dkonsole/dkonsole:${VERSION}"
