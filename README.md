@@ -117,7 +117,7 @@ The official image is available at:
 ## 📝 Changelog
 
 ### v1.2.0 (2025-01-27)
-**🧹 Major Refactoring & Code Cleanup + Architecture Improvements**
+**🧹 Major Refactoring & Code Cleanup + Architecture Improvements (thanks Kkoder from redit)**
 
 This release includes a comprehensive codebase cleanup, refactoring, and architectural improvements to follow SOLID principles and improve maintainability.
 
