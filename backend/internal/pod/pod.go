@@ -316,8 +316,10 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	// Execute the command
-	err = executor.Stream(remotecommand.StreamOptions{
+	// Execute the command with context for proper cancellation
+	ctx, cancel := utils.CreateRequestContext(r)
+	defer cancel()
+	err = executor.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdin:  stdinReader,
 		Stdout: stdoutWriter,
 		Stderr: stdoutWriter,

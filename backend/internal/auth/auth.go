@@ -10,6 +10,11 @@ import (
 	"github.com/example/k8s-view/internal/utils"
 )
 
+// contextKey is a custom type for context keys to avoid collisions
+type contextKey string
+
+const userContextKey contextKey = "user"
+
 // Service provides HTTP handlers for authentication operations.
 // It follows a layered architecture:
 //   - Handler (HTTP): Handles HTTP requests/responses
@@ -172,7 +177,7 @@ func (s *Service) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user", claims)
+		ctx := context.WithValue(r.Context(), userContextKey, claims)
 		next(w, r.WithContext(ctx))
 	}
 }

@@ -180,7 +180,7 @@ func TestAuthService_GetCurrentUser(t *testing.T) {
 	}{
 		{
 			name:    "valid user in context",
-			ctx:     context.WithValue(context.Background(), "user", &AuthClaims{Claims: models.Claims{Username: "admin", Role: "admin"}}),
+			ctx:     context.WithValue(context.Background(), userContextKey, &AuthClaims{Claims: models.Claims{Username: "admin", Role: "admin"}}),
 			wantErr: false,
 		},
 		{
@@ -190,7 +190,7 @@ func TestAuthService_GetCurrentUser(t *testing.T) {
 		},
 		{
 			name:    "invalid user type in context",
-			ctx:     context.WithValue(context.Background(), "user", "invalid"),
+			ctx:     context.WithValue(context.Background(), userContextKey, "invalid"),
 			wantErr: true,
 		},
 	}

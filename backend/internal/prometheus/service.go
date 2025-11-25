@@ -154,7 +154,7 @@ func (s *Service) GetClusterOverview(ctx context.Context, req GetClusterOverview
 	}
 
 	// Calculate cluster stats
-	clusterStats := s.calculateClusterStats(nodeMetrics, startTime, endTime)
+	clusterStats := s.calculateClusterStats(nodeMetrics)
 
 	return &ClusterOverviewResponse{
 		NodeMetrics:  nodeMetrics,
@@ -366,7 +366,7 @@ func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interfac
 }
 
 // calculateClusterStats calculates aggregated cluster statistics
-func (s *Service) calculateClusterStats(nodes []NodeMetric, startTime, endTime time.Time) *ClusterStats {
+func (s *Service) calculateClusterStats(nodes []NodeMetric) *ClusterStats {
 	if len(nodes) == 0 {
 		return &ClusterStats{
 			TotalNodes:     0,

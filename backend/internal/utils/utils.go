@@ -37,7 +37,7 @@ func CreateTimeoutContext() (context.Context, context.CancelFunc) {
 }
 
 // CreateRequestContext creates a context from HTTP request with timeout
-// This ensures that if the user cancels the HTTP request, Kubernetes API calls are also cancelled
+// This ensures that if the user cancels the HTTP request, Kubernetes API calls are also canceled
 func CreateRequestContext(r *http.Request) (context.Context, context.CancelFunc) {
 	timeout := 30 * time.Second
 	if timeoutStr := os.Getenv("K8S_OPERATION_TIMEOUT"); timeoutStr != "" {

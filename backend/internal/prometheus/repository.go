@@ -106,7 +106,7 @@ func (r *HTTPPrometheusRepository) QueryRange(ctx context.Context, query string,
 	resp, err := r.client.Do(req)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			return nil, fmt.Errorf("Prometheus query timeout: %w", err)
+			return nil, fmt.Errorf("prometheus query timeout: %w", err)
 		}
 		return nil, fmt.Errorf("failed to query Prometheus: %w", err)
 	}
@@ -175,7 +175,7 @@ func (r *HTTPPrometheusRepository) QueryInstant(ctx context.Context, query strin
 	resp, err := r.client.Do(req)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			return nil, fmt.Errorf("Prometheus query timeout: %w", err)
+			return nil, fmt.Errorf("prometheus query timeout: %w", err)
 		}
 		return nil, fmt.Errorf("failed to query Prometheus: %w", err)
 	}
@@ -187,7 +187,7 @@ func (r *HTTPPrometheusRepository) QueryInstant(ctx context.Context, query strin
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(limitedReader)
-		return nil, fmt.Errorf("Prometheus query failed with status %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("prometheus query failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
 	body, err := io.ReadAll(limitedReader)
@@ -208,7 +208,7 @@ func (r *HTTPPrometheusRepository) QueryInstant(ctx context.Context, query strin
 	}
 
 	if result.Status != "success" {
-		return nil, fmt.Errorf("Prometheus query error: %s (type: %s)", result.Error, result.ErrorType)
+		return nil, fmt.Errorf("prometheus query error: %s (type: %s)", result.Error, result.ErrorType)
 	}
 
 	var results []map[string]interface{}

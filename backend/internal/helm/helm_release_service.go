@@ -48,8 +48,8 @@ func (s *HelmReleaseService) GetHelmReleases(ctx context.Context) ([]HelmRelease
 			if release := s.parseReleaseFromSecret(secret); release != nil {
 				key := fmt.Sprintf("%s/%s", release.Namespace, release.Name)
 				// Only update if this is a newer revision or doesn't exist
-				if existing, exists := releasesMap[key]; !exists || 
-					release.Revision > existing.Revision || 
+				if existing, exists := releasesMap[key]; !exists ||
+					release.Revision > existing.Revision ||
 					(release.Revision == existing.Revision && release.Status == "deployed" && existing.Status != "deployed") {
 					releasesMap[key] = release
 				}
@@ -262,7 +262,7 @@ func (s *HelmReleaseService) extractReleaseInfo(releaseInfo map[string]interface
 		}
 	}
 
-	return
+	return status, revision, updated, description
 }
 
 // DeleteHelmReleaseRequest represents the parameters for deleting a Helm release
@@ -329,4 +329,3 @@ func (s *HelmReleaseService) isSecretRelatedToRelease(secret corev1.Secret, rele
 
 	return (releaseNameFromAnnotation == releaseName && releaseNamespaceFromAnnotation == namespace) || secretNameMatches
 }
-

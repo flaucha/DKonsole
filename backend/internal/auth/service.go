@@ -107,7 +107,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 //
 // Returns ErrUnauthorized if no user is found in the context.
 func (s *AuthService) GetCurrentUser(ctx context.Context) (*models.Claims, error) {
-	userVal := ctx.Value("user")
+	userVal := ctx.Value(userContextKey)
 	if userVal == nil {
 		return nil, ErrUnauthorized
 	}

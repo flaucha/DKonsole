@@ -113,12 +113,12 @@ func TestCreateRequestContext(t *testing.T) {
 		t.Error("CreateRequestContext() returned nil cancel function")
 	}
 
-	// Verify context is derived from request context and not cancelled initially
+	// Verify context is derived from request context and not canceled initially
 	select {
 	case <-ctx.Done():
-		t.Error("CreateRequestContext() context should not be cancelled initially")
+		t.Error("CreateRequestContext() context should not be canceled initially")
 	default:
-		// Context is not cancelled, which is what we want
+		// Context is not canceled, which is what we want
 	}
 
 	// Clean up
@@ -256,8 +256,8 @@ func TestAuditLog(t *testing.T) {
 
 // Helper function to check if string contains substring
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || 
-		(len(s) > len(substr) && (s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || 
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
+		(len(s) > len(substr) && (s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
 		containsMiddle(s, substr))))
 }
 
@@ -269,4 +269,3 @@ func containsMiddle(s, substr string) bool {
 	}
 	return false
 }
-
