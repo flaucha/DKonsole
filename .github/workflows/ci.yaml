@@ -2,19 +2,8 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
     tags:
-      - 'v*'  # Tags de versión (ej: v1.1.5)
-    paths-ignore:
-      - '**.md'
-      - 'scripts/**'
-  pull_request:
-    branches:
-      - main
-    paths-ignore:
-      - '**.md'
-      - 'scripts/**'
+      - 'v*'  # Tags de versión (ej: v1.1.5, v1.2.2)
 
 jobs:
   test-backend:
@@ -167,18 +156,18 @@ jobs:
           # Extract version from tag
           TAG_NAME=${GITHUB_REF#refs/tags/}
           echo "🏷️  Tag name: $TAG_NAME"
-          
+
           # Remove 'v' prefix if present
           VERSION=${TAG_NAME#v}
           echo "📦 Extracted version: $VERSION"
-          
+
           # Validate version format (must match semver x.y.z)
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
             echo "❌ ERROR: Tag '$TAG_NAME' doesn't match semver pattern (x.y.z or vx.y.z)"
             echo "Valid examples: v1.1.7, 1.1.7"
             exit 1
           fi
-          
+
           echo "✅ Valid version format: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Final version: $VERSION"
@@ -197,15 +186,15 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/dkonsole"
-          
+
           # Always tag with the version
           TAGS="$IMAGE:$VERSION"
-          
+
           # Extract major.minor for additional tag
           MAJOR_MINOR=$(echo $VERSION | cut -d. -f1,2)
           TAGS="$TAGS,$IMAGE:$MAJOR_MINOR"
           echo "📌 Tagging as $VERSION and $MAJOR_MINOR"
-          
+
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
           echo "🏷️  Docker image tags: $TAGS"
 
