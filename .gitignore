@@ -43,7 +43,8 @@ secrets.yaml
 *.tgz
 
 # Swagger generated docs
-backend/docs/
+backend/docs/*
+!backend/docs/doc.go/
 
 #SEG_FILE
 
