@@ -58,11 +58,11 @@ type AuditLogEntry struct {
 // auditLogInternal writes a structured audit log entry (internal function)
 func auditLogInternal(entry AuditLogEntry) {
 	fields := logrus.Fields{
-		"type":      "audit",
-		"user":      entry.User,
-		"ip":        entry.IP,
-		"action":    entry.Action,
-		"success":   entry.Success,
+		"type":    "audit",
+		"user":    entry.User,
+		"ip":      entry.IP,
+		"action":  entry.Action,
+		"success": entry.Success,
 	}
 
 	if entry.Resource != "" {
@@ -150,4 +150,3 @@ func LogWarn(message string, fields map[string]interface{}) {
 	}
 	Logger.WithFields(logFields).Warn(message)
 }
-

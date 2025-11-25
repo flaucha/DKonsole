@@ -14,9 +14,9 @@ func TestSecurityHeadersMiddleware(t *testing.T) {
 	})
 
 	tests := []struct {
-		name           string
-		path           string
-		isHTTPS        bool
+		name            string
+		path            string
+		isHTTPS         bool
 		expectedHeaders map[string]string
 	}{
 		{
@@ -26,7 +26,7 @@ func TestSecurityHeadersMiddleware(t *testing.T) {
 			expectedHeaders: map[string]string{
 				"X-Content-Type-Options": "nosniff",
 				"X-Frame-Options":        "DENY",
-				"X-XSS-Protection":        "1; mode=block",
+				"X-XSS-Protection":       "1; mode=block",
 				"Referrer-Policy":        "strict-origin-when-cross-origin",
 				"Permissions-Policy":     "geolocation=(), microphone=(), camera=()",
 			},
@@ -36,12 +36,12 @@ func TestSecurityHeadersMiddleware(t *testing.T) {
 			path:    "/api/resources",
 			isHTTPS: true,
 			expectedHeaders: map[string]string{
-				"X-Content-Type-Options":     "nosniff",
-				"X-Frame-Options":            "DENY",
-				"X-XSS-Protection":           "1; mode=block",
-				"Referrer-Policy":            "strict-origin-when-cross-origin",
-				"Permissions-Policy":         "geolocation=(), microphone=(), camera=()",
-				"Strict-Transport-Security":  "max-age=31536000; includeSubDomains; preload",
+				"X-Content-Type-Options":    "nosniff",
+				"X-Frame-Options":           "DENY",
+				"X-XSS-Protection":          "1; mode=block",
+				"Referrer-Policy":           "strict-origin-when-cross-origin",
+				"Permissions-Policy":        "geolocation=(), microphone=(), camera=()",
+				"Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
 			},
 		},
 		{
@@ -124,6 +124,3 @@ func TestBuildCSP(t *testing.T) {
 		})
 	}
 }
-
-
-

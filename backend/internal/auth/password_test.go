@@ -11,7 +11,7 @@ import (
 // generateArgon2Hash generates a valid Argon2id hash for testing
 func generateArgon2Hash(password string) string {
 	salt := []byte("testsalt12345678") // 16 bytes salt
-	memory := uint32(65536)             // 64 MB
+	memory := uint32(65536)            // 64 MB
 	time := uint32(3)                  // 3 iterations
 	threads := uint8(2)                // 2 threads
 	keyLen := uint32(32)               // 32 bytes output
@@ -32,17 +32,17 @@ func generateArgon2Hash(password string) string {
 func TestVerifyPassword(t *testing.T) {
 	correctPassword := "testpassword123"
 	wrongPassword := "wrongpassword"
-	
+
 	// Generate a valid hash for testing
 	validHash := generateArgon2Hash(correctPassword)
 
 	tests := []struct {
-		name         string
-		password     string
-		encodedHash  string
-		wantMatch    bool
-		wantErr      bool
-		errMsg       string
+		name        string
+		password    string
+		encodedHash string
+		wantMatch   bool
+		wantErr     bool
+		errMsg      string
 	}{
 		{
 			name:        "correct password",
@@ -144,4 +144,3 @@ func contains(s, substr string) bool {
 	}
 	return false
 }
-

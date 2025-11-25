@@ -43,7 +43,7 @@ func TestExecService_Security_NoCommandInjection(t *testing.T) {
 	// The ExecRequest structure does NOT include a Command field
 	// This is intentional - commands are hardcoded in CreateExecutor
 	// This prevents command injection attacks (RCE vulnerability that was fixed in v1.1.9)
-	
+
 	req := ExecRequest{
 		Namespace: "default",
 		PodName:   "test-pod",
@@ -68,13 +68,13 @@ func TestExecService_ValidationIntegration(t *testing.T) {
 	// - Namespace using ValidateNamespace (DNS-1123 label, no dots, max 63 chars)
 	// - PodName using ValidatePodName (DNS-1123 label, no dots, max 63 chars)
 	// - Container using ValidateContainerName (DNS-1123 label, no dots, max 63 chars)
-	
+
 	// This test documents the validation flow:
 	// 1. HTTP request comes in
 	// 2. ParsePodParams validates all parameters
 	// 3. If validation passes, ExecService.CreateExecutor is called
 	// 4. CreateExecutor uses hardcoded safe command (no user input)
-	
+
 	// This prevents:
 	// - Path traversal attacks (../, etc.)
 	// - Command injection (no Command field in ExecRequest)
@@ -90,4 +90,3 @@ func contains(s, substr string) bool {
 	}
 	return false
 }
-

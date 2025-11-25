@@ -15,8 +15,8 @@ import (
 
 // mockResourceRepository is a mock implementation of ResourceRepository
 type mockResourceRepository struct {
-	getFunc   func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool) (*unstructured.Unstructured, error)
-	patchFunc func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, patchData []byte, patchType types.PatchType, options metav1.PatchOptions) (*unstructured.Unstructured, error)
+	getFunc    func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool) (*unstructured.Unstructured, error)
+	patchFunc  func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, patchData []byte, patchType types.PatchType, options metav1.PatchOptions) (*unstructured.Unstructured, error)
 	deleteFunc func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, options metav1.DeleteOptions) error
 }
 
@@ -55,11 +55,11 @@ func (m *mockGVRResolver) ResolveGVR(ctx context.Context, kind, apiVersion strin
 
 func TestResourceService_DeleteResource(t *testing.T) {
 	tests := []struct {
-		name      string
-		req       DeleteResourceRequest
+		name       string
+		req        DeleteResourceRequest
 		setupMocks func() (*mockResourceRepository, *mockGVRResolver)
-		wantErr   bool
-		errMsg    string
+		wantErr    bool
+		errMsg     string
 	}{
 		{
 			name: "successful deletion",
@@ -212,11 +212,11 @@ func TestResourceService_DeleteResource(t *testing.T) {
 
 func TestResourceService_GetResourceYAML(t *testing.T) {
 	tests := []struct {
-		name      string
-		req       GetResourceRequest
+		name       string
+		req        GetResourceRequest
 		setupMocks func() (*mockResourceRepository, *mockGVRResolver)
-		wantErr   bool
-		checkYAML bool
+		wantErr    bool
+		checkYAML  bool
 	}{
 		{
 			name: "successful get",
@@ -318,11 +318,11 @@ spec:
 `
 
 	tests := []struct {
-		name      string
-		req       UpdateResourceRequest
+		name       string
+		req        UpdateResourceRequest
 		setupMocks func() (*mockResourceRepository, *mockGVRResolver)
-		wantErr   bool
-		errMsg    string
+		wantErr    bool
+		errMsg     string
 	}{
 		{
 			name: "successful update",
@@ -420,6 +420,3 @@ func contains(s, substr string) bool {
 	}
 	return false
 }
-
-
-

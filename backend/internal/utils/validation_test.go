@@ -72,10 +72,10 @@ func TestValidateNamespace(t *testing.T) {
 
 func TestValidateResourceName(t *testing.T) {
 	tests := []struct {
-		name      string
-		resource  string
-		wantErr   bool
-		errMsg    string
+		name     string
+		resource string
+		wantErr  bool
+		errMsg   string
 	}{
 		{
 			name:     "valid resource name",
@@ -290,5 +290,3 @@ func TestValidateContainerName(t *testing.T) {
 		})
 	}
 }
-
-

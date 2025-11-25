@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/example/k8s-view/internal/models"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func TestJWTService_ValidateToken(t *testing.T) {
@@ -240,4 +240,3 @@ func TestJWTService_AuthenticateRequest(t *testing.T) {
 		})
 	}
 }
-

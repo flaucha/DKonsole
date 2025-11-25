@@ -10,11 +10,11 @@ var (
 	// DNS-1123 subdomain regex: RFC 1123 compliant Kubernetes names
 	// Must start and end with alphanumeric, can contain '-' and '.'
 	dns1123SubdomainRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
-	
+
 	// DNS-1123 label regex: For individual labels (no dots)
 	// Must start and end with alphanumeric, can contain '-'
 	dns1123LabelRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
-	
+
 	// Path traversal patterns to detect (note: forward slash / is allowed as path separator)
 	// We check for these patterns explicitly in ValidatePath
 )
@@ -69,7 +69,7 @@ func ValidatePath(path string) error {
 
 	// Normalize path (decode URL encoding if present)
 	normalized := strings.ToLower(path)
-	
+
 	// Check for protocol schemes first (http://, file://, etc.)
 	if strings.Contains(normalized, "://") {
 		return fmt.Errorf("invalid path: protocol schemes are not allowed: %s", path)
@@ -85,7 +85,7 @@ func ValidatePath(path string) error {
 	if strings.Contains(normalized, "..") || strings.Contains(normalized, "%2e%2e") {
 		return fmt.Errorf("invalid path: contains dangerous pattern '..': %s", path)
 	}
-	
+
 	// Check for backslash (Windows path separator, but also used in attacks)
 	if strings.Contains(normalized, "\\") || strings.Contains(normalized, "%5c") {
 		return fmt.Errorf("invalid path: backslashes are not allowed: %s", path)
@@ -136,4 +136,3 @@ func ValidateContainerName(containerName string) error {
 
 	return nil
 }
-

@@ -216,5 +216,3 @@ func TestAuthService_GetCurrentUser(t *testing.T) {
 		})
 	}
 }
-
-
