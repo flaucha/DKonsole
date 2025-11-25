@@ -16,15 +16,15 @@ import (
 
 // HelmRelease represents a Helm release
 type HelmRelease struct {
-	Name        string    `json:"name"`
-	Namespace   string    `json:"namespace"`
-	Chart       string    `json:"chart"`
-	Version     string    `json:"version"`
-	Status      string    `json:"status"`
-	Revision    int       `json:"revision"`
-	Updated     string    `json:"updated"`
-	AppVersion  string    `json:"appVersion,omitempty"`
-	Description string    `json:"description,omitempty"`
+	Name        string `json:"name"`
+	Namespace   string `json:"namespace"`
+	Chart       string `json:"chart"`
+	Version     string `json:"version"`
+	Status      string `json:"status"`
+	Revision    int    `json:"revision"`
+	Updated     string `json:"updated"`
+	AppVersion  string `json:"appVersion,omitempty"`
+	Description string `json:"description,omitempty"`
 }
 
 // HelmReleaseService provides business logic for Helm release operations
@@ -107,8 +107,8 @@ func (s *HelmReleaseService) parseReleaseFromSecret(secret corev1.Secret) *HelmR
 	}
 
 	// Parse release data
-		if releaseData, ok := secret.Data["release"]; ok {
-			releaseInfo, err := s.DecodeHelmReleaseData(releaseData)
+	if releaseData, ok := secret.Data["release"]; ok {
+		releaseInfo, err := s.DecodeHelmReleaseData(releaseData)
 		if err != nil {
 			return nil
 		}

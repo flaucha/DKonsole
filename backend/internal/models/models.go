@@ -17,9 +17,8 @@ type Handlers struct {
 	Dynamics         map[string]dynamic.Interface
 	Metrics          map[string]*metricsv.Clientset
 	RESTConfigs      map[string]*rest.Config
-	PrometheusURL    string
-	mu               sync.RWMutex
-	discoveryClients map[string]discovery.DiscoveryInterface
+	PrometheusURL string
+	mu            sync.RWMutex
 }
 
 // Lock locks the handlers mutex for writing
@@ -72,7 +71,7 @@ type Resource struct {
 // PaginatedResources representa una respuesta paginada de recursos
 type PaginatedResources struct {
 	Resources []Resource `json:"resources"`
-	Continue  string     `json:"continue,omitempty"` // Token para la siguiente página
+	Continue  string     `json:"continue,omitempty"`  // Token para la siguiente página
 	Remaining int        `json:"remaining,omitempty"` // Cantidad estimada de recursos restantes
 }
 
@@ -152,8 +151,8 @@ type Credentials struct {
 
 // Claims representa los claims del JWT
 type Claims struct {
-	Username string `json:"username"`
-	Role     string `json:"role"`
+	Username         string      `json:"username"`
+	Role             string      `json:"role"`
 	RegisteredClaims interface{} `json:"-"` // Se manejará con jwt.RegisteredClaims en el paquete auth
 }
 

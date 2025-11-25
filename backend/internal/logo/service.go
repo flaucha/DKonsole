@@ -67,7 +67,7 @@ func (s *LogoService) UploadLogo(ctx context.Context, req UploadLogoRequest) err
 // GetLogoPath returns the path to an existing logo file
 func (s *LogoService) GetLogoPath(ctx context.Context) (string, error) {
 	extensions := []string{".png", ".svg"}
-	
+
 	for _, ext := range extensions {
 		path, err := s.storage.Get(ctx, ext)
 		if err == nil {
@@ -77,4 +77,3 @@ func (s *LogoService) GetLogoPath(ctx context.Context) (string, error) {
 
 	return "", fmt.Errorf("logo not found")
 }
-

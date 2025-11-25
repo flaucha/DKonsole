@@ -264,4 +264,3 @@ func TestClaims(t *testing.T) {
 		t.Errorf("Claims.Role = %q, want %q", claims.Role, "admin")
 	}
 }
-

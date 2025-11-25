@@ -21,7 +21,6 @@ func NewService(h *models.Handlers) *Service {
 	return &Service{handlers: h}
 }
 
-
 // GetClient returns the Kubernetes client for the specified cluster
 func (s *Service) GetClient(r *http.Request) (*kubernetes.Clientset, error) {
 	cluster := r.URL.Query().Get("cluster")
@@ -89,4 +88,3 @@ func (s *Service) GetRESTConfig(r *http.Request) (*rest.Config, error) {
 	}
 	return config, nil
 }
-

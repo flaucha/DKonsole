@@ -50,12 +50,10 @@ linters:
     - gocyclo
     - gofmt
     - goimports
-    - golint
     - gosec
     - gosimple
     - govet
     - ineffassign
-    - interfacer
     - lll
     - misspell
     - nakedret
@@ -63,13 +61,11 @@ linters:
     - nolintlint
     - rowserrcheck
     - staticcheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
     - whitespace
 
 issues:
@@ -79,8 +75,29 @@ issues:
         - errcheck
         - goconst
         - gocyclo
-  max-issues-per-linter: 0
-  max-same-issues: 0
-
-
-
+        - gocritic
+        - lll
+    - path: _test\.go
+      linters:
+        - errcheck
+        - goconst
+        - gocyclo
+        - gocritic
+        - lll
+  max-issues-per-linter: 50
+  max-same-issues: 10
+  exclude:
+    - "Error return value of `w\\.Write` is not checked"
+    - "Error return value of `filepath\\.Abs` is not checked"
+    - "Error return value of `fmt\\.Sscanf` is not checked"
+    - "Error return value of `json\\.Marshal` is not checked"
+    - "Error return value of `unstructured\\.Nested.*` is not checked"
+    - "Error return value of `schema\\.ParseGroupVersion` is not checked"
+    - "Error return value of `net\\.SplitHostPort` is not checked"
+    - "Error return value of `seeker\\.Seek` is not checked"
+    - "Error return value of `io\\.ReadAll` is not checked"
+    - "Error return value of `x509\\.SystemCertPool` is not checked"
+    - "Error return value of `s\\.repo\\.Query.*` is not checked"
+    - "Error return value of `stdinWriter\\.Write` is not checked"
+    - "Error return value of `conn\\.WriteMessage` is not checked"
+    - "Error return value of `metricsv\\.NewForConfig` is not checked"

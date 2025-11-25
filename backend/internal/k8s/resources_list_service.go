@@ -10,8 +10,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 
-	"github.com/example/k8s-view/internal/models"
 	"github.com/example/k8s-view/internal/cluster"
+	"github.com/example/k8s-view/internal/models"
 )
 
 // ResourceListService provides business logic for listing Kubernetes resources
@@ -30,10 +30,10 @@ func NewResourceListService(clusterService *cluster.Service, prometheusURL strin
 
 // ListResourcesRequest represents parameters for listing resources
 type ListResourcesRequest struct {
-	Kind         string
-	Namespace    string
+	Kind          string
+	Namespace     string
 	AllNamespaces bool
-	Client       kubernetes.Interface
+	Client        kubernetes.Interface
 	MetricsClient *metricsv.Clientset
 }
 
@@ -953,4 +953,3 @@ func (s *ResourceListService) listLimitRanges(ctx context.Context, client kubern
 
 	return resources, nil
 }
-

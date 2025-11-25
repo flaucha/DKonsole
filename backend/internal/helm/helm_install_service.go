@@ -19,14 +19,14 @@ func NewHelmInstallService(jobService *HelmJobService) *HelmInstallService {
 
 // InstallHelmReleaseRequest represents the parameters for installing a Helm release
 type InstallHelmReleaseRequest struct {
-	Name            string
-	Namespace       string
-	Chart           string
-	Version         string
-	Repo            string
-	ValuesYAML      string
-	DkonsoleNS      string
-	ServiceAccount  string
+	Name           string
+	Namespace      string
+	Chart          string
+	Version        string
+	Repo           string
+	ValuesYAML     string
+	DkonsoleNS     string
+	ServiceAccount string
 }
 
 // InstallHelmReleaseResponse represents the result of initiating an install

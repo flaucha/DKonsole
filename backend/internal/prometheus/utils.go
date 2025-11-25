@@ -55,4 +55,3 @@ func parseDuration(rangeParam string) (time.Time, time.Time) {
 
 	return startTime, endTime
 }
-

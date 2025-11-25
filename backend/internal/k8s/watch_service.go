@@ -26,8 +26,8 @@ func NewWatchService(gvrResolver GVRResolver) *WatchService {
 
 // WatchRequest represents parameters for watching resources
 type WatchRequest struct {
-	Kind         string
-	Namespace    string
+	Kind          string
+	Namespace     string
 	AllNamespaces bool
 }
 
@@ -98,4 +98,3 @@ func (s *WatchService) TransformEvent(event watch.Event) (*WatchResult, error) {
 		Namespace: obj.GetNamespace(),
 	}, nil
 }
-

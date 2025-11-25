@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/example/k8s-view/internal/models"
 	"github.com/example/k8s-view/internal/cluster"
+	"github.com/example/k8s-view/internal/models"
 	"github.com/example/k8s-view/internal/utils"
 )
 
@@ -205,7 +205,7 @@ func (s *Service) GetAPIResourceYAML(w http.ResponseWriter, r *http.Request) {
 
 	// Write YAML response (HTTP layer)
 	w.Header().Set("Content-Type", "application/x-yaml")
-	w.Write([]byte(yamlData))
+	_, _ = w.Write([]byte(yamlData))
 }
 
 // GetCRDs returns a list of all Custom Resource Definitions in the cluster
@@ -382,5 +382,5 @@ func (s *Service) GetCRDYaml(w http.ResponseWriter, r *http.Request) {
 
 	// Write YAML response (HTTP layer)
 	w.Header().Set("Content-Type", "application/x-yaml")
-	w.Write([]byte(yamlData))
+	_, _ = w.Write([]byte(yamlData))
 }

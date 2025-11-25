@@ -68,14 +68,14 @@ func (s *Service) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 
 	// Prepare request
 	getReq := GetResourceRequest{
-		Kind:         kind,
-		Name:         name,
-		Namespace:    namespace,
+		Kind:          kind,
+		Name:          name,
+		Namespace:     namespace,
 		AllNamespaces: allNamespaces,
-		Group:        group,
-		Version:      version,
-		Resource:     resourceName,
-		Namespaced:   namespacedParam,
+		Group:         group,
+		Version:       version,
+		Resource:      resourceName,
+		Namespaced:    namespacedParam,
 	}
 
 	// Call service to get resource YAML (business logic layer)
@@ -95,6 +95,5 @@ func (s *Service) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 
 	// Write YAML response (HTTP layer)
 	w.Header().Set("Content-Type", "application/x-yaml")
-	w.Write([]byte(yamlData))
+	_, _ = w.Write([]byte(yamlData))
 }
-

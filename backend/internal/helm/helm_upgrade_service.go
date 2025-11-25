@@ -25,21 +25,21 @@ func NewHelmUpgradeService(releaseRepo HelmReleaseRepository, jobService *HelmJo
 
 // UpgradeHelmReleaseRequest represents the parameters for upgrading a Helm release
 type UpgradeHelmReleaseRequest struct {
-	Name        string
-	Namespace   string
-	Chart       string
-	Version     string
-	Repo        string
-	ValuesYAML  string
-	DkonsoleNS  string
+	Name           string
+	Namespace      string
+	Chart          string
+	Version        string
+	Repo           string
+	ValuesYAML     string
+	DkonsoleNS     string
 	ServiceAccount string
 }
 
 // UpgradeHelmReleaseResponse represents the result of initiating an upgrade
 type UpgradeHelmReleaseResponse struct {
-	JobName      string
-	Status       string
-	Message      string
+	JobName string
+	Status  string
+	Message string
 }
 
 // UpgradeHelmRelease upgrades a Helm release by creating a Kubernetes Job
@@ -117,7 +117,7 @@ func (s *HelmUpgradeService) getChartInfoFromRelease(ctx context.Context, namesp
 	for i := range secrets {
 		secret := &secrets[i]
 		releaseNameFromAnnotation := secret.Annotations["meta.helm.sh/release-name"]
-		
+
 		if releaseNameFromAnnotation == releaseName {
 			if revStr, ok := secret.Labels["version"]; ok {
 				if rev, err := strconv.Atoi(revStr); err == nil && rev > latestRevision {
@@ -185,4 +185,3 @@ func (s *HelmUpgradeService) getChartInfoFromRelease(ctx context.Context, namesp
 
 	return chartInfo, nil
 }
-
