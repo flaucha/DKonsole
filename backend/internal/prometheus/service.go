@@ -148,7 +148,7 @@ func (s *Service) GetClusterOverview(ctx context.Context, req GetClusterOverview
 	startTime, endTime := parseDuration(req.Range)
 
 	// Get node metrics
-	nodeMetrics, err := s.getNodeMetrics(ctx, client, startTime, endTime)
+	nodeMetrics, err := s.getNodeMetrics(ctx, client, endTime)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node metrics: %w", err)
 	}
@@ -163,7 +163,7 @@ func (s *Service) GetClusterOverview(ctx context.Context, req GetClusterOverview
 }
 
 // getNodeMetrics fetches metrics for all nodes
-func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interface, startTime, endTime time.Time) ([]NodeMetric, error) {
+func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interface, endTime time.Time) ([]NodeMetric, error) {
 	var nodes []NodeMetric
 
 	if client == nil {

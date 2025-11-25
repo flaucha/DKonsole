@@ -4,10 +4,13 @@
 run:
   timeout: 5m
   tests: true
-  skip-dirs:
-    - vendor
-  skip-files:
-    - ".*\\.pb\\.go$"
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+  issues:
+    exclude-dirs:
+      - vendor
+    exclude-files:
+      - ".*\\.pb\\.go$"
 
 linters-settings:
   errcheck:
@@ -28,7 +31,9 @@ linters-settings:
   goimports:
     local-prefixes: github.com/example/k8s-view
   govet:
-    check-shadowing: true
+    enable-all: false
+    disable:
+      - fieldalignment
   lll:
     line-length: 120
   maligned:
