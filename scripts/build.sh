@@ -12,7 +12,7 @@ else
 fi
 
 # Use test version for testing
-TEST_VERSION="${VERSION}-test"
+TEST_VERSION="${VERSION}"
 
 echo "=========================================="
 echo "🔨 DKonsole Build v${TEST_VERSION}"
