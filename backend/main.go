@@ -22,7 +22,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"mime"
 	"net/http"
 	"net/url"
@@ -40,6 +39,7 @@ import (
 	"github.com/example/k8s-view/internal/api"
 	"github.com/example/k8s-view/internal/auth"
 	"github.com/example/k8s-view/internal/cluster"
+	"github.com/example/k8s-view/internal/health"
 	"github.com/example/k8s-view/internal/helm"
 	"github.com/example/k8s-view/internal/k8s"
 	"github.com/example/k8s-view/internal/logo"
@@ -88,18 +88,6 @@ func (c *contentTypeFixer) WriteHeader(code int) {
 		}
 	}
 	c.ResponseWriter.WriteHeader(code)
-}
-
-// setupHandlerDelegates connects service methods to old handler implementations
-// This is temporary during migration
-func setupHandlerDelegates(h *Handlers, k8sSvc *k8s.Service, apiSvc *api.Service, helmSvc *helm.Service, podSvc *pod.Service) {
-	// Services will delegate to handlers.go methods through h
-	// This maintains functionality while we migrate
-	_ = h // Used by services
-	_ = k8sSvc
-	_ = apiSvc
-	_ = helmSvc
-	_ = podSvc
 }
 
 func main() {
@@ -151,9 +139,6 @@ func main() {
 		handlersModel.Metrics["default"] = metricsClient
 	}
 
-	// Create wrapper for backward compatibility with handlers not yet migrated
-	h := &Handlers{Handlers: handlersModel}
-
 	// Initialize services
 	authService := auth.NewService(handlersModel)
 	clusterService := cluster.NewService(handlersModel)
@@ -163,12 +148,6 @@ func main() {
 	podService := pod.NewService(handlersModel, clusterService)
 	prometheusService := prometheus.NewHTTPHandler(handlersModel.PrometheusURL, clusterService)
 	logoService := logo.NewService("./data")
-
-	// authenticateRequest is now handled by authService.AuthenticateRequest
-	// No need for a global wrapper variable
-
-	// Set up handler delegates for services that need access to old handlers
-	setupHandlerDelegates(h, k8sService, apiService, helmService, podService)
 
 	mux := http.NewServeMux()
 	// Helper for authenticated routes
@@ -198,8 +177,8 @@ func main() {
 	mux.HandleFunc("/api/logout", public(authService.LogoutHandler))
 	mux.HandleFunc("/api/me", secure(authService.MeHandler))
 	// Health check endpoint (also available as /health for compatibility)
-	mux.HandleFunc("/healthz", middleware.SecurityHeadersMiddleware(h.HealthHandler))
-	mux.HandleFunc("/health", middleware.SecurityHeadersMiddleware(h.HealthHandler))
+	mux.HandleFunc("/healthz", middleware.SecurityHeadersMiddleware(health.HealthHandler))
+	mux.HandleFunc("/health", middleware.SecurityHeadersMiddleware(health.HealthHandler))
 
 	// Swagger documentation - protected with authentication
 	mux.Handle("/swagger/", secureHandler(httpSwagger.WrapHandler))
@@ -331,7 +310,9 @@ func main() {
 	}
 
 	port := ":8080"
-	fmt.Printf("Server starting on port %s...\n", port)
+	utils.LogInfo("Server starting", map[string]interface{}{
+		"port": port,
+	})
 	if err := http.ListenAndServe(port, mux); err != nil {
 		utils.LogError(err, "Server failed", nil)
 		panic(err)

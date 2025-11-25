@@ -12,6 +12,8 @@ import (
 	"net/url"
 	"os"
 	"time"
+
+	"github.com/example/k8s-view/internal/utils"
 )
 
 // PrometheusQueryResult represents the response from Prometheus query API
@@ -121,7 +123,9 @@ func (r *HTTPPrometheusRepository) QueryRange(ctx context.Context, query string,
 
 	// Check if response was truncated
 	if len(body) >= int(maxResponseSize) {
-		fmt.Printf("Warning: Prometheus response truncated (max %d bytes)\n", maxResponseSize)
+		utils.LogWarn("Prometheus response truncated", map[string]interface{}{
+			"max_bytes": maxResponseSize,
+		})
 	}
 
 	var result PrometheusQueryResult
@@ -193,7 +197,9 @@ func (r *HTTPPrometheusRepository) QueryInstant(ctx context.Context, query strin
 
 	// Check if response was truncated
 	if len(body) >= int(maxResponseSize) {
-		fmt.Printf("Warning: Prometheus response truncated (max %d bytes)\n", maxResponseSize)
+		utils.LogWarn("Prometheus response truncated", map[string]interface{}{
+			"max_bytes": maxResponseSize,
+		})
 	}
 
 	var result PrometheusInstantQueryResult

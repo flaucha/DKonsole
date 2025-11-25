@@ -1,7 +1,6 @@
 package logo
 
 import (
-	"fmt"
 	"net/http"
 	"path/filepath"
 
@@ -33,14 +32,14 @@ func NewService(dataDir string) *Service {
 func (s *Service) UploadLogo(w http.ResponseWriter, r *http.Request) {
 	// Parse multipart form
 	if err := r.ParseMultipartForm(5 << 20); err != nil {
-		fmt.Printf("Error parsing multipart form: %v\n", err)
+		utils.LogError(err, "Error parsing multipart form", nil)
 		utils.ErrorResponse(w, http.StatusBadRequest, "Error parsing form")
 		return
 	}
 
 	file, handler, err := r.FormFile("logo")
 	if err != nil {
-		fmt.Printf("Error retrieving file: %v\n", err)
+		utils.LogError(err, "Error retrieving file", nil)
 		utils.ErrorResponse(w, http.StatusBadRequest, "Error retrieving file")
 		return
 	}
@@ -60,13 +59,15 @@ func (s *Service) UploadLogo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("Uploaded File: %+v\n", handler.Filename)
-	fmt.Printf("File Size: %+v\n", handler.Size)
-	fmt.Printf("MIME Header: %+v\n", handler.Header)
+	utils.LogDebug("Logo uploaded successfully", map[string]interface{}{
+		"filename": handler.Filename,
+		"size":     handler.Size,
+		"mime":     handler.Header,
+	})
 
 	// Write success response (HTTP layer)
 	utils.JSONResponse(w, http.StatusOK, map[string]string{
-		"status": "success",
+		"status":  "success",
 		"message": "Logo uploaded successfully",
 	})
 }
@@ -87,6 +88,8 @@ func (s *Service) GetLogo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	absPath, _ := filepath.Abs(logoPath)
-	fmt.Printf("Serving logo from: %s\n", absPath)
+	utils.LogDebug("Serving logo", map[string]interface{}{
+		"path": absPath,
+	})
 	http.ServeFile(w, r, logoPath)
 }

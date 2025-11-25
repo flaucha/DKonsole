@@ -1,9 +1,10 @@
 package auth
 
 import (
-	"fmt"
 	"log"
 	"os"
+
+	"github.com/example/k8s-view/internal/utils"
 )
 
 var (
@@ -14,7 +15,9 @@ var (
 func init() {
 	jwtSecretStr := os.Getenv("JWT_SECRET")
 	if len(jwtSecretStr) == 0 {
-		fmt.Println("CRITICAL: JWT_SECRET environment variable must be set")
+		utils.LogWarn("JWT_SECRET environment variable must be set", map[string]interface{}{
+			"level": "critical",
+		})
 		if os.Getenv("GO_ENV") == "production" {
 			log.Fatal("JWT_SECRET is required in production")
 		}

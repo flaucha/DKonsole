@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.2.1-green.svg)
+![Version](https://img.shields.io/badge/version-1.2.2-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.2.1
+git checkout v1.2.2
 
 # EDIT VALUES WITH YOUR FAVORITE EDITOR.
 $ vim ./helm/dkonsole/values.yaml
@@ -103,18 +103,29 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.2.1"
+  tag: "1.2.2"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.2.1`
+- **Unified**: `dkonsole/dkonsole:1.2.2`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.2.2 (2025-11-25)
+**🧹 Code Quality & Technical Debt Removal**
+
+This release focuses on code quality improvements, unified logging, and elimination of technical debt.
+
+- **Unified Logging**: All logging migrated to JSON structured format using `utils.Logger`
+- **Legacy Code Removal**: Eliminated `handlers.go` and all legacy compatibility code
+- **Architecture**: Completed migration to pure service-based architecture
+- **Code Cleanup**: Removed unused imports and dead code
+- **Modularity**: Health check endpoint moved to independent `internal/health` package
 
 ### v1.2.1 (2025-11-24)
 **🔒 Security, Testing, Performance & Documentation Improvements**
@@ -234,14 +245,14 @@ graph TB
     subgraph "Frontend"
         UI[React UI]
     end
-    
+
     subgraph "Backend - HTTP Server"
         Main[main.go<br/>Router & Middleware]
         AuthMW[Auth Middleware]
         RateLimit[Rate Limiting]
         CORS[CORS Handler]
     end
-    
+
     subgraph "Backend - Services Layer"
         AuthSvc[auth.Service<br/>Login, Logout, Auth]
         ClusterSvc[cluster.Service<br/>Cluster Management]
@@ -250,17 +261,17 @@ graph TB
         HelmSvc[helm.Service<br/>Helm Releases]
         PodSvc[pod.Service<br/>Logs, Exec, Events]
     end
-    
+
     subgraph "Backend - Shared"
         Models[models/<br/>Shared Types]
         Utils[utils/<br/>Utilities]
     end
-    
+
     subgraph "External Systems"
         K8s[Kubernetes API]
         Prometheus[Prometheus]
     end
-    
+
     UI -->|HTTP Requests| Main
     Main --> AuthMW
     AuthMW --> RateLimit
@@ -270,7 +281,7 @@ graph TB
     CORS --> ApiSvc
     CORS --> HelmSvc
     CORS --> PodSvc
-    
+
     AuthSvc --> Models
     ClusterSvc --> Models
     K8sSvc --> Models
@@ -281,20 +292,20 @@ graph TB
     HelmSvc --> ClusterSvc
     PodSvc --> Models
     PodSvc --> ClusterSvc
-    
+
     K8sSvc --> Utils
     ApiSvc --> Utils
     HelmSvc --> Utils
     PodSvc --> Utils
     AuthSvc --> Utils
-    
+
     ClusterSvc --> K8s
     K8sSvc --> K8s
     ApiSvc --> K8s
     HelmSvc --> K8s
     PodSvc --> K8s
     PodSvc --> Prometheus
-    
+
     style Main fill:#e1f5ff
     style AuthSvc fill:#fff4e1
     style ClusterSvc fill:#fff4e1

@@ -3,9 +3,9 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/example/k8s-view/internal/models"
+	"github.com/example/k8s-view/internal/utils"
 )
 
 // ClusterStatsService provides business logic for cluster statistics
@@ -25,56 +25,56 @@ func (s *ClusterStatsService) GetClusterStats(ctx context.Context) (models.Clust
 
 	if count, err := s.repo.GetNodeCount(ctx); err != nil {
 		errors = append(errors, fmt.Errorf("nodes: %w", err))
-		log.Printf("Error fetching node count: %v", err)
+		utils.LogError(err, "Error fetching node count", map[string]interface{}{"resource": "nodes"})
 	} else {
 		stats.Nodes = count
 	}
 
 	if count, err := s.repo.GetNamespaceCount(ctx); err != nil {
 		errors = append(errors, fmt.Errorf("namespaces: %w", err))
-		log.Printf("Error fetching namespace count: %v", err)
+		utils.LogError(err, "Error fetching namespace count", map[string]interface{}{"resource": "namespaces"})
 	} else {
 		stats.Namespaces = count
 	}
 
 	if count, err := s.repo.GetPodCount(ctx); err != nil {
 		errors = append(errors, fmt.Errorf("pods: %w", err))
-		log.Printf("Error fetching pod count: %v", err)
+		utils.LogError(err, "Error fetching pod count", map[string]interface{}{"resource": "pods"})
 	} else {
 		stats.Pods = count
 	}
 
 	if count, err := s.repo.GetDeploymentCount(ctx); err != nil {
 		errors = append(errors, fmt.Errorf("deployments: %w", err))
-		log.Printf("Error fetching deployment count: %v", err)
+		utils.LogError(err, "Error fetching deployment count", map[string]interface{}{"resource": "deployments"})
 	} else {
 		stats.Deployments = count
 	}
 
 	if count, err := s.repo.GetServiceCount(ctx); err != nil {
 		errors = append(errors, fmt.Errorf("services: %w", err))
-		log.Printf("Error fetching service count: %v", err)
+		utils.LogError(err, "Error fetching service count", map[string]interface{}{"resource": "services"})
 	} else {
 		stats.Services = count
 	}
 
 	if count, err := s.repo.GetIngressCount(ctx); err != nil {
 		errors = append(errors, fmt.Errorf("ingresses: %w", err))
-		log.Printf("Error fetching ingress count: %v", err)
+		utils.LogError(err, "Error fetching ingress count", map[string]interface{}{"resource": "ingresses"})
 	} else {
 		stats.Ingresses = count
 	}
 
 	if count, err := s.repo.GetPVCCount(ctx); err != nil {
 		errors = append(errors, fmt.Errorf("pvcs: %w", err))
-		log.Printf("Error fetching PVC count: %v", err)
+		utils.LogError(err, "Error fetching PVC count", map[string]interface{}{"resource": "pvcs"})
 	} else {
 		stats.PVCs = count
 	}
 
 	if count, err := s.repo.GetPVCount(ctx); err != nil {
 		errors = append(errors, fmt.Errorf("pvs: %w", err))
-		log.Printf("Error fetching PV count: %v", err)
+		utils.LogError(err, "Error fetching PV count", map[string]interface{}{"resource": "pvs"})
 	} else {
 		stats.PVs = count
 	}

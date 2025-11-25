@@ -3,7 +3,6 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/example/k8s-view/internal/models"
+	"github.com/example/k8s-view/internal/utils"
 )
 
 // ResourceRepository defines the interface for accessing Kubernetes resources
@@ -126,7 +126,7 @@ func (r *K8sGVRResolver) ResolveGVR(ctx context.Context, kind, apiVersion string
 	if r.discoveryClient != nil {
 		lists, err := r.discoveryClient.Discovery().ServerPreferredResources()
 		if err != nil && !discovery.IsGroupDiscoveryFailedError(err) {
-			log.Printf("GVRResolver: Discovery error: %v", err)
+			utils.LogError(err, "GVRResolver: Discovery error", nil)
 		} else {
 			for _, list := range lists {
 				gv, _ := schema.ParseGroupVersion(list.GroupVersion)

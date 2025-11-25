@@ -5,6 +5,31 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2025-11-25
+
+### 🧹 Code Quality & Technical Debt
+
+- **Unified Structured Logging**: Migrated all logging to JSON structured format
+  - Replaced all `fmt.Printf`, `fmt.Println`, and `log.Printf` with `utils.Logger`
+  - All logs now use structured JSON format with contextual fields
+  - Improved observability and log aggregation capabilities
+  - 8 files updated with consistent logging patterns
+- **Legacy Code Removal**: Eliminated technical debt from migration
+  - Removed `backend/handlers.go` file completely (legacy compatibility layer)
+  - Removed `setupHandlerDelegates` function (no longer needed)
+  - Removed `Handlers` struct wrapper (services now use `models.Handlers` directly)
+  - Cleaned up unused imports (`fmt`, `log`)
+- **Architecture Improvements**: Completed migration to service-based architecture
+  - Migrated `HealthHandler` to independent `internal/health` package
+  - All endpoints now use pure service pattern
+  - Improved code maintainability and testability
+
+### 🔧 Technical Improvements
+
+- **Code Cleanup**: Removed all unused imports and dead code
+- **Consistency**: All logging now follows the same structured format
+- **Modularity**: Health check endpoint is now properly modularized
+
 ## [1.2.1] - 2025-11-24
 
 ### 🔒 Security

@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/example/k8s-view/internal/utils"
 )
 
 const DataDir = "./data"
@@ -57,7 +59,9 @@ func (s *FileSystemLogoStorage) Save(ctx context.Context, ext string, content io
 		return fmt.Errorf("failed to save file content: %w", err)
 	}
 
-	fmt.Printf("Saving logo to: %s\n", absPath)
+	utils.LogInfo("Saving logo", map[string]interface{}{
+		"path": absPath,
+	})
 	return nil
 }
 
@@ -80,7 +84,10 @@ func (s *FileSystemLogoStorage) RemoveAll(ctx context.Context) error {
 		path := filepath.Join(s.dataDir, "logo"+ext)
 		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 			// Log but don't fail if file doesn't exist
-			fmt.Printf("Warning: failed to remove logo file %s: %v\n", path, err)
+			utils.LogWarn("Failed to remove logo file", map[string]interface{}{
+				"path":  path,
+				"error": err.Error(),
+			})
 		}
 	}
 	return nil

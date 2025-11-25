@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	corev1 "k8s.io/api/core/v1"
@@ -327,7 +326,10 @@ func (s *Service) validateResourceQuota(ctx context.Context, client *kubernetes.
 	// Get all ResourceQuotas in the namespace
 	quotas, err := client.CoreV1().ResourceQuotas(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		log.Printf("Warning: Could not check ResourceQuota for namespace %s: %v", namespace, err)
+		utils.LogWarn("Could not check ResourceQuota", map[string]interface{}{
+			"namespace": namespace,
+			"error":     err.Error(),
+		})
 		return nil
 	}
 
@@ -393,7 +395,10 @@ func (s *Service) validateLimitRange(ctx context.Context, client *kubernetes.Cli
 	// Get LimitRanges in the namespace
 	limitRanges, err := client.CoreV1().LimitRanges(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		log.Printf("Warning: Could not check LimitRange for namespace %s: %v", namespace, err)
+		utils.LogWarn("Could not check LimitRange", map[string]interface{}{
+			"namespace": namespace,
+			"error":     err.Error(),
+		})
 		return nil
 	}
 
@@ -418,7 +423,9 @@ func (s *Service) validateLimitRange(ctx context.Context, client *kubernetes.Cli
 						for _, lr := range limitRanges.Items {
 							for _, limit := range lr.Spec.Limits {
 								if limit.Type == corev1.LimitTypeContainer {
-									log.Printf("Validating container resources against LimitRange %s", lr.Name)
+									utils.LogDebug("Validating container resources against LimitRange", map[string]interface{}{
+										"limitrange": lr.Name,
+									})
 								}
 							}
 						}
