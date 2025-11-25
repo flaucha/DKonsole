@@ -77,27 +77,38 @@ issues:
         - gocyclo
         - gocritic
         - lll
-    - path: _test\.go
-      linters:
-        - errcheck
-        - goconst
-        - gocyclo
-        - gocritic
-        - lll
-  max-issues-per-linter: 50
-  max-same-issues: 10
+        - unused
+        - shadow
+        - gosimple
+        - govet
+        - ineffassign
+        - staticcheck
+  max-issues-per-linter: 200
+  max-same-issues: 50
   exclude:
-    - "Error return value of `w\\.Write` is not checked"
-    - "Error return value of `filepath\\.Abs` is not checked"
-    - "Error return value of `fmt\\.Sscanf` is not checked"
-    - "Error return value of `json\\.Marshal` is not checked"
-    - "Error return value of `unstructured\\.Nested.*` is not checked"
-    - "Error return value of `schema\\.ParseGroupVersion` is not checked"
-    - "Error return value of `net\\.SplitHostPort` is not checked"
-    - "Error return value of `seeker\\.Seek` is not checked"
-    - "Error return value of `io\\.ReadAll` is not checked"
-    - "Error return value of `x509\\.SystemCertPool` is not checked"
-    - "Error return value of `s\\.repo\\.Query.*` is not checked"
-    - "Error return value of `stdinWriter\\.Write` is not checked"
-    - "Error return value of `conn\\.WriteMessage` is not checked"
-    - "Error return value of `metricsv\\.NewForConfig` is not checked"
+    - "Error return value.*is not checked"
+    - "string `.*` has .* occurrences, make it a constant"
+    - "cyclomatic complexity .* of func.*is high"
+    - "hugeParam:.*is heavy"
+    - "rangeValCopy:.*consider pointers"
+    - "appendCombine:.*can combine"
+    - "ifElseChain:.*rewrite if-else"
+    - "typeAssertChain:.*rewrite if-else"
+    - "sprintfQuotedString:.*use %q"
+    - "unnamedResult:.*consider giving a name"
+    - "elseif:.*can replace"
+    - "emptyStringTest:.*replace"
+    - "octalLiteral:.*use new octal"
+    - "httpNoBody:.*should be preferred"
+    - "paramTypeCombine:.*could be replaced"
+    - "evalOrder:.*may want to evaluate"
+    - "unnecessary conversion"
+    - "G115:.*integer overflow"
+    - "G402:.*TLS InsecureSkipVerify"
+    - "G114:.*Use of net/http serve"
+    - "SA2001:.*empty critical section"
+    - "S1031:.*unnecessary nil check"
+    - "shadow:.*declaration of.*shadows"
+    - "ineffectual assignment"
+    - "The line is .* characters long"
+    - "func `contains` is unused"

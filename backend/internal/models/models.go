@@ -12,10 +12,10 @@ import (
 
 // Handlers es la estructura principal que contiene los clients de Kubernetes
 type Handlers struct {
-	Clients          map[string]*kubernetes.Clientset
-	Dynamics         map[string]dynamic.Interface
-	Metrics          map[string]*metricsv.Clientset
-	RESTConfigs      map[string]*rest.Config
+	Clients       map[string]*kubernetes.Clientset
+	Dynamics      map[string]dynamic.Interface
+	Metrics       map[string]*metricsv.Clientset
+	RESTConfigs   map[string]*rest.Config
 	PrometheusURL string
 	mu            sync.RWMutex
 }
