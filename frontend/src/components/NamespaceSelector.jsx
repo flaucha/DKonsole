@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Search, Database } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { logger } from '../utils/logger';
 
 const NamespaceSelector = ({ selected, onSelect }) => {
     const [namespaces, setNamespaces] = useState([]);
@@ -22,12 +23,12 @@ const NamespaceSelector = ({ selected, onSelect }) => {
                 if (Array.isArray(data)) {
                     setNamespaces(data);
                 } else {
-                    console.error("Invalid namespaces response:", data);
+                    logger.error("Invalid namespaces response:", data);
                     setNamespaces([]);
                 }
             })
             .catch(err => {
-                console.error("Failed to fetch namespaces:", err);
+                logger.error("Failed to fetch namespaces:", err);
                 setNamespaces([]);
             });
     }, [authFetch]);

@@ -1,12 +1,14 @@
 package prometheus
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"os"
 	"time"
@@ -40,8 +42,8 @@ type PrometheusInstantQueryResult struct {
 
 // Repository defines the interface for querying Prometheus
 type Repository interface {
-	QueryRange(query string, start, end time.Time, step string) ([]MetricDataPoint, error)
-	QueryInstant(query string) ([]map[string]interface{}, error)
+	QueryRange(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error)
+	QueryInstant(ctx context.Context, query string) ([]map[string]interface{}, error)
 }
 
 // HTTPPrometheusRepository implements Repository using HTTP client
@@ -52,14 +54,28 @@ type HTTPPrometheusRepository struct {
 
 // NewHTTPPrometheusRepository creates a new HTTPPrometheusRepository
 func NewHTTPPrometheusRepository(baseURL string) *HTTPPrometheusRepository {
+	timeout := getPrometheusTimeout()
 	return &HTTPPrometheusRepository{
 		baseURL: baseURL,
-		client:  createSecureHTTPClient(),
+		client:  createSecureHTTPClient(timeout),
 	}
 }
 
-// QueryRange executes a Prometheus range query
-func (r *HTTPPrometheusRepository) QueryRange(query string, start, end time.Time, step string) ([]MetricDataPoint, error) {
+// getPrometheusTimeout returns the timeout for Prometheus queries from environment variable
+// Default: 30 seconds
+func getPrometheusTimeout() time.Duration {
+	timeoutStr := os.Getenv("PROMETHEUS_QUERY_TIMEOUT")
+	if timeoutStr == "" {
+		return 30 * time.Second
+	}
+	if timeout, err := time.ParseDuration(timeoutStr); err == nil {
+		return timeout
+	}
+	return 30 * time.Second
+}
+
+// QueryRange executes a Prometheus range query with context timeout
+func (r *HTTPPrometheusRepository) QueryRange(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error) {
 	if step == "" {
 		step = "60s"
 	}
@@ -75,8 +91,21 @@ func (r *HTTPPrometheusRepository) QueryRange(query string, start, end time.Time
 
 	fullURL := fmt.Sprintf("%s?%s", promURL, params.Encode())
 
-	resp, err := r.client.Get(fullURL)
+	// Create request with context
+	req, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
 	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Add tracing for debugging
+	trace := &httptrace.ClientTrace{}
+	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+
+	resp, err := r.client.Do(req)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil, fmt.Errorf("Prometheus query timeout: %w", err)
+		}
 		return nil, fmt.Errorf("failed to query Prometheus: %w", err)
 	}
 	defer resp.Body.Close()
@@ -123,8 +152,8 @@ func (r *HTTPPrometheusRepository) QueryRange(query string, start, end time.Time
 	return dataPoints, nil
 }
 
-// QueryInstant executes a Prometheus instant query
-func (r *HTTPPrometheusRepository) QueryInstant(query string) ([]map[string]interface{}, error) {
+// QueryInstant executes a Prometheus instant query with context timeout
+func (r *HTTPPrometheusRepository) QueryInstant(ctx context.Context, query string) ([]map[string]interface{}, error) {
 	// Build Prometheus query URL for instant query
 	promURL := fmt.Sprintf("%s/api/v1/query", r.baseURL)
 
@@ -133,8 +162,17 @@ func (r *HTTPPrometheusRepository) QueryInstant(query string) ([]map[string]inte
 
 	fullURL := fmt.Sprintf("%s?%s", promURL, params.Encode())
 
-	resp, err := r.client.Get(fullURL)
+	// Create request with context
+	req, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
 	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := r.client.Do(req)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil, fmt.Errorf("Prometheus query timeout: %w", err)
+		}
 		return nil, fmt.Errorf("failed to query Prometheus: %w", err)
 	}
 	defer resp.Body.Close()
@@ -189,7 +227,8 @@ func (r *HTTPPrometheusRepository) QueryInstant(query string) ([]map[string]inte
 }
 
 // createSecureHTTPClient creates an HTTP client with proper TLS certificate validation
-func createSecureHTTPClient() *http.Client {
+// The timeout parameter allows customizing the client timeout
+func createSecureHTTPClient(timeout time.Duration) *http.Client {
 	// Load system certificate pool
 	rootCAs, _ := x509.SystemCertPool()
 	if rootCAs == nil {
@@ -208,12 +247,7 @@ func createSecureHTTPClient() *http.Client {
 	}
 
 	return &http.Client{
-		Timeout:   30 * time.Second,
+		Timeout:   timeout,
 		Transport: transport,
 	}
 }
-
-
-
-
-

@@ -6,6 +6,7 @@ import LogViewerInline from './LogViewerInline';
 import TerminalViewerInline from './TerminalViewerInline';
 import PodMetrics from '../PodMetrics';
 import { formatDateTime, formatDateTimeShort } from '../../utils/dateUtils';
+import { logger } from '../../utils/logger';
 
 const PodDetails = ({ details, onEditYAML, pod }) => {
     const { authFetch } = useAuth();
@@ -51,7 +52,7 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                     setLoadingEvents(false);
                 })
                 .catch(err => {
-                    console.error('Error fetching events:', err);
+                    logger.error('Error fetching events:', err);
                     setEvents([]);
                     setLoadingEvents(false);
                 });

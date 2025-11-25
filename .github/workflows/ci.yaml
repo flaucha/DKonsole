@@ -49,6 +49,19 @@ jobs:
         working-directory: ./backend
         run: go vet ./...
 
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          working-directory: ./backend
+          args: --timeout=5m
+
+      - name: Run govulncheck
+        working-directory: ./backend
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
       - name: Run tests
         working-directory: ./backend
         run: go test -v -coverprofile=coverage.out ./...
@@ -85,6 +98,10 @@ jobs:
         working-directory: ./frontend
         run: npm install
 
+      - name: Run npm audit
+        working-directory: ./frontend
+        run: npm audit --audit-level=moderate || true  # No fallar en vulnerabilidades bajas
+
       - name: Run linter
         working-directory: ./frontend
         run: npm run lint || true  # No fallar si hay warnings del linter
@@ -101,6 +118,28 @@ jobs:
           flags: frontend
           name: frontend-coverage
 
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
   docker-build-push:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
@@ -112,6 +151,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Fetch all history for tags
+
+      - name: Run Trivy vulnerability scanner on Dockerfile
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-dockerfile-results.sarif'
+          severity: 'CRITICAL,HIGH'
 
       - name: Validate tag and determine version
         id: version

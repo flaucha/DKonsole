@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, X, Plus, Trash2, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
+import { logger } from '../../utils/logger';
 
 export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
     const { authFetch } = useAuth();
@@ -188,8 +189,8 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
             if (!saveRes.ok) {
                 const errorText = await saveRes.text();
                 // Log the YAML for debugging if there's an error
-                console.error('YAML that failed:', newYaml.substring(0, 500));
-                console.error('Error from server:', errorText);
+                logger.error('YAML that failed:', newYaml.substring(0, 500));
+                logger.error('Error from server:', errorText);
                 throw new Error(errorText || 'Failed to save changes');
             }
 

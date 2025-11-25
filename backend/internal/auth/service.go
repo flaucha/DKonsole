@@ -10,13 +10,15 @@ import (
 	"github.com/example/k8s-view/internal/models"
 )
 
-// AuthService provides business logic for authentication operations
+// AuthService provides business logic for authentication operations.
+// It handles user authentication, password verification, and JWT token generation.
 type AuthService struct {
-	userRepo UserRepository
+	userRepo  UserRepository
 	jwtSecret []byte
 }
 
-// NewAuthService creates a new AuthService
+// NewAuthService creates a new AuthService with the provided user repository and JWT secret.
+// The JWT secret should be a secure random byte array, typically loaded from environment variables.
 func NewAuthService(userRepo UserRepository, jwtSecret []byte) *AuthService {
 	return &AuthService{
 		userRepo:  userRepo,
@@ -24,25 +26,29 @@ func NewAuthService(userRepo UserRepository, jwtSecret []byte) *AuthService {
 	}
 }
 
-// LoginRequest represents login credentials
+// LoginRequest represents login credentials provided by the user.
 type LoginRequest struct {
-	Username string
-	Password string
+	Username string // Username for authentication
+	Password string // Password for authentication
 }
 
-// LoginResponse represents the response after successful login
+// LoginResponse represents the response after successful login.
 type LoginResponse struct {
-	Role string `json:"role"`
+	Role string `json:"role"` // User role (typically "admin")
 }
 
-// LoginResult represents the complete login result including token
+// LoginResult represents the complete login result including JWT token and expiration.
 type LoginResult struct {
-	Response LoginResponse
-	Token    string
-	Expires  time.Time
+	Response LoginResponse // Login response with user role
+	Token    string        // JWT token for subsequent authenticated requests
+	Expires  time.Time     // Token expiration time
 }
 
-// Login authenticates a user and generates a JWT token
+// Login authenticates a user and generates a JWT token.
+// It verifies the username and password against the configured admin credentials,
+// and returns a JWT token valid for 24 hours if authentication succeeds.
+//
+// Returns ErrInvalidCredentials if username or password is incorrect.
 func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult, error) {
 	// Get admin credentials from repository
 	adminUser, err := s.userRepo.GetAdminUser()
@@ -96,7 +102,10 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 	}, nil
 }
 
-// GetCurrentUser extracts user information from context
+// GetCurrentUser extracts user information from the request context.
+// The context should contain a "user" value set by the AuthMiddleware.
+//
+// Returns ErrUnauthorized if no user is found in the context.
 func (s *AuthService) GetCurrentUser(ctx context.Context) (*models.Claims, error) {
 	userVal := ctx.Value("user")
 	if userVal == nil {
@@ -131,8 +140,3 @@ var (
 	ErrInvalidCredentials = &AuthError{Message: "Invalid credentials"}
 	ErrUnauthorized       = &AuthError{Message: "Unauthorized"}
 )
-
-
-
-
-

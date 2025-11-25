@@ -10,25 +10,33 @@ import (
 	"github.com/example/k8s-view/internal/models"
 )
 
-// JWTService provides JWT token operations
+// JWTService provides JWT token operations including extraction, validation, and authentication.
 type JWTService struct {
-	jwtSecret []byte
+	jwtSecret []byte // Secret key used for signing and verifying JWT tokens
 }
 
-// NewJWTService creates a new JWTService
+// NewJWTService creates a new JWTService with the provided JWT secret.
+// The secret should be a secure random byte array, typically loaded from environment variables.
 func NewJWTService(jwtSecret []byte) *JWTService {
 	return &JWTService{
 		jwtSecret: jwtSecret,
 	}
 }
 
-// AuthClaims extends models.Claims with JWT registered claims
+// AuthClaims extends models.Claims with JWT registered claims.
+// It contains user information (username, role) and standard JWT claims (expiration, etc.).
 type AuthClaims struct {
 	models.Claims
 	jwt.RegisteredClaims
 }
 
-// ExtractToken extracts JWT token from request (header, query, or cookie)
+// ExtractToken extracts JWT token from HTTP request.
+// It checks for the token in the following order:
+//  1. Authorization header (Bearer token)
+//  2. Query parameter "token"
+//  3. Cookie named "token"
+//
+// Returns an error if no token is found in any of these locations.
 func (s *JWTService) ExtractToken(r *http.Request) (string, error) {
 	tokenString := ""
 	if authHeader := r.Header.Get("Authorization"); authHeader != "" {
@@ -46,7 +54,10 @@ func (s *JWTService) ExtractToken(r *http.Request) (string, error) {
 	return tokenString, nil
 }
 
-// ValidateToken validates a JWT token and returns the claims
+// ValidateToken validates a JWT token and returns the claims if valid.
+// It verifies the token signature using the JWT secret and checks token expiration.
+//
+// Returns an error if the token is invalid, expired, or malformed.
 func (s *JWTService) ValidateToken(tokenString string) (*AuthClaims, error) {
 	claims := &AuthClaims{}
 
@@ -61,7 +72,10 @@ func (s *JWTService) ValidateToken(tokenString string) (*AuthClaims, error) {
 	return claims, nil
 }
 
-// AuthenticateRequest extracts and validates JWT from request
+// AuthenticateRequest extracts and validates JWT from HTTP request.
+// This is a convenience method that combines ExtractToken and ValidateToken.
+//
+// Returns the authenticated claims if successful, or an error if authentication fails.
 func (s *JWTService) AuthenticateRequest(r *http.Request) (*AuthClaims, error) {
 	tokenString, err := s.ExtractToken(r)
 	if err != nil {
@@ -70,8 +84,3 @@ func (s *JWTService) AuthenticateRequest(r *http.Request) (*AuthClaims, error) {
 
 	return s.ValidateToken(tokenString)
 }
-
-
-
-
-

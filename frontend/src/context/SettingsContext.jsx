@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { logger } from '../utils/logger';
 
 const SettingsContext = createContext();
 
@@ -52,7 +53,7 @@ export const SettingsProvider = ({ children }) => {
             setClusters(['default']);
             setCurrentCluster('default');
         } catch (error) {
-            console.error('Failed to initialize clusters:', error);
+            logger.error('Failed to initialize clusters:', error);
             // Fallback to default
             setClusters(['default']);
             setCurrentCluster('default');

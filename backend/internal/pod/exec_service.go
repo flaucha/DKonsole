@@ -5,28 +5,31 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
-	"k8s.io/client-go/kubernetes"
 )
 
-// ExecService provides business logic for pod exec operations
+// ExecService provides business logic for pod exec operations.
+// It creates executors for executing commands in pod containers via the Kubernetes API.
 type ExecService struct{}
 
-// NewExecService creates a new ExecService
+// NewExecService creates a new ExecService instance.
 func NewExecService() *ExecService {
 	return &ExecService{}
 }
 
-// ExecRequest represents parameters for executing a command in a pod
+// ExecRequest represents parameters for executing a command in a pod.
 type ExecRequest struct {
-	Namespace string
-	PodName   string
-	Container string
+	Namespace string // Kubernetes namespace
+	PodName   string // Pod name
+	Container string // Optional container name (for multi-container pods)
 }
 
-// CreateExecutor creates a remote command executor for a pod
+// CreateExecutor creates a remote command executor for a pod.
+// The command executed is hardcoded to /bin/sh (or /bin/bash if available) for security.
+// Returns the executor, the exec URL, and an error if creation fails.
 func (s *ExecService) CreateExecutor(client kubernetes.Interface, config *rest.Config, req ExecRequest) (remotecommand.Executor, string, error) {
 	// Build exec request
 	execReq := client.CoreV1().RESTClient().Post().
@@ -58,4 +61,3 @@ func (s *ExecService) CreateExecutor(client kubernetes.Interface, config *rest.C
 
 	return executor, url.String(), nil
 }
-

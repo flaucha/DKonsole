@@ -17,9 +17,15 @@ import (
 	"github.com/example/k8s-view/internal/utils"
 )
 
-// UpdateResourceYAML updates a resource from YAML
-// Refactored to use layered architecture:
-// Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
+// UpdateResourceYAML handles HTTP PUT requests to update a Kubernetes resource from YAML.
+// Query parameters:
+//   - kind: The resource kind
+//   - name: The resource name
+//   - namespace: The namespace (if namespaced)
+//   - namespaced: "true" if the resource is namespaced
+//
+// Request body should contain the YAML representation of the resource.
+// Returns a success status on completion.
 func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 	// Parse HTTP parameters
 	kind := r.URL.Query().Get("kind")

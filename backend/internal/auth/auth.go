@@ -10,15 +10,18 @@ import (
 	"github.com/example/k8s-view/internal/utils"
 )
 
-// Service provides HTTP handlers for authentication operations
-// Refactored to use layered architecture:
-// Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
+// Service provides HTTP handlers for authentication operations.
+// It follows a layered architecture:
+//   - Handler (HTTP): Handles HTTP requests/responses
+//   - Service (Business Logic): AuthService and JWTService
+//   - Repository (Data Access): UserRepository for credential retrieval
 type Service struct {
 	authService *AuthService
 	jwtService  *JWTService
 }
 
-// NewService creates a new auth service
+// NewService creates a new authentication service with default configuration.
+// It initializes the user repository (EnvUserRepository) and JWT services.
 func NewService(h *models.Handlers) *Service {
 	// Initialize repository
 	userRepo := NewEnvUserRepository()
@@ -34,9 +37,28 @@ func NewService(h *models.Handlers) *Service {
 	}
 }
 
-// LoginHandler handles user authentication
-// Refactored to use layered architecture:
-// Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
+// LoginHandler handles HTTP POST requests for user authentication.
+// It expects a JSON body with "username" and "password" fields.
+// On success, returns a JWT token in the response body and sets it as an HTTP-only cookie.
+//
+// @Summary Autenticar usuario
+// @Description Autentica un usuario y retorna un JWT token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param credentials body models.Credentials true "Credenciales de usuario"
+// @Success 200 {object} LoginResponse "Autenticación exitosa"
+// @Failure 400 {object} map[string]string "Cuerpo de solicitud inválido"
+// @Failure 401 {object} map[string]string "Credenciales inválidas"
+// @Router /api/login [post]
+//
+// Example request body:
+//
+//	{"username": "admin", "password": "password123"}
+//
+// Example response:
+//
+//	{"role": "admin"}
 func (s *Service) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var creds models.Credentials
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
@@ -79,8 +101,9 @@ func (s *Service) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	utils.JSONResponse(w, http.StatusOK, result.Response)
 }
 
-// LogoutHandler clears the session cookie
-// Refactored to use utils helpers
+// LogoutHandler handles HTTP requests to log out the current user.
+// It clears the authentication cookie by setting it to expire immediately.
+// Returns a JSON response with a success message.
 func (s *Service) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
@@ -95,9 +118,22 @@ func (s *Service) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	utils.JSONResponse(w, http.StatusOK, map[string]string{"message": "Logged out"})
 }
 
-// MeHandler returns current user info if authenticated
-// Refactored to use layered architecture:
-// Handler (HTTP) -> Service (Business Logic)
+// MeHandler returns the current authenticated user's information.
+// It extracts user claims from the request context (set by AuthMiddleware).
+// Returns a JSON response with username and role, or 401 Unauthorized if not authenticated.
+//
+// @Summary Obtener usuario actual
+// @Description Retorna la información del usuario autenticado
+// @Tags auth
+// @Security Bearer
+// @Produce json
+// @Success 200 {object} map[string]string "Información del usuario"
+// @Failure 401 {object} map[string]string "No autenticado"
+// @Router /api/me [get]
+//
+// Example response:
+//
+//	{"username": "admin", "role": "admin"}
 func (s *Service) MeHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -115,8 +151,12 @@ func (s *Service) MeHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// AuthMiddleware protects routes
-// Refactored to use JWTService
+// AuthMiddleware is an HTTP middleware that protects routes by requiring valid JWT authentication.
+// It extracts and validates the JWT token from the request, and if valid, adds the user claims
+// to the request context for use by subsequent handlers.
+//
+// OPTIONS requests are allowed through for CORS preflight.
+// Unauthenticated requests receive a 401 Unauthorized response.
 func (s *Service) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Allow OPTIONS for CORS

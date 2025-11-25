@@ -42,6 +42,9 @@ secrets.yaml
 # Helm
 *.tgz
 
+# Swagger generated docs
+backend/docs/
+
 #SEG_FILE
 ANALISIS*
 

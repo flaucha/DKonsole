@@ -3,6 +3,7 @@ import { Activity, HardDrive, Clock } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { logger } from '../utils/logger';
 
 const DeploymentMetrics = ({ deployment, namespace }) => {
     const { currentCluster } = useSettings();
@@ -32,7 +33,7 @@ const DeploymentMetrics = ({ deployment, namespace }) => {
                 const status = await response.json();
                 setPrometheusEnabled(status.enabled);
             } catch (error) {
-                console.error('Error checking Prometheus status:', error);
+                logger.error('Error checking Prometheus status:', error);
                 setPrometheusEnabled(false);
             }
         };
@@ -92,7 +93,7 @@ const DeploymentMetrics = ({ deployment, namespace }) => {
 
                 setData(transformedData);
             } catch (error) {
-                console.error('Error fetching Prometheus metrics:', error);
+                logger.error('Error fetching Prometheus metrics:', error);
             } finally {
                 setLoading(false);
             }

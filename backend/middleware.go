@@ -1,13 +1,14 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
 	"golang.org/x/time/rate"
+
+	"github.com/example/k8s-view/internal/utils"
 )
 
 // StatusRecorder wraps http.ResponseWriter to capture status code
@@ -50,7 +51,7 @@ func getClientIP(r *http.Request) string {
 func AuditMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		
+
 		// For WebSocket, don't use StatusRecorder as it interferes with upgrade
 		isWebSocket := r.Header.Get("Upgrade") == "websocket"
 		var recorder *StatusRecorder
@@ -97,16 +98,21 @@ func AuditMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		// Get real client IP (handles proxies)
 		clientIP := getClientIP(r)
 
-		// Log format: [AUDIT] | Status | Duration | User | IP | Method | Path | UserAgent
-		log.Printf("[AUDIT] | %d | %v | %s | %s | %s %s | %s",
-			status,
-			duration,
-			user,
-			clientIP,
-			r.Method,
-			r.URL.Path,
-			r.UserAgent(),
-		)
+		// Use structured logging - build entry and call internal function
+		entry := utils.AuditLogEntry{
+			User:     user,
+			IP:       clientIP,
+			Action:   "http_request",
+			Method:   r.Method,
+			Path:     r.URL.Path,
+			Status:   status,
+			Duration: duration.String(),
+			Success:  status < 400,
+			Details: map[string]interface{}{
+				"user_agent": r.UserAgent(),
+			},
+		}
+		utils.AuditLogLegacy(r, entry.Action, "", "", "", entry.Success, nil, entry.Details)
 	}
 }
 
@@ -200,7 +206,7 @@ func CSRFMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		// Check Origin or Referer
 		origin := r.Header.Get("Origin")
 		referer := r.Header.Get("Referer")
-		
+
 		if origin == "" && referer == "" {
 			http.Error(w, "Missing Origin or Referer header", http.StatusForbidden)
 			return
@@ -209,10 +215,10 @@ func CSRFMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		// In a real app, we would validate against a list of allowed domains.
 		// For now, we ensure that if Origin is present, it matches the Host (basic check)
 		// or matches ALLOWED_ORIGINS env var.
-		
+
 		// This is a simplified check. For strict CSRF, use Double Submit Cookie or similar.
 		// Here we rely on the fact that browsers set Origin/Referer and attackers can't spoof them easily in cross-site requests.
-		
+
 		next(w, r)
 	}
 }

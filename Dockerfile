@@ -35,9 +35,9 @@ ENV GOFLAGS=-mod=mod
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 # Stage 3: Final image
-FROM alpine:latest
+FROM alpine:3.19
 
-RUN apk --no-cache add ca-certificates && \
+RUN apk --no-cache add ca-certificates wget && \
     addgroup -S app && adduser -S -G app -u 1000 app
 
 WORKDIR /home/app
@@ -61,6 +61,10 @@ RUN chown -R app:app /home/app
 
 # Expose port
 EXPOSE 8080
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/healthz || exit 1
 
 USER app
 

@@ -41,3 +41,5 @@ echo "📝 O simplemente abre una nueva terminal (el PATH ya está en .bashrc)"
 
 
 
+
+

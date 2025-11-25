@@ -55,12 +55,12 @@ func (s *Service) GetDeploymentMetrics(ctx context.Context, req GetDeploymentMet
 		validatedNamespace, validatedDeployment,
 	)
 
-	cpuData, err := s.repo.QueryRange(cpuQuery, startTime, endTime, "60s")
+	cpuData, err := s.repo.QueryRange(ctx, cpuQuery, startTime, endTime, "60s")
 	if err != nil {
 		return nil, fmt.Errorf("failed to query CPU metrics: %w", err)
 	}
 
-	memoryData, err := s.repo.QueryRange(memoryQuery, startTime, endTime, "60s")
+	memoryData, err := s.repo.QueryRange(ctx, memoryQuery, startTime, endTime, "60s")
 	if err != nil {
 		return nil, fmt.Errorf("failed to query memory metrics: %w", err)
 	}
@@ -123,11 +123,11 @@ func (s *Service) GetPodMetrics(ctx context.Context, req GetPodMetricsRequest) (
 		validatedNamespace, validatedPodName, validatedNamespace, validatedPodName,
 	)
 
-	cpuData, _ := s.repo.QueryRange(cpuQuery, startTime, endTime, "60s")
-	memoryData, _ := s.repo.QueryRange(memoryQuery, startTime, endTime, "60s")
-	networkRxData, _ := s.repo.QueryRange(networkRxQuery, startTime, endTime, "60s")
-	networkTxData, _ := s.repo.QueryRange(networkTxQuery, startTime, endTime, "60s")
-	pvcUsageData, _ := s.repo.QueryRange(pvcUsageQuery, startTime, endTime, "60s")
+	cpuData, _ := s.repo.QueryRange(ctx, cpuQuery, startTime, endTime, "60s")
+	memoryData, _ := s.repo.QueryRange(ctx, memoryQuery, startTime, endTime, "60s")
+	networkRxData, _ := s.repo.QueryRange(ctx, networkRxQuery, startTime, endTime, "60s")
+	networkTxData, _ := s.repo.QueryRange(ctx, networkTxQuery, startTime, endTime, "60s")
+	pvcUsageData, _ := s.repo.QueryRange(ctx, pvcUsageQuery, startTime, endTime, "60s")
 
 	return &PodMetricsResponse{
 		CPU:       cpuData,
@@ -191,23 +191,23 @@ func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interfac
 
 	// Query all CPU metrics
 	cpuQuery := `100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)`
-	cpuData, _ := s.repo.QueryInstant(cpuQuery)
+	cpuData, _ := s.repo.QueryInstant(ctx, cpuQuery)
 
 	// Query all memory metrics
 	memQuery := `(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100`
-	memData, _ := s.repo.QueryInstant(memQuery)
+	memData, _ := s.repo.QueryInstant(ctx, memQuery)
 
 	// Query all disk metrics
 	diskQuery := `(1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100`
-	diskData, _ := s.repo.QueryInstant(diskQuery)
+	diskData, _ := s.repo.QueryInstant(ctx, diskQuery)
 
 	// Query all network RX metrics
 	netRxQuery := `sum(rate(node_network_receive_bytes_total[5m])) by (instance) / 1024`
-	netRxData, _ := s.repo.QueryInstant(netRxQuery)
+	netRxData, _ := s.repo.QueryInstant(ctx, netRxQuery)
 
 	// Query all network TX metrics
 	netTxQuery := `sum(rate(node_network_transmit_bytes_total[5m])) by (instance) / 1024`
-	netTxData, _ := s.repo.QueryInstant(netTxQuery)
+	netTxData, _ := s.repo.QueryInstant(ctx, netTxQuery)
 
 	// Build maps for quick lookup
 	cpuMap := make(map[string]float64)
@@ -268,7 +268,7 @@ func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interfac
 	// Try to get instance mapping from kube_node_info
 	nodeToInstance := make(map[string]string)
 	nodesQuery := `kube_node_info`
-	nodesData, _ := s.repo.QueryInstant(nodesQuery)
+	nodesData, _ := s.repo.QueryInstant(ctx, nodesQuery)
 	for _, nodeData := range nodesData {
 		if node, ok := nodeData["node"].(string); ok {
 			if inst, ok := nodeData["instance"].(string); ok {
@@ -407,8 +407,3 @@ func (s *Service) calculateClusterStats(nodes []NodeMetric, startTime, endTime t
 		MemoryTrend:    memoryTrend,
 	}
 }
-
-
-
-
-

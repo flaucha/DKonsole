@@ -9,14 +9,15 @@ import (
 	"github.com/example/k8s-view/internal/utils"
 )
 
-// Service provides Helm release operations
+// Service provides HTTP handlers for Helm release operations.
+// It manages Helm releases by interacting with Kubernetes Secrets that store Helm release metadata.
 type Service struct {
 	handlers       *models.Handlers
 	clusterService *cluster.Service
 	serviceFactory *ServiceFactory
 }
 
-// NewService creates a new Helm service
+// NewService creates a new Helm service with the provided handlers and cluster service.
 func NewService(h *models.Handlers, cs *cluster.Service) *Service {
 	return &Service{
 		handlers:       h,
@@ -25,8 +26,8 @@ func NewService(h *models.Handlers, cs *cluster.Service) *Service {
 	}
 }
 
-// GetHelmReleases lists all Helm releases in the cluster
-// Refactored to use layered architecture: Handler -> Service -> Repository
+// GetHelmReleases handles HTTP GET requests to list all Helm releases in the cluster.
+// Returns a JSON array of Helm release objects with metadata including name, namespace, version, and status.
 func (s *Service) GetHelmReleases(w http.ResponseWriter, r *http.Request) {
 	// Get Kubernetes client
 	client, err := s.clusterService.GetClient(r)
@@ -53,8 +54,13 @@ func (s *Service) GetHelmReleases(w http.ResponseWriter, r *http.Request) {
 	utils.JSONResponse(w, http.StatusOK, releases)
 }
 
-// DeleteHelmRelease uninstalls a Helm release by deleting its Secrets
-// Refactored to use layered architecture: Handler -> Service -> Repository
+// DeleteHelmRelease handles HTTP DELETE requests to uninstall a Helm release.
+// Query parameters:
+//   - name: The Helm release name
+//   - namespace: The namespace where the release is installed
+//
+// This operation deletes the Helm release Secrets, effectively uninstalling the release.
+// Returns a success status on completion.
 func (s *Service) DeleteHelmRelease(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		utils.ErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")

@@ -8,17 +8,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// PodService provides business logic for pod-related operations
+// PodService provides business logic for pod-related operations.
 type PodService struct {
 	eventRepo EventRepository
 }
 
-// NewPodService creates a new PodService
+// NewPodService creates a new PodService with the provided event repository.
 func NewPodService(eventRepo EventRepository) *PodService {
 	return &PodService{eventRepo: eventRepo}
 }
 
-// GetPodEvents fetches, transforms, and sorts events for a specific pod
+// GetPodEvents fetches, transforms, and sorts Kubernetes events for a specific pod.
+// Events are sorted by LastSeen timestamp in descending order (most recent first).
+// Returns an error if the events cannot be retrieved.
 func (s *PodService) GetPodEvents(ctx context.Context, namespace, podName string) ([]EventInfo, error) {
 	events, err := s.eventRepo.GetEvents(ctx, namespace, podName)
 	if err != nil {

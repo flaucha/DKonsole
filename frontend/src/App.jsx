@@ -1,19 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import NamespaceSelector from './components/NamespaceSelector';
-import WorkloadList from './components/WorkloadList';
+import Loading from './components/Loading';
 import Settings from './components/Settings';
 import About from './components/About';
-import ClusterOverview from './components/ClusterOverview';
 import { SettingsProvider } from './context/SettingsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import YamlImporter from './components/YamlImporter';
-import ApiExplorer from './components/ApiExplorer';
-import NamespaceManager from './components/NamespaceManager';
-import ResourceQuotaManager from './components/ResourceQuotaManager';
-import HelmChartManager from './components/HelmChartManager';
 import Login from './components/Login';
+
+// Lazy load large components for code splitting
+const WorkloadList = lazy(() => import('./components/WorkloadList'));
+const ClusterOverview = lazy(() => import('./components/ClusterOverview'));
+const YamlImporter = lazy(() => import('./components/YamlImporter'));
+const ApiExplorer = lazy(() => import('./components/ApiExplorer'));
+const NamespaceManager = lazy(() => import('./components/NamespaceManager'));
+const ResourceQuotaManager = lazy(() => import('./components/ResourceQuotaManager'));
+const HelmChartManager = lazy(() => import('./components/HelmChartManager'));
 
 const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
@@ -68,18 +71,46 @@ const Dashboard = () => {
             >
                 <Routes>
                     <Route path="/" element={<Navigate to="overview" replace />} />
-                    <Route path="overview" element={<ClusterOverview />} />
-                    <Route path="workloads/:kind" element={<WorkloadListWrapper namespace={selectedNamespace} />} />
+                    <Route path="overview" element={
+                        <Suspense fallback={<Loading message="Loading cluster overview..." />}>
+                            <ClusterOverview />
+                        </Suspense>
+                    } />
+                    <Route path="workloads/:kind" element={
+                        <Suspense fallback={<Loading message="Loading workloads..." />}>
+                            <WorkloadListWrapper namespace={selectedNamespace} />
+                        </Suspense>
+                    } />
                     <Route path="settings" element={<Settings />} />
                     <Route path="about" element={<About />} />
-                    <Route path="api-explorer" element={<ApiExplorer namespace={selectedNamespace} />} />
-                    <Route path="namespaces" element={<NamespaceManager />} />
-                    <Route path="resource-quotas" element={<ResourceQuotaManager namespace={selectedNamespace} />} />
-                    <Route path="helm-charts" element={<HelmChartManager />} />
+                    <Route path="api-explorer" element={
+                        <Suspense fallback={<Loading message="Loading API explorer..." />}>
+                            <ApiExplorer namespace={selectedNamespace} />
+                        </Suspense>
+                    } />
+                    <Route path="namespaces" element={
+                        <Suspense fallback={<Loading message="Loading namespace manager..." />}>
+                            <NamespaceManager />
+                        </Suspense>
+                    } />
+                    <Route path="resource-quotas" element={
+                        <Suspense fallback={<Loading message="Loading resource quotas..." />}>
+                            <ResourceQuotaManager namespace={selectedNamespace} />
+                        </Suspense>
+                    } />
+                    <Route path="helm-charts" element={
+                        <Suspense fallback={<Loading message="Loading Helm charts..." />}>
+                            <HelmChartManager />
+                        </Suspense>
+                    } />
                     {/* Fallback */}
                     <Route path="*" element={<Navigate to="overview" replace />} />
                 </Routes>
-                {showImporter && <YamlImporter onClose={() => setShowImporter(false)} />}
+                {showImporter && (
+                    <Suspense fallback={<Loading message="Loading YAML importer..." />}>
+                        <YamlImporter onClose={() => setShowImporter(false)} />
+                    </Suspense>
+                )}
             </Layout>
         </SettingsProvider>
     );

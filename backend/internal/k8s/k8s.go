@@ -10,14 +10,15 @@ import (
 	"github.com/example/k8s-view/internal/utils"
 )
 
-// Service provides Kubernetes resource operations
+// Service provides HTTP handlers for Kubernetes resource operations.
+// It follows a layered architecture pattern with dependency injection via ServiceFactory.
 type Service struct {
 	handlers       *models.Handlers
 	clusterService *cluster.Service
 	serviceFactory *ServiceFactory
 }
 
-// NewService creates a new Kubernetes service
+// NewService creates a new Kubernetes service with the provided handlers and cluster service.
 func NewService(h *models.Handlers, cs *cluster.Service) *Service {
 	return &Service{
 		handlers:       h,
@@ -26,9 +27,22 @@ func NewService(h *models.Handlers, cs *cluster.Service) *Service {
 	}
 }
 
-// GetNamespaces returns a list of all namespaces
-// Refactored to use layered architecture:
-// Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
+// GetNamespaces handles HTTP GET requests to retrieve all Kubernetes namespaces.
+// Returns a JSON array of namespace objects.
+//
+// @Summary Listar namespaces
+// @Description Retorna todos los namespaces de Kubernetes
+// @Tags k8s
+// @Security Bearer
+// @Produce json
+// @Success 200 {array} object "Lista de namespaces"
+// @Failure 400 {object} map[string]string "Error en la solicitud"
+// @Failure 500 {object} map[string]string "Error del servidor"
+// @Router /api/namespaces [get]
+//
+// Example response:
+//
+//	[{"name": "default", "status": "Active"}, ...]
 func (s *Service) GetNamespaces(w http.ResponseWriter, r *http.Request) {
 	// Get Kubernetes client for this request
 	client, err := s.clusterService.GetClient(r)
@@ -55,9 +69,12 @@ func (s *Service) GetNamespaces(w http.ResponseWriter, r *http.Request) {
 	utils.JSONResponse(w, http.StatusOK, namespaces)
 }
 
-// GetResources lists resources of a specific kind
-// Refactored to use layered architecture:
-// Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
+// GetResources handles HTTP GET requests to list Kubernetes resources of a specific kind.
+// Query parameters:
+//   - kind: The resource kind (e.g., "Pod", "Deployment", "Service")
+//   - namespace: The namespace to filter by, or "all" for all namespaces
+//
+// Returns a JSON array of resource objects with metadata and status information.
 func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	// Parse HTTP parameters
 	ns := r.URL.Query().Get("namespace")
@@ -108,8 +125,14 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	utils.JSONResponse(w, http.StatusOK, resources)
 }
 
-// ScaleResource scales a deployment
-// Refactored to use utils helpers
+// ScaleResource handles HTTP POST requests to scale a Kubernetes Deployment.
+// Query parameters:
+//   - kind: Must be "Deployment"
+//   - name: The deployment name
+//   - namespace: The namespace (defaults to "default" if empty)
+//   - delta: The number of replicas to add or subtract (positive or negative integer)
+//
+// Returns the new replica count on success.
 func (s *Service) ScaleResource(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		utils.ErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
@@ -180,9 +203,17 @@ func (s *Service) ScaleResource(w http.ResponseWriter, r *http.Request) {
 
 // WatchResources is implemented in resource_operations.go
 
-// GetClusterStats returns cluster statistics
-// Refactored to use layered architecture:
-// Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
+// GetClusterStats handles HTTP GET requests to retrieve cluster-wide statistics.
+// Returns counts of nodes, namespaces, pods, deployments, services, ingresses, PVCs, and PVs.
+//
+// Example response:
+//
+//	{
+//	  "nodes": 3,
+//	  "namespaces": 10,
+//	  "pods": 45,
+//	  ...
+//	}
 func (s *Service) GetClusterStats(w http.ResponseWriter, r *http.Request) {
 	// Use request context with timeout so cancellation propagates
 	ctx, cancel := utils.CreateRequestContext(r)

@@ -3,7 +3,6 @@ package pod
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,13 +16,13 @@ import (
 	"github.com/example/k8s-view/internal/utils"
 )
 
-// Service provides pod-specific HTTP handlers
+// Service provides HTTP handlers for pod-specific operations including log streaming and exec.
 type Service struct {
 	handlers       *models.Handlers
 	clusterService *cluster.Service
 }
 
-// NewService creates a new pod service
+// NewService creates a new pod service with the provided handlers and cluster service.
 func NewService(h *models.Handlers, cs *cluster.Service) *Service {
 	return &Service{
 		handlers:       h,
@@ -33,9 +32,14 @@ func NewService(h *models.Handlers, cs *cluster.Service) *Service {
 	}
 }
 
-// StreamPodLogs streams logs from a pod
-// Refactored to use layered architecture:
-// Handler (HTTP Streaming) -> Service (Business Logic) -> Repository (Data Access)
+// StreamPodLogs handles HTTP GET requests to stream logs from a Kubernetes pod.
+// Query parameters:
+//   - namespace: The namespace containing the pod
+//   - pod: The pod name
+//   - container: Optional container name (if pod has multiple containers)
+//
+// Returns a streaming text/plain response with pod logs. The connection remains open
+// and logs are streamed in real-time as they are generated.
 func (s *Service) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
 	// Parse and validate HTTP parameters
 	params, err := utils.ParsePodParams(r)
@@ -105,9 +109,12 @@ func (s *Service) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetPodEvents returns events for a specific pod
-// Refactored to use layered architecture:
-// Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
+// GetPodEvents handles HTTP GET requests to retrieve Kubernetes events for a specific pod.
+// Query parameters:
+//   - namespace: The namespace containing the pod
+//   - pod: The pod name
+//
+// Returns a JSON array of events sorted by LastSeen timestamp (most recent first).
 func (s *Service) GetPodEvents(w http.ResponseWriter, r *http.Request) {
 	// Parse and validate HTTP parameters
 	params, err := utils.ParsePodParams(r)
@@ -262,13 +269,19 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("WebSocket upgrade failed: %v, Origin: %s, Host: %s",
-			err, r.Header.Get("Origin"), r.Host)
+		utils.LogError(err, "WebSocket upgrade failed", map[string]interface{}{
+			"origin": r.Header.Get("Origin"),
+			"host":   r.Host,
+			"pod":    fmt.Sprintf("%s/%s", params.Namespace, params.PodName),
+		})
 		return
 	}
 	defer conn.Close()
 
-	log.Printf("WebSocket upgraded successfully for pod: %s/%s", params.Namespace, params.PodName)
+	utils.LogInfo("WebSocket upgraded successfully", map[string]interface{}{
+		"pod":       fmt.Sprintf("%s/%s", params.Namespace, params.PodName),
+		"container": params.Container,
+	})
 
 	// Create pipes for stdin/stdout/stderr
 	stdinReader, stdinWriter := io.Pipe()
@@ -312,7 +325,10 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		log.Printf("Exec stream error: %v", err)
+		utils.LogError(err, "Exec stream error", map[string]interface{}{
+			"pod":       fmt.Sprintf("%s/%s", params.Namespace, params.PodName),
+			"container": params.Container,
+		})
 		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Exec error: %v", err)))
 	}
 }

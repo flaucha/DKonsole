@@ -8,25 +8,28 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// LogService provides business logic for pod log operations
+// LogService provides business logic for pod log operations.
 type LogService struct {
 	logRepo LogRepository
 }
 
-// NewLogService creates a new LogService
+// NewLogService creates a new LogService with the provided log repository.
 func NewLogService(logRepo LogRepository) *LogService {
 	return &LogService{logRepo: logRepo}
 }
 
-// StreamLogsRequest represents the parameters for streaming pod logs
+// StreamLogsRequest represents the parameters for streaming pod logs.
 type StreamLogsRequest struct {
-	Namespace string
-	PodName   string
-	Container string
-	Follow    bool
+	Namespace string // Kubernetes namespace
+	PodName   string // Pod name
+	Container string // Optional container name (for multi-container pods)
+	Follow    bool   // If true, stream logs continuously as they are generated
 }
 
-// StreamLogs opens a log stream for a specific pod
+// StreamLogs opens a log stream for a specific pod container.
+// Returns an io.ReadCloser that can be used to read log data.
+// The caller is responsible for closing the stream.
+// Returns an error if the log stream cannot be opened.
 func (s *LogService) StreamLogs(ctx context.Context, req StreamLogsRequest) (io.ReadCloser, error) {
 	opts := &corev1.PodLogOptions{
 		Follow: req.Follow,
@@ -42,8 +45,3 @@ func (s *LogService) StreamLogs(ctx context.Context, req StreamLogsRequest) (io.
 
 	return stream, nil
 }
-
-
-
-
-

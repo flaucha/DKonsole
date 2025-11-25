@@ -13,13 +13,14 @@ import (
 	"github.com/example/k8s-view/internal/models"
 )
 
-// ResourceService provides business logic for resource operations
+// ResourceService provides business logic for Kubernetes resource operations.
+// It handles resource updates, deletions, and YAML retrieval using the dynamic client.
 type ResourceService struct {
 	resourceRepo ResourceRepository
 	gvrResolver  GVRResolver
 }
 
-// NewResourceService creates a new ResourceService
+// NewResourceService creates a new ResourceService with the provided repository and GVR resolver.
 func NewResourceService(resourceRepo ResourceRepository, gvrResolver GVRResolver) *ResourceService {
 	return &ResourceService{
 		resourceRepo: resourceRepo,
@@ -27,16 +28,18 @@ func NewResourceService(resourceRepo ResourceRepository, gvrResolver GVRResolver
 	}
 }
 
-// UpdateResourceRequest represents parameters for updating a resource
+// UpdateResourceRequest represents parameters for updating a Kubernetes resource.
 type UpdateResourceRequest struct {
-	YAMLContent string
-	Kind        string
-	Name        string
-	Namespace   string
-	Namespaced  bool
+	YAMLContent string // YAML content of the resource to update
+	Kind        string // Resource kind (e.g., "Pod", "Deployment")
+	Name        string // Resource name
+	Namespace   string // Namespace (empty for cluster-scoped resources)
+	Namespaced  bool   // Whether the resource is namespaced
 }
 
-// UpdateResource updates a Kubernetes resource from YAML
+// UpdateResource updates a Kubernetes resource from YAML content.
+// It parses the YAML, resolves the GroupVersionResource, and applies the changes using a strategic merge patch.
+// Returns an error if the YAML is invalid, the resource cannot be found, or the update fails.
 func (s *ResourceService) UpdateResource(ctx context.Context, req UpdateResourceRequest) error {
 	// Parse YAML to JSON
 	jsonData, err := yaml.YAMLToJSON([]byte(req.YAMLContent))
@@ -102,15 +105,18 @@ func (s *ResourceService) UpdateResource(ctx context.Context, req UpdateResource
 	return nil
 }
 
-// DeleteResourceRequest represents parameters for deleting a resource
+// DeleteResourceRequest represents parameters for deleting a Kubernetes resource.
 type DeleteResourceRequest struct {
-	Kind      string
-	Name      string
-	Namespace string
-	Force     bool
+	Kind      string // Resource kind (e.g., "Pod", "Deployment")
+	Name      string // Resource name
+	Namespace string // Namespace (required for namespaced resources)
+	Force     bool   // If true, force deletion with 0 grace period
 }
 
-// DeleteResource deletes a Kubernetes resource
+// DeleteResource deletes a Kubernetes resource.
+// By default, it uses a 30-second grace period and foreground deletion propagation.
+// If Force is true, it uses 0 grace period and background propagation.
+// Returns an error if the resource cannot be found or deletion fails.
 func (s *ResourceService) DeleteResource(ctx context.Context, req DeleteResourceRequest) error {
 	normalizedKind := models.NormalizeKind(req.Kind)
 
@@ -142,19 +148,21 @@ func (s *ResourceService) DeleteResource(ctx context.Context, req DeleteResource
 	return nil
 }
 
-// GetResourceRequest represents parameters for getting a resource
+// GetResourceRequest represents parameters for retrieving a Kubernetes resource.
 type GetResourceRequest struct {
-	Kind         string
-	Name         string
-	Namespace    string
-	AllNamespaces bool
-	Group        string
-	Version      string
-	Resource     string
-	Namespaced   bool
+	Kind          string // Resource kind (e.g., "Pod", "Deployment")
+	Name          string // Resource name
+	Namespace     string // Namespace (defaults to "default" for namespaced resources)
+	AllNamespaces bool   // If true, ignore namespace filter
+	Group         string // API group (optional)
+	Version       string // API version (optional)
+	Resource      string // Resource name (optional)
+	Namespaced    bool   // Whether the resource is namespaced
 }
 
-// GetResourceYAML fetches a resource and returns its YAML representation
+// GetResourceYAML fetches a Kubernetes resource and returns its YAML representation.
+// It resolves the GroupVersionResource, retrieves the resource, and converts it to YAML format.
+// Returns the YAML string or an error if the resource cannot be found or retrieved.
 func (s *ResourceService) GetResourceYAML(ctx context.Context, req GetResourceRequest, discoveryClient interface{}) (string, error) {
 	normalizedKind := models.NormalizeKind(req.Kind)
 

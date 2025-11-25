@@ -2,7 +2,6 @@ package prometheus
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/example/k8s-view/internal/cluster"
@@ -43,21 +42,27 @@ func (h *HTTPHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 // Refactored to use layered architecture:
 // Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
 func (h *HTTPHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
-	log.Printf("GetPrometheusMetrics: PrometheusURL=%s, deployment=%s, namespace=%s",
-		h.prometheusURL, r.URL.Query().Get("deployment"), r.URL.Query().Get("namespace"))
-
-	if h.prometheusURL == "" {
-		log.Printf("GetPrometheusMetrics: Prometheus URL not configured")
-		utils.ErrorResponse(w, http.StatusServiceUnavailable, "Prometheus URL not configured")
-		return
-	}
-
 	deployment := r.URL.Query().Get("deployment")
 	namespace := r.URL.Query().Get("namespace")
 	rangeParam := r.URL.Query().Get("range")
 
+	utils.LogDebug("GetPrometheusMetrics request", map[string]interface{}{
+		"prometheus_url": h.prometheusURL,
+		"deployment":     deployment,
+		"namespace":      namespace,
+	})
+
+	if h.prometheusURL == "" {
+		utils.LogWarn("Prometheus URL not configured", nil)
+		utils.ErrorResponse(w, http.StatusServiceUnavailable, "Prometheus URL not configured")
+		return
+	}
+
 	if deployment == "" || namespace == "" {
-		log.Printf("GetPrometheusMetrics: Missing deployment or namespace")
+		utils.LogWarn("Missing deployment or namespace", map[string]interface{}{
+			"deployment": deployment,
+			"namespace":  namespace,
+		})
 		utils.ErrorResponse(w, http.StatusBadRequest, "deployment and namespace are required")
 		return
 	}
@@ -88,17 +93,20 @@ func (h *HTTPHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 // Refactored to use layered architecture:
 // Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
 func (h *HTTPHandler) GetPodMetrics(w http.ResponseWriter, r *http.Request) {
-	log.Printf("GetPrometheusPodMetrics: PrometheusURL=%s, pod=%s, namespace=%s",
-		h.prometheusURL, r.URL.Query().Get("pod"), r.URL.Query().Get("namespace"))
+	podName := r.URL.Query().Get("pod")
+	namespace := r.URL.Query().Get("namespace")
+	rangeParam := r.URL.Query().Get("range")
+
+	utils.LogDebug("GetPrometheusPodMetrics request", map[string]interface{}{
+		"prometheus_url": h.prometheusURL,
+		"pod":            podName,
+		"namespace":      namespace,
+	})
 
 	if h.prometheusURL == "" {
 		utils.ErrorResponse(w, http.StatusServiceUnavailable, "Prometheus URL not configured")
 		return
 	}
-
-	podName := r.URL.Query().Get("pod")
-	namespace := r.URL.Query().Get("namespace")
-	rangeParam := r.URL.Query().Get("range")
 
 	if podName == "" || namespace == "" {
 		utils.ErrorResponse(w, http.StatusBadRequest, "pod and namespace are required")
@@ -131,7 +139,9 @@ func (h *HTTPHandler) GetPodMetrics(w http.ResponseWriter, r *http.Request) {
 // Refactored to use layered architecture:
 // Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
 func (h *HTTPHandler) GetClusterOverview(w http.ResponseWriter, r *http.Request) {
-	log.Printf("GetPrometheusClusterOverview: PrometheusURL=%s", h.prometheusURL)
+	utils.LogDebug("GetPrometheusClusterOverview request", map[string]interface{}{
+		"prometheus_url": h.prometheusURL,
+	})
 
 	if h.prometheusURL == "" {
 		utils.ErrorResponse(w, http.StatusServiceUnavailable, "Prometheus URL not configured")
@@ -166,4 +176,3 @@ func (h *HTTPHandler) GetClusterOverview(w http.ResponseWriter, r *http.Request)
 	// Write JSON response (HTTP layer)
 	utils.JSONResponse(w, http.StatusOK, response)
 }
-

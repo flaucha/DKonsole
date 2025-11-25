@@ -10,7 +10,14 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-// VerifyPassword verifies a password against an Argon2 hash
+// VerifyPassword verifies a password against an Argon2 hash.
+// The hash should be in the format: $argon2id$v=19$m=65536,t=3,p=4$salt$hash
+//
+// It supports both Argon2id and Argon2i variants and uses constant-time comparison
+// to prevent timing attacks.
+//
+// Returns true if the password matches the hash, false otherwise.
+// Returns an error if the hash format is invalid or unsupported.
 func VerifyPassword(password, encodedHash string) (bool, error) {
 	parts := strings.Split(encodedHash, "$")
 	if len(parts) != 6 {
@@ -61,8 +68,3 @@ func VerifyPassword(password, encodedHash string) (bool, error) {
 
 	return subtle.ConstantTimeCompare(decodedHash, comparisonHash) == 1, nil
 }
-
-
-
-
-

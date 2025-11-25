@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { logger } from '../utils/logger';
 
 const AuthContext = createContext();
 
@@ -20,7 +21,7 @@ export const AuthProvider = ({ children }) => {
                 setUser(data);
             }
         } catch (error) {
-            console.error('Session check failed:', error);
+            logger.error('Session check failed:', error);
         } finally {
             setLoading(false);
         }
@@ -43,7 +44,7 @@ export const AuthProvider = ({ children }) => {
                 throw new Error('Invalid credentials');
             }
         } catch (error) {
-            console.error('Login failed:', error);
+            logger.error('Login failed:', error);
             throw error;
         }
     };
@@ -52,7 +53,7 @@ export const AuthProvider = ({ children }) => {
         try {
             await fetch('/api/logout', { method: 'POST' });
         } catch (error) {
-            console.error('Logout failed:', error);
+            logger.error('Logout failed:', error);
         }
         setUser(null);
     };

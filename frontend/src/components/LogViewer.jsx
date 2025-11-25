@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Terminal, Download, Pause, Play } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { logger } from '../utils/logger';
 
 const LogViewer = ({ namespace, pod, container, onClose }) => {
     const [logs, setLogs] = useState([]);
@@ -24,7 +25,7 @@ const LogViewer = ({ namespace, pod, container, onClose }) => {
                     setLogs(prev => [...prev, ...text.split('\n').filter(Boolean)]);
                 }
             } catch (error) {
-                console.error('Error streaming logs:', error);
+                logger.error('Error streaming logs:', error);
                 setLogs(prev => [...prev, `Error: ${error.message}`]);
             }
         };
