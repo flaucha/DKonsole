@@ -177,6 +177,18 @@ func main() {
 		return middleware.SecurityHeadersMiddleware(enableCors(RateLimitMiddleware(CSRFMiddleware(AuditMiddleware(authService.AuthMiddleware(h))))))
 	}
 
+	// Helper for authenticated Handler (for Swagger which returns http.Handler)
+	secureHandler := func(h http.Handler) http.Handler {
+		// Convert Handler to HandlerFunc and apply authentication middleware
+		handlerFunc := func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+		// Apply the same security chain as secure() but wrap the Handler
+		return middleware.SecurityHeadersHandler(http.HandlerFunc(
+			enableCors(RateLimitMiddleware(CSRFMiddleware(AuditMiddleware(authService.AuthMiddleware(handlerFunc)))))),
+		)
+	}
+
 	// Helper for public routes
 	public := func(h http.HandlerFunc) http.HandlerFunc {
 		return middleware.SecurityHeadersMiddleware(enableCors(RateLimitMiddleware(AuditMiddleware(h))))
@@ -189,8 +201,8 @@ func main() {
 	mux.HandleFunc("/healthz", middleware.SecurityHeadersMiddleware(h.HealthHandler))
 	mux.HandleFunc("/health", middleware.SecurityHeadersMiddleware(h.HealthHandler))
 
-	// Swagger documentation
-	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
+	// Swagger documentation - protected with authentication
+	mux.Handle("/swagger/", secureHandler(httpSwagger.WrapHandler))
 
 	// K8s handlers - using services
 	mux.HandleFunc("/api/namespaces", secure(k8sService.GetNamespaces))
