@@ -46,7 +46,7 @@ func (s *FileSystemLogoStorage) EnsureDataDir(ctx context.Context) error {
 func (s *FileSystemLogoStorage) Save(ctx context.Context, ext string, content io.Reader) error {
 	destPath := filepath.Join(s.dataDir, "logo"+ext)
 	absPath, _ := filepath.Abs(destPath)
-	
+
 	dst, err := os.Create(destPath)
 	if err != nil {
 		return fmt.Errorf("failed to create destination file: %w", err)
@@ -85,10 +85,3 @@ func (s *FileSystemLogoStorage) RemoveAll(ctx context.Context) error {
 	}
 	return nil
 }
-
-
-
-
-
-
-

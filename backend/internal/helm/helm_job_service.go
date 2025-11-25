@@ -127,7 +127,7 @@ func (s *HelmJobService) BuildHelmCommand(req HelmCommandRequest) []string {
 		cmdParts = append(cmdParts, "helm repo update")
 
 		helmCmd := fmt.Sprintf("helm %s %s %s/%s --namespace %s", req.Operation, req.ReleaseName, repoName, req.ChartName, req.Namespace)
-		
+
 		if req.Operation == "install" {
 			helmCmd += " --create-namespace"
 		}
@@ -328,12 +328,3 @@ type CreateHelmJobRequest struct {
 	ServiceAccountName string
 	DkonsoleNamespace  string
 }
-
-
-
-
-
-
-
-
-

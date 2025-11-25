@@ -104,18 +104,3 @@ export const formatAge = (dateString) => {
         return 'Unknown';
     }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

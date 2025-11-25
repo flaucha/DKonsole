@@ -125,14 +125,3 @@ else
     error "Go no está disponible en el PATH"
     info "Ejecuta: export PATH=\$PATH:/usr/local/go/bin"
 fi
-
-
-
-
-
-
-
-
-
-
-

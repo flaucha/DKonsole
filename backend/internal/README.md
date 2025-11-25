@@ -97,16 +97,3 @@ Operaciones específicas de pods:
 3. ⏳ Mover handlers a sus respectivos módulos
 4. ⏳ Actualizar imports en `main.go` y otros archivos
 5. ⏳ Implementar tests para cada módulo
-
-
-
-
-
-
-
-
-
-
-
-
-

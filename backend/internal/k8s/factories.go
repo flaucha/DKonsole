@@ -56,10 +56,3 @@ func (f *ServiceFactory) CreateWatchService() *WatchService {
 	gvrResolver := NewK8sGVRResolver()
 	return NewWatchService(gvrResolver)
 }
-
-
-
-
-
-
-

@@ -75,12 +75,3 @@ func (s *HelmInstallService) InstallHelmRelease(ctx context.Context, req Install
 		Message: fmt.Sprintf("Helm install job created: %s", jobName),
 	}, nil
 }
-
-
-
-
-
-
-
-
-

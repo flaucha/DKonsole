@@ -1,7 +1,7 @@
 # ADR 0002: Autenticación Basada en JWT
 
-**Estado**: Aceptado  
-**Fecha**: 2024-11-24  
+**Estado**: Aceptado
+**Fecha**: 2024-11-24
 **Decisor**: Equipo de desarrollo
 
 ## Contexto
@@ -49,6 +49,3 @@ Implementamos autenticación basada en JWT con las siguientes características:
 
 - **Sesiones**: Rechazado por requerir almacenamiento de estado en el servidor
 - **OAuth2**: Considerado para futuras versiones para integración con proveedores externos
-
-
-

@@ -90,10 +90,3 @@ func (s *Service) GetLogo(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Serving logo from: %s\n", absPath)
 	http.ServeFile(w, r, logoPath)
 }
-
-
-
-
-
-
-

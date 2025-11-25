@@ -32,12 +32,3 @@ func init() {
 func GetJWTSecret() []byte {
 	return jwtSecret
 }
-
-
-
-
-
-
-
-
-

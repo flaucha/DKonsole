@@ -1,7 +1,7 @@
 # ADR 0001: Arquitectura Modular con Capas Separadas
 
-**Estado**: Aceptado  
-**Fecha**: 2024-11-24  
+**Estado**: Aceptado
+**Fecha**: 2024-11-24
 **Decisor**: Equipo de desarrollo
 
 ## Contexto
@@ -49,6 +49,3 @@ internal/
     resource_service.go  # Business logic
     resource_repository.go  # Data access
 ```
-
-
-

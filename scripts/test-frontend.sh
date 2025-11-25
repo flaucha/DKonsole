@@ -133,7 +133,7 @@ if [ "$RUN_TESTS" = true ]; then
     echo "========================================"
     info "Ejecutando tests del frontend..."
     echo "========================================"
-    
+
     case $MODE in
         watch)
             info "Modo: Watch (presiona 'q' para salir)"
@@ -170,14 +170,3 @@ echo ""
 echo "========================================"
 success "Tests del frontend completados"
 echo "========================================"
-
-
-
-
-
-
-
-
-
-
-

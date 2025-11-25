@@ -1,7 +1,7 @@
 # ADR 0003: Uso de React Query para Gestión de Estado del Servidor
 
-**Estado**: Aceptado  
-**Fecha**: 2024-11-24  
+**Estado**: Aceptado
+**Fecha**: 2024-11-24
 **Decisor**: Equipo de desarrollo
 
 ## Contexto
@@ -55,6 +55,3 @@ Adoptamos React Query (TanStack Query) v5 para la gestión de estado del servido
 - **Redux + RTK Query**: Rechazado por ser más verboso y requerir más configuración
 - **SWR**: Considerado pero React Query ofrece más características (mutations, devtools)
 - **Estado local**: Rechazado por requerir implementar manualmente caching, refetching, etc.
-
-
-

@@ -45,7 +45,7 @@ func (v *DefaultLogoValidator) ValidateFile(filename string, size int64, content
 	if err != nil && err != io.EOF {
 		return "", fmt.Errorf("error reading file: %w", err)
 	}
-	
+
 	// Reset reader position for later use
 	if seeker, ok := content.(io.Seeker); ok {
 		seeker.Seek(0, 0)
@@ -84,7 +84,7 @@ func (v *DefaultLogoValidator) validateSVGSecurity(content io.Reader) error {
 	}
 
 	contentStr := strings.ToLower(string(fileContent))
-	
+
 	// Check for dangerous patterns
 	dangerousPatterns := []string{
 		"<script",
@@ -124,10 +124,3 @@ func detectContentType(buffer []byte) string {
 
 	return ""
 }
-
-
-
-
-
-
-

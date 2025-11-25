@@ -119,7 +119,7 @@ docker run --rm \
 
 if [ $? -eq 0 ]; then
     success "Tests completados exitosamente"
-    
+
     if [ "$COVERAGE" = true ]; then
         info "Reporte de cobertura generado en: backend/coverage.out"
     fi
@@ -127,14 +127,3 @@ else
     error "Tests fallaron"
     exit 1
 fi
-
-
-
-
-
-
-
-
-
-
-
