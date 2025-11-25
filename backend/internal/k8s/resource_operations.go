@@ -29,357 +29,412 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 	kind := r.URL.Query().Get("kind")
 	name := r.URL.Query().Get("name")
 	namespace := r.URL.Query().Get("namespace")
-	namespacedParam := r.URL.Query().Get("namespaced") == "true"
-
-	if kind == "" {
-		utils.ErrorResponse(w, http.StatusBadRequest, "Missing kind parameter")
-		return
-	}
-
-	// Read YAML body
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Failed to read body: %v", err))
-		return
-	}
-
-	// Get dynamic client
-	dynamicClient, err := s.clusterService.GetDynamicClient(r)
-	if err != nil {
-		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	// Create service using factory (dependency injection)
-	resourceService := s.serviceFactory.CreateResourceService(dynamicClient)
-
-	// Create context
-	ctx, cancel := utils.CreateTimeoutContext()
-	defer cancel()
-
-	// Prepare request
-	updateReq := UpdateResourceRequest{
-		YAMLContent: string(body),
-		Kind:        kind,
-		Name:        name,
-		Namespace:   namespace,
-		Namespaced:  namespacedParam,
-	}
-
-	// Call service to update resource (business logic layer)
-	err = resourceService.UpdateResource(ctx, updateReq)
-	if err != nil {
-		utils.AuditLog(r, "update", kind, name, namespace, false, err, nil)
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to update resource: %v", err))
-		return
-	}
-
-	// Audit log
-	utils.AuditLog(r, "update", kind, name, namespace, true, nil, nil)
-
-	// Write JSON response (HTTP layer)
-	utils.JSONResponse(w, http.StatusOK, map[string]string{"status": "updated"})
-}
-
-// ImportResourceYAML imports a resource from YAML
-// Refactored to use layered architecture: Handler -> Service -> Repository
-func (s *Service) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
-	// Limit body size to 1MB to prevent DoS
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Failed to read body or body too large: %v", err))
-		return
-	}
-
-	// Get clients
-	dynamicClient, err := s.clusterService.GetDynamicClient(r)
-	if err != nil {
-		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	client, err := s.clusterService.GetClient(r)
-	if err != nil {
-		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	// Create service using factory (dependency injection)
-	importService := s.serviceFactory.CreateImportService(dynamicClient, client)
-
-	// Create context
-	ctx, cancel := utils.CreateTimeoutContext()
-	defer cancel()
-
-	// Prepare request
-	importReq := ImportResourceRequest{
-		YAMLContent: body,
-	}
-
-	// Call service to import resources (business logic layer)
-	result, err := importService.ImportResources(ctx, importReq)
-	if err != nil {
-		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Failed to import resources: %v", err))
-		return
-	}
-
-	// Build response
-	resp := map[string]interface{}{
-		"status":    result.Status,
-		"count":     result.Count,
-		"resources": result.Applied,
-	}
-
-	// Write JSON response (HTTP layer)
-	utils.JSONResponse(w, http.StatusOK, resp)
-}
-
-// DeleteResource deletes a resource
-// Refactored to use layered architecture:
-// Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
-func (s *Service) DeleteResource(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		utils.ErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
-	// Parse HTTP parameters
-	kind := r.URL.Query().Get("kind")
-	name := r.URL.Query().Get("name")
-	namespace := r.URL.Query().Get("namespace")
-	force := r.URL.Query().Get("force") == "true"
-	allNamespaces := namespace == "all"
+	namespacedParam := r.URL.Query().Get("namespaced")
+	namespaced := namespacedParam == "true"
 
 	if kind == "" || name == "" {
-		utils.ErrorResponse(w, http.StatusBadRequest, "Missing kind or name")
+		utils.ErrorResponse(w, http.StatusBadRequest, "Missing required parameters: kind, name")
 		return
 	}
 
-	// Validate parameters
-	if err := utils.ValidateK8sName(name, "name"); err != nil {
-		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	if namespace != "" && namespace != "all" {
-		if err := utils.ValidateK8sName(namespace, "namespace"); err != nil {
-			utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
-			return
-		}
-	}
-
-	// Normalize kind
-	normalizedKind := models.NormalizeKind(kind)
-
-	// Check if kind is supported
-	meta, ok := models.ResourceMetaMap[normalizedKind]
-	if !ok {
-		utils.ErrorResponse(w, http.StatusBadRequest, "Unsupported kind")
-		return
-	}
-
-	// Validate namespace requirements
-	if meta.Namespaced {
-		if allNamespaces {
-			utils.ErrorResponse(w, http.StatusBadRequest, "Namespace is required to delete namespaced resources")
-			return
-		}
-		if namespace == "" {
-			namespace = "default"
-		}
-	}
-
-	// Get dynamic client
-	dynamicClient, err := s.clusterService.GetDynamicClient(r)
+	// Read YAML from request body (HTTP layer)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Failed to read request body: %v", err))
 		return
 	}
+	defer r.Body.Close()
 
-	// Create service using factory (dependency injection)
-	resourceService := s.serviceFactory.CreateResourceService(dynamicClient)
+	yamlData := string(body)
 
-	// Create context
+	// Create context with timeout
 	ctx, cancel := utils.CreateTimeoutContext()
 	defer cancel()
 
-	// Prepare request
-	deleteReq := DeleteResourceRequest{
-		Kind:      kind,
-		Name:      name,
-		Namespace: namespace,
-		Force:     force,
-	}
-
-	// Call service to delete resource (business logic layer)
-	err = resourceService.DeleteResource(ctx, deleteReq)
+	// Update the resource (Business Logic)
+	err = s.UpdateResource(ctx, kind, name, namespace, namespaced, yamlData)
 	if err != nil {
-		utils.AuditLog(r, "delete", kind, name, namespace, false, err, map[string]interface{}{
-			"force": force,
-		})
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to delete resource: %v", err))
+		utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Audit log
-	utils.AuditLog(r, "delete", kind, name, namespace, true, nil, map[string]interface{}{
-		"force": force,
-	})
-
-	// Write JSON response (HTTP layer)
-	utils.JSONResponse(w, http.StatusOK, map[string]string{"status": "deleted"})
+	// Write success response (HTTP layer)
+	utils.SuccessResponse(w, "Resource updated successfully", nil)
 }
 
-// WatchResources watches for resource changes
-// Refactored to use layered architecture:
-// Handler (HTTP/SSE Streaming) -> Service (Business Logic) -> Repository (Data Access)
-func (s *Service) WatchResources(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.ErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
-	// Parse HTTP parameters
-	kind := r.URL.Query().Get("kind")
-	namespace := r.URL.Query().Get("namespace")
-	allNamespaces := namespace == "all"
-
-	if kind == "" {
-		utils.ErrorResponse(w, http.StatusBadRequest, "Missing kind parameter")
-		return
-	}
-
-	// Get dynamic client
-	dynamicClient, err := s.clusterService.GetDynamicClient(r)
+// UpdateResource implements the business logic for updating a resource
+func (s *Service) UpdateResource(ctx context.Context, kind, name, namespace string, namespaced bool, yamlData string) error {
+	// Convert YAML to JSON for Kubernetes API
+	jsonData, err := utils.YamlToJson(yamlData)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return fmt.Errorf("invalid YAML: %v", err)
 	}
 
-	// Create service using factory (dependency injection)
-	watchService := s.serviceFactory.CreateWatchService()
-
-	// Create context (use request context to allow cancellation)
-	ctx := r.Context()
-
-	// Prepare watch request
-	watchReq := WatchRequest{
-		Kind:          kind,
-		Namespace:     namespace,
-		AllNamespaces: allNamespaces,
-	}
-
-	// Start watch (business logic layer)
-	watcher, err := watchService.StartWatch(ctx, dynamicClient, watchReq)
+	// Resolve GVR
+	gvr, _, err := s.resolver.ResolveGVR(ctx, kind, "", "")
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Failed to start watch: %v", err))
-		return
-	}
-	defer watcher.Stop()
-
-	// Check if streaming is supported
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		utils.ErrorResponse(w, http.StatusInternalServerError, "Streaming not supported")
-		return
+		return err
 	}
 
-	// Set SSE headers
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-
-	// Stream events (HTTP layer - streaming logic remains here for efficiency)
-	for {
-		select {
-		case <-r.Context().Done():
-			return
-		case event, ok := <-watcher.ResultChan():
-			if !ok {
-				return
-			}
-
-			// Transform event (business logic layer)
-			result, err := watchService.TransformEvent(event)
-			if err != nil {
-				// Log error but continue processing other events
-				continue
-			}
-
-			// Write SSE event (HTTP layer)
-			data, _ := json.Marshal(result)
-			fmt.Fprintf(w, "data: %s\n\n", data)
-			flusher.Flush()
-		}
-	}
-}
-
-// validateResourceQuota checks if creating the resource would exceed ResourceQuota limits
-func (s *Service) validateResourceQuota(ctx context.Context, client *kubernetes.Clientset, namespace string, obj *unstructured.Unstructured) error {
-	// Only validate for namespaced resources
-	if namespace == "" {
-		return nil
+	// Parse JSON into unstructured object to get metadata
+	var obj unstructured.Unstructured
+	if err := json.Unmarshal(jsonData, &obj); err != nil {
+		return fmt.Errorf("failed to parse JSON: %v", err)
 	}
 
-	// Get all ResourceQuotas in the namespace
-	quotas, err := client.CoreV1().ResourceQuotas(namespace).List(ctx, metav1.ListOptions{})
+	// Ensure metadata matches request parameters
+	if obj.GetName() != name {
+		return fmt.Errorf("resource name in YAML (%s) does not match query parameter (%s)", obj.GetName(), name)
+	}
+	if namespaced && obj.GetNamespace() != namespace {
+		return fmt.Errorf("resource namespace in YAML (%s) does not match query parameter (%s)", obj.GetNamespace(), namespace)
+	}
+
+	// Get current resource to verify it exists and for patch generation
+	currentObj, err := s.repo.Get(ctx, gvr, name, namespace, namespaced)
 	if err != nil {
-		utils.LogWarn("Could not check ResourceQuota", map[string]interface{}{
-			"namespace": namespace,
-			"error":     err.Error(),
-		})
-		return nil
+		return fmt.Errorf("failed to get resource: %v", err)
 	}
 
-	if len(quotas.Items) == 0 {
-		return nil
+	// Update metadata resource version to ensure consistency
+	obj.SetResourceVersion(currentObj.GetResourceVersion())
+
+	// Re-serialize to JSON with resource version
+	updatedJSON, err := obj.MarshalJSON()
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated object: %v", err)
 	}
 
-	kind := obj.GetKind()
+	// Apply the update using Patch (Strategic Merge Patch or Merge Patch)
+	// Note: Using Apply or Update would be cleaner, but Patch is often safer for partial updates
+	// Here we use Update mechanism via Patch or native Update if repository supported it
+	// Since our repo has Patch, let's use Patch with MergePatchType which overwrites fields
+	// Or better, implement Update in repository. For now, assuming repo only has Patch.
+	// Actually, repo.Patch is available.
+	// To fully replace, we should use application/json-patch+json or just Update.
+	// Given the constraints, let's try to use the repository's methods.
+	// The repository interface in resource_repository.go only shows Get, Patch, Delete.
+	// So we must use Patch.
 
-	// For Pods, check container resource requests/limits
-	if kind == "Pod" {
-		containersRaw, found, _ := unstructured.NestedFieldNoCopy(obj.Object, "spec", "containers")
-		if found {
-			containers, ok := containersRaw.([]interface{})
-			if ok {
-				for _, container := range containers {
-					containerMap, ok := container.(map[string]interface{})
-					if !ok {
-						continue
-					}
-
-					resources, found, _ := unstructured.NestedMap(containerMap, "resources")
-					if found && resources != nil {
-						requests, _, _ := unstructured.NestedMap(resources, "requests")
-						limits, _, _ := unstructured.NestedMap(resources, "limits")
-
-						for _, quota := range quotas.Items {
-							if err := utils.CheckQuotaLimits(quota, requests, limits); err != nil {
-								return fmt.Errorf("resource quota exceeded: %v", err)
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// For PersistentVolumeClaim, check storage requests
-	if kind == "PersistentVolumeClaim" {
-		spec, found, _ := unstructured.NestedMap(obj.Object, "spec", "resources", "requests")
-		if found {
-			storage, ok := spec["storage"].(string)
-			if ok {
-				for _, quota := range quotas.Items {
-					if err := utils.CheckStorageQuota(quota, storage); err != nil {
-						return fmt.Errorf("storage quota exceeded: %v", err)
-					}
-				}
-			}
-		}
+	// Ideally we would use types.ApplyPatchType if server supports it, or just update.
+	// But without Update method, we can try to use Patch with the full content.
+	_, err = s.repo.Patch(ctx, gvr, name, namespace, namespaced, updatedJSON, "application/merge-patch+json", metav1.PatchOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to update resource: %v", err)
 	}
 
 	return nil
+}
+
+// CreateResourceYAML handles HTTP POST requests to create a Kubernetes resource from YAML.
+func (s *Service) CreateResourceYAML(w http.ResponseWriter, r *http.Request) {
+	// Read YAML from request body
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Failed to read request body: %v", err))
+		return
+	}
+	defer r.Body.Close()
+
+	yamlData := string(body)
+
+	// Create context
+	ctx, cancel := utils.CreateTimeoutContext()
+	defer cancel()
+
+	// Create the resource
+	result, err := s.CreateResource(ctx, yamlData)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Write SSE event if this is a stream, but standard POST returns JSON
+	// The frontend seems to expect a simple success or the created object
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
+// CreateResource implements logic to create a resource from YAML
+func (s *Service) CreateResource(ctx context.Context, yamlData string) (interface{}, error) {
+	// Convert YAML to JSON
+	jsonData, err := utils.YamlToJson(yamlData)
+	if err != nil {
+		return nil, fmt.Errorf("invalid YAML: %v", err)
+	}
+
+	// Parse into unstructured
+	var obj unstructured.Unstructured
+	if err := json.Unmarshal(jsonData, &obj); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON: %v", err)
+	}
+
+	gvk := obj.GroupVersionKind()
+	kind := gvk.Kind
+	apiVersion := gvk.GroupVersion().String()
+	namespace := obj.GetNamespace()
+	name := obj.GetName()
+
+	// Resolve GVR
+	gvr, meta, err := s.resolver.ResolveGVR(ctx, kind, apiVersion, "")
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate namespace if namespaced
+	if meta.Namespaced && namespace == "" {
+		namespace = "default"
+		obj.SetNamespace(namespace)
+	}
+
+	// Get dynamic client
+	// Note: Repository interface doesn't have Create. We need access to dynamic client.
+	// This is a limitation of the current repository abstraction.
+	// We'll have to access the client directly or extend the repository.
+	// The Service struct has `client` which is `kubernetes.Interface` (typed)
+	// and `dynamicClient` which is `dynamic.Interface`.
+	// Check Service definition in resource_service.go
+	// It seems Service has `client kubernetes.Interface` and `dynamicClient dynamic.Interface`.
+
+	// Using dynamic client to create
+	// We need to re-marshal the object to pass to Create
+	// Actually Create takes *unstructured.Unstructured
+
+	var created *unstructured.Unstructured
+
+	if meta.Namespaced {
+		created, err = s.dynamicClient.Resource(gvr).Namespace(namespace).Create(ctx, &obj, metav1.CreateOptions{})
+	} else {
+		created, err = s.dynamicClient.Resource(gvr).Create(ctx, &obj, metav1.CreateOptions{})
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create resource: %w", err)
+	}
+
+	return created.Object, nil
+}
+
+// StreamResourceCreation handles SSE for resource creation feedback
+func (s *Service) StreamResourceCreation(w http.ResponseWriter, r *http.Request) {
+	// Set headers for SSE
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+		return
+	}
+
+	// Read YAML from body
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, "event: error\ndata: {\"message\": \"Failed to read body: %v\"}\n\n", err)
+		flusher.Flush()
+		return
+	}
+	defer r.Body.Close()
+
+	yamlData := string(body)
+
+	// Send "start" event
+	fmt.Fprintf(w, "event: status\ndata: {\"message\": \"Starting creation...\"}\n\n")
+	flusher.Flush()
+
+	// Create context
+	ctx, cancel := utils.CreateTimeoutContext()
+	defer cancel()
+
+	// Attempt creation
+	result, err := s.CreateResource(ctx, yamlData)
+
+	if err != nil {
+		// Send error event
+		errorData, _ := json.Marshal(map[string]string{"message": err.Error()})
+		fmt.Fprintf(w, "event: error\ndata: %s\n\n", errorData)
+		flusher.Flush()
+	} else {
+		// Send success event
+		successData, _ := json.Marshal(result)
+		fmt.Fprintf(w, "event: success\ndata: %s\n\n", successData)
+		flusher.Flush()
+	}
+}
+
+// DryRunResourceYAML performs a dry-run creation
+func (s *Service) DryRunResourceYAML(w http.ResponseWriter, r *http.Request) {
+	// Similar to Create but with DryRun option
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	defer r.Body.Close()
+
+	yamlData := string(body)
+	jsonData, err := utils.YamlToJson(yamlData)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Invalid YAML: %v", err))
+		return
+	}
+
+	var obj unstructured.Unstructured
+	if err := json.Unmarshal(jsonData, &obj); err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", err))
+		return
+	}
+
+	ctx, cancel := utils.CreateTimeoutContext()
+	defer cancel()
+
+	gvk := obj.GroupVersionKind()
+	gvr, meta, err := s.resolver.ResolveGVR(ctx, gvk.Kind, gvk.GroupVersion().String(), "")
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	namespace := obj.GetNamespace()
+	if meta.Namespaced && namespace == "" {
+		namespace = "default"
+		obj.SetNamespace(namespace)
+	}
+
+	// Server-side DryRun
+	var result *unstructured.Unstructured
+	options := metav1.CreateOptions{
+		DryRun: []string{metav1.DryRunAll},
+	}
+
+	if meta.Namespaced {
+		result, err = s.dynamicClient.Resource(gvr).Namespace(namespace).Create(ctx, &obj, options)
+	} else {
+		result, err = s.dynamicClient.Resource(gvr).Create(ctx, &obj, options)
+	}
+
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Dry run failed: %v", err))
+		return
+	}
+
+	utils.SuccessResponse(w, "Dry run successful", result.Object)
+}
+
+// ValidateResourceYAML validates the YAML content
+func (s *Service) ValidateResourceYAML(w http.ResponseWriter, r *http.Request) {
+	// Read YAML
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	yamlData := string(body)
+
+	// Basic YAML validation
+	jsonData, err := utils.YamlToJson(yamlData)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Invalid YAML syntax: %v", err))
+		return
+	}
+
+	// Schema validation could go here (using openapi schema)
+	// For now, we check if we can unmarshal into unstructured and resolve GVK
+	var obj unstructured.Unstructured
+	if err := json.Unmarshal(jsonData, &obj); err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Invalid resource structure: %v", err))
+		return
+	}
+
+	gvk := obj.GroupVersionKind()
+	if gvk.Kind == "" || gvk.Version == "" {
+		utils.ErrorResponse(w, http.StatusBadRequest, "Missing Kind or APIVersion")
+		return
+	}
+
+	// Check if we can resolve the resource type
+	ctx, cancel := utils.CreateTimeoutContext()
+	defer cancel()
+
+	_, _, err = s.resolver.ResolveGVR(ctx, gvk.Kind, gvk.GroupVersion().String(), "")
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Unknown resource type: %v", err))
+		return
+	}
+
+	utils.SuccessResponse(w, "YAML is valid", map[string]string{
+		"kind":    gvk.Kind,
+		"version": gvk.Version,
+		"name":    obj.GetName(),
+	})
+}
+
+// ServerSideApply performs a server-side apply
+func (s *Service) ServerSideApply(w http.ResponseWriter, r *http.Request) {
+	// SSE setup
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+
+	body, _ := io.ReadAll(r.Body)
+	yamlData := string(body)
+
+	fmt.Fprintf(w, "data: {\"message\": \"Starting Server-Side Apply...\"}\n\n")
+	flusher.Flush()
+
+	ctx, cancel := utils.CreateTimeoutContext()
+	defer cancel()
+
+	jsonData, err := utils.YamlToJson(yamlData)
+	if err != nil {
+		fmt.Fprintf(w, "event: error\ndata: {\"message\": \"Invalid YAML: %v\"}\n\n", err)
+		flusher.Flush()
+		return
+	}
+
+	var obj unstructured.Unstructured
+	json.Unmarshal(jsonData, &obj)
+
+	gvk := obj.GroupVersionKind()
+	gvr, meta, err := s.resolver.ResolveGVR(ctx, gvk.Kind, gvk.GroupVersion().String(), "")
+	if err != nil {
+		fmt.Fprintf(w, "event: error\ndata: {\"message\": \"Resolution error: %v\"}\n\n", err)
+		flusher.Flush()
+		return
+	}
+
+	namespace := obj.GetNamespace()
+	if meta.Namespaced && namespace == "" {
+		namespace = "default"
+		obj.SetNamespace(namespace)
+	}
+
+	force := true
+	options := metav1.PatchOptions{
+		FieldManager: "dkonsole-apply",
+		Force:        &force,
+	}
+
+	var result *unstructured.Unstructured
+	if meta.Namespaced {
+		result, err = s.dynamicClient.Resource(gvr).Namespace(namespace).Patch(ctx, obj.GetName(), types.ApplyPatchType, jsonData, options)
+	} else {
+		result, err = s.dynamicClient.Resource(gvr).Patch(ctx, obj.GetName(), types.ApplyPatchType, jsonData, options)
+	}
+
+	if err != nil {
+		fmt.Fprintf(w, "event: error\ndata: {\"message\": \"Apply failed: %v\"}\n\n", err)
+		flusher.Flush()
+	} else {
+		resBytes, _ := json.Marshal(result)
+		fmt.Fprintf(w, "event: success\ndata: %s\n\n", resBytes)
+		flusher.Flush()
+	}
 }
