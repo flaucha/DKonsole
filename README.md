@@ -117,9 +117,9 @@ The official image is available at:
 ## 📝 Changelog
 
 ### v1.2.0 (2025-01-27)
-**🧹 Major Refactoring & Code Cleanup**
+**🧹 Major Refactoring & Code Cleanup + Architecture Improvements**
 
-This release includes a comprehensive codebase cleanup and refactoring to improve maintainability, remove obsolete code, and organize components better.
+This release includes a comprehensive codebase cleanup, refactoring, and architectural improvements to follow SOLID principles and improve maintainability.
 
 - **Changed**: Frontend component organization
   - Extracted resource detail components into modular structure
@@ -135,10 +135,21 @@ This release includes a comprehensive codebase cleanup and refactoring to improv
   - Removed deprecated `DeploymentTable.jsx` and `PodTable.jsx` (replaced by unified `WorkloadList.jsx`)
   - Removed duplicate `AcercaDe.jsx` (duplicate of `About.jsx`)
   - Removed example ingress and certificate files
+- **New**: Logo Management Module (`internal/logo/`)
+  - Separated `UploadLogo` handler into layered architecture (Handler → Service → Storage)
+  - Created dedicated `LogoValidator` for file validation and SVG security checks
+  - Created `LogoStorage` interface for file persistence abstraction
+  - Improved testability and maintainability following Single Responsibility Principle (SRP)
+- **Improved**: Dependency Injection Pattern
+  - Introduced `ServiceFactory` pattern in `k8s` and `helm` modules
+  - Handlers now use injected factories instead of creating services directly
+  - Reduced coupling between HTTP handlers and business logic services
+  - Better testability with mockable factories
 - **Technical**: Code quality improvements
   - Removed ~850+ lines of obsolete code
   - Eliminated code duplication
   - Improved maintainability
+  - Applied SOLID principles (SRP, Dependency Inversion)
   - Updated release script to read version from VERSION file
 
 ### v1.1.10 (2025-01-27)
