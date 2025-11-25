@@ -11,7 +11,7 @@ import (
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
-// Handlers es la estructura principal que contiene los clientes de Kubernetes
+// Handlers es la estructura principal que contiene los clients de Kubernetes
 type Handlers struct {
 	Clients          map[string]*kubernetes.Clientset
 	Dynamics         map[string]dynamic.Interface
@@ -277,4 +277,3 @@ func NormalizeKind(kind string) string {
 	}
 	return kind
 }
-

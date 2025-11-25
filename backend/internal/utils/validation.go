@@ -54,7 +54,9 @@ func ValidateResourceName(name string) error {
 
 	// Validate format: DNS-1123 subdomain (allows dots for subresources)
 	if !dns1123SubdomainRegex.MatchString(name) {
-		return fmt.Errorf("invalid resource name format: must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character: %s", name)
+		return fmt.Errorf(
+			"invalid resource name format: must consist of lower case alphanumeric characters, '-' or '.', "+
+				"and must start and end with an alphanumeric character: %s", name)
 	}
 
 	return nil
@@ -131,7 +133,9 @@ func ValidateContainerName(containerName string) error {
 
 	// Validate format: DNS-1123 label (no dots)
 	if !dns1123LabelRegex.MatchString(containerName) {
-		return fmt.Errorf("invalid container name format: must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character: %s", containerName)
+		return fmt.Errorf(
+			"invalid container name format: must consist of lower case alphanumeric characters or '-', "+
+				"and must start and end with an alphanumeric character: %s", containerName)
 	}
 
 	return nil

@@ -211,12 +211,10 @@ func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interfac
 
 	// Build maps for quick lookup
 	cpuMap := make(map[string]float64)
-	allInstances := make([]string, 0)
 	for _, data := range cpuData {
 		if inst, ok := data["instance"].(string); ok {
 			if val, ok := data["value"].(float64); ok {
 				cpuMap[inst] = val
-				allInstances = append(allInstances, inst)
 			}
 		}
 	}

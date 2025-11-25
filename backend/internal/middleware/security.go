@@ -67,7 +67,9 @@ func buildCSP(r *http.Request) string {
 
 	// For API routes, use strict CSP
 	if strings.HasPrefix(path, "/api") {
-		return "default-src 'self'; script-src 'none'; style-src 'none'; img-src 'none'; font-src 'none'; connect-src 'self' ws: wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		return "default-src 'self'; script-src 'none'; style-src 'none'; " +
+			"img-src 'none'; font-src 'none'; connect-src 'self' ws: wss:; " +
+			"frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 	}
 
 	// For static files and frontend routes, allow necessary resources
