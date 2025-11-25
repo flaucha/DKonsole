@@ -22,3 +22,5 @@ Cada ADR sigue el siguiente formato:
 - [0002-autenticacion-jwt.md](0002-autenticacion-jwt.md) - Autenticación basada en JWT
 - [0003-react-query.md](0003-react-query.md) - Uso de React Query para gestión de estado del servidor
 
+
+

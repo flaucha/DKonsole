@@ -56,3 +56,5 @@ Adoptamos React Query (TanStack Query) v5 para la gestión de estado del servido
 - **SWR**: Considerado pero React Query ofrece más características (mutations, devtools)
 - **Estado local**: Rechazado por requerir implementar manualmente caching, refetching, etc.
 
+
+
