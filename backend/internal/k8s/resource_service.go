@@ -105,6 +105,40 @@ func (s *ResourceService) UpdateResource(ctx context.Context, req UpdateResource
 	return nil
 }
 
+// CreateResource creates a Kubernetes resource from YAML content.
+func (s *ResourceService) CreateResource(ctx context.Context, yamlContent string) (interface{}, error) {
+	// Parse YAML to JSON
+	jsonData, err := yaml.YAMLToJSON([]byte(yamlContent))
+	if err != nil {
+		return nil, fmt.Errorf("invalid YAML: %w", err)
+	}
+
+	// Unmarshal to unstructured
+	var obj unstructured.Unstructured
+	if err := json.Unmarshal(jsonData, &obj.Object); err != nil {
+		return nil, fmt.Errorf("failed to parse resource: %w", err)
+	}
+
+	// Resolve GVR
+	gvr, meta, err := s.gvrResolver.ResolveGVR(ctx, obj.GetKind(), obj.GetAPIVersion(), "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve GVR: %w", err)
+	}
+
+	namespace := obj.GetNamespace()
+	if meta.Namespaced && namespace == "" {
+		namespace = "default"
+		obj.SetNamespace(namespace)
+	}
+
+	created, err := s.resourceRepo.Create(ctx, gvr, namespace, meta.Namespaced, &obj, metav1.CreateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create resource: %w", err)
+	}
+
+	return created.Object, nil
+}
+
 // DeleteResourceRequest represents parameters for deleting a Kubernetes resource.
 type DeleteResourceRequest struct {
 	Kind      string // Resource kind (e.g., "Pod", "Deployment")

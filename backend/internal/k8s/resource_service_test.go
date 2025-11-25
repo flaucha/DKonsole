@@ -16,6 +16,7 @@ import (
 // mockResourceRepository is a mock implementation of ResourceRepository
 type mockResourceRepository struct {
 	getFunc    func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool) (*unstructured.Unstructured, error)
+	createFunc func(ctx context.Context, gvr schema.GroupVersionResource, namespace string, namespaced bool, obj *unstructured.Unstructured, options metav1.CreateOptions) (*unstructured.Unstructured, error)
 	patchFunc  func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, patchData []byte, patchType types.PatchType, options metav1.PatchOptions) (*unstructured.Unstructured, error)
 	deleteFunc func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, options metav1.DeleteOptions) error
 }
@@ -25,6 +26,13 @@ func (m *mockResourceRepository) Get(ctx context.Context, gvr schema.GroupVersio
 		return m.getFunc(ctx, gvr, name, namespace, namespaced)
 	}
 	return nil, errors.New("get not implemented")
+}
+
+func (m *mockResourceRepository) Create(ctx context.Context, gvr schema.GroupVersionResource, namespace string, namespaced bool, obj *unstructured.Unstructured, options metav1.CreateOptions) (*unstructured.Unstructured, error) {
+	if m.createFunc != nil {
+		return m.createFunc(ctx, gvr, namespace, namespaced, obj, options)
+	}
+	return nil, errors.New("create not implemented")
 }
 
 func (m *mockResourceRepository) Patch(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, patchData []byte, patchType types.PatchType, options metav1.PatchOptions) (*unstructured.Unstructured, error) {

@@ -145,7 +145,7 @@ type GetClusterOverviewRequest struct {
 
 // GetClusterOverview fetches cluster-wide metrics including node metrics and cluster stats
 func (s *Service) GetClusterOverview(ctx context.Context, req GetClusterOverviewRequest, client kubernetes.Interface) (*ClusterOverviewResponse, error) {
-	startTime, endTime := parseDuration(req.Range)
+	_, endTime := parseDuration(req.Range)
 
 	// Get node metrics
 	nodeMetrics, err := s.getNodeMetrics(ctx, client, endTime)

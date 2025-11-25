@@ -20,6 +20,7 @@ import (
 // ResourceRepository defines the interface for accessing Kubernetes resources
 type ResourceRepository interface {
 	Get(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool) (*unstructured.Unstructured, error)
+	Create(ctx context.Context, gvr schema.GroupVersionResource, namespace string, namespaced bool, obj *unstructured.Unstructured, options metav1.CreateOptions) (*unstructured.Unstructured, error)
 	Patch(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, patchData []byte, patchType types.PatchType, options metav1.PatchOptions) (*unstructured.Unstructured, error)
 	Delete(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, options metav1.DeleteOptions) error
 }
@@ -51,6 +52,16 @@ func (r *K8sResourceRepository) Get(ctx context.Context, gvr schema.GroupVersion
 		return nil, fmt.Errorf("failed to get resource: %w", err)
 	}
 	return obj, nil
+}
+
+// Create creates a new resource
+func (r *K8sResourceRepository) Create(ctx context.Context, gvr schema.GroupVersionResource, namespace string, namespaced bool, obj *unstructured.Unstructured, options metav1.CreateOptions) (*unstructured.Unstructured, error) {
+	res := r.getResourceInterface(gvr, namespace, namespaced)
+	created, err := res.Create(ctx, obj, options)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create resource: %w", err)
+	}
+	return created, nil
 }
 
 // Patch applies a patch to a resource
