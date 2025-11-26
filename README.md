@@ -58,25 +58,36 @@ jwtSecret: "..." # Generate with openssl rand -base64 32
 ```
 
 **Generate password hash:**
+### Option A: Using Go (Recommended if installed)
 ```bash
 cd backend && go run ../scripts/generate-password-hash.go "yourpassword"
+```
+
+### Option B: Using Docker (No Go required)
+This command uses Docker to generate the hash, ensuring compatibility with the backend.
+```bash
+docker run --rm -v $(pwd):/app -w /app/backend golang:1.24-alpine go run ../scripts/generate-password-hash.go "yourpassword"
 ```
 
 **Using `--set` with Helm (Recommended):**
 When using `helm install --set`, Helm interprets commas as list separators, which can break Argon2 hashes containing commas. Use `passwordHashBase64` instead:
 
 ```bash
-# 1. Generate hash
+# 1. Generate hash (pick one method)
+# Method A (Go):
 HASH=$(cd backend && go run ../scripts/generate-password-hash.go "yourpassword")
+# Method B (Docker):
+HASH=$(docker run --rm -v $(pwd):/app -w /app/backend golang:1.24-alpine go run ../scripts/generate-password-hash.go "yourpassword" | tr -d '\r')
 
-# 2. Encode to base64
+# 2. Encode to base64 (Linux/Mac)
 ENCODED=$(echo -n "$HASH" | base64 -w 0)
+# Note: On Mac, use 'base64' without '-w 0'. If output has newlines, pipe to 'tr -d "\n"'
 
 # 3. Install with --set (no escaping needed!)
 helm install dkonsole ./helm/dkonsole --set admin.passwordHashBase64="$ENCODED"
 ```
 
-Or use the helper script:
+Or use the helper script (requires Go):
 ```bash
 # Generate and encode in one step
 cd backend && go run ../scripts/generate-password-hash.go "yourpassword" | xargs ../scripts/encode-hash.sh
