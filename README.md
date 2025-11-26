@@ -58,15 +58,30 @@ jwtSecret: "..." # Generate with openssl rand -base64 32
 ```
 
 **Generate password hash:**
+
 ### Option A: Using Go (Recommended if installed)
 ```bash
 cd backend && go run ../scripts/generate-password-hash.go "yourpassword"
 ```
 
 ### Option B: Using Docker (No Go required)
-This command uses Docker to generate the hash, ensuring compatibility with the backend.
 ```bash
 docker run --rm -v $(pwd):/app -w /app/backend golang:1.24-alpine go run ../scripts/generate-password-hash.go "yourpassword"
+```
+
+### Option C: Using `argon2` CLI
+If you have the `argon2` utility installed (e.g., `apt install argon2` or `brew install argon2`):
+```bash
+# Usage: echo -n "password" | argon2 "salt" -i -t 3 -m 12 -p 1 -l 32 -e
+# Note: -m 12 means 2^12 = 4096 KB
+echo -n "yourpassword" | argon2 "$(openssl rand -hex 16)" -i -t 3 -m 12 -p 1 -l 32 -e
+```
+
+### Option D: Using Node.js (npm)
+If you have Node.js installed, you can use `npx` to run a quick script:
+```bash
+# This uses the 'argon2' package to generate a compatible hash
+npx -y argon2-cli -h "yourpassword" -t 3 -m 12 -p 1 --type argon2i
 ```
 
 **Using `--set` with Helm (Recommended):**
