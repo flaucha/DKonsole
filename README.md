@@ -93,6 +93,10 @@ When using `helm install --set`, Helm interprets commas as list separators, whic
 HASH=$(cd backend && go run ../scripts/generate-password-hash.go "yourpassword")
 # Method B (Docker):
 HASH=$(docker run --rm -v $(pwd):/app -w /app/backend golang:1.24-alpine go run ../scripts/generate-password-hash.go "yourpassword" | tr -d '\r')
+# Method C (Argon2 CLI):
+HASH=$(echo -n "yourpassword" | argon2 "$(openssl rand -hex 16)" -i -t 3 -m 12 -p 1 -l 32 -e)
+# Method D (npm):
+HASH=$(npx -y argon2-cli -h "yourpassword" -t 3 -m 12 -p 1 --type argon2i)
 
 # 2. Encode to base64 (Linux/Mac)
 ENCODED=$(echo -n "$HASH" | base64 -w 0)
