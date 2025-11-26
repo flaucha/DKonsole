@@ -454,3 +454,49 @@ func (s *Service) WatchResources(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+// ImportResourceYAML handles HTTP POST requests to import multiple Kubernetes resources from YAML.
+func (s *Service) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
+	// Read YAML from request body
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Failed to read request body: %v", err))
+		return
+	}
+	defer r.Body.Close()
+
+	// Create context
+	ctx, cancel := utils.CreateTimeoutContext()
+	defer cancel()
+
+	// Get Clients
+	client, err := s.clusterService.GetClient(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	dynamicClient, err := s.clusterService.GetDynamicClient(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Create Import Service
+	importService := s.serviceFactory.CreateImportService(dynamicClient, client)
+
+	// Prepare request
+	req := ImportResourceRequest{
+		YAMLContent: body,
+	}
+
+	// Import resources
+	result, err := importService.ImportResources(ctx, req)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to import resources: %v", err))
+		return
+	}
+
+	// Write success response
+	utils.JSONResponse(w, http.StatusOK, result)
+}
