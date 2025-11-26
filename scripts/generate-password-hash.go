@@ -26,10 +26,10 @@ func main() {
 
 	// Parameters that work with version 1.2.2
 	// These match the working hash format: $argon2i$v=19$m=4096,t=3,p=1$salt$hash
-	memory := uint32(4096)  // 4 MB in KB (matches working version)
-	time := uint32(3)       // 3 iterations
-	threads := uint8(1)     // 1 thread (matches working version)
-	keyLen := uint32(32)    // 32 bytes output
+	memory := uint32(4096) // 4 MB in KB (matches working version)
+	time := uint32(3)      // 3 iterations
+	threads := uint8(1)    // 1 thread (matches working version)
+	keyLen := uint32(32)   // 32 bytes output
 
 	// Generate Argon2i hash (matches working version)
 	hash := argon2.Key([]byte(password), salt, time, memory, threads, keyLen)
