@@ -1,11 +1,13 @@
 package k8s
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
+	"github.com/gorilla/websocket"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
@@ -13,6 +15,14 @@ import (
 
 	"github.com/example/k8s-view/internal/utils"
 )
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true // Allow all origins for now
+	},
+}
 
 // UpdateResourceYAML handles HTTP PUT requests to update a Kubernetes resource from YAML.
 func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
