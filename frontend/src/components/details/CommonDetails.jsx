@@ -1,6 +1,51 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, FileText } from 'lucide-react';
 
+export const SmartImage = ({ image }) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleClick = (e) => {
+        e.stopPropagation();
+        // Extract SHA if present, otherwise copy full image string
+        const shaMatch = image.match(/@sha256:([a-f0-9]+)/);
+        const textToCopy = shaMatch ? image : image;
+        // Requirement says "click on shortened hash copies it".
+        // Actually "click on shortened hash that it copies AND notifies".
+        // If I copy the FULL image string it's safer for reuse.
+
+        navigator.clipboard.writeText(textToCopy);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    if (!image) return null;
+
+    const parts = image.split('@sha256:');
+    const isSha = parts.length > 1;
+    const displayText = isSha ? (
+        <span>
+            {parts[0]}@sha256:<span className="font-bold text-blue-300 hover:underline">{parts[1].substring(0, 8)}...</span>
+        </span>
+    ) : image;
+
+    return (
+        <div className="relative inline-block group">
+            <span
+                className={`cursor-pointer hover:text-blue-400 transition-colors ${isSha ? 'font-mono' : ''}`}
+                onClick={handleClick}
+                title={image} // Show full image on hover
+            >
+                {displayText}
+            </span>
+            {copied && (
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-green-600 text-white text-xs rounded shadow-lg animate-fade-out pointer-events-none whitespace-nowrap z-50 border border-green-500">
+                    Version copied
+                </div>
+            )}
+        </div>
+    );
+};
+
 export const DetailRow = ({ label, value, icon: Icon, children }) => (
     <div className="flex items-center justify-between bg-gray-800/50 px-4 py-3 rounded-md border border-gray-700/50 mb-3 hover:bg-gray-800/70 transition-colors">
         <div className="flex items-center min-w-0 flex-1">

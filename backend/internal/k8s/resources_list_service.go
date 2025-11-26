@@ -33,6 +33,7 @@ type ListResourcesRequest struct {
 	Kind          string
 	Namespace     string
 	AllNamespaces bool
+	LabelSelector string
 	Client        kubernetes.Interface
 	MetricsClient *metricsv.Clientset
 }
@@ -50,8 +51,11 @@ func (s *ResourceListService) ListResources(ctx context.Context, req ListResourc
 		listNamespace = ""
 	}
 
-	// Create ListOptions - no pagination limits, load all resources
+	// Create ListOptions
 	listOpts := metav1.ListOptions{}
+	if req.LabelSelector != "" {
+		listOpts.LabelSelector = req.LabelSelector
+	}
 
 	var resources []models.Resource
 	var err error
@@ -434,18 +438,45 @@ func (s *ResourceListService) listCronJobs(ctx context.Context, client kubernete
 		if i.Status.LastScheduleTime != nil {
 			lastSchedule = i.Status.LastScheduleTime.Format(time.RFC3339)
 		}
+
+		// Calculate status based on CronJob state
+		status := "Active"
+		if i.Spec.Suspend != nil && *i.Spec.Suspend {
+			status = "Suspended"
+		} else if len(i.Status.Active) > 0 {
+			status = "Running"
+		} else if i.Status.LastSuccessfulTime != nil {
+			// Check if there's a recent failure by comparing LastScheduleTime with LastSuccessfulTime
+			// If LastScheduleTime exists but LastSuccessfulTime is nil or older, it might have failed
+			if i.Status.LastScheduleTime != nil {
+				if i.Status.LastSuccessfulTime.Before(i.Status.LastScheduleTime) {
+					// Last schedule was not successful
+					status = "Failed"
+				} else {
+					status = "Succeeded"
+				}
+			} else {
+				status = "Succeeded"
+			}
+		} else if i.Status.LastScheduleTime != nil {
+			// Has been scheduled but no successful time recorded - likely failed
+			status = "Failed"
+		}
+
 		details := map[string]interface{}{
 			"schedule":         i.Spec.Schedule,
 			"suspend":          i.Spec.Suspend,
 			"concurrency":      i.Spec.ConcurrencyPolicy,
 			"startingDeadline": i.Spec.StartingDeadlineSeconds,
 			"lastSchedule":     lastSchedule,
+			"succeeded":        len(i.Status.Active) == 0 && i.Status.LastSuccessfulTime != nil,
+			"failed":           i.Status.LastScheduleTime != nil && (i.Status.LastSuccessfulTime == nil || i.Status.LastSuccessfulTime.Before(i.Status.LastScheduleTime)),
 		}
 		resources = append(resources, models.Resource{
 			Name:      i.Name,
 			Namespace: i.Namespace,
 			Kind:      "CronJob",
-			Status:    i.Spec.Schedule,
+			Status:    status,
 			Created:   i.CreationTimestamp.Format(time.RFC3339),
 			UID:       string(i.UID),
 			Details:   details,
@@ -472,6 +503,7 @@ func (s *ResourceListService) listStatefulSets(ctx context.Context, client kuber
 			"podManagement":  i.Spec.PodManagementPolicy,
 			"updateStrategy": i.Spec.UpdateStrategy,
 			"volumeClaims":   i.Spec.VolumeClaimTemplates,
+			"selector":       i.Spec.Selector.MatchLabels,
 		}
 		resources = append(resources, models.Resource{
 			Name:      i.Name,
@@ -503,6 +535,7 @@ func (s *ResourceListService) listDaemonSets(ctx context.Context, client kuberne
 			"updated":      i.Status.UpdatedNumberScheduled,
 			"misscheduled": i.Status.NumberMisscheduled,
 			"nodeSelector": i.Spec.Template.Spec.NodeSelector,
+			"selector":     i.Spec.Selector.MatchLabels,
 		}
 		resources = append(resources, models.Resource{
 			Name:      i.Name,
@@ -603,7 +636,7 @@ func (s *ResourceListService) listIngresses(ctx context.Context, client kubernet
 
 		var rules []map[string]interface{}
 		for _, r := range i.Spec.Rules {
-			var paths []string
+			var paths []interface{}
 			if r.HTTP != nil {
 				for _, p := range r.HTTP.Paths {
 					svcName := "unknown"
@@ -612,7 +645,11 @@ func (s *ResourceListService) listIngresses(ctx context.Context, client kubernet
 						svcName = p.Backend.Service.Name
 						svcPort = p.Backend.Service.Port.Number
 					}
-					paths = append(paths, fmt.Sprintf("%s -> %s:%d", p.Path, svcName, svcPort))
+					paths = append(paths, map[string]interface{}{
+						"path":        p.Path,
+						"serviceName": svcName,
+						"servicePort": svcPort,
+					})
 				}
 			}
 			rules = append(rules, map[string]interface{}{

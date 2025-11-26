@@ -52,7 +52,9 @@ const ApiExplorer = ({ namespace }) => {
         authFetch(`/api/apis/resources?${params.toString()}`)
             .then(res => res.json())
             .then(data => {
-                setObjects(data || []);
+                // Backend returns { resources: [...] } structure
+                const resources = Array.isArray(data) ? data : (data?.resources || []);
+                setObjects(resources);
             })
             .catch(() => setObjects([]))
             .finally(() => setLoadingObjects(false));

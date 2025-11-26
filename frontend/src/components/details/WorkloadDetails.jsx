@@ -1,22 +1,55 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Activity, Check, X, Layers, AlertTriangle, Clock, Pause, Network, Box } from 'lucide-react';
 import { DetailRow, EditYamlButton } from './CommonDetails';
+import AssociatedPods from './AssociatedPods';
 
-export const JobDetails = ({ details, onEditYAML }) => (
-    <div className="p-4 bg-gray-900/50 rounded-md mt-2">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <DetailRow label="Active" value={details.active} icon={Activity} />
-            <DetailRow label="Succeeded" value={details.succeeded} icon={Check} />
-            <DetailRow label="Failed" value={details.failed} icon={X} />
-            <DetailRow label="Parallelism" value={details.parallelism} icon={Layers} />
-            <DetailRow label="Completions" value={details.completions} icon={Layers} />
-            <DetailRow label="Backoff Limit" value={details.backoffLimit} icon={AlertTriangle} />
-        </div>
-        <div className="flex justify-end mt-4">
-            <EditYamlButton onClick={onEditYAML} />
-        </div>
-    </div>
+const TabButton = ({ active, label, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+            active
+            ? 'bg-gray-700 text-white shadow-sm'
+            : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+        }`}
+    >
+        {label}
+    </button>
 );
+
+export const JobDetails = ({ details, onEditYAML, namespace }) => {
+    const [activeTab, setActiveTab] = useState('details');
+    // Job selector can be complex, usually MatchLabels is what we want
+    const selector = details.podSelector?.matchLabels || details.podSelector;
+
+    return (
+        <div className="p-4 bg-gray-900/50 rounded-md mt-2">
+             <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-md mb-4 w-fit">
+                <TabButton active={activeTab === 'details'} label="Details" onClick={() => setActiveTab('details')} />
+                <TabButton active={activeTab === 'runs'} label="Runs" onClick={() => setActiveTab('runs')} />
+            </div>
+
+            {activeTab === 'details' && (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <DetailRow label="Active" value={details.active} icon={Activity} />
+                        <DetailRow label="Succeeded" value={details.succeeded} icon={Check} />
+                        <DetailRow label="Failed" value={details.failed} icon={X} />
+                        <DetailRow label="Parallelism" value={details.parallelism} icon={Layers} />
+                        <DetailRow label="Completions" value={details.completions} icon={Layers} />
+                        <DetailRow label="Backoff Limit" value={details.backoffLimit} icon={AlertTriangle} />
+                    </div>
+                    <div className="flex justify-end mt-4">
+                        <EditYamlButton onClick={onEditYAML} />
+                    </div>
+                </>
+            )}
+
+            {activeTab === 'runs' && (
+                <AssociatedPods namespace={namespace} selector={selector} />
+            )}
+        </div>
+    );
+};
 
 export const CronJobDetails = ({ details, onEditYAML }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">
@@ -33,37 +66,71 @@ export const CronJobDetails = ({ details, onEditYAML }) => (
     </div>
 );
 
-export const StatefulSetDetails = ({ details, onEditYAML }) => (
-    <div className="p-4 bg-gray-900/50 rounded-md mt-2">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <DetailRow label="Replicas" value={`${details.ready}/${details.replicas}`} icon={Layers} />
-            <DetailRow label="Current" value={details.current} icon={Activity} />
-            <DetailRow label="Updated" value={details.update} icon={Activity} />
-            <DetailRow label="Service" value={details.serviceName} icon={Network} />
-            <DetailRow label="Pod Mgmt" value={details.podManagement} icon={Box} />
-            <DetailRow label="Update Strategy" value={details.updateStrategy?.type} icon={Layers} />
-        </div>
-        <div className="flex justify-end mt-4">
-            <EditYamlButton onClick={onEditYAML} />
-        </div>
-    </div>
-);
+export const StatefulSetDetails = ({ details, onEditYAML, namespace }) => {
+    const [activeTab, setActiveTab] = useState('details');
 
-export const DaemonSetDetails = ({ details, onEditYAML }) => (
-    <div className="p-4 bg-gray-900/50 rounded-md mt-2">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <DetailRow label="Desired" value={details.desired} icon={Activity} />
-            <DetailRow label="Current" value={details.current} icon={Activity} />
-            <DetailRow label="Ready" value={details.ready} icon={Activity} />
-            <DetailRow label="Available" value={details.available} icon={Check} />
-            <DetailRow label="Updated" value={details.updated} icon={Layers} />
-            <DetailRow label="Misscheduled" value={details.misscheduled} icon={AlertTriangle} />
+    return (
+        <div className="p-4 bg-gray-900/50 rounded-md mt-2">
+            <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-md mb-4 w-fit">
+                <TabButton active={activeTab === 'details'} label="Details" onClick={() => setActiveTab('details')} />
+                <TabButton active={activeTab === 'pods'} label="Pod List" onClick={() => setActiveTab('pods')} />
+            </div>
+
+            {activeTab === 'details' && (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <DetailRow label="Replicas" value={`${details.ready}/${details.replicas}`} icon={Layers} />
+                        <DetailRow label="Current" value={details.current} icon={Activity} />
+                        <DetailRow label="Updated" value={details.update} icon={Activity} />
+                        <DetailRow label="Service" value={details.serviceName} icon={Network} />
+                        <DetailRow label="Pod Mgmt" value={details.podManagement} icon={Box} />
+                        <DetailRow label="Update Strategy" value={details.updateStrategy?.type} icon={Layers} />
+                    </div>
+                    <div className="flex justify-end mt-4">
+                        <EditYamlButton onClick={onEditYAML} />
+                    </div>
+                </>
+            )}
+
+            {activeTab === 'pods' && (
+                <AssociatedPods namespace={namespace} selector={details.selector} />
+            )}
         </div>
-        <div className="flex justify-end mt-4">
-            <EditYamlButton onClick={onEditYAML} />
+    );
+};
+
+export const DaemonSetDetails = ({ details, onEditYAML, namespace }) => {
+    const [activeTab, setActiveTab] = useState('details');
+
+    return (
+        <div className="p-4 bg-gray-900/50 rounded-md mt-2">
+            <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-md mb-4 w-fit">
+                <TabButton active={activeTab === 'details'} label="Details" onClick={() => setActiveTab('details')} />
+                <TabButton active={activeTab === 'pods'} label="Pod List" onClick={() => setActiveTab('pods')} />
+            </div>
+
+            {activeTab === 'details' && (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <DetailRow label="Desired" value={details.desired} icon={Activity} />
+                        <DetailRow label="Current" value={details.current} icon={Activity} />
+                        <DetailRow label="Ready" value={details.ready} icon={Activity} />
+                        <DetailRow label="Available" value={details.available} icon={Check} />
+                        <DetailRow label="Updated" value={details.updated} icon={Layers} />
+                        <DetailRow label="Misscheduled" value={details.misscheduled} icon={AlertTriangle} />
+                    </div>
+                    <div className="flex justify-end mt-4">
+                        <EditYamlButton onClick={onEditYAML} />
+                    </div>
+                </>
+            )}
+
+            {activeTab === 'pods' && (
+                 <AssociatedPods namespace={namespace} selector={details.selector} />
+            )}
         </div>
-    </div>
-);
+    );
+};
 
 export const HPADetails = ({ details, onEditYAML }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">

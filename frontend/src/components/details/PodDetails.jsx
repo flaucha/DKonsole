@@ -8,6 +8,19 @@ import PodMetrics from '../PodMetrics';
 import { formatDateTime, formatDateTimeShort } from '../../utils/dateUtils';
 import { logger } from '../../utils/logger';
 
+const TabButton = ({ active, label, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+            active
+            ? 'bg-gray-700 text-white shadow-sm'
+            : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+        }`}
+    >
+        {label}
+    </button>
+);
+
 const PodDetails = ({ details, onEditYAML, pod }) => {
     const { authFetch } = useAuth();
     const [activeTab, setActiveTab] = useState('details');
@@ -66,37 +79,12 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
 
     return (
         <div className="mt-2 flex flex-col" style={{ height: isFullHeightTab ? fullHeight : 'auto' }}>
-            <div className="flex space-x-4 border-b border-gray-700 mb-4 flex-shrink-0 pl-2">
-                <button
-                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'details' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
-                    onClick={() => setActiveTab('details')}
-                >
-                    Details
-                </button>
-                <button
-                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'logs' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
-                    onClick={() => setActiveTab('logs')}
-                >
-                    Logs
-                </button>
-                <button
-                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'terminal' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
-                    onClick={() => setActiveTab('terminal')}
-                >
-                    Terminal
-                </button>
-                <button
-                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'metrics' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
-                    onClick={() => setActiveTab('metrics')}
-                >
-                    Metrics
-                </button>
-                <button
-                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'events' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
-                    onClick={() => setActiveTab('events')}
-                >
-                    Events
-                </button>
+            <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-md mb-4 w-fit">
+                <TabButton active={activeTab === 'details'} label="Details" onClick={() => setActiveTab('details')} />
+                <TabButton active={activeTab === 'logs'} label="Logs" onClick={() => setActiveTab('logs')} />
+                <TabButton active={activeTab === 'terminal'} label="Terminal" onClick={() => setActiveTab('terminal')} />
+                <TabButton active={activeTab === 'metrics'} label="Metrics" onClick={() => setActiveTab('metrics')} />
+                <TabButton active={activeTab === 'events'} label="Events" onClick={() => setActiveTab('events')} />
             </div>
 
             <div className={`transition-all duration-300 ease-in-out flex-1 flex flex-col ${isFullHeightTab ? 'min-h-0' : ''}`}>

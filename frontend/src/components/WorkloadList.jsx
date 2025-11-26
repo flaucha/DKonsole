@@ -16,8 +16,10 @@ import {
     Users,
     Search,
     RefreshCw,
-    MoreVertical
+    MoreVertical,
+    PlayCircle
 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { useWorkloads } from '../hooks/useWorkloads';
@@ -91,6 +93,7 @@ const WorkloadList = ({ namespace, kind }) => {
     const [sortDirection, setSortDirection] = useState('asc');
     const { currentCluster } = useSettings();
     const { authFetch } = useAuth();
+    const location = useLocation();
     const [filter, setFilter] = useState('');
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [editingResource, setEditingResource] = useState(null);
@@ -98,6 +101,7 @@ const WorkloadList = ({ namespace, kind }) => {
     const [confirmAction, setConfirmAction] = useState(null);
     const [allResources, setAllResources] = useState([]);
     const [scaling, setScaling] = useState(null);
+    const [triggering, setTriggering] = useState(null);
 
     // Early return if kind is not provided
     if (!kind) {
@@ -106,51 +110,65 @@ const WorkloadList = ({ namespace, kind }) => {
 
     // Use React Query hook to fetch all resources
     const { data: resourcesData, isLoading: loading, error, refetch } = useWorkloads(authFetch, namespace, kind, currentCluster);
-    
+
     // Track previous kind to detect changes
     const prevKindRef = useRef(kind);
     const prevNamespaceRef = useRef(namespace);
     const prevClusterRef = useRef(currentCluster);
-    
+
     // Reset when namespace, kind, or cluster changes - MUST happen before data handling
     useEffect(() => {
         const kindChanged = prevKindRef.current !== kind;
         const namespaceChanged = prevNamespaceRef.current !== namespace;
         const clusterChanged = prevClusterRef.current !== currentCluster;
-        
+
         if (kindChanged || namespaceChanged || clusterChanged) {
             // Clear state immediately when switching
             setAllResources([]);
             setExpandedId(null);
             setFilter('');
-            
+
             // Update refs
             prevKindRef.current = kind;
             prevNamespaceRef.current = namespace;
             prevClusterRef.current = currentCluster;
-            
+
             // Force refetch when kind/namespace/cluster changes to ensure fresh data
             if (namespace && kind) {
                 refetch();
             }
         }
     }, [namespace, kind, currentCluster, refetch]);
-    
+
     // Handle resources data - always expect an array now (no pagination)
     useEffect(() => {
         // Only update if we have data
         if (resourcesData) {
+            let data = [];
             if (Array.isArray(resourcesData)) {
-                setAllResources(resourcesData);
+                data = resourcesData;
             } else if (resourcesData.resources && Array.isArray(resourcesData.resources)) {
                 // Backward compatibility with paginated response
-                setAllResources(resourcesData.resources);
+                data = resourcesData.resources;
+            }
+            setAllResources(data);
+
+            // Check for search param in URL
+            const searchParams = new URLSearchParams(location.search);
+            const search = searchParams.get('search');
+            if (search) {
+                setFilter(search);
+                // If exact match found, expand it
+                const found = data.find(r => r.name === search);
+                if (found) {
+                    setExpandedId(found.uid);
+                }
             }
         } else if (!loading) {
             // Only clear if we're not loading (to avoid flickering)
             setAllResources([]);
         }
-    }, [resourcesData, loading]);
+    }, [resourcesData, loading, location.search]);
 
     // Ensure resources is always an array
     const resources = allResources;
@@ -296,6 +314,33 @@ const WorkloadList = ({ namespace, kind }) => {
         }
     };
 
+    const handleTriggerCronJob = async (res) => {
+        if (!res.namespace) return;
+        setTriggering(res.name);
+        const params = new URLSearchParams();
+        if (currentCluster) params.append('cluster', currentCluster);
+
+        try {
+            const resp = await authFetch(`/api/cronjobs/trigger?${params.toString()}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    namespace: res.namespace,
+                    name: res.name
+                })
+            });
+            if (!resp.ok) {
+                const errorText = await resp.text().catch(() => 'Trigger failed');
+                throw new Error(errorText || 'Trigger failed');
+            }
+            // Optional: notify success
+        } catch (err) {
+            alert(err.message || 'Failed to trigger cronjob');
+        } finally {
+            setTriggering(null);
+        }
+    };
+
     const renderDetails = (res) => {
         const onEditYAML = () => setEditingResource(res);
         const onDataSaved = () => {
@@ -319,8 +364,8 @@ const WorkloadList = ({ namespace, kind }) => {
             case 'RoleBinding':
             case 'ClusterRoleBinding': return <BindingDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'Deployment': return <DeploymentDetails details={res.details} onScale={(delta) => handleScale(res, delta)} scaling={scaling === res.name} res={res} onEditYAML={onEditYAML} />;
-            case 'Service': return <ServiceDetails details={res.details} onEditYAML={onEditYAML} />;
-            case 'Ingress': return <IngressDetails details={res.details} onEditYAML={onEditYAML} />;
+            case 'Service': return <ServiceDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
+            case 'Ingress': return <IngressDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
             case 'Pod': return <PodDetails details={res.details} onEditYAML={onEditYAML} pod={res} />;
             case 'ConfigMap': return <ConfigMapDetails details={res.details} onEditYAML={onEditYAML} resource={res} onDataSaved={onDataSaved} />;
             case 'Secret': return <SecretDetails details={res.details} onEditYAML={onEditYAML} resource={res} onDataSaved={onDataSaved} />;
@@ -328,10 +373,10 @@ const WorkloadList = ({ namespace, kind }) => {
             case 'PersistentVolumeClaim':
             case 'PersistentVolume': return <StorageDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'StorageClass': return <StorageClassDetails details={res.details} onEditYAML={onEditYAML} />;
-            case 'Job': return <JobDetails details={res.details} onEditYAML={onEditYAML} />;
+            case 'Job': return <JobDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
             case 'CronJob': return <CronJobDetails details={res.details} onEditYAML={onEditYAML} />;
-            case 'StatefulSet': return <StatefulSetDetails details={res.details} onEditYAML={onEditYAML} />;
-            case 'DaemonSet': return <DaemonSetDetails details={res.details} onEditYAML={onEditYAML} />;
+            case 'StatefulSet': return <StatefulSetDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
+            case 'DaemonSet': return <DaemonSetDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
             case 'HPA': return <HPADetails details={res.details} onEditYAML={onEditYAML} />;
             default: return <GenericDetails details={res.details} onEditYAML={onEditYAML} />;
         }
@@ -528,7 +573,20 @@ const WorkloadList = ({ namespace, kind }) => {
                                 {kind !== 'Pod' && kind !== 'PersistentVolumeClaim' && (
                                     <div className="col-span-1"></div>
                                 )}
-                                <div className="col-span-1 flex justify-end" onClick={(e) => e.stopPropagation()}>
+                                <div className={`${kind === 'Pod' ? 'col-span-1' : kind === 'PersistentVolumeClaim' ? 'col-span-2' : 'col-span-2'} flex justify-end items-center space-x-2 pr-2`} onClick={(e) => e.stopPropagation()}>
+                    {kind === 'CronJob' && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleTriggerCronJob(res);
+                                            }}
+                                            disabled={triggering === res.name}
+                                            className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-green-400 transition-colors disabled:opacity-50"
+                                            title="Trigger manual run"
+                                        >
+                                            <PlayCircle size={16} />
+                                        </button>
+                                    )}
                                     <div className="relative">
                                         <button
                                             onClick={() => setMenuOpen(menuOpen === res.uid ? null : res.uid)}
@@ -584,7 +642,7 @@ const WorkloadList = ({ namespace, kind }) => {
                 )}
             </div>
 
-            
+
             {/* YAML Editor Modal */}
             {editingResource && (
                 <YamlEditor
@@ -596,7 +654,7 @@ const WorkloadList = ({ namespace, kind }) => {
                     }}
                 />
             )}
-            
+
             {/* Menu overlay */}
             {menuOpen && (
                 <div
@@ -630,8 +688,8 @@ const WorkloadList = ({ namespace, kind }) => {
                             <button
                                 onClick={() => handleDelete(confirmAction.res, confirmAction.force)}
                                 className={`px-4 py-2 rounded-md text-white transition-colors ${
-                                    confirmAction.force 
-                                        ? 'bg-red-700 hover:bg-red-800' 
+                                    confirmAction.force
+                                        ? 'bg-red-700 hover:bg-red-800'
                                         : 'bg-orange-600 hover:bg-orange-700'
                                 }`}
                             >

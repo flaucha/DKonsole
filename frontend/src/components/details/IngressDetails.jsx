@@ -1,8 +1,9 @@
 import React from 'react';
 import { Globe } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { EditYamlButton } from './CommonDetails';
 
-const IngressDetails = ({ details, onEditYAML }) => {
+const IngressDetails = ({ details, onEditYAML, namespace }) => {
     const rules = details.rules || [];
     const tls = details.tls || [];
     const loadBalancer = details.loadBalancer || [];
@@ -36,12 +37,35 @@ const IngressDetails = ({ details, onEditYAML }) => {
                                     <span className="text-sm font-medium text-white">{rule.host || '*'}</span>
                                 </div>
                                 <div className="p-2 space-y-1">
-                                    {rule.paths && rule.paths.map((path, j) => (
-                                        <div key={j} className="flex items-center text-xs text-gray-300 pl-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-gray-600 mr-2"></div>
-                                            {path}
-                                        </div>
-                                    ))}
+                                    {rule.paths && rule.paths.map((p, j) => {
+                                        // Backend now returns objects {path, serviceName, servicePort}
+                                        // But keep backward compat just in case
+                                        const isObj = typeof p === 'object';
+                                        const pathStr = isObj ? p.path : p;
+                                        const serviceName = isObj ? p.serviceName : null;
+                                        const servicePort = isObj ? p.servicePort : null;
+
+                                        return (
+                                            <div key={j} className="flex items-center justify-between text-xs text-gray-300 pl-2 py-1 hover:bg-gray-700/30 rounded px-2">
+                                                <div className="flex items-center">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-gray-600 mr-2"></div>
+                                                    <span className="font-mono">{pathStr}</span>
+                                                </div>
+                                                {serviceName && serviceName !== 'unknown' && (
+                                                    <div className="flex items-center space-x-2 ml-4">
+                                                        <span className="text-gray-500">→</span>
+                                                        <Link
+                                                            to={`/dashboard/workloads/Service?search=${serviceName}`}
+                                                            className="text-blue-400 hover:underline font-medium"
+                                                            title={`Go to Service: ${serviceName}`}
+                                                        >
+                                                            {serviceName}:{servicePort}
+                                                        </Link>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ))}

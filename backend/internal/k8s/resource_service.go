@@ -226,12 +226,40 @@ func (s *ResourceService) GetResourceYAML(ctx context.Context, req GetResourceRe
 		return "", fmt.Errorf("failed to get resource: %w", err)
 	}
 
+	// Clean up the object to ensure clean YAML output
+	// Remove metadata fields that clutter the view
+	unstructured.RemoveNestedField(obj.Object, "metadata", "managedFields")
+	unstructured.RemoveNestedField(obj.Object, "metadata", "creationTimestamp")
+	unstructured.RemoveNestedField(obj.Object, "metadata", "resourceVersion")
+	unstructured.RemoveNestedField(obj.Object, "metadata", "uid")
+	unstructured.RemoveNestedField(obj.Object, "metadata", "generation")
+	unstructured.RemoveNestedField(obj.Object, "metadata", "selfLink")
+
 	jsonData, err := obj.MarshalJSON()
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal resource: %w", err)
 	}
 
-	yamlData, err := yaml.JSONToYAML(jsonData)
+	// Parse JSON to ensure clean structure
+	var cleanObj map[string]interface{}
+	if err := json.Unmarshal(jsonData, &cleanObj); err != nil {
+		return "", fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	// Ensure apiVersion appears only once
+	if apiVer, exists := cleanObj["apiVersion"]; exists {
+		// Remove and re-add to ensure it's at the root level only
+		delete(cleanObj, "apiVersion")
+		cleanObj["apiVersion"] = apiVer
+	}
+
+	// Re-marshal to JSON
+	cleanJSON, err := json.Marshal(cleanObj)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal clean JSON: %w", err)
+	}
+
+	yamlData, err := yaml.JSONToYAML(cleanJSON)
 	if err != nil {
 		return "", fmt.Errorf("failed to convert to YAML: %w", err)
 	}

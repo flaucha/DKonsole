@@ -79,6 +79,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	// Parse HTTP parameters
 	ns := r.URL.Query().Get("namespace")
 	kind := r.URL.Query().Get("kind")
+	labelSelector := r.URL.Query().Get("labelSelector")
 	allNamespaces := ns == "all"
 
 	if kind == "" {
@@ -110,6 +111,7 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 		Kind:          normalizedKind,
 		Namespace:     ns,
 		AllNamespaces: allNamespaces,
+		LabelSelector: labelSelector,
 		Client:        client,
 		MetricsClient: metricsClient,
 	}
