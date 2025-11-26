@@ -95,6 +95,13 @@ func auditLogInternal(entry AuditLogEntry) {
 	Logger.WithFields(fields).Info("audit log")
 }
 
+// LogAuditEntry logs an audit entry using the complete AuditLogEntry structure
+// This function preserves all fields including Method, Path, Status, and Duration
+// which are lost when using AuditLogLegacy
+func LogAuditEntry(entry AuditLogEntry) {
+	auditLogInternal(entry)
+}
+
 // LogError logs an error with context
 func LogError(err error, message string, fields map[string]interface{}) {
 	logFields := logrus.Fields{

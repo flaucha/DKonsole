@@ -1,9 +1,7 @@
 package middleware
 
 import (
-	"net"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 )
@@ -81,24 +79,6 @@ func (l *WebSocketConnectionLimiter) decrementConnection(ip string) {
 			delete(l.connections, ip)
 		}
 	}
-}
-
-// getClientIP extracts the real client IP from request, handling proxies
-func getClientIP(r *http.Request) string {
-	// Try X-Real-IP first (set by nginx, traefik, etc.)
-	if ip := r.Header.Get("X-Real-IP"); ip != "" {
-		return strings.TrimSpace(ip)
-	}
-	// Try X-Forwarded-For (may contain multiple IPs, take the first)
-	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
-		ips := strings.Split(ip, ",")
-		if len(ips) > 0 {
-			return strings.TrimSpace(ips[0])
-		}
-	}
-	// Fallback to RemoteAddr (remove port if present)
-	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-	return ip
 }
 
 // WebSocketLimitMiddleware limits WebSocket connections per IP

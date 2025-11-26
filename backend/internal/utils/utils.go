@@ -154,7 +154,10 @@ func GetClientIP(r *http.Request) string {
 
 // AuditLogLegacy logs detailed audit information for critical actions
 // This is a convenience function that builds an AuditLogEntry from parameters
-// For better type safety, use AuditLogEntry directly
+//
+// Deprecated: This function does not preserve Method, Path, Status, and Duration fields.
+// Use LogAuditEntry with a complete AuditLogEntry structure instead for full audit information.
+// This function is kept for backward compatibility with existing code.
 func AuditLogLegacy(r *http.Request, action, resourceKind, resourceName, namespace string, success bool, err error, details map[string]interface{}) {
 	user := "anonymous"
 	// Try to get user from context - this will need to be adapted based on how Claims is structured

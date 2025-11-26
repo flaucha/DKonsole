@@ -156,7 +156,7 @@ func main() {
 	// Helper for authenticated routes
 	// SecurityHeadersMiddleware is applied first to ensure all responses have security headers
 	secure := func(h http.HandlerFunc) http.HandlerFunc {
-		return middleware.SecurityHeadersMiddleware(enableCors(RateLimitMiddleware(CSRFMiddleware(AuditMiddleware(authService.AuthMiddleware(h))))))
+		return middleware.SecurityHeadersMiddleware(enableCors(middleware.RateLimitMiddleware(middleware.CSRFMiddleware(middleware.AuditMiddleware(authService.AuthMiddleware(h))))))
 	}
 
 	// Helper for authenticated Handler (for Swagger which returns http.Handler)
@@ -167,16 +167,16 @@ func main() {
 		}
 		// Apply the same security chain as secure() but wrap the Handler
 		return middleware.SecurityHeadersHandler(http.HandlerFunc(
-			enableCors(RateLimitMiddleware(CSRFMiddleware(AuditMiddleware(authService.AuthMiddleware(handlerFunc)))))),
+			enableCors(middleware.RateLimitMiddleware(middleware.CSRFMiddleware(middleware.AuditMiddleware(authService.AuthMiddleware(handlerFunc)))))),
 		)
 	}
 
 	// Helper for public routes
 	public := func(h http.HandlerFunc) http.HandlerFunc {
-		return middleware.SecurityHeadersMiddleware(enableCors(RateLimitMiddleware(AuditMiddleware(h))))
+		return middleware.SecurityHeadersMiddleware(enableCors(middleware.RateLimitMiddleware(middleware.AuditMiddleware(h))))
 	}
 
-	mux.HandleFunc("/api/login", middleware.SecurityHeadersMiddleware(enableCors(LoginRateLimitMiddleware(AuditMiddleware(authService.LoginHandler)))))
+	mux.HandleFunc("/api/login", middleware.SecurityHeadersMiddleware(enableCors(middleware.LoginRateLimitMiddleware(middleware.AuditMiddleware(authService.LoginHandler)))))
 	mux.HandleFunc("/api/logout", public(authService.LogoutHandler))
 	mux.HandleFunc("/api/me", secure(authService.MeHandler))
 	// Health check endpoint (also available as /health for compatibility)
