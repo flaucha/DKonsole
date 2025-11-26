@@ -370,7 +370,77 @@ func (s *Service) ServerSideApply(w http.ResponseWriter, r *http.Request) {
 
 // WatchResources handles WebSocket connections for watching Kubernetes resources
 func (s *Service) WatchResources(w http.ResponseWriter, r *http.Request) {
-	// Use WatchService via ServiceFactory
+	// Upgrade to WebSocket
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		utils.LogError(err, "Failed to upgrade to WebSocket", nil)
+		return
+	}
+	defer conn.Close()
+
+	// Parse parameters
+	kind := r.URL.Query().Get("kind")
+	namespace := r.URL.Query().Get("namespace")
+	allNamespaces := r.URL.Query().Get("namespace") == "all"
+
+	// Get Dynamic Client
+	dynamicClient, err := s.clusterService.GetDynamicClient(r)
+	if err != nil {
+		_ = conn.WriteJSON(map[string]string{"type": "ERROR", "message": err.Error()})
+		return
+	}
+
+	// Create WatchService
 	watchService := s.serviceFactory.CreateWatchService()
-	watchService.HandleWatch(w, r, s.clusterService)
+
+	// Create context that is canceled when connection closes
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
+	// Handle client disconnect
+	go func() {
+		for {
+			if _, _, err := conn.NextReader(); err != nil {
+				cancel()
+				return
+			}
+		}
+	}()
+
+	// Start Watch
+	req := WatchRequest{
+		Kind:          kind,
+		Namespace:     namespace,
+		AllNamespaces: allNamespaces,
+	}
+
+	watcher, err := watchService.StartWatch(ctx, dynamicClient, req)
+	if err != nil {
+		_ = conn.WriteJSON(map[string]string{"type": "ERROR", "message": err.Error()})
+		return
+	}
+	defer watcher.Stop()
+
+	// Send events to client
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case event, ok := <-watcher.ResultChan():
+			if !ok {
+				return
+			}
+
+			// Transform event
+			result, err := watchService.TransformEvent(event)
+			if err != nil {
+				continue
+			}
+
+			// Send to client
+			if err := conn.WriteJSON(result); err != nil {
+				return
+			}
+		}
+	}
 }
