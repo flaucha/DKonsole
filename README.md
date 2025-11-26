@@ -299,6 +299,9 @@ graph TB
         ApiSvc[api.Service<br/>API Resources, CRDs]
         HelmSvc[helm.Service<br/>Helm Releases]
         PodSvc[pod.Service<br/>Logs, Exec, Events]
+        PromSvc[prometheus.Service<br/>Metrics & Overview]
+        LogoSvc[logo.Service<br/>Custom Branding]
+        HealthSvc[health.Handler<br/>Health Checks]
     end
 
     subgraph "Backend - Shared"
@@ -309,6 +312,7 @@ graph TB
     subgraph "External Systems"
         K8s[Kubernetes API]
         Prometheus[Prometheus]
+        FileSystem[File System]
     end
 
     UI -->|HTTP Requests| Main
@@ -320,6 +324,9 @@ graph TB
     CORS --> ApiSvc
     CORS --> HelmSvc
     CORS --> PodSvc
+    CORS --> PromSvc
+    CORS --> LogoSvc
+    CORS --> HealthSvc
 
     AuthSvc --> Models
     ClusterSvc --> Models
@@ -331,12 +338,17 @@ graph TB
     HelmSvc --> ClusterSvc
     PodSvc --> Models
     PodSvc --> ClusterSvc
+    PromSvc --> Models
+    PromSvc --> ClusterSvc
+    LogoSvc --> Models
 
     K8sSvc --> Utils
     ApiSvc --> Utils
     HelmSvc --> Utils
     PodSvc --> Utils
     AuthSvc --> Utils
+    PromSvc --> Utils
+    LogoSvc --> Utils
 
     ClusterSvc --> K8s
     K8sSvc --> K8s
@@ -344,6 +356,8 @@ graph TB
     HelmSvc --> K8s
     PodSvc --> K8s
     PodSvc --> Prometheus
+    PromSvc --> Prometheus
+    LogoSvc --> FileSystem
 
     style Main fill:#e1f5ff
     style AuthSvc fill:#fff4e1
@@ -352,10 +366,14 @@ graph TB
     style ApiSvc fill:#fff4e1
     style HelmSvc fill:#fff4e1
     style PodSvc fill:#fff4e1
+    style PromSvc fill:#fff4e1
+    style LogoSvc fill:#fff4e1
+    style HealthSvc fill:#fff4e1
     style Models fill:#e8f5e9
     style Utils fill:#e8f5e9
     style K8s fill:#ffebee
     style Prometheus fill:#ffebee
+    style FileSystem fill:#ffebee
 ```
 
 ### Módulos del Backend
@@ -368,6 +386,9 @@ graph TB
 - **`api/`**: Recursos de API genéricos y CRDs (Custom Resource Definitions)
 - **`helm/`**: Gestión de releases de Helm
 - **`pod/`**: Operaciones específicas de pods (logs, exec, events, métricas)
+- **`prometheus/`**: Integración con Prometheus para métricas históricas
+- **`logo/`**: Gestión de logos personalizados
+- **`health/`**: Endpoints de health check (liveness/readiness)
 
 ## 🛠️ Development
 
