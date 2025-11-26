@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.2.3-green.svg)
+![Version](https://img.shields.io/badge/version-1.2.4-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.2.3
+git checkout v1.2.4
 
 # EDIT VALUES WITH YOUR FAVORITE EDITOR.
 $ vim ./helm/dkonsole/values.yaml
@@ -52,12 +52,34 @@ You must provide an `admin` username and an Argon2 `passwordHash`. You also need
 admin:
   username: admin
   passwordHash: "$argon2id$..." # Generate with argon2 tool
+  # RECOMMENDED when using --set: Use passwordHashBase64 to avoid Helm parsing issues
+  passwordHashBase64: "" # Base64-encoded hash (takes precedence over passwordHash)
 jwtSecret: "..." # Generate with openssl rand -base64 32
 ```
 
 **Generate password hash:**
 ```bash
 cd backend && go run ../scripts/generate-password-hash.go "yourpassword"
+```
+
+**Using `--set` with Helm (Recommended):**
+When using `helm install --set`, Helm interprets commas as list separators, which can break Argon2 hashes containing commas. Use `passwordHashBase64` instead:
+
+```bash
+# 1. Generate hash
+HASH=$(cd backend && go run ../scripts/generate-password-hash.go "yourpassword")
+
+# 2. Encode to base64
+ENCODED=$(echo -n "$HASH" | base64 -w 0)
+
+# 3. Install with --set (no escaping needed!)
+helm install dkonsole ./helm/dkonsole --set admin.passwordHashBase64="$ENCODED"
+```
+
+Or use the helper script:
+```bash
+# Generate and encode in one step
+cd backend && go run ../scripts/generate-password-hash.go "yourpassword" | xargs ../scripts/encode-hash.sh
 ```
 
 ### 2. Ingress (Required for external access)
@@ -103,18 +125,29 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.2.3"
+  tag: "1.2.4"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.2.3`
+- **Unified**: `dkonsole/dkonsole:1.2.4`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.2.4 (2025-11-26)
+**🔧 Helm Chart Password Hash Fix**
+
+This release fixes the "Invalid credentials" error when using `helm install --set` with Argon2 password hashes.
+
+- **Helm Chart Password Hash Parsing**: Fixed hash truncation issue with special characters
+  - Added `admin.passwordHashBase64` support to avoid Helm parsing issues
+  - Works seamlessly with `--set` without character escaping
+  - Maintains backward compatibility with `passwordHash` for `values.yaml`
+  - Created helper script `scripts/encode-hash.sh` for easy encoding
 
 ### v1.2.3 (2025-11-25)
 **🔧 Helm Chart Fixes & Authentication Improvements**

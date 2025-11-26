@@ -5,6 +5,29 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.4] - 2025-11-26
+
+### 🔧 Fixed
+
+- **Helm Chart Password Hash Parsing**: Fixed "Invalid credentials" error when using `--set` with Argon2 password hashes
+  - Added support for `admin.passwordHashBase64` to avoid Helm parsing issues with special characters (commas, `$`, etc.)
+  - Helm's `--set` interprets commas as list separators, causing hash truncation
+  - Solution: Pass hash as base64-encoded string, automatically decoded in template
+  - Maintains backward compatibility with `passwordHash` for `values.yaml` usage
+  - Created helper script `scripts/encode-hash.sh` for easy hash encoding
+
+### ✨ Enhanced
+
+- **Helm Chart Authentication**: Enhanced password hash handling for CLI installations
+  - Template now supports `passwordHashBase64` (takes precedence over `passwordHash`)
+  - Works seamlessly with `helm install --set` without character escaping
+  - Updated documentation with examples for both `--set` and `values.yaml` usage
+
+### 📚 Documentation
+
+- **Helm Chart Documentation**: Updated `values.yaml` and `README.md` with `passwordHashBase64` usage instructions
+- **Release Documentation**: Added helper script documentation and usage examples
+
 ## [1.2.3] - 2025-11-25
 
 ### 🔧 Fixed

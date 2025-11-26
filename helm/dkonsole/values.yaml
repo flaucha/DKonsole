@@ -13,6 +13,13 @@ admin:
   #   $argon2i$v=19$m=4096,t=3,p=1$salt$hash
   # If empty, default password "password" will be used (INSECURE!)
   passwordHash: ""
+  # RECOMMENDED: Use passwordHashBase64 instead of passwordHash when using --set
+  # This avoids Helm parsing issues with special characters (commas, $, etc.)
+  # To encode your hash: echo -n "$argon2i$v=19$m=4096,t=3,p=1$salt$hash" | base64
+  # Or use: ./scripts/encode-hash.sh "$argon2i$v=19$m=4096,t=3,p=1$salt$hash"
+  # Then use: --set admin.passwordHashBase64='<base64-encoded-hash>'
+  # If passwordHashBase64 is set, it takes precedence over passwordHash
+  passwordHashBase64: ""
 
 # JWT Secret for session security. Generate with: openssl rand -base64 32
 jwtSecret: ""
@@ -22,7 +29,7 @@ jwtSecret: ""
 # -----------------------------------------------------------------------------
 image:
   repository: dkonsole/dkonsole
-  tag: "1.2.3"
+  tag: "1.2.4"
   pullPolicy: Always
 
 # Image pull secrets (optional)
