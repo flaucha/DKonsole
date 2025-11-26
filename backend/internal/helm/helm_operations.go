@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/example/k8s-view/internal/utils"
+	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
 // UpgradeHelmRelease upgrades a Helm release to a new version

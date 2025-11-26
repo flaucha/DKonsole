@@ -13,8 +13,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/example/k8s-view/internal/models"
-	"github.com/example/k8s-view/internal/utils"
+	"github.com/flaucha/DKonsole/backend/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
 // ResourceRepository defines the interface for accessing Kubernetes resources

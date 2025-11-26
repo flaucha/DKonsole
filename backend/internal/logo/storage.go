@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/example/k8s-view/internal/utils"
+	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
 const DataDir = "./data"

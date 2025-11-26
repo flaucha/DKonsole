@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	"github.com/example/k8s-view/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
 // AuthService provides business logic for authentication operations.

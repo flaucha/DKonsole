@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/example/k8s-view/internal/cluster"
-	"github.com/example/k8s-view/internal/models"
-	"github.com/example/k8s-view/internal/utils"
+	"github.com/flaucha/DKonsole/backend/internal/cluster"
+	"github.com/flaucha/DKonsole/backend/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
 // Service provides HTTP handlers for Helm release operations.

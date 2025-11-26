@@ -6,7 +6,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/example/k8s-view/internal/utils"
+	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
 // GetResourceYAML returns the YAML representation of a resource

@@ -29,7 +29,7 @@ linters-settings:
   gocyclo:
     min-complexity: 15
   goimports:
-    local-prefixes: github.com/example/k8s-view
+    local-prefixes: github.com/flaucha/DKonsole/backend
   govet:
     enable-all: false
     disable:

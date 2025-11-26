@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/example/k8s-view/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
 // mockResourceRepository is a mock implementation of ResourceRepository

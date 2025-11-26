@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/yaml"
 
-	"github.com/example/k8s-view/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
 // ResourceService provides business logic for Kubernetes resource operations.

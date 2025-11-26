@@ -1,4 +1,4 @@
-module github.com/example/k8s-view
+module github.com/flaucha/DKonsole/backend
 
 go 1.24.0
 

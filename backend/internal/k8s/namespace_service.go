@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/example/k8s-view/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
 // NamespaceService provides business logic for namespace operations

@@ -8,7 +8,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	"github.com/example/k8s-view/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
 func TestJWTService_ValidateToken(t *testing.T) {

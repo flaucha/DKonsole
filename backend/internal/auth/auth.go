@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/example/k8s-view/internal/models"
-	"github.com/example/k8s-view/internal/utils"
+	"github.com/flaucha/DKonsole/backend/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
 // contextKey is a custom type for context keys to avoid collisions

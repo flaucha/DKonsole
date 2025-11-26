@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/example/k8s-view/internal/cluster"
-	"github.com/example/k8s-view/internal/utils"
+	"github.com/flaucha/DKonsole/backend/internal/cluster"
+	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
 // HTTPHandler handles HTTP requests for Prometheus metrics

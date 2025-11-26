@@ -10,8 +10,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 
-	"github.com/example/k8s-view/internal/cluster"
-	"github.com/example/k8s-view/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/cluster"
+	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
 // ResourceListService provides business logic for listing Kubernetes resources

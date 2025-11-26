@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/example/k8s-view/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
 // mockUserRepository is a mock implementation of UserRepository for testing
