@@ -19,6 +19,18 @@ echo "🔨 DKonsole Build v${TEST_VERSION}"
 echo "=========================================="
 echo ""
 
+# Check for uncommitted changes and commit/push if needed
+if ! git diff-index --quiet HEAD --; then
+    echo "📝 Detected uncommitted changes, committing and pushing..."
+    git add -A
+    git commit -m "chore: update code before build ${TEST_VERSION}" || true
+    if git rev-parse --abbrev-ref HEAD | grep -q "main\|master"; then
+        git push || echo "⚠️  Warning: Could not push to remote (may need manual push)"
+    fi
+    echo "✅ Changes committed and pushed"
+    echo ""
+fi
+
 # Build Unified Docker Image (Backend + Frontend)
 echo "📦 Building Unified Image (Backend + Frontend)..."
 docker build -t dkonsole/dkonsole:$TEST_VERSION .
