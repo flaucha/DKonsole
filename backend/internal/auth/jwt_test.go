@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/example/k8s-view/internal/models"
 	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/example/k8s-view/internal/models"
 )
 
 func TestJWTService_ValidateToken(t *testing.T) {
