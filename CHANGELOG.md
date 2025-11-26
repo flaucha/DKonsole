@@ -5,6 +5,36 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2025-11-25
+
+### 🔧 Fixed
+
+- **Helm Chart PVC StorageClass**: Fixed PersistentVolumeClaim template to properly include `storageClassName`
+  - Added support for explicit `storageClass` configuration in `values.yaml`
+  - PVC now correctly includes `storageClassName` field when specified
+  - Allows using default storage class or custom storage classes as needed
+- **Argon2 Password Hash Generation**: Fixed password hash generation command
+  - Created reliable Go script (`scripts/generate-password-hash.go`) for generating Argon2 hashes
+  - Script generates hashes in format compatible with version 1.2.2: `$argon2i$v=19$m=4096,t=3,p=1$salt$hash`
+  - Updated documentation in `values.yaml` with correct command
+  - Resolves login authentication issues caused by hash format mismatches
+
+### ✨ Enhanced
+
+- **Flexible Argon2 Hash Support**: Enhanced authentication to accept any valid Argon2 hash
+  - Improved `VerifyPassword` function to be more robust and flexible
+  - Now accepts both `argon2id` and `argon2i` variants with any valid parameters (m, t, p)
+  - Automatically extracts parameters from the hash itself, making it compatible with any standard Argon2 tool
+  - Added fallback support for different base64 encodings (RawStdEncoding and StdEncoding)
+  - Improved error messages for better debugging
+  - Validates parameter ranges to prevent invalid configurations
+  - Case-insensitive variant matching for better compatibility
+
+### 📚 Documentation
+
+- **Helm Chart Documentation**: Updated `values.yaml` with correct Argon2 hash generation command
+- **Code Documentation**: Enhanced comments in `password.go` explaining hash format flexibility
+
 ## [1.2.2] - 2025-11-25
 
 ### 🧹 Code Quality & Technical Debt

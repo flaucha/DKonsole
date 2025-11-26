@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.2.2-green.svg)
+![Version](https://img.shields.io/badge/version-1.2.3-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.2.2
+git checkout v1.2.3
 
 # EDIT VALUES WITH YOUR FAVORITE EDITOR.
 $ vim ./helm/dkonsole/values.yaml
@@ -57,7 +57,7 @@ jwtSecret: "..." # Generate with openssl rand -base64 32
 
 **Generate password hash:**
 ```bash
-echo -n "yourpassword" | argon2 $(openssl rand -base64 16) -id -t 3 -m 12 -p 1 -l 32 -e
+cd backend && go run ../scripts/generate-password-hash.go "yourpassword"
 ```
 
 ### 2. Ingress (Required for external access)
@@ -103,18 +103,31 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.2.2"
+  tag: "1.2.3"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.2.2`
+- **Unified**: `dkonsole/dkonsole:1.2.3`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.2.3 (2025-11-25)
+**🔧 Helm Chart Fixes & Authentication Improvements**
+
+This release fixes critical Helm chart issues and enhances authentication flexibility.
+
+- **Helm Chart PVC Fix**: Fixed PersistentVolumeClaim to properly include `storageClassName` field
+- **Argon2 Hash Generation**: Created reliable Go script for generating password hashes compatible with version 1.2.2
+- **Flexible Argon2 Support**: Enhanced authentication to accept any valid Argon2 hash format
+  - Supports both `argon2id` and `argon2i` variants with any parameters
+  - Automatic parameter extraction from hash
+  - Fallback support for different base64 encodings
+  - Improved error messages and validation
 
 ### v1.2.2 (2025-11-25)
 **🧹 Code Quality & Technical Debt Removal**
@@ -140,14 +153,6 @@ This release focuses on security hardening, comprehensive testing, performance i
 - **Infrastructure**: Healthcheck in Dockerfile, pinned base image (alpine:3.19)
 - **Documentation**: Structured JSON logging, comprehensive Godoc, Swagger/OpenAPI, Architecture Decision Records
 - **CI/CD**: Added linting, vulnerability scanning (Trivy, npm audit, govulncheck)
-
-### v1.2.0 (2025-01-27)
-**🧹 Major Refactoring & Code Cleanup + Architecture Improvements (thanks Kkoder from redit)**
-
-This release includes a comprehensive codebase cleanup, refactoring, and architectural improvements to follow SOLID principles and improve maintainability.
-
-- **Changed**: Frontend component organization
-  - Extracted resource detail components into modular structure
   - All resource detail components moved to `components/details/` directory
   - Improved separation of concerns with dedicated detail components
   - Better code organization and reusability

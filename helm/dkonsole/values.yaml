@@ -8,8 +8,10 @@ admin:
   # Username for the dashboard
   username: admin
   # Password hash (Argon2). Generate with:
-  # echo -n "password" | argon2 $(openssl rand -base64 16) -id -t 3 -m 12 -p 1 -l 32 -e
-  # This should be an Argon2 hash. If empty, default password "password" will be used (INSECURE!)
+  #   cd backend && go run ../scripts/generate-password-hash.go "yourpassword"
+  # This generates a hash in the format that works with version 1.2.2:
+  #   $argon2i$v=19$m=4096,t=3,p=1$salt$hash
+  # If empty, default password "password" will be used (INSECURE!)
   passwordHash: ""
 
 # JWT Secret for session security. Generate with: openssl rand -base64 32
@@ -20,7 +22,7 @@ jwtSecret: ""
 # -----------------------------------------------------------------------------
 image:
   repository: dkonsole/dkonsole
-  tag: "1.2.2"
+  tag: "1.2.3"
   pullPolicy: Always
 
 # Image pull secrets (optional)
@@ -135,7 +137,7 @@ affinity: {}
 # -----------------------------------------------------------------------------
 persistence:
   enabled: true
-  # storageClass: "" # Uncomment to specify a storage class
+  storageClass: "" # Specify a storage class name, or leave empty for default
   accessMode: ReadWriteOnce
   size: 1Gi
 
