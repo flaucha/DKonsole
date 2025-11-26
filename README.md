@@ -307,6 +307,8 @@ For questions or feedback, please contact: **flaucha@gmail.com**
 
 ## 🏗️ Arquitectura
 
+For detailed coding standards and contribution guidelines, please refer to [CODING_GUIDELINES.md](./CODING_GUIDELINES.md).
+
 DKonsole utiliza una arquitectura orientada al dominio en el backend, organizando el código en módulos especializados dentro de `backend/internal/`:
 
 ```mermaid
