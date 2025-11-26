@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.2.4-green.svg)
+![Version](https://img.shields.io/badge/version-1.2.5-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.2.4
+git checkout v1.2.5
 
 # EDIT VALUES WITH YOUR FAVORITE EDITOR.
 $ vim ./helm/dkonsole/values.yaml
@@ -155,18 +155,34 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.2.4"
+  tag: "1.2.5"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.2.4`
+- **Unified**: `dkonsole/dkonsole:1.2.5`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.2.5 (2025-11-26)
+**✨ Enhanced Resource Management & UI Improvements**
+
+This release adds comprehensive pod list views, improved navigation, and fixes several UI issues.
+
+- **Deployment Image SHA Display**: Smart image SHA handling with shortened display, hover tooltip, and click-to-copy
+- **Pod List Tabs**: Added "Pod List" tabs to Deployment, DaemonSet, and StatefulSet details with navigation to pod details
+- **Ingress Service Links**: Display and navigate to services pointed to by ingresses
+- **Service Selector Tab**: Added "Selector" tab showing associated pods
+- **Job Runs Tab**: Added "Runs" tab listing job pods
+- **CronJob Manual Run**: Added manual run button for CronJobs
+- **CronJob Status Colors**: Improved status colors (Succeeded=green, Failed=red, others=yellow)
+- **YAML Editor Fix**: Fixed duplicate `apiVersion` field issue
+- **CronJob Trigger Fix**: Fixed EOF error when triggering CronJobs
+- **Action Menu Alignment**: Fixed three-dot menu alignment in all lists
 
 ### v1.2.4 (2025-11-26)
 **🔧 Helm Chart Password Hash Fix**
@@ -191,18 +207,6 @@ This release fixes critical Helm chart issues and enhances authentication flexib
   - Automatic parameter extraction from hash
   - Fallback support for different base64 encodings
   - Improved error messages and validation
-
-### v1.2.2 (2025-11-25)
-**🧹 Code Quality & Technical Debt Removal**
-
-This release focuses on code quality improvements, unified logging, and elimination of technical debt.
-
-- **Unified Logging**: All logging migrated to JSON structured format using `utils.Logger`
-- **Legacy Code Removal**: Eliminated `handlers.go` and all legacy compatibility code
-- **Architecture**: Completed migration to pure service-based architecture
-- **Code Cleanup**: Removed unused imports and dead code
-- **Modularity**: Health check endpoint moved to independent `internal/health` package
-- **Tests**: Added initial UI component tests (Loading component)
 
 ### v1.2.1 (2025-11-24)
 **🔒 Security, Testing, Performance & Documentation Improvements**

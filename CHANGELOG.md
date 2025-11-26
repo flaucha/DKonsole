@@ -5,6 +5,75 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.5] - 2025-11-26
+
+### ✨ Added
+
+- **Deployment Image SHA Display**: Smart image SHA handling for deployments
+  - Shortened SHA display with full SHA on hover tooltip
+  - Click to copy full SHA with "version copied" notification popup
+  - Improved readability for long image SHAs
+- **Deployment Pod List Tab**: Added "Pod List" tab to Deployment details
+  - Lists all pods associated with the deployment
+  - Click on pod to navigate to pod details in Pods section
+- **DaemonSet & StatefulSet Pod List**: Added "Pod List" tab to DaemonSet and StatefulSet details
+  - Lists associated pods with navigation to pod details
+- **Ingress Service Links**: Display service pointed to by ingress
+  - Shows service name for both Traefik and Nginx ingresses
+  - Click on service name to navigate to service details
+- **Service Selector Tab**: Added "Selector" tab to Service details
+  - Lists pods associated with the service selector
+  - Navigation to pod details on click
+- **Job Runs Tab**: Added "Runs" tab to Job details
+  - Lists pods created by the job
+  - Navigation to pod details on click
+- **CronJob Manual Run**: Added manual run button for CronJobs
+  - Trigger button in CronJob row to manually create a job
+  - Visual feedback during trigger operation
+
+### 🔧 Fixed
+
+- **YAML Editor**: Fixed duplicate `apiVersion` field issue
+  - Cleaned up object structure before YAML conversion
+  - Ensures single `apiVersion` field at root level
+- **CronJob Trigger**: Fixed EOF error when triggering CronJobs
+  - Changed from query parameters to JSON body in POST request
+  - Proper Content-Type header for JSON payload
+- **Pod List Navigation**: Fixed navigation to Pods section from associated pods lists
+  - Corrected route from `/dashboard/workloads/Pods` to `/dashboard/workloads/Pod`
+  - Fixed typo in "No Pods found" message
+- **Ingress Service Navigation**: Fixed service details auto-expansion
+  - Added URL search parameter support for auto-expanding resources
+  - Service details now expand automatically when navigating from ingress
+- **Action Menu Alignment**: Fixed three-dot menu alignment in all lists
+  - Always aligned to far right regardless of other columns
+  - Consistent padding and spacing
+
+### 🎨 Changed
+
+- **CronJob Status Colors**: Improved status badge colors for CronJobs
+  - "Succeeded" status now displays in green
+  - "Failed" status displays in red
+  - "Running", "Active", "Suspended" display in yellow
+- **Service Details Layout**: Reorganized Service details component
+  - Tabs now appear first, before service type badge
+  - Better visual hierarchy and user experience
+- **Status Badge Colors**: Updated status badge color scheme
+  - "Running" status displays in green (healthy state)
+  - Consistent color coding across all resource types
+
+### 🔧 Technical Improvements
+
+- **Backend API Enhancements**:
+  - Added `labelSelector` parameter to `/api/resources` endpoint for pod filtering
+  - Enhanced ingress paths structure to include service name and port
+  - Improved CronJob status calculation based on job execution history
+  - Added selector field to StatefulSet and DaemonSet details
+- **Frontend Component Organization**:
+  - Created reusable `AssociatedPods` component for pod lists
+  - Enhanced `SmartImage` component for SHA display
+  - Improved tab navigation consistency across detail components
+
 ## [1.2.4] - 2025-11-26
 
 ### 🔧 Fixed
