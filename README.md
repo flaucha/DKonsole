@@ -126,6 +126,7 @@ This release focuses on code quality improvements, unified logging, and eliminat
 - **Architecture**: Completed migration to pure service-based architecture
 - **Code Cleanup**: Removed unused imports and dead code
 - **Modularity**: Health check endpoint moved to independent `internal/health` package
+- **Tests**: Added initial UI component tests (Loading component)
 
 ### v1.2.1 (2025-11-24)
 **🔒 Security, Testing, Performance & Documentation Improvements**

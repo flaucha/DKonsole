@@ -27,7 +27,7 @@ type Service struct {
 
 // NewService creates a new authentication service with default configuration.
 // It initializes the user repository (EnvUserRepository) and JWT services.
-func NewService(h *models.Handlers) *Service {
+func NewService() *Service {
 	// Initialize repository
 	userRepo := NewEnvUserRepository()
 

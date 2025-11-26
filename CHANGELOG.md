@@ -112,6 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Structured logger with logrus
 - Swagger documentation generation
 - Architecture Decision Records (ADRs)
+- **Tests**: Added initial UI component tests (Loading component)
 
 ### Changed
 

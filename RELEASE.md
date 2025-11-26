@@ -37,7 +37,7 @@ Perform the following file updates precisely.
 - **Action 2 (Checkout)**: Update git checkout command regex `git checkout v[0-9.]+` to `git checkout vNEW_VERSION`.
 - **Action 3 (Docker Tag)**: Update Docker tag regex `tag: "[0-9.]+"` to `tag: "NEW_VERSION"`.
 - **Action 4 (Image Ref)**: Update image reference regex `dkonsole:[0-9.]+` to `dkonsole:NEW_VERSION`.
-- **Action 5 (Changelog)**: 
+- **Action 5 (Changelog)**:
   - **IMPORTANT**: The README changelog section must contain ONLY the last 3 versions (NEW_VERSION and the 2 previous ones).
   - Add the new changelog entry at the top of the "Changelog" section.
   - Remove the oldest version entry if there are more than 3 versions.
@@ -49,14 +49,20 @@ Perform the following file updates precisely.
 - **File**: `helm/dkonsole/values.yaml`
 - **Action**: Update `image.tag` field.
 
+### 2.5 Swagger Documentation
+- **Task**: Ensure Swagger documentation is updated for the new release.
+- **Action**: Generate/Update Swagger docs if necessary and include them in the commit.
+
 ## 3. Git Operations
 1. **Stage**: `git add VERSION CHANGELOG.md README.md helm/dkonsole/Chart.yaml helm/dkonsole/values.yaml`
 2. **Commit**: `git commit -m "chore: release vVERSION"`
 3. **Push**: `git push origin main`
 4. **Tag**: `git tag -a vVERSION -m "Release vVERSION"`
+   > [!IMPORTANT]
+   > **Pipeline Trigger**: Pushing this tag will trigger the GitHub Release Pipeline.
+   > **Pre-requisite**: You MUST confirm that the build works and all tests pass locally or in a previous CI run BEFORE pushing this tag.
 5. **Push Tag**: `git push origin vVERSION`
 
 ## 4. Verification
 - Monitor GitHub Actions for the tag push.
 - Verify Docker Hub for the new tag `dkonsole/dkonsole:VERSION`.
-

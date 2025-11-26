@@ -1,5 +1,5 @@
 // @title DKonsole API
-// @version 1.2.1
+// @version 1.2.2
 // @description API para gestión de recursos Kubernetes y Helm releases
 // @termsOfService http://swagger.io/terms/
 
@@ -109,21 +109,23 @@ func main() {
 		config, err = rest.InClusterConfig()
 		if err != nil {
 			utils.LogError(err, "Failed to get in-cluster config", nil)
-			panic(err.Error())
+			os.Exit(1)
 		}
 	}
 
 	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err.Error())
+		utils.LogError(err, "Failed to create clientset", nil)
+		os.Exit(1)
 	}
 
 	metricsClient, _ := metricsv.NewForConfig(config)
 
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
-		panic(err.Error())
+		utils.LogError(err, "Failed to create dynamic client", nil)
+		os.Exit(1)
 	}
 
 	handlersModel := &models.Handlers{
@@ -141,10 +143,10 @@ func main() {
 	}
 
 	// Initialize services
-	authService := auth.NewService(handlersModel)
+	authService := auth.NewService()
 	clusterService := cluster.NewService(handlersModel)
 	k8sService := k8s.NewService(handlersModel, clusterService)
-	apiService := api.NewService(handlersModel, clusterService)
+	apiService := api.NewService(clusterService)
 	helmService := helm.NewService(handlersModel, clusterService)
 	podService := pod.NewService(handlersModel, clusterService)
 	prometheusService := prometheus.NewHTTPHandler(handlersModel.PrometheusURL, clusterService)
@@ -316,7 +318,7 @@ func main() {
 	})
 	if err := http.ListenAndServe(port, mux); err != nil {
 		utils.LogError(err, "Server failed", nil)
-		panic(err)
+		os.Exit(1)
 	}
 }
 

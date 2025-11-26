@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
-	"github.com/flaucha/DKonsole/backend/internal/models"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -18,14 +17,12 @@ const (
 
 // Service provides API resource and CRD operations
 type Service struct {
-	handlers       *models.Handlers
 	clusterService *cluster.Service
 }
 
 // NewService creates a new API service
-func NewService(h *models.Handlers, cs *cluster.Service) *Service {
+func NewService(cs *cluster.Service) *Service {
 	return &Service{
-		handlers:       h,
 		clusterService: cs,
 	}
 }
