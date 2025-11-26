@@ -272,14 +272,3 @@ func SuccessResponse(w http.ResponseWriter, message string, data interface{}) {
 	}
 	JSONResponse(w, http.StatusOK, response)
 }
-
-// YamlToJson converts YAML content to JSON
-func YamlToJson(yamlData string) ([]byte, error) {
-	// Simple wrapper around yaml.YAMLToJSON
-	// We need to import "sigs.k8s.io/yaml" but declared imports in this file are different.
-	// To avoid circular dependencies or adding heavy imports to utils,
-	// we might keep this simple or move it.
-	// Let's try to implement it using "encoding/json" and "gopkg.in/yaml.v2" or similar if available.
-	// Actually, for k8s, "sigs.k8s.io/yaml" is standard.
-	return nil, fmt.Errorf("YamlToJson not implemented in utils, use sigs.k8s.io/yaml directly")
-}
