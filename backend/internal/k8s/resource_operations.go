@@ -500,3 +500,47 @@ func (s *Service) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 	// Write success response
 	utils.JSONResponse(w, http.StatusOK, result)
 }
+
+// DeleteResource handles HTTP DELETE requests to delete a Kubernetes resource.
+func (s *Service) DeleteResource(w http.ResponseWriter, r *http.Request) {
+	// Parse HTTP parameters
+	kind := r.URL.Query().Get("kind")
+	name := r.URL.Query().Get("name")
+	namespace := r.URL.Query().Get("namespace")
+	force := r.URL.Query().Get("force") == "true"
+
+	if kind == "" || name == "" {
+		utils.ErrorResponse(w, http.StatusBadRequest, "Missing required parameters: kind, name")
+		return
+	}
+
+	// Create context
+	ctx, cancel := utils.CreateTimeoutContext()
+	defer cancel()
+
+	// Get Dynamic Client
+	dynamicClient, err := s.clusterService.GetDynamicClient(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Create Resource Service
+	resourceService := s.serviceFactory.CreateResourceService(dynamicClient)
+
+	// Delete resource
+	req := DeleteResourceRequest{
+		Kind:      kind,
+		Name:      name,
+		Namespace: namespace,
+		Force:     force,
+	}
+
+	if err := resourceService.DeleteResource(ctx, req); err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Write success response
+	utils.JSONResponse(w, http.StatusOK, map[string]string{"message": "Resource deleted successfully"})
+}
