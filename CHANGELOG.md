@@ -5,6 +5,30 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.6] - 2025-11-27
+
+### ✨ Added
+
+- **CronJob Trigger Success Popup**: Added success notification when manually triggering a CronJob
+  - Popup displays created job name with link to job details
+  - Consistent styling with delete confirmation modals
+  - Automatic navigation to job details on click
+- **Service DNS Display**: Added DNS information to Service details
+  - Shows full DNS name (`<service-name>.<namespace>.svc.cluster.local`)
+  - Click to copy DNS with "DNS copied" notification popup
+  - Same styling as image SHA copy functionality
+- **Build Script Auto-Commit**: Build script now automatically commits and pushes changes before building
+  - Prevents uncommitted changes from being built
+  - Ensures code is always versioned before Docker build
+
+### 🔧 Fixed
+
+- **Logo Loading**: Fixed logo display consistency between login and main page
+  - Login page now uses same logo as main page (custom or default)
+  - GET endpoint for `/api/logo` is now public (no authentication required)
+  - Added timestamp to logo URL to prevent browser caching
+  - Consistent logo loading logic across all components
+
 ## [1.2.5] - 2025-11-26
 
 ### ✨ Added

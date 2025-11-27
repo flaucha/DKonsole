@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.2.5-green.svg)
+![Version](https://img.shields.io/badge/version-1.2.6-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.2.5
+git checkout v1.2.6
 
 # EDIT VALUES WITH YOUR FAVORITE EDITOR.
 $ vim ./helm/dkonsole/values.yaml
@@ -155,18 +155,31 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.2.5"
+  tag: "1.2.6"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.2.5`
+- **Unified**: `dkonsole/dkonsole:1.2.6`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.2.6 (2025-11-27)
+**✨ UI Enhancements & Logo Fixes**
+
+This release adds success notifications, service DNS display, and fixes logo loading consistency.
+
+- **CronJob Trigger Success Popup**: Added success notification when manually triggering a CronJob with link to job details
+- **Service DNS Display**: Added DNS information to Service details with click-to-copy functionality
+- **Build Script Auto-Commit**: Build script now automatically commits and pushes changes before building
+- **Logo Loading Fix**: Fixed logo display consistency between login and main page
+  - Login page now uses same logo as main page (custom or default)
+  - GET endpoint for `/api/logo` is now public (no authentication required)
+  - Added timestamp to logo URL to prevent browser caching
 
 ### v1.2.5 (2025-11-26)
 **✨ Enhanced Resource Management & UI Improvements**
@@ -194,90 +207,6 @@ This release fixes the "Invalid credentials" error when using `helm install --se
   - Works seamlessly with `--set` without character escaping
   - Maintains backward compatibility with `passwordHash` for `values.yaml`
   - Created helper script `scripts/encode-hash.sh` for easy encoding
-
-### v1.2.3 (2025-11-25)
-**🔧 Helm Chart Fixes & Authentication Improvements**
-
-This release fixes critical Helm chart issues and enhances authentication flexibility.
-
-- **Helm Chart PVC Fix**: Fixed PersistentVolumeClaim to properly include `storageClassName` field
-- **Argon2 Hash Generation**: Created reliable Go script for generating password hashes compatible with version 1.2.2
-- **Flexible Argon2 Support**: Enhanced authentication to accept any valid Argon2 hash format
-  - Supports both `argon2id` and `argon2i` variants with any parameters
-  - Automatic parameter extraction from hash
-  - Fallback support for different base64 encodings
-  - Improved error messages and validation
-
-### v1.2.1 (2025-11-24)
-**🔒 Security, Testing, Performance & Documentation Improvements**
-
-This release focuses on security hardening, comprehensive testing, performance improvements, and enhanced documentation.
-
-- **Security**: HTTP security headers (Helmet-like), stricter input validation, security tests
-- **Testing**: Complete test coverage for authentication, K8s services, and pod exec security
-- **Code Quality**: Removed console.logs from production, implemented code splitting
-- **Performance**: Prometheus query timeouts, WebSocket connection limits
-- **Infrastructure**: Healthcheck in Dockerfile, pinned base image (alpine:3.19)
-- **Documentation**: Structured JSON logging, comprehensive Godoc, Swagger/OpenAPI, Architecture Decision Records
-- **CI/CD**: Added linting, vulnerability scanning (Trivy, npm audit, govulncheck)
-  - All resource detail components moved to `components/details/` directory
-  - Improved separation of concerns with dedicated detail components
-  - Better code organization and reusability
-- **Changed**: Backend architecture cleanup
-  - Removed obsolete `GetResources_OLD` function (~760 lines)
-  - Removed unused Prometheus helper functions (now handled by `internal/prometheus/` package)
-  - Removed unused constants and imports
-  - Cleaned up `resources.go` file
-- **Removed**: Obsolete components and temporary files
-  - Removed deprecated `DeploymentTable.jsx` and `PodTable.jsx` (replaced by unified `WorkloadList.jsx`)
-  - Removed duplicate `AcercaDe.jsx` (duplicate of `About.jsx`)
-  - Removed example ingress and certificate files
-- **New**: Logo Management Module (`internal/logo/`)
-  - Separated `UploadLogo` handler into layered architecture (Handler → Service → Storage)
-  - Created dedicated `LogoValidator` for file validation and SVG security checks
-  - Created `LogoStorage` interface for file persistence abstraction
-  - Improved testability and maintainability following Single Responsibility Principle (SRP)
-- **Improved**: Dependency Injection Pattern
-  - Introduced `ServiceFactory` pattern in `k8s` and `helm` modules
-  - Handlers now use injected factories instead of creating services directly
-  - Reduced coupling between HTTP handlers and business logic services
-  - Better testability with mockable factories
-- **Technical**: Code quality improvements
-  - Removed ~850+ lines of obsolete code
-  - Eliminated code duplication
-  - Improved maintainability
-  - Applied SOLID principles (SRP, Dependency Inversion)
-  - Updated release script to read version from VERSION file
-
-### v1.1.10 (2025-01-27)
-**🔒 Security: Dependency Updates**
-
-- Updated: Dependencies updated to address security vulnerabilities
-  - Kubernetes client libraries updated from v0.29.0 to v0.34.2
-  - JWT library updated to v5.3.0
-  - WebSocket library updated to latest version
-  - Multiple transitive dependencies updated to secure versions
-
-### v1.1.9 (2025-01-27)
-**🔒 Security Fix: Critical RCE Vulnerability**
-
-- Fixed: Critical security vulnerability in `/api/pods/exec` endpoint
-  - Endpoint was not protected with authentication middleware
-  - Now requires authentication before allowing pod command execution
-  - Prevents unauthenticated Remote Code Execution (RCE) attacks
-- Fixed: Resource loading issue when switching between sections
-  - Resources now load correctly without requiring manual page refresh
-
-### v1.1.8 (2025-11-24)
-**🎨 Selector de color para logs con persistencia**
-
-- Added: Selector de color para personalizar el color del texto en los logs
-  - Selector visual mejorado con cuadraditos de color seleccionables
-  - Opciones disponibles: gris, verde, celeste, amarillo, naranja, blanco
-  - Persistencia de selección usando localStorage
-  - Diseño más armónico con fondo oscuro y mejor espaciado
-  - El color seleccionado se aplica a todos los logs en tiempo real
-  - Disponible en todos los visores de logs (LogViewerInline)
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 
