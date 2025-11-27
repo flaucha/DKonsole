@@ -73,10 +73,12 @@ const Layout = ({ children, headerContent }) => {
     const location = useLocation();
 
     useEffect(() => {
-        authFetch('/api/logo')
+        // Add timestamp to prevent browser caching
+        authFetch(`/api/logo?t=${Date.now()}`)
             .then(res => {
                 if (res.ok && res.status === 200) {
-                    setLogoSrc('/api/logo');
+                    // Add timestamp to prevent caching
+                    setLogoSrc(`/api/logo?t=${Date.now()}`);
                 }
             })
             .catch(() => { });

@@ -15,10 +15,12 @@ const Login = () => {
     useEffect(() => {
         // Try to load custom logo from API (no auth required for logo endpoint)
         // Same logic as Layout.jsx to ensure consistency
-        fetch('/api/logo')
+        // Add timestamp to prevent browser caching
+        fetch(`/api/logo?t=${Date.now()}`)
             .then(res => {
                 if (res.ok && res.status === 200) {
-                    setLogoSrc('/api/logo');
+                    // Add timestamp to prevent caching
+                    setLogoSrc(`/api/logo?t=${Date.now()}`);
                 }
             })
             .catch(() => { });

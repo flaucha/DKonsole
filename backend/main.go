@@ -247,15 +247,22 @@ func main() {
 	mux.HandleFunc("/api/resource", secure(k8sService.DeleteResource))
 	mux.HandleFunc("/api/cronjobs/trigger", secure(k8sService.TriggerCronJob))
 	// Logo handlers - using service
-	mux.HandleFunc("/api/logo", secure(func(w http.ResponseWriter, r *http.Request) {
+	// GET is public (needed for login page), POST requires authentication
+	mux.HandleFunc("/api/logo", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			logoService.GetLogo(w, r)
+			// Public endpoint for logo display (login page needs it)
+			public(func(w http.ResponseWriter, r *http.Request) {
+				logoService.GetLogo(w, r)
+			})(w, r)
 		} else if r.Method == http.MethodPost {
-			logoService.UploadLogo(w, r)
+			// Protected endpoint for logo upload
+			secure(func(w http.ResponseWriter, r *http.Request) {
+				logoService.UploadLogo(w, r)
+			})(w, r)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
-	}))
+	})
 	// Prometheus handlers - using services
 	mux.HandleFunc("/api/prometheus/status", secure(prometheusService.GetStatus))
 	mux.HandleFunc("/api/prometheus/metrics", secure(prometheusService.GetMetrics))
