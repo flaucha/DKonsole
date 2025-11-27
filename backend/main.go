@@ -142,8 +142,18 @@ func main() {
 		handlersModel.Metrics["default"] = metricsClient
 	}
 
-	// Initialize services
-	authService := auth.NewService()
+	// Initialize auth service with Kubernetes client
+	// Secret name follows Helm chart convention: {release-name}-auth, default: dkonsole-auth
+	secretName := os.Getenv("AUTH_SECRET_NAME")
+	if secretName == "" {
+		secretName = "dkonsole-auth"
+	}
+	authService, err := auth.NewService(clientset, secretName)
+	if err != nil {
+		utils.LogError(err, "Failed to initialize auth service", nil)
+		os.Exit(1)
+	}
+
 	clusterService := cluster.NewService(handlersModel)
 	k8sService := k8s.NewService(handlersModel, clusterService)
 	apiService := api.NewService(clusterService)
@@ -176,6 +186,11 @@ func main() {
 		return middleware.SecurityHeadersMiddleware(enableCors(middleware.RateLimitMiddleware(middleware.AuditMiddleware(h))))
 	}
 
+	// Setup endpoints (public, only available when in setup mode)
+	mux.HandleFunc("/api/setup/status", public(authService.SetupStatusHandler))
+	mux.HandleFunc("/api/setup/complete", public(middleware.RateLimitMiddleware(authService.SetupCompleteHandler)))
+
+	// Auth endpoints
 	mux.HandleFunc("/api/login", middleware.SecurityHeadersMiddleware(enableCors(middleware.LoginRateLimitMiddleware(middleware.AuditMiddleware(authService.LoginHandler)))))
 	mux.HandleFunc("/api/logout", public(authService.LogoutHandler))
 	mux.HandleFunc("/api/me", secure(authService.MeHandler))

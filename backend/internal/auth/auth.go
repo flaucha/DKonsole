@@ -3,8 +3,12 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/flaucha/DKonsole/backend/internal/models"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
@@ -23,23 +27,88 @@ const userContextKey contextKey = "user"
 type Service struct {
 	authService *AuthService
 	jwtService  *JWTService
+	k8sRepo     *K8sUserRepository // K8s repository for secret management (may be nil if not using K8s)
+	setupMode   bool                // true if running in setup mode (secret doesn't exist)
 }
 
 // NewService creates a new authentication service with default configuration.
-// It initializes the user repository (EnvUserRepository) and JWT services.
-func NewService() *Service {
-	// Initialize repository
-	userRepo := NewEnvUserRepository()
+// It initializes the user repository and JWT services.
+// If k8sClient is provided, it will try to use Kubernetes secrets.
+// If k8sClient is nil, it falls back to environment variables.
+// secretName is the name of the Kubernetes secret to use (default: "dkonsole-auth").
+func NewService(k8sClient kubernetes.Interface, secretName string) (*Service, error) {
+	var userRepo UserRepository
+	var jwtSecret []byte
+	var setupMode bool
+	var k8sRepo *K8sUserRepository
 
-	// Initialize services
-	jwtSecret := GetJWTSecret()
+	if k8sClient != nil && secretName != "" {
+		// Try to use Kubernetes secrets
+		repo, err := NewK8sUserRepository(k8sClient, secretName)
+		if err != nil {
+			utils.LogWarn("Failed to initialize K8s repository, falling back to environment variables", map[string]interface{}{
+				"error": err.Error(),
+			})
+			// Fall back to environment variables
+			userRepo = NewEnvUserRepository()
+			jwtSecret = GetJWTSecret()
+		} else {
+			k8sRepo = repo
+			// Check if secret exists
+			ctx := context.Background()
+			exists, err := repo.SecretExists(ctx)
+			if err != nil {
+				utils.LogWarn("Failed to check secret existence, falling back to environment variables", map[string]interface{}{
+					"error": err.Error(),
+				})
+				userRepo = NewEnvUserRepository()
+				jwtSecret = GetJWTSecret()
+			} else if !exists {
+				// Secret doesn't exist - setup mode
+				setupMode = true
+				utils.LogInfo("Running in setup mode - secret does not exist", map[string]interface{}{
+					"secret_name": secretName,
+				})
+				// Use a temporary JWT secret for setup mode (will be replaced after setup)
+				jwtSecret = GetJWTSecret() // This will use default if not set, which is OK for setup
+				// Don't initialize authService in setup mode - it will fail without credentials
+				return &Service{
+					authService: nil, // Will be nil in setup mode
+					jwtService:   nil, // Will be nil in setup mode
+					k8sRepo:     k8sRepo,
+					setupMode:   true,
+				}, nil
+			} else {
+				// Secret exists - use K8s repository
+				userRepo = k8sRepo
+				// Get JWT secret from the secret
+				secret, err := k8sClient.CoreV1().Secrets(repo.namespace).Get(ctx, secretName, metav1.GetOptions{})
+				if err != nil {
+					return nil, fmt.Errorf("failed to get JWT secret from Kubernetes secret: %w", err)
+				}
+				jwtSecretBytes, exists := secret.Data["jwt-secret"]
+				if !exists || len(jwtSecretBytes) == 0 {
+					return nil, fmt.Errorf("jwt-secret key not found in secret")
+				}
+				jwtSecret = jwtSecretBytes
+			}
+		}
+	} else {
+		// No K8s client provided - use environment variables
+		userRepo = NewEnvUserRepository()
+		jwtSecret = GetJWTSecret()
+	}
+
+	// Initialize services (only if not in setup mode)
 	authService := NewAuthService(userRepo, jwtSecret)
 	jwtService := NewJWTService(jwtSecret)
 
 	return &Service{
 		authService: authService,
 		jwtService:  jwtService,
-	}
+		k8sRepo:     k8sRepo,
+		setupMode:   setupMode,
+	}, nil
 }
 
 // LoginHandler handles HTTP POST requests for user authentication.
@@ -65,6 +134,12 @@ func NewService() *Service {
 //
 //	{"role": "admin"}
 func (s *Service) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	// Check if in setup mode
+	if s.setupMode {
+		utils.ErrorResponse(w, http.StatusPreconditionFailed, "Setup required. Please complete the initial setup first.")
+		return
+	}
+
 	var creds models.Credentials
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
@@ -81,6 +156,11 @@ func (s *Service) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call service (business logic layer)
+	if s.authService == nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Authentication service not initialized")
+		return
+	}
+
 	result, err := s.authService.Login(ctx, loginReq)
 	if err != nil {
 		if err == ErrInvalidCredentials {
@@ -140,9 +220,20 @@ func (s *Service) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 //
 //	{"username": "admin", "role": "admin"}
 func (s *Service) MeHandler(w http.ResponseWriter, r *http.Request) {
+	// Check if in setup mode
+	if s.setupMode {
+		utils.ErrorResponse(w, http.StatusPreconditionFailed, "Setup required. Please complete the initial setup first.")
+		return
+	}
+
 	ctx := r.Context()
 
 	// Call service (business logic layer)
+	if s.authService == nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Authentication service not initialized")
+		return
+	}
+
 	claims, err := s.authService.GetCurrentUser(ctx)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
@@ -170,7 +261,18 @@ func (s *Service) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		// If in setup mode, block authenticated routes
+		if s.setupMode {
+			utils.ErrorResponse(w, http.StatusPreconditionFailed, "Setup required. Please complete the initial setup first.")
+			return
+		}
+
 		// Use JWTService to authenticate request
+		if s.jwtService == nil {
+			utils.ErrorResponse(w, http.StatusInternalServerError, "JWT service not initialized")
+			return
+		}
+
 		claims, err := s.jwtService.AuthenticateRequest(r)
 		if err != nil {
 			utils.ErrorResponse(w, http.StatusUnauthorized, err.Error())

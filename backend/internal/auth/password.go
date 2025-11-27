@@ -1,11 +1,11 @@
 package auth
 
 import (
+	"crypto/rand"
+	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
 	"strings"
-
-	"crypto/subtle"
 
 	"golang.org/x/crypto/argon2"
 )
@@ -100,4 +100,37 @@ func VerifyPassword(password, encodedHash string) (bool, error) {
 
 	// Constant-time comparison to prevent timing attacks
 	return subtle.ConstantTimeCompare(decodedHash, comparisonHash) == 1, nil
+}
+
+// HashPassword generates an Argon2i hash for a password.
+// Uses the same parameters as the generate-password-hash script for compatibility.
+// Returns a hash in the format: $argon2i$v=19$m=4096,t=3,p=1$salt$hash
+func HashPassword(password string) (string, error) {
+	// Generate random 16-byte salt
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
+		return "", fmt.Errorf("failed to generate salt: %w", err)
+	}
+
+	// Parameters that work with version 1.2.2
+	// These match the working hash format: $argon2i$v=19$m=4096,t=3,p=1$salt$hash
+	memory := uint32(4096) // 4 MB in KB (matches working version)
+	time := uint32(3)      // 3 iterations
+	threads := uint8(1)    // 1 thread (matches working version)
+	keyLen := uint32(32)   // 32 bytes output
+
+	// Generate Argon2i hash (matches working version)
+	hash := argon2.Key([]byte(password), salt, time, memory, threads, keyLen)
+
+	// Format: $argon2i$v=19$m=4096,t=3,p=1$salt$hash
+	encodedHash := fmt.Sprintf("$argon2i$v=%d$m=%d,t=%d,p=%d$%s$%s",
+		argon2.Version,
+		memory,
+		time,
+		threads,
+		base64.RawStdEncoding.EncodeToString(salt),
+		base64.RawStdEncoding.EncodeToString(hash),
+	)
+
+	return encodedHash, nil
 }
