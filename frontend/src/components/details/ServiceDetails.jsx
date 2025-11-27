@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Tag } from 'lucide-react';
-import { EditYamlButton } from './CommonDetails';
+import { EditYamlButton, SmartDNS } from './CommonDetails';
 import AssociatedPods from './AssociatedPods';
 
-const ServiceDetails = ({ details, onEditYAML, namespace }) => {
+const ServiceDetails = ({ details, onEditYAML, namespace, name }) => {
     const [activeTab, setActiveTab] = useState('details');
     const type = details.type || 'ClusterIP';
     const clusterIP = details.clusterIP;
@@ -60,6 +60,12 @@ const ServiceDetails = ({ details, onEditYAML, namespace }) => {
                         <div>
                             <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">IP Addresses</h4>
                             <div className="space-y-2">
+                                {name && namespace && (
+                                    <div className="flex items-center justify-between bg-gray-800/50 px-4 py-3 rounded-md border border-gray-700/50 hover:bg-gray-800/70 transition-colors">
+                                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">DNS</span>
+                                        <SmartDNS dns={`${name}.${namespace}.svc.cluster.local`} />
+                                    </div>
+                                )}
                                 <div className="flex items-center justify-between bg-gray-800/50 px-4 py-3 rounded-md border border-gray-700/50 hover:bg-gray-800/70 transition-colors">
                                     <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Cluster IP</span>
                                     <span className="text-sm font-mono text-gray-200">{clusterIP}</span>

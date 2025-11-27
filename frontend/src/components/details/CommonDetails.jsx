@@ -46,6 +46,36 @@ export const SmartImage = ({ image }) => {
     );
 };
 
+export const SmartDNS = ({ dns }) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleClick = (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(dns);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    if (!dns) return null;
+
+    return (
+        <div className="relative inline-block group">
+            <span
+                className="cursor-pointer hover:text-blue-400 transition-colors font-mono"
+                onClick={handleClick}
+                title={dns} // Show full DNS on hover
+            >
+                {dns}
+            </span>
+            {copied && (
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-green-600 text-white text-xs rounded shadow-lg animate-fade-out pointer-events-none whitespace-nowrap z-50 border border-green-500">
+                    DNS copied
+                </div>
+            )}
+        </div>
+    );
+};
+
 export const DetailRow = ({ label, value, icon: Icon, children }) => (
     <div className="flex items-center justify-between bg-gray-800/50 px-4 py-3 rounded-md border border-gray-700/50 mb-3 hover:bg-gray-800/70 transition-colors">
         <div className="flex items-center min-w-0 flex-1">

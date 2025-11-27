@@ -19,7 +19,7 @@ import {
     MoreVertical,
     PlayCircle
 } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { useWorkloads } from '../hooks/useWorkloads';
@@ -102,6 +102,7 @@ const WorkloadList = ({ namespace, kind }) => {
     const [allResources, setAllResources] = useState([]);
     const [scaling, setScaling] = useState(null);
     const [triggering, setTriggering] = useState(null);
+    const [createdJob, setCreatedJob] = useState(null);
 
     // Early return if kind is not provided
     if (!kind) {
@@ -333,7 +334,13 @@ const WorkloadList = ({ namespace, kind }) => {
                 const errorText = await resp.text().catch(() => 'Trigger failed');
                 throw new Error(errorText || 'Trigger failed');
             }
-            // Optional: notify success
+            const data = await resp.json();
+            if (data.jobName) {
+                setCreatedJob({
+                    name: data.jobName,
+                    namespace: res.namespace
+                });
+            }
         } catch (err) {
             alert(err.message || 'Failed to trigger cronjob');
         } finally {
@@ -364,7 +371,7 @@ const WorkloadList = ({ namespace, kind }) => {
             case 'RoleBinding':
             case 'ClusterRoleBinding': return <BindingDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'Deployment': return <DeploymentDetails details={res.details} onScale={(delta) => handleScale(res, delta)} scaling={scaling === res.name} res={res} onEditYAML={onEditYAML} />;
-            case 'Service': return <ServiceDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
+            case 'Service': return <ServiceDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} name={res.name} />;
             case 'Ingress': return <IngressDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
             case 'Pod': return <PodDetails details={res.details} onEditYAML={onEditYAML} pod={res} />;
             case 'ConfigMap': return <ConfigMapDetails details={res.details} onEditYAML={onEditYAML} resource={res} onDataSaved={onDataSaved} />;
@@ -694,6 +701,35 @@ const WorkloadList = ({ namespace, kind }) => {
                                 }`}
                             >
                                 {confirmAction.force ? 'Force Delete' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Job created success modal */}
+            {createdJob && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-md shadow-xl">
+                        <h3 className="text-lg font-semibold text-white mb-2">
+                            Job creado
+                        </h3>
+                        <p className="text-sm text-gray-300 mb-4">
+                            Se ha creado el job{' '}
+                            <Link
+                                to={`/dashboard/workloads/Job?search=${createdJob.name}&namespace=${createdJob.namespace}`}
+                                onClick={() => setCreatedJob(null)}
+                                className="text-blue-400 hover:text-blue-300 hover:underline font-medium"
+                            >
+                                {createdJob.name}
+                            </Link>
+                        </p>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={() => setCreatedJob(null)}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
+                            >
+                                Aceptar
                             </button>
                         </div>
                     </div>
