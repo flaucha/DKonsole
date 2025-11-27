@@ -2,36 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User } from 'lucide-react';
-import defaultLogo from '../assets/logo-full.svg?url';
+import defaultLogo from '../assets/logo-full.svg';
 
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [logoSrc, setLogoSrc] = useState(defaultLogo);
-    const [logoError, setLogoError] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
         // Try to load custom logo from API (no auth required for logo endpoint)
+        // Same logic as Layout.jsx to ensure consistency
         fetch('/api/logo')
             .then(res => {
-                // Only set custom logo if response is OK (200) and has content
                 if (res.ok && res.status === 200) {
                     setLogoSrc('/api/logo');
                 }
-                // If 404 or other error, keep default logo (no action needed)
             })
-            .catch(() => {
-                // Silently handle errors (network, etc.) - keep default logo
-            });
+            .catch(() => { });
     }, []);
 
     const handleLogoError = () => {
         // If logo fails to load, fallback to default logo
-        if (logoSrc !== defaultLogo && !logoError) {
-            setLogoError(true);
+        if (logoSrc !== defaultLogo) {
             setLogoSrc(defaultLogo);
         }
     };
@@ -52,10 +47,10 @@ const Login = () => {
             <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md border border-gray-700">
                 <div className="text-center mb-8 flex justify-center items-center min-h-[80px]">
                     {logoSrc && (
-                        <img 
-                            src={logoSrc} 
-                            alt="DKonsole Logo" 
-                            className="h-20 w-auto max-w-full object-contain" 
+                        <img
+                            src={logoSrc}
+                            alt="DKonsole Logo"
+                            className="h-20 w-auto max-w-full object-contain"
                             onError={handleLogoError}
                             style={{ display: 'block' }}
                         />

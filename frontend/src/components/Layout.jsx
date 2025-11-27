@@ -80,7 +80,14 @@ const Layout = ({ children, headerContent }) => {
                 }
             })
             .catch(() => { });
-    }, []);
+    }, [authFetch]);
+
+    const handleLogoError = () => {
+        // If logo fails to load, fallback to default logo
+        if (logoSrc !== defaultLogo) {
+            setLogoSrc(defaultLogo);
+        }
+    };
 
     const toggleMenu = (menu) => {
         setExpandedMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
@@ -132,7 +139,12 @@ const Layout = ({ children, headerContent }) => {
                         <Menu size={24} />
                     </button>
                     <div className="flex items-center justify-center">
-                        <img src={logoSrc} alt="Logo" className="h-12 max-h-12 object-contain" />
+                        <img
+                            src={logoSrc}
+                            alt="Logo"
+                            className="h-12 max-h-12 object-contain"
+                            onError={handleLogoError}
+                        />
                     </div>
                 </div>
                 <div className="flex items-center">
@@ -285,4 +297,3 @@ const Layout = ({ children, headerContent }) => {
 };
 
 export default Layout;
-
