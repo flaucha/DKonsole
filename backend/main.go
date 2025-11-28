@@ -108,43 +108,24 @@ func main() {
 		})
 		config, err = rest.InClusterConfig()
 		if err != nil {
-			// In development/testing, allow running without Kubernetes
-			// This enables local testing of CORS and endpoint logic
-			if os.Getenv("ALLOW_NO_K8S") == "true" {
-				utils.LogWarn("Running without Kubernetes (ALLOW_NO_K8S=true) - setup mode will not work", map[string]interface{}{
-					"error": err.Error(),
-				})
-				config = nil // Will be handled below
-			} else {
-				utils.LogError(err, "Failed to get in-cluster config", nil)
-				os.Exit(1)
-			}
+			utils.LogError(err, "Failed to get in-cluster config", nil)
+			os.Exit(1)
 		}
 	}
 
-	// create the clientset (may be nil if ALLOW_NO_K8S=true)
-	var clientset kubernetes.Interface
-	if config != nil {
-		clientset, err = kubernetes.NewForConfig(config)
-		if err != nil {
-			utils.LogError(err, "Failed to create clientset", nil)
-			os.Exit(1)
-		}
-	} else {
-		clientset = nil
-		utils.LogWarn("Running without Kubernetes client - some features will be disabled", nil)
+	// create the clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		utils.LogError(err, "Failed to create clientset", nil)
+		os.Exit(1)
 	}
 
-	var metricsClient *metricsv.Clientset
-	var dynamicClient dynamic.Interface
+	metricsClient, _ := metricsv.NewForConfig(config)
 
-	if config != nil {
-		metricsClient, _ = metricsv.NewForConfig(config)
-		dynamicClient, err = dynamic.NewForConfig(config)
-		if err != nil {
-			utils.LogError(err, "Failed to create dynamic client", nil)
-			os.Exit(1)
-		}
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		utils.LogError(err, "Failed to create dynamic client", nil)
+		os.Exit(1)
 	}
 
 	handlersModel := &models.Handlers{
@@ -154,15 +135,9 @@ func main() {
 		RESTConfigs:   make(map[string]*rest.Config),
 		PrometheusURL: os.Getenv("PROMETHEUS_URL"),
 	}
-	if clientset != nil {
-		handlersModel.Clients["default"] = clientset.(*kubernetes.Clientset)
-	}
-	if dynamicClient != nil {
-		handlersModel.Dynamics["default"] = dynamicClient
-	}
-	if config != nil {
-		handlersModel.RESTConfigs["default"] = config
-	}
+	handlersModel.Clients["default"] = clientset
+	handlersModel.Dynamics["default"] = dynamicClient
+	handlersModel.RESTConfigs["default"] = config
 	if metricsClient != nil {
 		handlersModel.Metrics["default"] = metricsClient
 	}
@@ -433,10 +408,10 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 							hostDomain := strings.Join(hostParts[len(hostParts)-2:], ".")
 							if originDomain == hostDomain && (originURL.Scheme == "http" || originURL.Scheme == "https") {
 								utils.LogInfo("CORS: Allowing setup endpoint - same base domain", map[string]interface{}{
-									"origin": origin,
-									"host":   r.Host,
+									"origin":        origin,
+									"host":          r.Host,
 									"origin_domain": originDomain,
-									"host_domain": hostDomain,
+									"host_domain":   hostDomain,
 								})
 								allowed = true
 							}
