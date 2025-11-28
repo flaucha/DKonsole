@@ -2,45 +2,25 @@
 # Only configure what you need. Leave the rest as default.
 
 # -----------------------------------------------------------------------------
-# 1. Authentication (OPTIONAL - Setup Mode Available)
+# 1. Authentication (Setup Mode - No Helm Secret Creation)
 # -----------------------------------------------------------------------------
-# NEW: If you leave these values empty, DKonsole will start in "Setup Mode"
-#      and you can configure the admin account through the web interface.
-#      This is the recommended way for first-time installation.
+# IMPORTANT: DKonsole now uses "Setup Mode" for initial configuration.
+#            The secret is NO LONGER created by Helm - it will be created
+#            through the web interface during first-time setup.
 #
-#      To use Setup Mode:
-#        - Leave admin.username, admin.passwordHash, and jwtSecret empty
-#        - Deploy the Helm chart
-#        - Access the web interface - it will show the setup page
-#        - Complete the setup form to create the secret
-#        - The pod will need to be restarted after setup (or it will auto-detect)
+#            Installation process:
+#              1. Deploy the Helm chart (no authentication values needed)
+#              2. Access the web interface
+#              3. Complete the setup form to create the admin account
+#              4. The secret will be created automatically in Kubernetes
+#              5. After setup, you can login with the credentials you configured
 #
-#      To use pre-configured credentials (traditional method):
-#        - Set admin.username and admin.passwordHash (or passwordHashBase64)
-#        - Optionally set jwtSecret (auto-generated if empty)
-#        - The secret will be created during Helm install/upgrade
-admin:
-  # Username for the dashboard
-  # Leave empty to use Setup Mode
-  username: ""
-  # Password hash (Argon2). Generate with:
-  #   cd backend && go run ../scripts/generate-password-hash.go "yourpassword"
-  # This generates a hash in the format that works with version 1.2.2:
-  #   $argon2i$v=19$m=4096,t=3,p=1$salt$hash
-  # Leave empty to use Setup Mode
-  passwordHash: ""
-  # RECOMMENDED: Use passwordHashBase64 instead of passwordHash when using --set
-  # This avoids Helm parsing issues with special characters (commas, $, etc.)
-  # To encode your hash: echo -n "$argon2i$v=19$m=4096,t=3,p=1$salt$hash" | base64
-  # Or use: ./scripts/encode-hash.sh "$argon2i$v=19$m=4096,t=3,p=1$salt$hash"
-  # Then use: --set admin.passwordHashBase64='<base64-encoded-hash>'
-  # If passwordHashBase64 is set, it takes precedence over passwordHash
-  # Leave empty to use Setup Mode
-  passwordHashBase64: ""
-
-# JWT Secret for session security. Generate with: openssl rand -base64 32
-# Leave empty to use Setup Mode (will be auto-generated during setup)
-jwtSecret: ""
+#            The secret name follows the pattern: {release-name}-auth
+#            Example: If release name is "dkonsole", secret will be "dkonsole-auth"
+#
+#            NOTE: These values below are kept for reference but are NOT USED.
+#            They are here for backward compatibility but the secret.yaml template
+#            has been removed. All authentication is now handled via Setup Mode.
 
 # -----------------------------------------------------------------------------
 # 2. Docker Image Configuration
