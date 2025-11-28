@@ -13,10 +13,32 @@ const Setup = () => {
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
     const [reloading, setReloading] = useState(false);
+    const [setupCompleted, setSetupCompleted] = useState(false);
+    const [checkingStatus, setCheckingStatus] = useState(true);
     const [logoSrc, setLogoSrc] = useState(defaultLogo);
     const navigate = useNavigate();
 
     useEffect(() => {
+        // Check if setup is already completed
+        const checkSetupStatus = async () => {
+            try {
+                const res = await fetch('/api/setup/status');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (!data.setupRequired) {
+                        // Setup is already completed
+                        setSetupCompleted(true);
+                    }
+                }
+            } catch (err) {
+                logger.error('Failed to check setup status:', err);
+            } finally {
+                setCheckingStatus(false);
+            }
+        };
+
+        checkSetupStatus();
+
         // Try to load custom logo from API (no auth required for logo endpoint)
         fetch(`/api/logo?t=${Date.now()}`)
             .then(res => {
@@ -99,9 +121,9 @@ const Setup = () => {
                 setReloading(true);
                 setLoading(false);
 
-                // Wait 5 seconds then reload the page
+                // Wait 5 seconds then navigate to login
                 setTimeout(() => {
-                    window.location.reload();
+                    navigate('/login');
                 }, 5000);
             } else {
                 setError(data.message || data.error || 'Failed to complete setup');
@@ -114,14 +136,64 @@ const Setup = () => {
         }
     };
 
-    // Show reloading screen if setup was successful
+    // Show loading while checking setup status
+    if (checkingStatus) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-900">
+                <div className="flex flex-col items-center space-y-4">
+                    <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
+                    <p className="text-gray-400 text-sm">Checking setup status...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Show "Setup completed" message if setup is already done
+    if (setupCompleted) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-900">
+                <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md border border-gray-700 text-center">
+                    <div className="text-center mb-8 flex justify-center items-center min-h-[80px]">
+                        {logoSrc && (
+                            <img
+                                src={logoSrc}
+                                alt="DKonsole Logo"
+                                className="h-20 w-auto max-w-full object-contain"
+                                onError={handleLogoError}
+                                style={{ display: 'block' }}
+                            />
+                        )}
+                    </div>
+                    <div className="flex flex-col items-center space-y-4">
+                        <div className="w-16 h-16 bg-green-900/20 rounded-full flex items-center justify-center">
+                            <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h2 className="text-2xl font-bold text-white">Setup Completed</h2>
+                        <p className="text-gray-400 text-sm">
+                            The initial setup has already been completed. You can now log in to access DKonsole.
+                        </p>
+                        <button
+                            onClick={() => navigate('/login')}
+                            className="mt-4 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                        >
+                            Go to Login
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Show reloading screen if setup was just completed
     if (reloading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-900">
                 <div className="flex flex-col items-center space-y-4">
                     <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
                     <p className="text-gray-300 text-lg">Setup completed successfully!</p>
-                    <p className="text-gray-400 text-sm">Reloading application...</p>
+                    <p className="text-gray-400 text-sm">Redirecting to login...</p>
                 </div>
             </div>
         );
