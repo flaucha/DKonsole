@@ -387,9 +387,35 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 					if strings.Contains(originHost, ":") {
 						originHost = strings.Split(originHost, ":")[0]
 					}
+
+					// Allow if origin host matches request host
+					// Also allow common localhost variants
 					if (originHost == "localhost" || originHost == "127.0.0.1" || originHost == host) &&
 						(originURL.Scheme == "http" || originURL.Scheme == "https") {
 						allowed = true
+					}
+
+					// For setup endpoints, be more permissive - allow same domain
+					// This handles cases like accessing via ingress where Host might be different
+					if !allowed && strings.HasPrefix(r.URL.Path, "/api/setup/") {
+						// Extract base domain (e.g., "dkonsole.lan" from "dkonsole.lan" or "sub.dkonsole.lan")
+						originParts := strings.Split(originHost, ".")
+						hostParts := strings.Split(host, ".")
+
+						// If both have at least 2 parts, compare the last 2 (domain.tld)
+						if len(originParts) >= 2 && len(hostParts) >= 2 {
+							originDomain := strings.Join(originParts[len(originParts)-2:], ".")
+							hostDomain := strings.Join(hostParts[len(hostParts)-2:], ".")
+							if originDomain == hostDomain && (originURL.Scheme == "http" || originURL.Scheme == "https") {
+								utils.LogInfo("CORS: Allowing setup endpoint - same base domain", map[string]interface{}{
+									"origin": origin,
+									"host":   r.Host,
+									"origin_domain": originDomain,
+									"host_domain": hostDomain,
+								})
+								allowed = true
+							}
+						}
 					}
 				}
 			}
