@@ -27,7 +27,7 @@
 # -----------------------------------------------------------------------------
 image:
   repository: dkonsole/dkonsole
-  tag: "1.2.6-test-5"  # Using test version for LoginHotFix branch
+  tag: "1.2.7"
   pullPolicy: Always
 
 # Image pull secrets (optional)

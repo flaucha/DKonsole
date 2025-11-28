@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.2.6-green.svg)
+![Version](https://img.shields.io/badge/version-1.2.7-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.2.6
+git checkout v1.2.7
 
 # EDIT VALUES WITH YOUR FAVORITE EDITOR.
 $ vim ./helm/dkonsole/values.yaml
@@ -155,18 +155,37 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.2.6"
+  tag: "1.2.7"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.2.6`
+- **Unified**: `dkonsole/dkonsole:1.2.7`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.2.7 (2025-11-28)
+**✨ Setup Mode & Auto-Reload**
+
+This release introduces a web-based setup mode for initial configuration and automatic service reload.
+
+- **Setup Mode**: Initial setup via web interface instead of Helm secrets
+  - Automatic detection when `dkonsole-auth` secret doesn't exist
+  - Web-based setup form for admin username, password, and JWT secret
+  - Auto-generation of JWT secret with manual override option
+  - Argon2 password hashing for secure credential storage
+- **Auto-Reload After Setup**: Service automatically reloads configuration after setup completion
+  - No pod restart required after initial setup
+  - Seamless transition from setup mode to normal operation
+- **Setup Status Check**: Frontend checks setup status on page load
+  - Shows "Setup Completed" message if setup already done
+  - Prevents duplicate setup attempts
+  - Automatic redirect to login after successful setup
+- **Security**: Passwords are now hashed using Argon2id with secure random salt generation
 
 ### v1.2.6 (2025-11-27)
 **✨ UI Enhancements & Logo Fixes**

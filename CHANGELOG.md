@@ -5,6 +5,41 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.7] - 2025-11-28
+
+### ✨ Added
+
+- **Setup Mode**: Initial setup via web interface instead of Helm secrets
+  - Automatic detection when `dkonsole-auth` secret doesn't exist
+  - Web-based setup form for admin username, password, and JWT secret
+  - Auto-generation of JWT secret with manual override option
+  - Argon2 password hashing for secure credential storage
+- **Auto-Reload After Setup**: Service automatically reloads configuration after setup completion
+  - No pod restart required after initial setup
+  - Seamless transition from setup mode to normal operation
+  - Thread-safe reload mechanism with mutex protection
+- **Setup Status Check**: Frontend checks setup status on page load
+  - Shows "Setup Completed" message if setup already done
+  - Prevents duplicate setup attempts
+  - Automatic redirect to login after successful setup
+
+### 🔧 Changed
+
+- **Helm Chart**: Removed secret creation from Helm templates
+  - Secret is now created exclusively by the application during setup
+  - Environment variables for auth credentials are now optional
+  - Setup mode is the default for new installations
+- **CORS Configuration**: Improved CORS handling for setup endpoints
+  - More permissive domain matching for setup endpoints
+  - Better support for ingress-based deployments
+
+### 🔒 Security
+
+- **Password Storage**: Passwords are now hashed using Argon2id
+  - 64 MB memory, 3 iterations, 2 threads
+  - Secure random salt generation
+  - Industry-standard password hashing algorithm
+
 ## [1.2.6] - 2025-11-27
 
 ### ✨ Added
