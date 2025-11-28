@@ -135,12 +135,16 @@ func main() {
 		utils.LogWarn("Running without Kubernetes client - some features will be disabled", nil)
 	}
 
-	metricsClient, _ := metricsv.NewForConfig(config)
+	var metricsClient *metricsv.Clientset
+	var dynamicClient dynamic.Interface
 
-	dynamicClient, err := dynamic.NewForConfig(config)
-	if err != nil {
-		utils.LogError(err, "Failed to create dynamic client", nil)
-		os.Exit(1)
+	if config != nil {
+		metricsClient, _ = metricsv.NewForConfig(config)
+		dynamicClient, err = dynamic.NewForConfig(config)
+		if err != nil {
+			utils.LogError(err, "Failed to create dynamic client", nil)
+			os.Exit(1)
+		}
 	}
 
 	handlersModel := &models.Handlers{
@@ -150,9 +154,15 @@ func main() {
 		RESTConfigs:   make(map[string]*rest.Config),
 		PrometheusURL: os.Getenv("PROMETHEUS_URL"),
 	}
-	handlersModel.Clients["default"] = clientset
-	handlersModel.Dynamics["default"] = dynamicClient
-	handlersModel.RESTConfigs["default"] = config
+	if clientset != nil {
+		handlersModel.Clients["default"] = clientset.(*kubernetes.Clientset)
+	}
+	if dynamicClient != nil {
+		handlersModel.Dynamics["default"] = dynamicClient
+	}
+	if config != nil {
+		handlersModel.RESTConfigs["default"] = config
+	}
 	if metricsClient != nil {
 		handlersModel.Metrics["default"] = metricsClient
 	}
