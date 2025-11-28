@@ -190,15 +190,16 @@ func main() {
 	// Note: setup/complete needs to bypass CSRF for initial setup, but we add logging
 	setupCompleteHandler := func(w http.ResponseWriter, r *http.Request) {
 		utils.LogInfo("Request received for /api/setup/complete", map[string]interface{}{
-			"method": r.Method,
-			"ip":     r.RemoteAddr,
-			"origin": r.Header.Get("Origin"),
+			"method":  r.Method,
+			"ip":      r.RemoteAddr,
+			"origin":  r.Header.Get("Origin"),
 			"referer": r.Header.Get("Referer"),
 		})
 		authService.SetupCompleteHandler(w, r)
 	}
 	mux.HandleFunc("/api/setup/status", public(authService.SetupStatusHandler))
-	mux.HandleFunc("/api/setup/complete", public(middleware.RateLimitMiddleware(setupCompleteHandler)))
+	// Note: public() already includes RateLimitMiddleware, so we don't need to add it again
+	mux.HandleFunc("/api/setup/complete", public(setupCompleteHandler))
 
 	// Auth endpoints
 	mux.HandleFunc("/api/login", middleware.SecurityHeadersMiddleware(enableCors(middleware.LoginRateLimitMiddleware(middleware.AuditMiddleware(authService.LoginHandler)))))
