@@ -34,85 +34,20 @@ cd DKonsole
 # Checkout the latest stable version
 git checkout v1.2.7
 
-# EDIT VALUES WITH YOUR FAVORITE EDITOR.
-$ vim ./helm/dkonsole/values.yaml
+# Configure ingress and allowedOrigins (at minimum)
+vim ./helm/dkonsole/values.yaml
 
 # Install
 helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
+
+# After installation, access the web interface to complete the initial setup
 ```
 
 ## ⚙️ Configuration
 
 The `values.yaml` file is designed to be simple. You only need to configure the essentials:
 
-### 1. Authentication (Required)
-You must provide an `admin` username and an Argon2 `passwordHash`. You also need a `jwtSecret` for session security.
-
-```yaml
-admin:
-  username: admin
-  passwordHash: "$argon2id$..." # Generate with argon2 tool
-  # RECOMMENDED when using --set: Use passwordHashBase64 to avoid Helm parsing issues
-  passwordHashBase64: "" # Base64-encoded hash (takes precedence over passwordHash)
-jwtSecret: "..." # Generate with openssl rand -base64 32
-```
-
-**Generate password hash:**
-
-### Option A: Using Go (Recommended if installed)
-```bash
-cd backend && go run ../scripts/generate-password-hash.go "yourpassword"
-```
-
-### Option B: Using Docker (No Go required)
-```bash
-docker run --rm -v $(pwd):/app -w /app/backend golang:1.24-alpine go run ../scripts/generate-password-hash.go "yourpassword"
-```
-
-### Option C: Using `argon2` CLI
-If you have the `argon2` utility installed (e.g., `apt install argon2` or `brew install argon2`):
-```bash
-# Usage: echo -n "password" | argon2 "salt" -i -t 3 -m 12 -p 1 -l 32 -e
-# Note: -m 12 means 2^12 = 4096 KB
-echo -n "yourpassword" | argon2 "$(openssl rand -hex 16)" -i -t 3 -m 12 -p 1 -l 32 -e
-```
-
-### Option D: Using Node.js (npm)
-If you have Node.js installed, you can use `npx` to run a quick script:
-```bash
-# This uses the 'argon2' package to generate a compatible hash
-npx -y argon2-cli -h "yourpassword" -t 3 -m 12 -p 1 --type argon2i
-```
-
-**Using `--set` with Helm (Recommended):**
-When using `helm install --set`, Helm interprets commas as list separators, which can break Argon2 hashes containing commas. Use `passwordHashBase64` instead:
-
-```bash
-# 1. Generate hash (pick one method)
-# Method A (Go):
-HASH=$(cd backend && go run ../scripts/generate-password-hash.go "yourpassword")
-# Method B (Docker):
-HASH=$(docker run --rm -v $(pwd):/app -w /app/backend golang:1.24-alpine go run ../scripts/generate-password-hash.go "yourpassword" | tr -d '\r')
-# Method C (Argon2 CLI):
-HASH=$(echo -n "yourpassword" | argon2 "$(openssl rand -hex 16)" -i -t 3 -m 12 -p 1 -l 32 -e)
-# Method D (npm):
-HASH=$(npx -y argon2-cli -h "yourpassword" -t 3 -m 12 -p 1 --type argon2i)
-
-# 2. Encode to base64 (Linux/Mac)
-ENCODED=$(echo -n "$HASH" | base64 -w 0)
-# Note: On Mac, use 'base64' without '-w 0'. If output has newlines, pipe to 'tr -d "\n"'
-
-# 3. Install with --set (no escaping needed!)
-helm install dkonsole ./helm/dkonsole --set admin.passwordHashBase64="$ENCODED"
-```
-
-Or use the helper script (requires Go):
-```bash
-# Generate and encode in one step
-cd backend && go run ../scripts/generate-password-hash.go "yourpassword" | xargs ../scripts/encode-hash.sh
-```
-
-### 2. Ingress (Required for external access)
+### 1. Ingress (Required for external access)
 Configure your domain and TLS settings to access the dashboard.
 
 ```yaml
@@ -131,9 +66,34 @@ ingress:
       hosts:
         - dkonsole.example.com
 
-# Optional: Restrict WebSocket origins (CORS)
+# Required for setup mode via ingress (CORS)
 allowedOrigins: "https://dkonsole.example.com"
 ```
+
+### 2. Initial Setup (Web Interface)
+After deploying the Helm chart, access the web interface to complete the initial setup:
+
+1. **Deploy the chart** (no authentication configuration needed):
+   ```bash
+   helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
+   ```
+
+2. **Access the web interface** via your ingress URL
+
+3. **Complete the setup form**:
+   - Enter admin username
+   - Enter admin password (minimum 8 characters)
+   - Optionally set a JWT secret (or leave empty for auto-generation)
+   - Click "Complete Setup"
+
+4. **Login** with the credentials you configured
+
+The setup creates a Kubernetes secret (`{release-name}-auth`) automatically with:
+- Admin username
+- Argon2-hashed password
+- JWT secret for session security
+
+**Note:** The secret is created automatically by the application. You don't need to configure authentication in Helm values.
 
 ### 3. Prometheus Integration (Optional)
 Enable historical metrics by configuring your Prometheus endpoint.

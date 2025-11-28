@@ -2,73 +2,7 @@
 # Only configure what you need. Leave the rest as default.
 
 # -----------------------------------------------------------------------------
-# 1. Authentication (Setup Mode - No Helm Secret Creation)
-# -----------------------------------------------------------------------------
-# IMPORTANT: DKonsole now uses "Setup Mode" for initial configuration.
-#            The secret is NO LONGER created by Helm - it will be created
-#            through the web interface during first-time setup.
-#
-#            Installation process:
-#              1. Deploy the Helm chart (no authentication values needed)
-#              2. Access the web interface
-#              3. Complete the setup form to create the admin account
-#              4. The secret will be created automatically in Kubernetes
-#              5. After setup, you can login with the credentials you configured
-#
-#            The secret name follows the pattern: {release-name}-auth
-#            Example: If release name is "dkonsole", secret will be "dkonsole-auth"
-#
-#            NOTE: These values below are kept for reference but are NOT USED.
-#            They are here for backward compatibility but the secret.yaml template
-#            has been removed. All authentication is now handled via Setup Mode.
-
-# -----------------------------------------------------------------------------
-# 2. Docker Image Configuration
-# -----------------------------------------------------------------------------
-image:
-  repository: dkonsole/dkonsole
-  tag: "1.2.7"
-  pullPolicy: Always
-
-# Image pull secrets (optional)
-# Example: [{"name": "myregistrykey"}]
-imagePullSecrets: []
-
-# Name override for the release (optional)
-nameOverride: ""
-
-# Full name override for the release (optional)
-fullnameOverride: ""
-
-# -----------------------------------------------------------------------------
-# 3. Service Account Configuration
-# -----------------------------------------------------------------------------
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
-
-# -----------------------------------------------------------------------------
-# 4. Pod Configuration
-# -----------------------------------------------------------------------------
-# Pod annotations (optional)
-podAnnotations: {}
-
-# Pod Security Context (Run as non-root user)
-podSecurityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
-  fsGroup: 2000
-
-# Container Security Context (optional)
-securityContext: {}
-
-# -----------------------------------------------------------------------------
-# 5. Ingress / External Access (REQUIRED for external access)
+# 1. Ingress / External Access (REQUIRED for external access)
 # -----------------------------------------------------------------------------
 ingress:
   enabled: true
@@ -94,6 +28,67 @@ ingress:
 # IMPORTANT: For setup mode to work via ingress, include your ingress URL here
 # Example: "https://dkonsole.lan" or "https://dkonsole.example.com"
 allowedOrigins: ""
+
+# -----------------------------------------------------------------------------
+# 2. Docker Image Configuration
+# -----------------------------------------------------------------------------
+image:
+  repository: dkonsole/dkonsole
+  tag: "1.2.7"
+  pullPolicy: Always
+
+# Image pull secrets (optional)
+# Example: [{"name": "myregistrykey"}]
+imagePullSecrets: []
+
+# Name override for the release (optional)
+nameOverride: ""
+
+# Full name override for the release (optional)
+fullnameOverride: ""
+
+# -----------------------------------------------------------------------------
+# 3. Initial Setup (Web Interface)
+# -----------------------------------------------------------------------------
+# DKonsole uses "Setup Mode" for initial configuration.
+# No authentication values are needed in Helm - setup is done via web interface.
+#
+# Installation process:
+#   1. Deploy the Helm chart (no authentication values needed)
+#   2. Access the web interface via ingress
+#   3. Complete the setup form to create the admin account
+#   4. The secret will be created automatically in Kubernetes
+#   5. After setup, you can login with the credentials you configured
+#
+# The secret name follows the pattern: {release-name}-auth
+# Example: If release name is "dkonsole", secret will be "dkonsole-auth"
+
+# -----------------------------------------------------------------------------
+# 4. Service Account Configuration
+# -----------------------------------------------------------------------------
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# -----------------------------------------------------------------------------
+# 5. Pod Configuration
+# -----------------------------------------------------------------------------
+# Pod annotations (optional)
+podAnnotations: {}
+
+# Pod Security Context (Run as non-root user)
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 2000
+
+# Container Security Context (optional)
+securityContext: {}
 
 # -----------------------------------------------------------------------------
 # 6. Service Configuration
