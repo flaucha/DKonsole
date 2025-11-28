@@ -398,6 +398,20 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 					// For setup endpoints, be more permissive - allow same domain
 					// This handles cases like accessing via ingress where Host might be different
 					if !allowed && strings.HasPrefix(r.URL.Path, "/api/setup/") {
+						// First, try exact match (case-insensitive) - this should catch most cases
+						if strings.EqualFold(originHost, host) && (originURL.Scheme == "http" || originURL.Scheme == "https") {
+							utils.LogInfo("CORS: Allowing setup endpoint - exact host match", map[string]interface{}{
+								"origin":      origin,
+								"host":        r.Host,
+								"origin_host": originHost,
+								"host_clean":  host,
+							})
+							allowed = true
+						}
+					}
+
+					// For setup endpoints, also check base domain match
+					if !allowed && strings.HasPrefix(r.URL.Path, "/api/setup/") {
 						// Extract base domain (e.g., "dkonsole.lan" from "dkonsole.lan" or "sub.dkonsole.lan")
 						originParts := strings.Split(originHost, ".")
 						hostParts := strings.Split(host, ".")
