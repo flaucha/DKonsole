@@ -108,16 +108,31 @@ func main() {
 		})
 		config, err = rest.InClusterConfig()
 		if err != nil {
-			utils.LogError(err, "Failed to get in-cluster config", nil)
-			os.Exit(1)
+			// In development/testing, allow running without Kubernetes
+			// This enables local testing of CORS and endpoint logic
+			if os.Getenv("ALLOW_NO_K8S") == "true" {
+				utils.LogWarn("Running without Kubernetes (ALLOW_NO_K8S=true) - setup mode will not work", map[string]interface{}{
+					"error": err.Error(),
+				})
+				config = nil // Will be handled below
+			} else {
+				utils.LogError(err, "Failed to get in-cluster config", nil)
+				os.Exit(1)
+			}
 		}
 	}
 
-	// create the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		utils.LogError(err, "Failed to create clientset", nil)
-		os.Exit(1)
+	// create the clientset (may be nil if ALLOW_NO_K8S=true)
+	var clientset kubernetes.Interface
+	if config != nil {
+		clientset, err = kubernetes.NewForConfig(config)
+		if err != nil {
+			utils.LogError(err, "Failed to create clientset", nil)
+			os.Exit(1)
+		}
+	} else {
+		clientset = nil
+		utils.LogWarn("Running without Kubernetes client - some features will be disabled", nil)
 	}
 
 	metricsClient, _ := metricsv.NewForConfig(config)
