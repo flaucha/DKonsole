@@ -339,6 +339,11 @@ func main() {
 				http.NotFound(w, r)
 				return
 			}
+			// Don't serve index.html for specific static files (handled by specific handlers)
+			if r.URL.Path == "/favicon.ico" || r.URL.Path == "/logo.svg" || r.URL.Path == "/robots.txt" {
+				http.NotFound(w, r)
+				return
+			}
 			indexPath := filepath.Join(staticDir, "index.html")
 			if _, err := os.Stat(indexPath); err == nil {
 				http.ServeFile(w, r, indexPath)
