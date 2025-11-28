@@ -9,6 +9,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
 // K8sUserRepository implements UserRepository using Kubernetes secrets.
@@ -125,10 +127,28 @@ func (r *K8sUserRepository) CreateSecret(ctx context.Context, username, password
 		},
 	}
 
+	utils.LogInfo("Creating Kubernetes secret", map[string]interface{}{
+		"secret_name": r.secretName,
+		"namespace":   r.namespace,
+		"username":    username,
+	})
+
 	_, err := r.client.CoreV1().Secrets(r.namespace).Create(ctx, secret, metav1.CreateOptions{})
 	if err != nil {
+		// Check if it's a specific Kubernetes API error
+		if apierrors.IsForbidden(err) {
+			return fmt.Errorf("forbidden: %w (check RBAC permissions for creating secrets)", err)
+		}
+		if apierrors.IsAlreadyExists(err) {
+			return fmt.Errorf("secret already exists: %w", err)
+		}
 		return fmt.Errorf("failed to create secret: %w", err)
 	}
+
+	utils.LogInfo("Secret created successfully", map[string]interface{}{
+		"secret_name": r.secretName,
+		"namespace":   r.namespace,
+	})
 
 	return nil
 }

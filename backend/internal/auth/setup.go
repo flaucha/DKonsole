@@ -62,21 +62,33 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// First, verify that secret doesn't exist (security check)
+	utils.LogInfo("Checking if secret exists before setup", map[string]interface{}{
+		"endpoint": "/api/setup/complete",
+	})
 	exists, err := s.checkSecretExists(ctx)
 	if err != nil {
 		utils.LogError(err, "Failed to check secret existence", map[string]interface{}{
 			"endpoint": "/api/setup/complete",
+			"error_type": fmt.Sprintf("%T", err),
 		})
 		// Check if it's a permission error
-		if strings.Contains(err.Error(), "Forbidden") || strings.Contains(err.Error(), "permission") {
-			utils.ErrorResponse(w, http.StatusForbidden, "Permission denied: Unable to check or create secret. Please verify RBAC permissions.")
+		errStr := err.Error()
+		if strings.Contains(errStr, "Forbidden") || strings.Contains(errStr, "permission") || strings.Contains(errStr, "forbidden") {
+			utils.ErrorResponse(w, http.StatusForbidden, "Permission denied: Unable to check secret existence. Please verify RBAC permissions allow reading secrets in this namespace.")
 		} else {
 			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check setup status: %v", err))
 		}
 		return
 	}
 
+	utils.LogInfo("Secret existence check completed", map[string]interface{}{
+		"exists": exists,
+	})
+
 	if exists {
+		utils.LogWarn("Setup attempted but secret already exists", map[string]interface{}{
+			"endpoint": "/api/setup/complete",
+		})
 		utils.ErrorResponse(w, http.StatusForbidden, "Setup already completed. Secret already exists.")
 		return
 	}
@@ -132,12 +144,20 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create secret using repository
+	utils.LogInfo("Attempting to create secret", map[string]interface{}{
+		"username": req.Username,
+		"secret_name": s.k8sRepo.secretName,
+		"namespace": s.k8sRepo.namespace,
+	})
 	if err := s.createSecret(ctx, req.Username, passwordHash, jwtSecret); err != nil {
+		errStr := err.Error()
 		utils.LogError(err, "Failed to create secret", map[string]interface{}{
 			"username": req.Username,
+			"error_type": fmt.Sprintf("%T", err),
+			"error_message": errStr,
 		})
 		// Check if it's a permission error
-		if strings.Contains(err.Error(), "Forbidden") || strings.Contains(err.Error(), "permission") {
+		if strings.Contains(errStr, "Forbidden") || strings.Contains(errStr, "permission") || strings.Contains(errStr, "forbidden") {
 			utils.ErrorResponse(w, http.StatusForbidden, "Permission denied: Unable to create secret. Please verify RBAC permissions allow creating secrets in this namespace.")
 		} else {
 			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create secret: %v", err))
