@@ -176,17 +176,6 @@ This release adds comprehensive pod list views, improved navigation, and fixes s
 - **CronJob Trigger Fix**: Fixed EOF error when triggering CronJobs
 - **Action Menu Alignment**: Fixed three-dot menu alignment in all lists
 
-### v1.2.4 (2025-11-26)
-**🔧 Helm Chart Password Hash Fix**
-
-This release fixes the "Invalid credentials" error when using `helm install --set` with Argon2 password hashes.
-
-- **Helm Chart Password Hash Parsing**: Fixed hash truncation issue with special characters
-  - Added `admin.passwordHashBase64` support to avoid Helm parsing issues
-  - Works seamlessly with `--set` without character escaping
-  - Maintains backward compatibility with `passwordHash` for `values.yaml`
-  - Created helper script `scripts/encode-hash.sh` for easy encoding
-
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## 📊 Prometheus Metrics
