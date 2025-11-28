@@ -69,8 +69,6 @@ func NewService(k8sClient kubernetes.Interface, secretName string) (*Service, er
 				utils.LogInfo("Running in setup mode - secret does not exist", map[string]interface{}{
 					"secret_name": secretName,
 				})
-				// Use a temporary JWT secret for setup mode (will be replaced after setup)
-				jwtSecret = GetJWTSecret() // This will use default if not set, which is OK for setup
 				// Don't initialize authService in setup mode - it will fail without credentials
 				return &Service{
 					authService: nil, // Will be nil in setup mode
