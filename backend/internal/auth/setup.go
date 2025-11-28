@@ -54,6 +54,12 @@ func (s *Service) SetupStatusHandler(w http.ResponseWriter, r *http.Request) {
 // SetupCompleteHandler handles POST requests to complete the initial setup.
 // It creates the dkonsole-auth secret with the provided credentials.
 func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
+	utils.LogInfo("SetupCompleteHandler called", map[string]interface{}{
+		"method": r.Method,
+		"path":   r.URL.Path,
+		"ip":     r.RemoteAddr,
+	})
+
 	if r.Method != http.MethodPost {
 		utils.ErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
