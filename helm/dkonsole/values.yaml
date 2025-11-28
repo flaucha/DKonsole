@@ -2,16 +2,32 @@
 # Only configure what you need. Leave the rest as default.
 
 # -----------------------------------------------------------------------------
-# 1. Authentication (REQUIRED)
+# 1. Authentication (OPTIONAL - Setup Mode Available)
 # -----------------------------------------------------------------------------
+# NEW: If you leave these values empty, DKonsole will start in "Setup Mode"
+#      and you can configure the admin account through the web interface.
+#      This is the recommended way for first-time installation.
+#
+#      To use Setup Mode:
+#        - Leave admin.username, admin.passwordHash, and jwtSecret empty
+#        - Deploy the Helm chart
+#        - Access the web interface - it will show the setup page
+#        - Complete the setup form to create the secret
+#        - The pod will need to be restarted after setup (or it will auto-detect)
+#
+#      To use pre-configured credentials (traditional method):
+#        - Set admin.username and admin.passwordHash (or passwordHashBase64)
+#        - Optionally set jwtSecret (auto-generated if empty)
+#        - The secret will be created during Helm install/upgrade
 admin:
   # Username for the dashboard
-  username: admin
+  # Leave empty to use Setup Mode
+  username: ""
   # Password hash (Argon2). Generate with:
   #   cd backend && go run ../scripts/generate-password-hash.go "yourpassword"
   # This generates a hash in the format that works with version 1.2.2:
   #   $argon2i$v=19$m=4096,t=3,p=1$salt$hash
-  # If empty, default password "password" will be used (INSECURE!)
+  # Leave empty to use Setup Mode
   passwordHash: ""
   # RECOMMENDED: Use passwordHashBase64 instead of passwordHash when using --set
   # This avoids Helm parsing issues with special characters (commas, $, etc.)
@@ -19,9 +35,11 @@ admin:
   # Or use: ./scripts/encode-hash.sh "$argon2i$v=19$m=4096,t=3,p=1$salt$hash"
   # Then use: --set admin.passwordHashBase64='<base64-encoded-hash>'
   # If passwordHashBase64 is set, it takes precedence over passwordHash
+  # Leave empty to use Setup Mode
   passwordHashBase64: ""
 
 # JWT Secret for session security. Generate with: openssl rand -base64 32
+# Leave empty to use Setup Mode (will be auto-generated during setup)
 jwtSecret: ""
 
 # -----------------------------------------------------------------------------
@@ -29,7 +47,7 @@ jwtSecret: ""
 # -----------------------------------------------------------------------------
 image:
   repository: dkonsole/dkonsole
-  tag: "1.2.6"
+  tag: "1.2.6-test"  # Using test version for LoginHotFix branch
   pullPolicy: Always
 
 # Image pull secrets (optional)
