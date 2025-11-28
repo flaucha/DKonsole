@@ -91,6 +91,8 @@ ingress:
 # Allowed Origins for WebSocket (CORS)
 # Comma-separated list of allowed origins (e.g., "https://dkonsole.example.com,http://localhost:5173")
 # If empty, only same-origin requests are allowed.
+# IMPORTANT: For setup mode to work via ingress, include your ingress URL here
+# Example: "https://dkonsole.lan" or "https://dkonsole.example.com"
 allowedOrigins: ""
 
 # -----------------------------------------------------------------------------
