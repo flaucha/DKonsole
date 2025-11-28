@@ -19,9 +19,9 @@ type SetupStatusResponse struct {
 
 // SetupCompleteRequest represents the request to complete setup.
 type SetupCompleteRequest struct {
-	Username    string `json:"username"`    // Admin username
-	Password    string `json:"password"`    // Plain password (will be hashed)
-	JWTSecret   string `json:"jwtSecret"`   // JWT secret (optional, will be auto-generated if empty)
+	Username  string `json:"username"`  // Admin username
+	Password  string `json:"password"`  // Plain password (will be hashed)
+	JWTSecret string `json:"jwtSecret"` // JWT secret (optional, will be auto-generated if empty)
 }
 
 // SetupStatusHandler handles GET requests to check if setup is required.
@@ -74,7 +74,7 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 	exists, err := s.checkSecretExists(ctx)
 	if err != nil {
 		utils.LogError(err, "Failed to check secret existence", map[string]interface{}{
-			"endpoint": "/api/setup/complete",
+			"endpoint":   "/api/setup/complete",
 			"error_type": fmt.Sprintf("%T", err),
 		})
 		// Check if it's a permission error
@@ -151,15 +151,15 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create secret using repository
 	utils.LogInfo("Attempting to create secret", map[string]interface{}{
-		"username": req.Username,
+		"username":    req.Username,
 		"secret_name": s.k8sRepo.secretName,
-		"namespace": s.k8sRepo.namespace,
+		"namespace":   s.k8sRepo.namespace,
 	})
 	if err := s.createSecret(ctx, req.Username, passwordHash, jwtSecret); err != nil {
 		errStr := err.Error()
 		utils.LogError(err, "Failed to create secret", map[string]interface{}{
-			"username": req.Username,
-			"error_type": fmt.Sprintf("%T", err),
+			"username":      req.Username,
+			"error_type":    fmt.Sprintf("%T", err),
 			"error_message": errStr,
 		})
 		// Check if it's a permission error
