@@ -396,6 +396,11 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if !allowed && origin != "" {
+			utils.LogWarn("CORS: Origin not allowed", map[string]interface{}{
+				"origin": origin,
+				"host":   r.Host,
+				"path":   r.URL.Path,
+			})
 			http.Error(w, "Origin not allowed", http.StatusForbidden)
 			return
 		}
