@@ -142,8 +142,18 @@ func main() {
 		handlersModel.Metrics["default"] = metricsClient
 	}
 
-	// Initialize services
-	authService := auth.NewService()
+	// Initialize auth service with Kubernetes client
+	// Secret name follows Helm chart convention: {release-name}-auth, default: dkonsole-auth
+	secretName := os.Getenv("AUTH_SECRET_NAME")
+	if secretName == "" {
+		secretName = "dkonsole-auth"
+	}
+	authService, err := auth.NewService(clientset, secretName)
+	if err != nil {
+		utils.LogError(err, "Failed to initialize auth service", nil)
+		os.Exit(1)
+	}
+
 	clusterService := cluster.NewService(handlersModel)
 	k8sService := k8s.NewService(handlersModel, clusterService)
 	apiService := api.NewService(clusterService)
@@ -176,6 +186,22 @@ func main() {
 		return middleware.SecurityHeadersMiddleware(enableCors(middleware.RateLimitMiddleware(middleware.AuditMiddleware(h))))
 	}
 
+	// Setup endpoints (public, only available when in setup mode)
+	// Note: setup/complete needs to bypass CSRF for initial setup, but we add logging
+	setupCompleteHandler := func(w http.ResponseWriter, r *http.Request) {
+		utils.LogInfo("Request received for /api/setup/complete", map[string]interface{}{
+			"method":  r.Method,
+			"ip":      r.RemoteAddr,
+			"origin":  r.Header.Get("Origin"),
+			"referer": r.Header.Get("Referer"),
+		})
+		authService.SetupCompleteHandler(w, r)
+	}
+	mux.HandleFunc("/api/setup/status", public(authService.SetupStatusHandler))
+	// Note: public() already includes RateLimitMiddleware, so we don't need to add it again
+	mux.HandleFunc("/api/setup/complete", public(setupCompleteHandler))
+
+	// Auth endpoints
 	mux.HandleFunc("/api/login", middleware.SecurityHeadersMiddleware(enableCors(middleware.LoginRateLimitMiddleware(middleware.AuditMiddleware(authService.LoginHandler)))))
 	mux.HandleFunc("/api/logout", public(authService.LogoutHandler))
 	mux.HandleFunc("/api/me", secure(authService.MeHandler))
@@ -361,15 +387,52 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 					if strings.Contains(originHost, ":") {
 						originHost = strings.Split(originHost, ":")[0]
 					}
+
+					// Trim whitespace just in case
+					host = strings.TrimSpace(host)
+					originHost = strings.TrimSpace(originHost)
+
+					// Allow if origin host matches request host
+					// Also allow common localhost variants
 					if (originHost == "localhost" || originHost == "127.0.0.1" || originHost == host) &&
 						(originURL.Scheme == "http" || originURL.Scheme == "https") {
 						allowed = true
+					}
+
+					// For setup endpoints, be more permissive - allow same domain
+					// This handles cases like accessing via ingress where Host might be different
+					if !allowed && strings.HasPrefix(r.URL.Path, "/api/setup/") {
+						// First, try exact match (case-insensitive) - this should catch most cases
+						if strings.EqualFold(originHost, host) && (originURL.Scheme == "http" || originURL.Scheme == "https") {
+							allowed = true
+						}
+
+						// Also check base domain match
+						if !allowed {
+							// Extract base domain (e.g., "dkonsole.lan" from "dkonsole.lan" or "sub.dkonsole.lan")
+							originParts := strings.Split(originHost, ".")
+							hostParts := strings.Split(host, ".")
+
+							// If both have at least 2 parts, compare the last 2 (domain.tld)
+							if len(originParts) >= 2 && len(hostParts) >= 2 {
+								originDomain := strings.Join(originParts[len(originParts)-2:], ".")
+								hostDomain := strings.Join(hostParts[len(hostParts)-2:], ".")
+								if originDomain == hostDomain && (originURL.Scheme == "http" || originURL.Scheme == "https") {
+									allowed = true
+								}
+							}
+						}
 					}
 				}
 			}
 		}
 
 		if !allowed && origin != "" {
+			utils.LogWarn("CORS: Origin not allowed", map[string]interface{}{
+				"origin": origin,
+				"host":   r.Host,
+				"path":   r.URL.Path,
+			})
 			http.Error(w, "Origin not allowed", http.StatusForbidden)
 			return
 		}

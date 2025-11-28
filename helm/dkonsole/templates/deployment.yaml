@@ -43,16 +43,25 @@ spec:
             secretKeyRef:
               name: {{ include "dkonsole.fullname" . }}-auth
               key: jwt-secret
+              optional: true
         - name: ADMIN_USER
           valueFrom:
             secretKeyRef:
               name: {{ include "dkonsole.fullname" . }}-auth
               key: admin-username
+              optional: true
         - name: ADMIN_PASSWORD
           valueFrom:
             secretKeyRef:
               name: {{ include "dkonsole.fullname" . }}-auth
               key: admin-password-hash
+              optional: true
+        - name: AUTH_SECRET_NAME
+          value: {{ include "dkonsole.fullname" . }}-auth
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         - name: ALLOWED_ORIGINS
           value: {{ .Values.allowedOrigins | default "" | quote }}
         {{- if .Values.prometheusUrl }}

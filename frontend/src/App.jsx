@@ -8,6 +8,7 @@ import About from './components/About';
 import { SettingsProvider } from './context/SettingsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
+import Setup from './components/Setup';
 
 // Lazy load large components for code splitting
 const WorkloadList = lazy(() => import('./components/WorkloadList'));
@@ -19,10 +20,18 @@ const ResourceQuotaManager = lazy(() => import('./components/ResourceQuotaManage
 const HelmChartManager = lazy(() => import('./components/HelmChartManager'));
 
 const ProtectedRoute = ({ children }) => {
-    const { user, loading } = useAuth();
+    const { user, loading, setupRequired } = useAuth();
     if (loading) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">Loading...</div>;
+    if (setupRequired) return <Navigate to="/setup" />;
     if (!user) return <Navigate to="/login" />;
     return children;
+};
+
+const SetupOrLogin = () => {
+    const { setupRequired, loading } = useAuth();
+    if (loading) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">Loading...</div>;
+    if (setupRequired) return <Setup />;
+    return <Login />;
 };
 
 const WorkloadListWrapper = ({ namespace }) => {
@@ -126,7 +135,8 @@ function App() {
             <AuthProvider>
                 <BrowserRouter>
                     <Routes>
-                        <Route path="/login" element={<Login />} />
+                        <Route path="/setup" element={<Setup />} />
+                        <Route path="/login" element={<SetupOrLogin />} />
                         <Route path="/dashboard/*" element={
                             <ProtectedRoute>
                                 <Dashboard />
@@ -142,4 +152,3 @@ function App() {
 }
 
 export default App;
-

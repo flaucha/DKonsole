@@ -8,10 +8,35 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [setupRequired, setSetupRequired] = useState(false);
 
     useEffect(() => {
-        checkSession();
+        checkSetupStatus();
     }, []);
+
+    const checkSetupStatus = async () => {
+        try {
+            const res = await fetch('/api/setup/status');
+            if (res.ok) {
+                const data = await res.json();
+                setSetupRequired(data.setupRequired || false);
+
+                // Only check session if setup is not required
+                if (!data.setupRequired) {
+                    await checkSession();
+                } else {
+                    setLoading(false);
+                }
+            } else {
+                // If endpoint fails, assume setup is not required and check session
+                await checkSession();
+            }
+        } catch (error) {
+            logger.error('Setup status check failed:', error);
+            // On error, assume setup is not required and check session
+            await checkSession();
+        }
+    };
 
     const checkSession = async () => {
         try {
@@ -69,7 +94,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading, authFetch }}>
+        <AuthContext.Provider value={{ user, login, logout, loading, authFetch, setupRequired, checkSetupStatus }}>
             {children}
         </AuthContext.Provider>
     );
