@@ -11,11 +11,11 @@ else
     VERSION="1.1.9"
 fi
 
-# Use test version for testing (add -test-5 suffix)
-TEST_VERSION="${VERSION}-test-5"
+# Use same version (no test suffix)
+BUILD_VERSION="${VERSION}"
 
 echo "=========================================="
-echo "🔨 DKonsole Build v${TEST_VERSION}"
+echo "🔨 DKonsole Build v${BUILD_VERSION}"
 echo "=========================================="
 echo ""
 
@@ -23,7 +23,7 @@ echo ""
 if ! git diff-index --quiet HEAD --; then
     echo "📝 Detected uncommitted changes, committing and pushing..."
     git add -A
-    git commit -m "chore: update code before build ${TEST_VERSION}" || true
+    git commit -m "chore: update code before build ${BUILD_VERSION}" || true
     if git rev-parse --abbrev-ref HEAD | grep -q "main\|master"; then
         git push || echo "⚠️  Warning: Could not push to remote (may need manual push)"
     fi
@@ -33,13 +33,13 @@ fi
 
 # Build Unified Docker Image (Backend + Frontend)
 echo "📦 Building Unified Image (Backend + Frontend)..."
-docker build -t dkonsole/dkonsole:$TEST_VERSION .
+docker build -t dkonsole/dkonsole:$BUILD_VERSION .
 echo "✅ Unified image built successfully"
 echo ""
 
 # Push to Docker Hub
 echo "🚀 Pushing Unified Image to Docker Hub..."
-docker push dkonsole/dkonsole:$TEST_VERSION
+docker push dkonsole/dkonsole:$BUILD_VERSION
 echo "✅ Unified image pushed successfully"
 echo ""
 
@@ -48,8 +48,8 @@ echo "✨ Build Complete!"
 echo "=========================================="
 echo ""
 echo "📦 Docker Image:"
-echo "   - dkonsole/dkonsole:${TEST_VERSION}"
+echo "   - dkonsole/dkonsole:${BUILD_VERSION}"
 echo ""
 echo "🧪 To test locally:"
-echo "   docker run -p 8080:8080 dkonsole/dkonsole:${TEST_VERSION}"
+echo "   docker run -p 8080:8080 dkonsole/dkonsole:${BUILD_VERSION}"
 echo ""
