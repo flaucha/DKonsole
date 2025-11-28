@@ -171,13 +171,39 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.LogInfo("Setup completed successfully", map[string]interface{}{
+	utils.LogInfo("Setup completed successfully, attempting to reload service", map[string]interface{}{
 		"username": req.Username,
 	})
 
-	utils.JSONResponse(w, http.StatusOK, map[string]string{
-		"message": "Setup completed successfully. Please restart the pod for changes to take effect.",
-	})
+	// Attempt to reload the service configuration
+	reloaded, err := s.Reload(ctx)
+	if err != nil {
+		utils.LogError(err, "Failed to reload service after setup", map[string]interface{}{
+			"username": req.Username,
+		})
+		// Still return success, but warn that restart may be needed
+		utils.JSONResponse(w, http.StatusOK, map[string]string{
+			"message": "Setup completed successfully. The service will reload automatically. If you encounter issues, you may need to restart the pod.",
+		})
+		return
+	}
+
+	if reloaded {
+		utils.LogInfo("Service reloaded successfully after setup", map[string]interface{}{
+			"username": req.Username,
+		})
+		utils.JSONResponse(w, http.StatusOK, map[string]string{
+			"message": "Setup completed successfully. The service has been reloaded and is ready to use.",
+		})
+	} else {
+		// This shouldn't happen, but handle it gracefully
+		utils.LogWarn("Service reload returned false after setup", map[string]interface{}{
+			"username": req.Username,
+		})
+		utils.JSONResponse(w, http.StatusOK, map[string]string{
+			"message": "Setup completed successfully. The service will reload automatically. If you encounter issues, you may need to restart the pod.",
+		})
+	}
 }
 
 // checkSecretExists checks if the dkonsole-auth secret exists.

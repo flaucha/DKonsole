@@ -93,15 +93,15 @@ const Setup = () => {
 
             const data = await response.json();
 
-            if (response.ok) {
-                setSuccess(data.message || 'Setup completed successfully! Please restart the pod for changes to take effect.');
-                // Redirect to login after a delay
-                setTimeout(() => {
-                    navigate('/login');
-                }, 3000);
-            } else {
-                setError(data.message || data.error || 'Failed to complete setup');
-            }
+                    if (response.ok) {
+                        setSuccess(data.message || 'Setup completed successfully! The service has been reloaded and is ready to use.');
+                        // Redirect to login after a delay
+                        setTimeout(() => {
+                            navigate('/login');
+                        }, 3000);
+                    } else {
+                        setError(data.message || data.error || 'Failed to complete setup');
+                    }
         } catch (err) {
             logger.error('Setup failed:', err);
             setError('An error occurred while completing setup');

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +29,10 @@ type Service struct {
 	authService *AuthService
 	jwtService  *JWTService
 	k8sRepo     *K8sUserRepository // K8s repository for secret management (may be nil if not using K8s)
-	setupMode   bool                // true if running in setup mode (secret doesn't exist)
+	setupMode   bool               // true if running in setup mode (secret doesn't exist)
+	mu          sync.RWMutex       // Mutex for thread-safe reload
+	k8sClient   kubernetes.Interface
+	secretName  string
 }
 
 // NewService creates a new authentication service with default configuration.
@@ -72,9 +76,11 @@ func NewService(k8sClient kubernetes.Interface, secretName string) (*Service, er
 				// Don't initialize authService in setup mode - it will fail without credentials
 				return &Service{
 					authService: nil, // Will be nil in setup mode
-					jwtService:   nil, // Will be nil in setup mode
+					jwtService:  nil, // Will be nil in setup mode
 					k8sRepo:     k8sRepo,
 					setupMode:   true,
+					k8sClient:   k8sClient,
+					secretName:  secretName,
 				}, nil
 			} else {
 				// Secret exists - use K8s repository
@@ -106,7 +112,67 @@ func NewService(k8sClient kubernetes.Interface, secretName string) (*Service, er
 		jwtService:  jwtService,
 		k8sRepo:     k8sRepo,
 		setupMode:   setupMode,
+		k8sClient:   k8sClient,
+		secretName:  secretName,
 	}, nil
+}
+
+// Reload attempts to reload the service configuration if the secret now exists.
+// This allows the service to transition from setup mode to normal mode without restarting.
+// Returns true if reload was successful, false otherwise.
+func (s *Service) Reload(ctx context.Context) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Only reload if we're in setup mode and have K8s client
+	if !s.setupMode || s.k8sClient == nil || s.k8sRepo == nil {
+		return false, nil
+	}
+
+	// Check if secret now exists
+	exists, err := s.k8sRepo.SecretExists(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to check secret existence during reload: %w", err)
+	}
+
+	if !exists {
+		// Secret still doesn't exist, no reload needed
+		return false, nil
+	}
+
+	// Secret exists now - reload configuration
+	utils.LogInfo("Reloading auth service - secret now exists", map[string]interface{}{
+		"secret_name": s.secretName,
+	})
+
+	// Get credentials from secret
+	userRepo := s.k8sRepo
+
+	// Get JWT secret from the secret
+	secret, err := s.k8sClient.CoreV1().Secrets(s.k8sRepo.namespace).Get(ctx, s.secretName, metav1.GetOptions{})
+	if err != nil {
+		return false, fmt.Errorf("failed to get JWT secret from Kubernetes secret during reload: %w", err)
+	}
+
+	jwtSecretBytes, exists := secret.Data["jwt-secret"]
+	if !exists || len(jwtSecretBytes) == 0 {
+		return false, fmt.Errorf("jwt-secret key not found in secret during reload")
+	}
+
+	// Initialize services with new credentials
+	authService := NewAuthService(userRepo, jwtSecretBytes)
+	jwtService := NewJWTService(jwtSecretBytes)
+
+	// Update service state
+	s.authService = authService
+	s.jwtService = jwtService
+	s.setupMode = false
+
+	utils.LogInfo("Auth service reloaded successfully", map[string]interface{}{
+		"secret_name": s.secretName,
+	})
+
+	return true, nil
 }
 
 // LoginHandler handles HTTP POST requests for user authentication.
@@ -132,8 +198,13 @@ func NewService(k8sClient kubernetes.Interface, secretName string) (*Service, er
 //
 //	{"role": "admin"}
 func (s *Service) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	s.mu.RLock()
+	setupMode := s.setupMode
+	authService := s.authService
+	s.mu.RUnlock()
+
 	// Check if in setup mode
-	if s.setupMode {
+	if setupMode {
 		utils.ErrorResponse(w, http.StatusPreconditionFailed, "Setup required. Please complete the initial setup first.")
 		return
 	}
@@ -154,12 +225,12 @@ func (s *Service) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call service (business logic layer)
-	if s.authService == nil {
+	if authService == nil {
 		utils.ErrorResponse(w, http.StatusInternalServerError, "Authentication service not initialized")
 		return
 	}
 
-	result, err := s.authService.Login(ctx, loginReq)
+	result, err := authService.Login(ctx, loginReq)
 	if err != nil {
 		if err == ErrInvalidCredentials {
 			utils.ErrorResponse(w, http.StatusUnauthorized, "Invalid credentials")
@@ -218,8 +289,13 @@ func (s *Service) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 //
 //	{"username": "admin", "role": "admin"}
 func (s *Service) MeHandler(w http.ResponseWriter, r *http.Request) {
+	s.mu.RLock()
+	setupMode := s.setupMode
+	authService := s.authService
+	s.mu.RUnlock()
+
 	// Check if in setup mode
-	if s.setupMode {
+	if setupMode {
 		utils.ErrorResponse(w, http.StatusPreconditionFailed, "Setup required. Please complete the initial setup first.")
 		return
 	}
@@ -227,12 +303,12 @@ func (s *Service) MeHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Call service (business logic layer)
-	if s.authService == nil {
+	if authService == nil {
 		utils.ErrorResponse(w, http.StatusInternalServerError, "Authentication service not initialized")
 		return
 	}
 
-	claims, err := s.authService.GetCurrentUser(ctx)
+	claims, err := authService.GetCurrentUser(ctx)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -259,19 +335,24 @@ func (s *Service) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		s.mu.RLock()
+		setupMode := s.setupMode
+		jwtService := s.jwtService
+		s.mu.RUnlock()
+
 		// If in setup mode, block authenticated routes
-		if s.setupMode {
+		if setupMode {
 			utils.ErrorResponse(w, http.StatusPreconditionFailed, "Setup required. Please complete the initial setup first.")
 			return
 		}
 
 		// Use JWTService to authenticate request
-		if s.jwtService == nil {
+		if jwtService == nil {
 			utils.ErrorResponse(w, http.StatusInternalServerError, "JWT service not initialized")
 			return
 		}
 
-		claims, err := s.jwtService.AuthenticateRequest(r)
+		claims, err := jwtService.AuthenticateRequest(r)
 		if err != nil {
 			utils.ErrorResponse(w, http.StatusUnauthorized, err.Error())
 			return
@@ -285,5 +366,13 @@ func (s *Service) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 // AuthenticateRequest extracts and validates JWT from request
 // Delegates to JWTService
 func (s *Service) AuthenticateRequest(r *http.Request) (*AuthClaims, error) {
-	return s.jwtService.AuthenticateRequest(r)
+	s.mu.RLock()
+	jwtService := s.jwtService
+	s.mu.RUnlock()
+
+	if jwtService == nil {
+		return nil, fmt.Errorf("JWT service not initialized")
+	}
+
+	return jwtService.AuthenticateRequest(r)
 }
