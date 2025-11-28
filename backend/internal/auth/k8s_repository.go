@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -86,11 +87,18 @@ func (r *K8sUserRepository) GetAdminPasswordHash() (string, error) {
 }
 
 // SecretExists checks if the dkonsole-auth secret exists in the namespace.
+// Returns (true, nil) if secret exists
+// Returns (false, nil) if secret doesn't exist (NotFound error)
+// Returns (false, error) if there's a permission error or other API error
 func (r *K8sUserRepository) SecretExists(ctx context.Context) (bool, error) {
 	_, err := r.client.CoreV1().Secrets(r.namespace).Get(ctx, r.secretName, metav1.GetOptions{})
 	if err != nil {
-		// If secret doesn't exist, return false without error
-		return false, nil
+		if apierrors.IsNotFound(err) {
+			// Secret doesn't exist - this is expected in setup mode
+			return false, nil
+		}
+		// Other error (permission denied, etc.) - return the error
+		return false, fmt.Errorf("failed to check secret existence: %w", err)
 	}
 	return true, nil
 }

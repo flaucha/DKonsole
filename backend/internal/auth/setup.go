@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
@@ -66,7 +67,12 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 		utils.LogError(err, "Failed to check secret existence", map[string]interface{}{
 			"endpoint": "/api/setup/complete",
 		})
-		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to check setup status")
+		// Check if it's a permission error
+		if strings.Contains(err.Error(), "Forbidden") || strings.Contains(err.Error(), "permission") {
+			utils.ErrorResponse(w, http.StatusForbidden, "Permission denied: Unable to check or create secret. Please verify RBAC permissions.")
+		} else {
+			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check setup status: %v", err))
+		}
 		return
 	}
 
@@ -130,7 +136,12 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 		utils.LogError(err, "Failed to create secret", map[string]interface{}{
 			"username": req.Username,
 		})
-		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to create secret")
+		// Check if it's a permission error
+		if strings.Contains(err.Error(), "Forbidden") || strings.Contains(err.Error(), "permission") {
+			utils.ErrorResponse(w, http.StatusForbidden, "Permission denied: Unable to create secret. Please verify RBAC permissions allow creating secrets in this namespace.")
+		} else {
+			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create secret: %v", err))
+		}
 		return
 	}
 
