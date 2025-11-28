@@ -53,8 +53,15 @@ Perform the following file updates precisely.
 - **Task**: Ensure Swagger documentation is updated for the new release.
 - **Action**: Generate/Update Swagger docs if necessary and include them in the commit.
 
+### 2.6 Docker Hub README
+- **File**: `dockerhub-readme.md`
+- **Action**: Update `dockerhub-readme.md` with the same format in each release.
+  - Ensure version references in the Tags section are current (if applicable).
+  - Keep the format consistent with previous releases.
+  - The file will be automatically pushed to Docker Hub by the CI pipeline after the image is built.
+
 ## 3. Git Operations
-1. **Stage**: `git add VERSION CHANGELOG.md README.md helm/dkonsole/Chart.yaml helm/dkonsole/values.yaml`
+1. **Stage**: `git add VERSION CHANGELOG.md README.md dockerhub-readme.md helm/dkonsole/Chart.yaml helm/dkonsole/values.yaml`
 2. **Commit**: `git commit -m "chore: release vVERSION"`
 3. **Push**: `git push origin main`
 4. **Tag**: `git tag -a vVERSION -m "Release vVERSION"`
