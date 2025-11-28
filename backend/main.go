@@ -324,7 +324,13 @@ func main() {
 			http.ServeFile(w, r, filepath.Join(staticDir, "favicon.ico"))
 		}))
 		mux.HandleFunc("/logo.svg", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, filepath.Join(staticDir, "logo.svg"))
+			logoPath := filepath.Join(staticDir, "logo.svg")
+			if _, err := os.Stat(logoPath); err != nil {
+				http.NotFound(w, r)
+				return
+			}
+			w.Header().Set("Content-Type", "image/svg+xml")
+			http.ServeFile(w, r, logoPath)
 		}))
 		mux.HandleFunc("/robots.txt", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, filepath.Join(staticDir, "robots.txt"))
