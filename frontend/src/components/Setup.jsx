@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, User, Key, RefreshCw } from 'lucide-react';
+import { Lock, User, Key, RefreshCw, Loader2 } from 'lucide-react';
 import defaultLogo from '../assets/logo-full.svg';
 import { logger } from '../utils/logger';
 
@@ -12,6 +12,7 @@ const Setup = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
+    const [reloading, setReloading] = useState(false);
     const [logoSrc, setLogoSrc] = useState(defaultLogo);
     const navigate = useNavigate();
 
@@ -93,22 +94,38 @@ const Setup = () => {
 
             const data = await response.json();
 
-                    if (response.ok) {
-                        setSuccess(data.message || 'Setup completed successfully! The service has been reloaded and is ready to use.');
-                        // Redirect to login after a delay
-                        setTimeout(() => {
-                            navigate('/login');
-                        }, 3000);
-                    } else {
-                        setError(data.message || data.error || 'Failed to complete setup');
-                    }
+            if (response.ok) {
+                // Hide form and show reloading screen
+                setReloading(true);
+                setLoading(false);
+
+                // Wait 5 seconds then reload the page
+                setTimeout(() => {
+                    window.location.reload();
+                }, 5000);
+            } else {
+                setError(data.message || data.error || 'Failed to complete setup');
+                setLoading(false);
+            }
         } catch (err) {
             logger.error('Setup failed:', err);
             setError('An error occurred while completing setup');
-        } finally {
             setLoading(false);
         }
     };
+
+    // Show reloading screen if setup was successful
+    if (reloading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-900">
+                <div className="flex flex-col items-center space-y-4">
+                    <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
+                    <p className="text-gray-300 text-lg">Setup completed successfully!</p>
+                    <p className="text-gray-400 text-sm">Reloading application...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-900">
