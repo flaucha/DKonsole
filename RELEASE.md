@@ -63,6 +63,39 @@ Perform the following file updates precisely.
    > **Pre-requisite**: You MUST confirm that the build works and all tests pass locally or in a previous CI run BEFORE pushing this tag.
 5. **Push Tag**: `git push origin vVERSION`
 
-## 4. Verification
+## 4. Docker Image Build and Tagging
+After the GitHub Actions pipeline completes (or manually):
+
+1. **Pull the new version image** (if not already local):
+   ```bash
+   docker pull dkonsole/dkonsole:VERSION
+   ```
+
+2. **Tag as latest**:
+   ```bash
+   docker tag dkonsole/dkonsole:VERSION dkonsole/dkonsole:latest
+   ```
+
+3. **Push both tags**:
+   ```bash
+   docker push dkonsole/dkonsole:VERSION
+   docker push dkonsole/dkonsole:latest
+   ```
+
+   > [!IMPORTANT]
+   > **Latest Tag**: The `latest` tag MUST be created and pushed for every release to ensure users can pull the most recent stable version.
+
+## 5. Cleanup (Optional - Periodic Maintenance)
+Periodically clean up test tags from Docker Hub to keep the repository clean:
+
+1. **Get Docker Hub token**: Create a token at https://hub.docker.com/settings/security
+2. **Run cleanup script**:
+   ```bash
+   ./scripts/cleanup-docker-tags.sh <docker_hub_username> <docker_hub_token>
+   ```
+   This will delete all tags containing "test" (case insensitive).
+
+## 6. Verification
 - Monitor GitHub Actions for the tag push.
 - Verify Docker Hub for the new tag `dkonsole/dkonsole:VERSION`.
+- Verify Docker Hub for the updated `dkonsole/dkonsole:latest` tag.
