@@ -360,6 +360,9 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password strin
 
 // GetUserGroups retrieves the groups for a user from LDAP
 func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string, error) {
+	utils.LogInfo("GetUserGroups called", map[string]interface{}{
+		"username": username,
+	})
 	config, err := s.repo.GetConfig(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get LDAP config: %w", err)
@@ -373,6 +376,10 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 	if err != nil {
 		return nil, fmt.Errorf("failed to get LDAP credentials: %w", err)
 	}
+
+	utils.LogInfo("Got service credentials", map[string]interface{}{
+		"service_username": serviceUsername,
+	})
 
 	// Connect to LDAP server
 	conn, err := ldap.DialURL(config.URL)
@@ -400,6 +407,10 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 	if strings.Contains(username, "=") {
 		// Username is already a full DN
 		userDN = username
+		utils.LogInfo("Username is already a DN", map[string]interface{}{
+			"username": username,
+			"userDN":   userDN,
+		})
 	} else {
 		// Search for user first to get the full DN
 		userSearchFilter := fmt.Sprintf("(%s=%s)", config.UserDN, username)
@@ -417,11 +428,25 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 		if err != nil || len(userSr.Entries) == 0 {
 			// Fallback: construct DN from username, userDN attribute, and baseDN
 			userDN = fmt.Sprintf("%s=%s,%s", config.UserDN, username, config.BaseDN)
+			utils.LogWarn("User not found, using constructed DN", map[string]interface{}{
+				"username": username,
+				"userDN":   userDN,
+				"error":    err,
+			})
 		} else {
 			// Use the found DN
 			userDN = userSr.Entries[0].DN
+			utils.LogInfo("Found user DN", map[string]interface{}{
+				"username": username,
+				"userDN":   userDN,
+			})
 		}
 	}
+
+	utils.LogInfo("Searching for user groups", map[string]interface{}{
+		"username": username,
+		"userDN":   userDN,
+	})
 
 	// First, try to get groups from memberOf attribute on the user entry (AD-style)
 	userSearchRequest := ldap.NewSearchRequest(
