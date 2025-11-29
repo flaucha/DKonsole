@@ -152,23 +152,39 @@ const Settings = () => {
             )}
 
             {activeTab === 'general' && (
-                <div className="space-y-6">
-                    {/* Prometheus URL Settings */}
-                    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
-                        <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
-                            <Server size={20} className="mr-2 text-blue-400" /> Prometheus Configuration
-                        </h2>
-                        <PrometheusURLSettings authFetch={authFetch} error={error} setError={setError} success={success} setSuccess={setSuccess} />
-                    </div>
+                <>
+                    {checkingAdmin ? (
+                        <div className="p-6 max-w-5xl mx-auto">
+                            <div className="text-white">Checking permissions...</div>
+                        </div>
+                    ) : !isAdmin ? (
+                        <div className="p-6 max-w-5xl mx-auto">
+                            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 text-center">
+                                <AlertCircle size={48} className="mx-auto mb-4 text-red-400" />
+                                <h2 className="text-xl font-semibold text-white mb-2">Access Denied</h2>
+                                <p className="text-gray-400">You need admin privileges to access general settings.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {/* Prometheus URL Settings */}
+                            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
+                                <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
+                                    <Server size={20} className="mr-2 text-blue-400" /> Prometheus Configuration
+                                </h2>
+                                <PrometheusURLSettings authFetch={authFetch} error={error} setError={setError} success={success} setSuccess={setSuccess} />
+                            </div>
 
-                    {/* Password Change Settings */}
-                    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
-                        <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
-                            <SettingsIcon size={20} className="mr-2 text-red-400" /> Change Password
-                        </h2>
-                        <PasswordChangeSettings authFetch={authFetch} error={error} setError={setError} success={success} setSuccess={setSuccess} />
-                    </div>
-                </div>
+                            {/* Password Change Settings */}
+                            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
+                                <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
+                                    <SettingsIcon size={20} className="mr-2 text-red-400" /> Change Password
+                                </h2>
+                                <PasswordChangeSettings authFetch={authFetch} error={error} setError={setError} success={success} setSuccess={setSuccess} />
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
 
             {activeTab === 'ldap' && (
