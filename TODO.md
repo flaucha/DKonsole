@@ -2,9 +2,6 @@
 
 ## Features to Implement
 
-- [ ] Change or set Prometheus URL in settings. After setting it, reload the app to display metrics.
-
-- [ ] Change password from settings. Show a warning that the user will be logged out on the change screen. After making the change, reload the app and prompt for login again.
 
 - [ ] Add LDAP authentication.
 
