@@ -155,25 +155,9 @@ func (h *HTTPHandler) GetPodMetrics(w http.ResponseWriter, r *http.Request) {
 	// Call service (business logic layer)
 	response, err := promService.GetPodMetrics(ctx, req)
 	if err != nil {
-		utils.LogError(err, "Failed to get pod metrics", map[string]interface{}{
-			"pod":       podName,
-			"namespace": namespace,
-			"range":     rangeParam,
-			"url":       h.prometheusURL,
-		})
 		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get pod metrics: %v", err))
 		return
 	}
-
-	utils.LogDebug("Pod metrics retrieved successfully", map[string]interface{}{
-		"pod":            podName,
-		"namespace":      namespace,
-		"cpu_points":     len(response.CPU),
-		"memory_points":  len(response.Memory),
-		"network_rx_points": len(response.NetworkRx),
-		"network_tx_points": len(response.NetworkTx),
-		"pvc_points":     len(response.PVCUsage),
-	})
 
 	// Write JSON response (HTTP layer)
 	utils.JSONResponse(w, http.StatusOK, response)
