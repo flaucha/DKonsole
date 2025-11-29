@@ -260,10 +260,19 @@ func (s *AuthService) GetCurrentUser(ctx context.Context) (*models.Claims, error
 		return nil, ErrUnauthorized
 	}
 
-	return &models.Claims{
-		Username: username,
-		Role:     role,
-	}, nil
+	claims := &models.Claims{
+		Username:    username,
+		Role:        role,
+		Permissions: permissions,
+	}
+
+	utils.LogInfo("GetCurrentUser: returning claims", map[string]interface{}{
+		"username":   claims.Username,
+		"role":       claims.Role,
+		"permissions": claims.Permissions,
+	})
+
+	return claims, nil
 }
 
 // Errors
