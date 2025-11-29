@@ -74,7 +74,7 @@ func GetUserFromContext(ctx context.Context) (*models.Claims, error) {
 // HasNamespaceAccess checks if the user has access to a specific namespace
 // Returns true if:
 // - User is admin (no permissions means full access)
-// - User has any permission (view/edit/admin) for the namespace
+// - User has any permission (view/edit) for the namespace
 func HasNamespaceAccess(ctx context.Context, namespace string) (bool, error) {
 	claims, err := GetUserFromContext(ctx)
 	if err != nil {
@@ -92,16 +92,17 @@ func HasNamespaceAccess(ctx context.Context, namespace string) (bool, error) {
 }
 
 // GetPermissionLevel returns the permission level for a namespace
-// Returns "admin", "edit", "view", or "" if no access
+// Returns "edit", "view", or "" if no access
+// Admin users return "edit" (full access)
 func GetPermissionLevel(ctx context.Context, namespace string) (string, error) {
 	claims, err := GetUserFromContext(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	// Admin has full access
+	// Admin has full access (equivalent to "edit" for all namespaces)
 	if claims.Role == "admin" || claims.Permissions == nil || len(claims.Permissions) == 0 {
-		return "admin", nil
+		return "edit", nil
 	}
 
 	// Get permission for namespace
@@ -114,7 +115,7 @@ func GetPermissionLevel(ctx context.Context, namespace string) (string, error) {
 }
 
 // CanPerformAction checks if the user can perform a specific action on a namespace
-// Actions: "view", "edit", "admin"
+// Actions: "view", "edit"
 // Returns true if user has the required permission level or higher
 func CanPerformAction(ctx context.Context, namespace, action string) (bool, error) {
 	permission, err := GetPermissionLevel(ctx, namespace)
@@ -122,16 +123,15 @@ func CanPerformAction(ctx context.Context, namespace, action string) (bool, erro
 		return false, err
 	}
 
-	// Permission hierarchy: admin > edit > view
+	// Permission hierarchy: edit > view
 	permissionLevels := map[string]int{
-		"view":  1,
-		"edit":  2,
-		"admin": 3,
+		"view": 1,
+		"edit": 2,
 	}
 
 	requiredLevel, ok := permissionLevels[action]
 	if !ok {
-		return false, fmt.Errorf("invalid action: %s", action)
+		return false, fmt.Errorf("invalid action: %s. Must be 'view' or 'edit'", action)
 	}
 
 	userLevel, ok := permissionLevels[permission]

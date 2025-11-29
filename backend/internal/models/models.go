@@ -153,7 +153,7 @@ type Credentials struct {
 type Claims struct {
 	Username    string            `json:"username"`
 	Role        string            `json:"role"`
-	Permissions map[string]string `json:"permissions,omitempty"` // namespace -> permission (view/edit/admin)
+	Permissions map[string]string `json:"permissions,omitempty"` // namespace -> permission (view/edit)
 	RegisteredClaims interface{} `json:"-"` // Se manejará con jwt.RegisteredClaims en el paquete auth
 }
 
@@ -293,7 +293,7 @@ type LDAPConfig struct {
 // LDAPGroupPermission representa los permisos de un grupo LDAP para un namespace
 type LDAPGroupPermission struct {
 	Namespace string `json:"namespace"`
-	Permission string `json:"permission"` // "view", "edit", "admin"
+	Permission string `json:"permission"` // "view", "edit"
 }
 
 // LDAPGroup representa un grupo LDAP con sus permisos

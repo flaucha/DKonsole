@@ -178,8 +178,8 @@ func (s *Service) UpdateGroupsHandler(w http.ResponseWriter, r *http.Request) {
 				// Skip empty permissions (user hasn't selected a namespace yet)
 				continue
 			}
-			if perm.Permission != "view" && perm.Permission != "edit" && perm.Permission != "admin" {
-				utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("invalid permission: %s. Must be 'view', 'edit', or 'admin'", perm.Permission))
+			if perm.Permission != "view" && perm.Permission != "edit" {
+				utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("invalid permission: %s. Must be 'view' or 'edit'", perm.Permission))
 				return
 			}
 			validPermissions = append(validPermissions, perm)
@@ -732,11 +732,10 @@ func (s *Service) GetUserPermissions(ctx context.Context, username string) (map[
 		groupMap[group] = true // Also keep original case for exact match
 	}
 
-	// Permission hierarchy: view < edit < admin
+	// Permission hierarchy: view < edit
 	permissionLevel := map[string]int{
-		"view":  1,
-		"edit":  2,
-		"admin": 3,
+		"view": 1,
+		"edit": 2,
 	}
 
 	// Find permissions for user's groups

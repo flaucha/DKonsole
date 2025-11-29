@@ -1283,7 +1283,6 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
                                                     >
                                                         <option value="view">View</option>
                                                         <option value="edit">Edit</option>
-                                                        <option value="admin">Admin</option>
                                                     </select>
                                                     <button
                                                         onClick={() => removePermission(groupIndex, permIndex)}
