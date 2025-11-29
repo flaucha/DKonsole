@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database, Gauge, Package, LogOut } from 'lucide-react';
+import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database, Gauge, Package, LogOut, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import defaultLogo from '../assets/logo-full.svg';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -187,9 +187,14 @@ const Layout = ({ children, headerContent }) => {
                 <div className="flex items-center space-x-2">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
-                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
+                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-all duration-200 hover:scale-110"
+                        title={sidebarOpen ? "Ocultar menú" : "Mostrar menú"}
                     >
-                        <Menu size={24} />
+                        {sidebarOpen ? (
+                            <PanelLeftClose size={24} className="transition-transform duration-300" />
+                        ) : (
+                            <PanelLeftOpen size={24} className="transition-transform duration-300" />
+                        )}
                     </button>
                     <div className="flex items-center justify-center">
                         <img
@@ -205,12 +210,32 @@ const Layout = ({ children, headerContent }) => {
                 </div>
             </header>
 
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden relative">
                 {/* Sidebar */}
                 <div
-                    className={`bg-black border-r border-gray-800 flex flex-col transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full opacity-0 overflow-hidden border-none'}`}
+                    className={`bg-black border-r border-gray-800 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                        sidebarOpen
+                            ? 'w-64 translate-x-0 opacity-100'
+                            : 'w-0 -translate-x-full opacity-0 pointer-events-none'
+                    }`}
+                    style={{
+                        transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+                        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
                 >
-                    <nav className="flex-1 px-2 space-y-1 mt-4 overflow-y-auto">
+                    {/* Botón de cerrar dentro del sidebar */}
+                    {sidebarOpen && (
+                        <div className="flex justify-end p-2 border-b border-gray-800">
+                            <button
+                                onClick={() => setSidebarOpen(false)}
+                                className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-all duration-200 hover:scale-110 hover:rotate-90"
+                                title="Ocultar menú"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                    )}
+                    <nav className={`flex-1 px-2 space-y-1 mt-4 overflow-y-auto transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
                         <SidebarItem
                             icon={LayoutDashboard}
                             label="Overview"
