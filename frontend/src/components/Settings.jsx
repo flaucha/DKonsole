@@ -206,7 +206,7 @@ const Settings = () => {
             )}
 
             {activeTab === 'appearance' && (
-                <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Theme Column */}
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg h-full">
