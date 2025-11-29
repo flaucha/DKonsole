@@ -76,30 +76,38 @@ const Layout = ({ children, headerContent }) => {
                     setHasPermissions(true);
                 } else if (res.status === 403) {
                     setIsAdmin(false);
-                    // Check if user has LDAP permissions
-                    if (user && user.permissions && Object.keys(user.permissions).length > 0) {
-                        setHasPermissions(true);
-                    } else {
-                        setHasPermissions(false);
-                    }
                 } else {
                     setIsAdmin(false);
-                    setHasPermissions(false);
                 }
             } catch (err) {
                 setIsAdmin(false);
-                // Check if user has LDAP permissions
-                if (user && user.permissions && Object.keys(user.permissions).length > 0) {
-                    setHasPermissions(true);
-                } else {
-                    setHasPermissions(false);
-                }
             } finally {
                 setCheckingAdmin(false);
             }
         };
+
+        // Check if user has permissions (admin or LDAP permissions)
+        const checkPermissions = () => {
+            if (!user) {
+                setHasPermissions(false);
+                return;
+            }
+            // Admin always has permissions
+            if (user.role === 'admin') {
+                setHasPermissions(true);
+                return;
+            }
+            // Check if user has LDAP permissions
+            if (user.permissions && Object.keys(user.permissions).length > 0) {
+                setHasPermissions(true);
+            } else {
+                setHasPermissions(false);
+            }
+        };
+
         if (user) {
             checkAdmin();
+            checkPermissions();
         } else {
             setCheckingAdmin(false);
             setHasPermissions(false);
