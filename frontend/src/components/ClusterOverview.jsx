@@ -188,12 +188,14 @@ const ClusterOverview = () => {
                     value={stats.pvcs}
                     color="bg-orange-600"
                 />
-                <StatCard
-                    icon={HardDrive}
-                    label="PVs"
-                    value={stats.pvs}
-                    color="bg-red-600"
-                />
+                {isAdmin && (
+                    <StatCard
+                        icon={HardDrive}
+                        label="PVs"
+                        value={stats.pvs}
+                        color="bg-red-600"
+                    />
+                )}
             </div>
 
             {/* Node Metrics Table - Only if Prometheus is enabled */}

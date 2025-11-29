@@ -316,7 +316,7 @@ const Layout = ({ children, headerContent }) => {
                                     onClick={() => toggleMenu('storage')}
                                 />
                                 <SubMenu isOpen={expandedMenus.storage}>
-                                    {['PVCs', 'PVs', ...(isAdmin ? ['Storage Classes'] : [])].map(item => (
+                                    {['PVCs', ...(isAdmin ? ['PVs', 'Storage Classes'] : [])].map(item => (
                                         <SubItem
                                             key={item}
                                             label={item}
