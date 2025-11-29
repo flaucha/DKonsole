@@ -193,7 +193,7 @@ const Layout = ({ children, headerContent }) => {
                     </div>
                 </div>
                 <div className="flex items-center">
-                    {headerContent}
+                    {!checkingAdmin && hasPermissions && headerContent}
                 </div>
             </header>
 
