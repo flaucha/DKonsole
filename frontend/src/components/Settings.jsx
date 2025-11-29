@@ -457,34 +457,40 @@ const PasswordChangeSettings = ({ authFetch, error, setError, success, setSucces
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const [showWarning, setShowWarning] = useState(false);
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-    const handleChangePassword = async () => {
+    const validateFields = () => {
         setError('');
         setSuccess('');
 
         // Validation
         if (!currentPassword || !newPassword || !confirmPassword) {
             setError('All fields are required');
-            return;
+            return false;
         }
 
         if (newPassword.length < 8) {
             setError('New password must be at least 8 characters long');
-            return;
+            return false;
         }
 
         if (newPassword !== confirmPassword) {
             setError('New passwords do not match');
-            return;
+            return false;
         }
 
-        if (!showWarning) {
-            setShowWarning(true);
-            return;
-        }
+        return true;
+    };
 
+    const handleChangePasswordClick = () => {
+        if (validateFields()) {
+            setShowConfirmDialog(true);
+        }
+    };
+
+    const handleConfirmChangePassword = async () => {
         setLoading(true);
+        setShowConfirmDialog(false);
 
         try {
             const res = await authFetch('/api/auth/change-password', {
@@ -520,20 +526,6 @@ const PasswordChangeSettings = ({ authFetch, error, setError, success, setSucces
 
     return (
         <div className="space-y-4">
-            {showWarning && (
-                <div className="bg-yellow-900/20 border border-yellow-600/50 rounded-lg p-4 mb-4">
-                    <div className="flex items-start">
-                        <AlertCircle size={20} className="text-yellow-400 mr-3 mt-0.5" />
-                        <div>
-                            <h4 className="text-yellow-400 font-semibold mb-1">Warning: You will be logged out</h4>
-                            <p className="text-yellow-300/80 text-sm">
-                                After changing your password, you will be automatically logged out and redirected to the login page.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             <div className="space-y-3">
                 <div>
                     <label className="block text-sm font-medium text-gray-400 mb-2">Current Password</label>
@@ -579,12 +571,12 @@ const PasswordChangeSettings = ({ authFetch, error, setError, success, setSucces
             </div>
 
             <button
-                onClick={handleChangePassword}
+                onClick={handleChangePasswordClick}
                 disabled={loading}
                 className="w-full flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
             >
                 <Lock size={16} className="mr-2" />
-                {loading ? 'Changing Password...' : showWarning ? 'Confirm Password Change' : 'Change Password'}
+                {loading ? 'Changing Password...' : 'Change Password'}
             </button>
 
             {error && (
@@ -597,6 +589,38 @@ const PasswordChangeSettings = ({ authFetch, error, setError, success, setSucces
                 <div className="flex items-center text-green-400 text-sm">
                     <Check size={16} className="mr-2" />
                     {success}
+                </div>
+            )}
+
+            {/* Confirmation Dialog */}
+            {showConfirmDialog && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-md shadow-xl">
+                        <div className="flex items-center space-x-3 mb-4 text-red-400">
+                            <AlertCircle size={24} />
+                            <h3 className="text-xl font-bold text-white">Confirm Password Change</h3>
+                        </div>
+                        <p className="text-gray-300 mb-2 leading-relaxed">
+                            Are you sure you want to change your password?
+                        </p>
+                        <p className="text-sm text-yellow-400 mb-6">
+                            ⚠️ Warning: After changing your password, you will be automatically logged out and redirected to the login page.
+                        </p>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={() => setShowConfirmDialog(false)}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmChangePassword}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
+                            >
+                                Change Password
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

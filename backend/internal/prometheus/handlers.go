@@ -135,6 +135,13 @@ func (h *HTTPHandler) GetPodMetrics(w http.ResponseWriter, r *http.Request) {
 	utils.JSONResponse(w, http.StatusOK, response)
 }
 
+// UpdateURL updates the Prometheus URL and recreates the repository and service
+func (h *HTTPHandler) UpdateURL(newURL string) {
+	h.prometheusURL = newURL
+	h.repo = NewHTTPPrometheusRepository(newURL)
+	h.promService = NewService(h.repo)
+}
+
 // GetClusterOverview handles requests for cluster overview metrics
 // Refactored to use layered architecture:
 // Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)

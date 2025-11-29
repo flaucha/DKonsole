@@ -11,8 +11,8 @@ else
     VERSION="1.1.9"
 fi
 
-# Use test version for testing (add -test suffix)
-TEST_VERSION="${VERSION}-test"
+# Use test version for testing (add -test-1 suffix)
+TEST_VERSION="${VERSION}-test-1"
 
 echo "=========================================="
 echo "🔨 DKonsole Build v${TEST_VERSION}"

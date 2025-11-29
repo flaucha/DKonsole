@@ -162,7 +162,7 @@ func main() {
 	podService := pod.NewService(handlersModel, clusterService)
 	prometheusService := prometheus.NewHTTPHandler(handlersModel.PrometheusURL, clusterService)
 	logoService := logo.NewService("./data")
-	settingsFactory := settings.NewServiceFactory(clientset, handlersModel, secretName)
+	settingsFactory := settings.NewServiceFactory(clientset, handlersModel, secretName, prometheusService)
 	settingsService := settingsFactory.NewService()
 
 	mux := http.NewServeMux()
