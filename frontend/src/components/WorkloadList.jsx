@@ -628,9 +628,31 @@ const WorkloadList = ({ namespace, kind }) => {
                                     )}
                                     {kind === 'Deployment' && (isAdmin(user) || canEdit(user, res.namespace)) && (
                                         <button
-                                            onClick={(e) => {
+                                            onClick={async (e) => {
                                                 e.stopPropagation();
-                                                setConfirmRollout(res);
+                                                // Fetch deployment details if not already available
+                                                if (!res.details || !res.details.replicas) {
+                                                    try {
+                                                        const params = new URLSearchParams();
+                                                        if (currentCluster) params.append('cluster', currentCluster);
+                                                        const response = await authFetch(
+                                                            `/api/namespaces/${res.namespace}/Deployment/${res.name}?${params.toString()}`
+                                                        );
+                                                        if (response.ok) {
+                                                            const deploymentData = await response.json();
+                                                            setConfirmRollout({
+                                                                ...res,
+                                                                details: deploymentData.details || res.details
+                                                            });
+                                                        } else {
+                                                            setConfirmRollout(res);
+                                                        }
+                                                    } catch (err) {
+                                                        setConfirmRollout(res);
+                                                    }
+                                                } else {
+                                                    setConfirmRollout(res);
+                                                }
                                             }}
                                             disabled={rollingOut === res.name}
                                             className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-green-400 transition-colors disabled:opacity-50"
