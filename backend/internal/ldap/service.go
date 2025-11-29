@@ -289,20 +289,39 @@ func (s *Service) TestConnectionHandler(w http.ResponseWriter, r *http.Request) 
 
 // AuthenticateUser authenticates a user against LDAP
 func (s *Service) AuthenticateUser(ctx context.Context, username, password string) error {
+	utils.LogInfo("AuthenticateUser called", map[string]interface{}{
+		"username": username,
+	})
 	config, err := s.repo.GetConfig(ctx)
 	if err != nil {
+		utils.LogWarn("Failed to get LDAP config", map[string]interface{}{
+			"username": username,
+			"error":    err.Error(),
+		})
 		return fmt.Errorf("failed to get LDAP config: %w", err)
 	}
 
 	if !config.Enabled {
+		utils.LogWarn("LDAP is not enabled", map[string]interface{}{
+			"username": username,
+		})
 		return fmt.Errorf("LDAP is not enabled")
 	}
 
 	// Get service account credentials for searching
 	serviceUsername, servicePassword, err := s.repo.GetCredentials(ctx)
 	if err != nil {
+		utils.LogWarn("Failed to get LDAP service credentials", map[string]interface{}{
+			"username": username,
+			"error":    err.Error(),
+		})
 		return fmt.Errorf("failed to get LDAP service credentials: %w", err)
 	}
+
+	utils.LogInfo("Got service credentials for authentication", map[string]interface{}{
+		"username":         username,
+		"service_username": serviceUsername,
+	})
 
 	// Connect to LDAP server
 	conn, err := ldap.DialURL(config.URL)
@@ -351,10 +370,23 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password strin
 	}
 
 	// Now bind with user credentials
+	utils.LogInfo("Attempting to bind with user credentials", map[string]interface{}{
+		"username": username,
+		"bindDN":   bindDN,
+	})
 	if err := conn.Bind(bindDN, password); err != nil {
+		utils.LogWarn("Failed to bind with user credentials", map[string]interface{}{
+			"username": username,
+			"bindDN":   bindDN,
+			"error":    err.Error(),
+		})
 		return fmt.Errorf("failed to bind to LDAP server: %w", err)
 	}
 
+	utils.LogInfo("User authenticated successfully", map[string]interface{}{
+		"username": username,
+		"bindDN":   bindDN,
+	})
 	return nil
 }
 
@@ -595,6 +627,9 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 
 // ValidateUserGroup checks if the user belongs to the required group (if configured)
 func (s *Service) ValidateUserGroup(ctx context.Context, username string) error {
+	utils.LogInfo("ValidateUserGroup called", map[string]interface{}{
+		"username": username,
+	})
 	config, err := s.repo.GetConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get LDAP config: %w", err)
@@ -602,8 +637,16 @@ func (s *Service) ValidateUserGroup(ctx context.Context, username string) error 
 
 	// If no required group is configured, allow all authenticated users
 	if config.RequiredGroup == "" {
+		utils.LogInfo("No required group configured, allowing user", map[string]interface{}{
+			"username": username,
+		})
 		return nil
 	}
+
+	utils.LogInfo("Required group is configured", map[string]interface{}{
+		"username":      username,
+		"required_group": config.RequiredGroup,
+	})
 
 	// Get user groups
 	groups, err := s.GetUserGroups(ctx, username)
