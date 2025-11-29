@@ -789,7 +789,7 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
             const res = await authFetch('/api/ldap/groups', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(groups),
+                body: JSON.stringify({ groups }),
             });
 
             if (res.ok) {
