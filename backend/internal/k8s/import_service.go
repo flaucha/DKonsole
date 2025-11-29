@@ -100,7 +100,9 @@ func (s *ImportService) ImportResources(ctx context.Context, req ImportResourceR
 		} else {
 			obj.SetNamespace("")
 			// Cluster-scoped resources require admin access
-			isAdmin, err := permissions.IsAdmin(ctx, nil)
+			// Check if user is core admin (pass nil for LDAP checker, will only check core admin)
+			var ldapChecker permissions.LDAPAdminChecker = nil
+			isAdmin, err := permissions.IsAdmin(ctx, ldapChecker)
 			if err != nil {
 				return nil, fmt.Errorf("failed to check admin status: %w", err)
 			}
