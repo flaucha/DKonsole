@@ -223,24 +223,28 @@ const Layout = ({ children, headerContent }) => {
                         transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
                 >
-                    {/* Botón de cerrar dentro del sidebar */}
-                    {sidebarOpen && (
-                        <div className="flex justify-end p-2 border-b border-gray-800">
-                            <button
-                                onClick={() => setSidebarOpen(false)}
-                                className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-all duration-200 hover:scale-110 hover:rotate-90"
-                                title="Ocultar menú"
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
-                    )}
                     <nav className={`flex-1 px-2 space-y-1 mt-4 overflow-y-auto transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
-                        <SidebarItem
-                            icon={LayoutDashboard}
-                            label="Overview"
-                            to="/dashboard/overview"
-                        />
+                        {/* Overview con botón de cerrar */}
+                        {sidebarOpen && (
+                            <div className="flex items-center justify-between px-4 py-2 mb-1">
+                                <NavLink
+                                    to="/dashboard/overview"
+                                    className={({ isActive }) =>
+                                        `flex items-center space-x-3 flex-1 px-4 py-2 cursor-pointer rounded-md transition-colors ${isActive ? 'bg-gray-800 text-white' : 'text-white hover:bg-gray-800'}`
+                                    }
+                                >
+                                    <LayoutDashboard size={20} />
+                                    <span className="font-medium whitespace-nowrap">Overview</span>
+                                </NavLink>
+                                <button
+                                    onClick={() => setSidebarOpen(false)}
+                                    className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-all duration-200 hover:scale-110 hover:rotate-90 ml-2"
+                                    title="Ocultar menú"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        )}
 
                         {/* Only show other menu items if user has permissions */}
                         {!checkingAdmin && hasPermissions && (
