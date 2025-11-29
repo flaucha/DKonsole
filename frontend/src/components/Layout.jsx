@@ -373,17 +373,20 @@ const Layout = ({ children, headerContent }) => {
                                     label="Helm Charts"
                                     to="/dashboard/helm-charts"
                                 />
-
-                                <SidebarItem
-                                    icon={Settings}
-                                    label="Settings"
-                                    to="/dashboard/settings"
-                                />
                             </>
                         )}
                     </nav>
 
                     <div className="mt-auto border-t border-gray-800">
+                        <NavLink
+                            to="/dashboard/settings"
+                            className={({ isActive }) =>
+                                `w-full flex items-center px-4 py-2 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors ${isActive ? 'bg-gray-800 text-white' : ''}`
+                            }
+                        >
+                            <Settings size={20} className="mr-3" />
+                            <span className="font-medium">Settings</span>
+                        </NavLink>
                         <button
                             onClick={logout}
                             className="w-full flex items-center px-4 py-2 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
