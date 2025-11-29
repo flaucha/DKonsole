@@ -58,6 +58,13 @@ func (h *HTTPHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Verify repository is using correct URL
+	if h.repo == nil {
+		utils.LogWarn("Prometheus repository is nil, recreating", nil)
+		h.repo = NewHTTPPrometheusRepository(h.prometheusURL)
+		h.promService = NewService(h.repo)
+	}
+
 	if deployment == "" || namespace == "" {
 		utils.LogWarn("Missing deployment or namespace", map[string]interface{}{
 			"deployment": deployment,
@@ -108,6 +115,13 @@ func (h *HTTPHandler) GetPodMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Verify repository is using correct URL
+	if h.repo == nil {
+		utils.LogWarn("Prometheus repository is nil, recreating", nil)
+		h.repo = NewHTTPPrometheusRepository(h.prometheusURL)
+		h.promService = NewService(h.repo)
+	}
+
 	if podName == "" || namespace == "" {
 		utils.ErrorResponse(w, http.StatusBadRequest, "pod and namespace are required")
 		return
@@ -137,9 +151,16 @@ func (h *HTTPHandler) GetPodMetrics(w http.ResponseWriter, r *http.Request) {
 
 // UpdateURL updates the Prometheus URL and recreates the repository and service
 func (h *HTTPHandler) UpdateURL(newURL string) {
+	utils.LogInfo("Updating Prometheus URL", map[string]interface{}{
+		"old_url": h.prometheusURL,
+		"new_url": newURL,
+	})
 	h.prometheusURL = newURL
 	h.repo = NewHTTPPrometheusRepository(newURL)
 	h.promService = NewService(h.repo)
+	utils.LogInfo("Prometheus URL updated successfully", map[string]interface{}{
+		"url": newURL,
+	})
 }
 
 // GetClusterOverview handles requests for cluster overview metrics

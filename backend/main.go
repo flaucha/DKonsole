@@ -21,6 +21,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"mime"
 	"net/http"
@@ -129,12 +130,36 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize auth service with Kubernetes client
+	// Secret name follows Helm chart convention: {release-name}-auth, default: dkonsole-auth
+	secretName := os.Getenv("AUTH_SECRET_NAME")
+	if secretName == "" {
+		secretName = "dkonsole-auth"
+	}
+
+	// Try to get Prometheus URL from ConfigMap first, then fallback to environment variable
+	prometheusURL := os.Getenv("PROMETHEUS_URL")
+	if clientset != nil {
+		// Try to read from ConfigMap
+		settingsRepo := settings.NewRepository(clientset, secretName)
+		if url, err := settingsRepo.GetPrometheusURL(context.Background()); err == nil && url != "" {
+			prometheusURL = url
+			utils.LogInfo("Prometheus URL loaded from ConfigMap", map[string]interface{}{
+				"url": prometheusURL,
+			})
+		} else if prometheusURL != "" {
+			utils.LogInfo("Prometheus URL loaded from environment variable", map[string]interface{}{
+				"url": prometheusURL,
+			})
+		}
+	}
+
 	handlersModel := &models.Handlers{
 		Clients:       make(map[string]*kubernetes.Clientset),
 		Dynamics:      make(map[string]dynamic.Interface),
 		Metrics:       make(map[string]*metricsv.Clientset),
 		RESTConfigs:   make(map[string]*rest.Config),
-		PrometheusURL: os.Getenv("PROMETHEUS_URL"),
+		PrometheusURL: prometheusURL,
 	}
 	handlersModel.Clients["default"] = clientset
 	handlersModel.Dynamics["default"] = dynamicClient
@@ -143,12 +168,6 @@ func main() {
 		handlersModel.Metrics["default"] = metricsClient
 	}
 
-	// Initialize auth service with Kubernetes client
-	// Secret name follows Helm chart convention: {release-name}-auth, default: dkonsole-auth
-	secretName := os.Getenv("AUTH_SECRET_NAME")
-	if secretName == "" {
-		secretName = "dkonsole-auth"
-	}
 	authService, err := auth.NewService(clientset, secretName)
 	if err != nil {
 		utils.LogError(err, "Failed to initialize auth service", nil)
