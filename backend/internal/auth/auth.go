@@ -376,3 +376,94 @@ func (s *Service) AuthenticateRequest(r *http.Request) (*AuthClaims, error) {
 
 	return jwtService.AuthenticateRequest(r)
 }
+
+// ChangePasswordRequest represents a request to change password
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
+}
+
+// ChangePasswordHandler handles password change requests
+func (s *Service) ChangePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	s.mu.RLock()
+	setupMode := s.setupMode
+	authService := s.authService
+	k8sRepo := s.k8sRepo
+	s.mu.RUnlock()
+
+	// Check if in setup mode
+	if setupMode {
+		utils.ErrorResponse(w, http.StatusPreconditionFailed, "Setup required. Please complete the initial setup first.")
+		return
+	}
+
+	// Check if K8s repository is available
+	if k8sRepo == nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Password change not available in this configuration")
+		return
+	}
+
+	ctx := r.Context()
+
+	// Parse request body
+	var req ChangePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validate new password
+	if len(req.NewPassword) < 8 {
+		utils.ErrorResponse(w, http.StatusBadRequest, "New password must be at least 8 characters long")
+		return
+	}
+
+	// Verify current password
+	if authService == nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Authentication service not initialized")
+		return
+	}
+
+	// Get current username from context
+	claims, err := authService.GetCurrentUser(ctx)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Verify current password
+	loginReq := LoginRequest{
+		Username: claims.Username,
+		Password: req.CurrentPassword,
+	}
+	_, err = authService.Login(ctx, loginReq)
+	if err != nil {
+		if err == ErrInvalidCredentials {
+			utils.ErrorResponse(w, http.StatusUnauthorized, "Current password is incorrect")
+			return
+		}
+		utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Hash new password
+	newPasswordHash, err := HashPassword(req.NewPassword)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to hash password: %v", err))
+		return
+	}
+
+	// Update password in secret
+	if err := k8sRepo.UpdatePassword(ctx, newPasswordHash); err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to update password: %v", err))
+		return
+	}
+
+	utils.LogInfo("Password changed successfully", map[string]interface{}{
+		"username": claims.Username,
+	})
+
+	utils.JSONResponse(w, http.StatusOK, map[string]string{
+		"message": "Password changed successfully",
+	})
+}
