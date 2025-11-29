@@ -247,23 +247,27 @@ const Layout = ({ children, headerContent }) => {
                             ))}
                         </SubMenu>
 
-                        {/* Access Control */}
-                        <SidebarItem
-                            icon={Shield}
-                            label="Access Control"
-                            hasChildren
-                            expanded={expandedMenus.accessControl}
-                            onClick={() => toggleMenu('accessControl')}
-                        />
-                        <SubMenu isOpen={expandedMenus.accessControl}>
-                            {['Service Accounts', 'Roles', 'Role Bindings', 'Cluster Roles', 'Cluster Role Bindings'].map(item => (
-                                <SubItem
-                                    key={item}
-                                    label={item}
-                                    to={getPath(item)}
+                        {/* Access Control - Only for admins */}
+                        {!checkingAdmin && isAdmin && (
+                            <>
+                                <SidebarItem
+                                    icon={Shield}
+                                    label="Access Control"
+                                    hasChildren
+                                    expanded={expandedMenus.accessControl}
+                                    onClick={() => toggleMenu('accessControl')}
                                 />
-                            ))}
-                        </SubMenu>
+                                <SubMenu isOpen={expandedMenus.accessControl}>
+                                    {['Service Accounts', 'Roles', 'Role Bindings', 'Cluster Roles', 'Cluster Role Bindings'].map(item => (
+                                        <SubItem
+                                            key={item}
+                                            label={item}
+                                            to={getPath(item)}
+                                        />
+                                    ))}
+                                </SubMenu>
+                            </>
+                        )}
 
                         <SidebarItem
                             icon={Database}
