@@ -11,6 +11,9 @@ import { parseErrorResponse, parseError } from '../utils/errorParser';
 const HelmChartManager = ({ namespace }) => {
     const { currentCluster } = useSettings();
     const { authFetch, user } = useAuth();
+
+    // Check if user is admin (core admin or LDAP admin group member)
+    const isAdmin = user && (user.role === 'admin' || (user.permissions && Object.keys(user.permissions).length === 0 && user.role !== 'user'));
     const [expandedId, setExpandedId] = useState(null);
     const [sortField, setSortField] = useState('name');
     const [sortDirection, setSortDirection] = useState('asc');
@@ -61,18 +64,41 @@ const HelmChartManager = ({ namespace }) => {
 
     // Helper to check if user has edit or admin permission for a namespace
     const hasEditPermission = (ns) => {
+        // Admins have full access
+        if (isAdmin) return true;
         if (!user || !user.permissions) return false;
-        if (user.role === 'admin') return true; // Core admin has full access
         const permission = user.permissions[ns];
         return permission === 'edit' || permission === 'admin';
     };
 
+    // Helper to check if user has view permission for a namespace
+    const hasViewPermission = (ns) => {
+        // Admins have full access
+        if (isAdmin) return true;
+        if (!user || !user.permissions) return false;
+        const permission = user.permissions[ns];
+        return permission === 'view' || permission === 'edit' || permission === 'admin';
+    };
+
     // Filter releases by namespace and search text
     const filteredReleases = releases.filter(release => {
-        // Only show releases in the user's namespace
-        if (namespace && release.namespace !== namespace) {
-            return false;
+        // If user is admin, show all releases (no namespace filter)
+        // If user is not admin, filter by namespace and check permissions
+        if (!isAdmin) {
+            // If namespace is "all", filter by user's allowed namespaces
+            if (namespace === 'all') {
+                // Only show releases in namespaces the user has access to
+                if (!hasViewPermission(release.namespace)) {
+                    return false;
+                }
+            } else {
+                // Show only releases in the selected namespace (if user has access)
+                if (release.namespace !== namespace || !hasViewPermission(release.namespace)) {
+                    return false;
+                }
+            }
         }
+        // Apply search filter
         if (!filter) return true;
         const searchText = filter.toLowerCase();
         return (
