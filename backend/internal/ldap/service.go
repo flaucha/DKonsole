@@ -298,6 +298,12 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password strin
 		return fmt.Errorf("LDAP is not enabled")
 	}
 
+	// Get service account credentials for searching
+	serviceUsername, servicePassword, err := s.repo.GetCredentials(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get LDAP service credentials: %w", err)
+	}
+
 	// Connect to LDAP server
 	conn, err := ldap.DialURL(config.URL)
 	if err != nil {
@@ -305,16 +311,46 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password strin
 	}
 	defer conn.Close()
 
-	// Determine bind DN: if username contains "=", it's already a DN, otherwise construct it
+	// Bind with service account first to search for user
+	var serviceBindDN string
+	if strings.Contains(serviceUsername, "=") {
+		serviceBindDN = serviceUsername
+	} else {
+		serviceBindDN = fmt.Sprintf("%s=%s,%s", config.UserDN, serviceUsername, config.BaseDN)
+	}
+	if err := conn.Bind(serviceBindDN, servicePassword); err != nil {
+		return fmt.Errorf("failed to bind with service account: %w", err)
+	}
+
+	// Determine user DN: if username contains "=", it's already a DN, otherwise search for it
 	var bindDN string
 	if strings.Contains(username, "=") {
 		// Username is already a full DN
 		bindDN = username
 	} else {
-		// Construct DN from username, userDN attribute, and baseDN
-		bindDN = fmt.Sprintf("%s=%s,%s", config.UserDN, username, config.BaseDN)
+		// Search for user first to get the full DN
+		userSearchFilter := fmt.Sprintf("(%s=%s)", config.UserDN, username)
+		if config.UserFilter != "" {
+			userSearchFilter = fmt.Sprintf("(&(%s=%s)%s)", config.UserDN, username, config.UserFilter)
+		}
+		userSearchRequest := ldap.NewSearchRequest(
+			config.BaseDN,
+			ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
+			userSearchFilter,
+			[]string{"dn"},
+			nil,
+		)
+		userSr, err := conn.Search(userSearchRequest)
+		if err != nil || len(userSr.Entries) == 0 {
+			// Fallback: construct DN from username, userDN attribute, and baseDN
+			bindDN = fmt.Sprintf("%s=%s,%s", config.UserDN, username, config.BaseDN)
+		} else {
+			// Use the found DN
+			bindDN = userSr.Entries[0].DN
+		}
 	}
 
+	// Now bind with user credentials
 	if err := conn.Bind(bindDN, password); err != nil {
 		return fmt.Errorf("failed to bind to LDAP server: %w", err)
 	}
