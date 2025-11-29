@@ -93,7 +93,7 @@ const WorkloadList = ({ namespace, kind }) => {
     const [sortField, setSortField] = useState('name');
     const [sortDirection, setSortDirection] = useState('asc');
     const { currentCluster } = useSettings();
-    const { authFetch } = useAuth();
+    const { authFetch, user } = useAuth();
     const location = useLocation();
     const [filter, setFilter] = useState('');
     const [isSearchFocused, setIsSearchFocused] = useState(false);
