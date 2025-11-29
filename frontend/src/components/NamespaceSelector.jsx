@@ -83,8 +83,17 @@ const NamespaceSelector = ({ selected, onSelect }) => {
                                     placeholder="Search namespaces..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-gray-900 border border-gray-700 text-gray-300 text-xs rounded pl-8 pr-2 py-1.5 focus:outline-none focus:border-blue-500"
+                                    className="w-full bg-gray-900 border border-gray-700 text-gray-300 text-xs rounded pl-8 pr-8 py-1.5 focus:outline-none focus:border-blue-500"
                                 />
+                                {searchTerm && (
+                                    <button
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                                        type="button"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                )}
                             </div>
                         </div>
                         <div className="max-h-60 overflow-y-auto py-1">

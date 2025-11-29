@@ -292,8 +292,17 @@ const HelmChartManager = ({ namespace }) => {
                             onChange={(e) => setFilter(e.target.value)}
                             onFocus={() => setIsSearchFocused(true)}
                             onBlur={() => setIsSearchFocused(false)}
-                            className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded-md pl-10 pr-4 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-300"
+                            className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded-md pl-10 pr-10 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-300"
                         />
+                        {filter && (
+                            <button
+                                onClick={() => setFilter('')}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                                type="button"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
                     </div>
                     <span className="text-sm text-gray-500">
                         {filteredReleases.length} {filteredReleases.length === 1 ? 'item' : 'items'}

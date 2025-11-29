@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Search, ListTree, RefreshCw, Globe, MapPin, FileText, ChevronDown } from 'lucide-react';
+import { Search, ListTree, RefreshCw, Globe, MapPin, FileText, ChevronDown, X } from 'lucide-react';
 import YamlEditor from './YamlEditor';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -148,9 +148,18 @@ const ApiExplorer = ({ namespace }) => {
                                 setShowSuggestions(true);
                             }}
                             onFocus={() => setShowSuggestions(true)}
-                            className="w-full bg-gray-800 border border-gray-700 rounded-md pl-8 pr-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500 transition-all"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md pl-8 pr-8 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500 transition-all"
                             placeholder="Search API resources (e.g., pod, deployment, service)..."
                         />
+                        {filter && (
+                            <button
+                                onClick={() => setFilter('')}
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                                type="button"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
                         {showSuggestions && filter && filteredSuggestions.length > 0 && (
                             <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
                                 {filteredSuggestions.map((api) => (
