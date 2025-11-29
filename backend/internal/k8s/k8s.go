@@ -55,11 +55,12 @@ func (s *Service) GetNamespaces(w http.ResponseWriter, r *http.Request) {
 	// Create service using factory (dependency injection)
 	namespaceService := s.serviceFactory.CreateNamespaceService(client)
 
-	// Create context with timeout
-	ctx, cancel := utils.CreateTimeoutContext()
+	// Create context from request (to access user permissions)
+	ctx, cancel := utils.CreateRequestContext(r)
 	defer cancel()
 
 	// Call service to get namespaces (business logic layer)
+	// The service will filter namespaces based on user permissions
 	namespaces, err := namespaceService.GetNamespaces(ctx)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get namespaces: %v", err))
