@@ -508,17 +508,36 @@ func (s *Service) ValidateUserGroup(ctx context.Context, username string) error 
 	// Get user groups
 	groups, err := s.GetUserGroups(ctx, username)
 	if err != nil {
+		utils.LogWarn("Failed to get user groups for validation", map[string]interface{}{
+			"username": username,
+			"error":    err.Error(),
+		})
 		return fmt.Errorf("failed to get user groups: %w", err)
 	}
+
+	utils.LogInfo("Validating user group membership", map[string]interface{}{
+		"username":      username,
+		"user_groups":  groups,
+		"required_group": config.RequiredGroup,
+	})
 
 	// Check if user belongs to required group
 	for _, group := range groups {
 		if group == config.RequiredGroup {
+			utils.LogInfo("User belongs to required group", map[string]interface{}{
+				"username":      username,
+				"required_group": config.RequiredGroup,
+			})
 			return nil
 		}
 	}
 
 	// User doesn't belong to required group
+	utils.LogWarn("User does not belong to required group", map[string]interface{}{
+		"username":       username,
+		"user_groups":    groups,
+		"required_group": config.RequiredGroup,
+	})
 	return fmt.Errorf("user is not a member of required group: %s", config.RequiredGroup)
 }
 
