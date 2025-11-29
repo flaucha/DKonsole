@@ -436,6 +436,10 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 	if err == nil && len(userSr.Entries) > 0 {
 		// Extract groups from memberOf attribute
 		memberOf := userSr.Entries[0].GetAttributeValues("memberOf")
+		utils.LogInfo("Found memberOf attributes", map[string]interface{}{
+			"username": username,
+			"memberOf": memberOf,
+		})
 		groups := make([]string, 0, len(memberOf))
 		for _, groupDN := range memberOf {
 			// Extract group name from DN
@@ -459,10 +463,19 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 				groups = append(groups, ou)
 			}
 		}
+		utils.LogInfo("Extracted groups from memberOf", map[string]interface{}{
+			"username": username,
+			"groups":   groups,
+		})
 		if len(groups) > 0 {
 			return groups, nil
 		}
 	}
+
+	utils.LogWarn("No groups found from memberOf, trying fallback search", map[string]interface{}{
+		"username": username,
+		"userDN":   userDN,
+	})
 
 	// Fallback: Search for groups with member attribute (standard LDAP)
 	searchFilter := fmt.Sprintf("(&(objectClass=groupOfNames)(member=%s))", userDN)
