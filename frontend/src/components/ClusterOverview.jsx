@@ -1,5 +1,5 @@
 import React from 'react';
-import { Server, Layers, Box, Network, Globe, HardDrive, Activity, Database, Cpu, TrendingUp } from 'lucide-react';
+import { Server, Layers, Box, Network, Globe, HardDrive, Activity, Database, Cpu, TrendingUp, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useClusterOverview } from '../hooks/useClusterOverview';
@@ -46,7 +46,7 @@ const ProgressBar = ({ value, color }) => {
 };
 
 const ClusterOverview = () => {
-    const { authFetch } = useAuth();
+    const { authFetch, user } = useAuth();
     const { currentCluster } = useSettings();
 
     const { overview, prometheusStatus, metrics } = useClusterOverview(authFetch, currentCluster);
@@ -58,6 +58,28 @@ const ClusterOverview = () => {
     const prometheusEnabled = prometheusStatus.data?.enabled || false;
     const clusterStats = metrics.data?.clusterStats;
     const nodeMetrics = metrics.data?.nodeMetrics || [];
+
+    // Check if user has permissions (admin or LDAP permissions)
+    const isAdmin = user && user.role === 'admin';
+    const hasPermissions = isAdmin || (user && user.permissions && Object.keys(user.permissions).length > 0);
+
+    // If user has no permissions, show message
+    if (!hasPermissions) {
+        return (
+            <div className="p-6 max-w-5xl mx-auto">
+                <div className="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-8 text-center">
+                    <AlertCircle size={64} className="mx-auto mb-4 text-yellow-400" />
+                    <h2 className="text-2xl font-semibold text-white mb-2">Sin Permisos</h2>
+                    <p className="text-gray-400 text-lg">
+                        No tienes permisos configurados para acceder a los recursos del cluster.
+                    </p>
+                    <p className="text-gray-500 text-sm mt-2">
+                        Contacta a tu administrador para que te asigne los permisos necesarios.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     if (loading) {
         return <div className="text-gray-400 animate-pulse p-6">Loading cluster overview...</div>;

@@ -64,6 +64,7 @@ const Layout = ({ children, headerContent }) => {
     const { logout, authFetch, user } = useAuth();
     const [isAdmin, setIsAdmin] = useState(false);
     const [checkingAdmin, setCheckingAdmin] = useState(true);
+    const [hasPermissions, setHasPermissions] = useState(false);
 
     useEffect(() => {
         // Check if user is admin (core admin or LDAP admin group member)
@@ -72,13 +73,27 @@ const Layout = ({ children, headerContent }) => {
                 const res = await authFetch('/api/settings/prometheus/url');
                 if (res.ok || res.status === 404) {
                     setIsAdmin(true);
+                    setHasPermissions(true);
                 } else if (res.status === 403) {
                     setIsAdmin(false);
+                    // Check if user has LDAP permissions
+                    if (user && user.permissions && Object.keys(user.permissions).length > 0) {
+                        setHasPermissions(true);
+                    } else {
+                        setHasPermissions(false);
+                    }
                 } else {
                     setIsAdmin(false);
+                    setHasPermissions(false);
                 }
             } catch (err) {
                 setIsAdmin(false);
+                // Check if user has LDAP permissions
+                if (user && user.permissions && Object.keys(user.permissions).length > 0) {
+                    setHasPermissions(true);
+                } else {
+                    setHasPermissions(false);
+                }
             } finally {
                 setCheckingAdmin(false);
             }
@@ -87,6 +102,7 @@ const Layout = ({ children, headerContent }) => {
             checkAdmin();
         } else {
             setCheckingAdmin(false);
+            setHasPermissions(false);
         }
     }, [authFetch, user]);
     const [sidebarOpen, setSidebarOpen] = useState(true);
