@@ -199,33 +199,41 @@ const NamespaceManager = () => {
                                         {menuOpen === ns.name && (
                                             <div className="absolute right-0 mt-1 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
                                                 <div className="flex flex-col">
-                                                    <button
-                                                        onClick={() => {
-                                                            setEditingYaml({ name: ns.name, kind: 'Namespace', namespaced: false });
-                                                            setMenuOpen(null);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
-                                                    >
-                                                        Edit YAML
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setConfirmAction({ namespace: ns.name, force: false });
-                                                            setMenuOpen(null);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setConfirmAction({ namespace: ns.name, force: true });
-                                                            setMenuOpen(null);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"
-                                                    >
-                                                        Force Delete
-                                                    </button>
+                                                    {isAdmin(user) ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditingYaml({ name: ns.name, kind: 'Namespace', namespaced: false });
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                                                            >
+                                                                Edit YAML
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setConfirmAction({ namespace: ns.name, force: false });
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setConfirmAction({ namespace: ns.name, force: true });
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"
+                                                            >
+                                                                Force Delete
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <div className="px-4 py-2 text-xs text-gray-500">
+                                                            View only
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
