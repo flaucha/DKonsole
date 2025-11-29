@@ -111,7 +111,7 @@ const ClusterOverview = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatCard
                         icon={Server}
-                        label="Total Nodes"
+                        label="Worker Nodes"
                         value={clusterStats.totalNodes}
                         color="bg-blue-600"
                     />
