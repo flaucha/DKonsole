@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/go-ldap/ldap/v3"
 
@@ -15,7 +16,9 @@ import (
 
 // Service provides business logic for LDAP operations
 type Service struct {
-	repo Repository
+	repo   Repository
+	client *LDAPClient
+	mu     sync.RWMutex
 }
 
 // GetConfig returns the LDAP configuration (for internal use)
@@ -28,6 +31,67 @@ func NewService(repo Repository) *Service {
 	return &Service{
 		repo: repo,
 	}
+}
+
+// initializeClient initializes or updates the LDAP client with current config
+func (s *Service) initializeClient(ctx context.Context) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	config, err := s.repo.GetConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get LDAP config: %w", err)
+	}
+
+	if !config.Enabled {
+		// Close existing client if disabled
+		if s.client != nil {
+			s.client.Close()
+			s.client = nil
+		}
+		return nil
+	}
+
+	// If client exists and config hasn't changed, reuse it
+	if s.client != nil {
+		// Update config if needed
+		if err := s.client.UpdateConfig(config); err != nil {
+			utils.LogWarn("Failed to update LDAP client config, recreating", map[string]interface{}{
+				"error": err.Error(),
+			})
+			s.client.Close()
+			s.client = nil
+		} else {
+			return nil
+		}
+	}
+
+	// Create new client
+	client, err := NewLDAPClient(config)
+	if err != nil {
+		return fmt.Errorf("failed to create LDAP client: %w", err)
+	}
+
+	s.client = client
+	return nil
+}
+
+// getClient gets or initializes the LDAP client
+func (s *Service) getClient(ctx context.Context) (*LDAPClient, error) {
+	s.mu.RLock()
+	client := s.client
+	s.mu.RUnlock()
+
+	if client == nil {
+		if err := s.initializeClient(ctx); err != nil {
+			return nil, err
+		}
+		s.mu.RLock()
+		client = s.client
+		s.mu.RUnlock()
+	}
+
+	return client, nil
 }
 
 // TestConnectionRequest represents a request to test LDAP connection
@@ -57,24 +121,32 @@ type UpdateCredentialsRequest struct {
 
 // TestConnection tests the LDAP connection with provided credentials
 func (s *Service) TestConnection(ctx context.Context, req TestConnectionRequest) error {
-	// Connect to LDAP server
-	conn, err := ldap.DialURL(req.URL)
-	if err != nil {
-		return fmt.Errorf("failed to connect to LDAP server: %w", err)
+	// Create a temporary config for testing
+	testConfig := &models.LDAPConfig{
+		URL:               req.URL,
+		BaseDN:            req.BaseDN,
+		UserDN:            req.UserDN,
+		InsecureSkipVerify: false, // Default to secure for testing
 	}
-	defer conn.Close()
+
+	// Create temporary client for testing
+	client, err := NewLDAPClient(testConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create LDAP client: %w", err)
+	}
+	defer client.Close()
+
+	// Get connection from pool
+	repo, err := NewLDAPClientRepository(client)
+	if err != nil {
+		return fmt.Errorf("failed to get LDAP connection: %w", err)
+	}
+	defer repo.Close()
 
 	// Determine bind DN: if username contains "=", it's already a DN, otherwise construct it
-	var bindDN string
-	if strings.Contains(req.Username, "=") {
-		// Username is already a full DN
-		bindDN = req.Username
-	} else {
-		// Construct DN from username, userDN attribute, and baseDN
-		bindDN = fmt.Sprintf("%s=%s,%s", req.UserDN, req.Username, req.BaseDN)
-	}
+	bindDN := buildBindDN(req.Username, testConfig)
 
-	if err := conn.Bind(bindDN, req.Password); err != nil {
+	if err := repo.Bind(ctx, bindDN, req.Password); err != nil {
 		return fmt.Errorf("failed to bind to LDAP server: %w", err)
 	}
 
@@ -125,15 +197,32 @@ func (s *Service) UpdateConfigHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Warn if InsecureSkipVerify is enabled
+	if req.Config.InsecureSkipVerify {
+		utils.LogWarn("LDAP InsecureSkipVerify enabled - TLS certificate verification is disabled", map[string]interface{}{
+			"url": req.Config.URL,
+		})
+	}
+
 	// Update in repository
 	if err := s.repo.UpdateConfig(r.Context(), &req.Config); err != nil {
 		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to update LDAP config: %v", err))
 		return
 	}
 
+	// Reinitialize client with new config
+	if err := s.initializeClient(r.Context()); err != nil {
+		utils.LogWarn("Failed to reinitialize LDAP client after config update", map[string]interface{}{
+			"error": err.Error(),
+		})
+		// Don't fail the request, just log the warning
+	}
+
 	utils.LogInfo("LDAP config updated", map[string]interface{}{
-		"enabled": req.Config.Enabled,
-		"url":     req.Config.URL,
+		"enabled":            req.Config.Enabled,
+		"url":                req.Config.URL,
+		"insecureSkipVerify": req.Config.InsecureSkipVerify,
+		"hasCACert":          req.Config.CACert != "",
 	})
 
 	utils.JSONResponse(w, http.StatusOK, map[string]string{
@@ -413,24 +502,22 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 		"service_username": serviceUsername,
 	})
 
-	// Connect to LDAP server
-	conn, err := ldap.DialURL(config.URL)
+	// Get or initialize client
+	client, err := s.getClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to LDAP server: %w", err)
+		return nil, fmt.Errorf("failed to get LDAP client: %w", err)
 	}
-	defer conn.Close()
+
+	// Get connection from pool
+	repo, err := NewLDAPClientRepository(client)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get LDAP connection: %w", err)
+	}
+	defer repo.Close()
 
 	// Bind with service account credentials
-	// Determine bind DN: if serviceUsername contains "=", it's already a DN, otherwise construct it
-	var bindDN string
-	if strings.Contains(serviceUsername, "=") {
-		// Service username is already a full DN
-		bindDN = serviceUsername
-	} else {
-		// Construct DN from service username, userDN attribute, and baseDN
-		bindDN = fmt.Sprintf("%s=%s,%s", config.UserDN, serviceUsername, config.BaseDN)
-	}
-	if err := conn.Bind(bindDN, servicePassword); err != nil {
+	bindDN := buildBindDN(serviceUsername, config)
+	if err := repo.Bind(ctx, bindDN, servicePassword); err != nil {
 		return nil, fmt.Errorf("failed to bind to LDAP server: %w", err)
 	}
 
@@ -445,29 +532,14 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 		})
 	} else {
 		// Search for user first to get the full DN
-		userSearchFilter := fmt.Sprintf("(%s=%s)", config.UserDN, username)
-		if config.UserFilter != "" {
-			userSearchFilter = fmt.Sprintf("(&(%s=%s)%s)", config.UserDN, username, config.UserFilter)
-		}
-		userSearchRequest := ldap.NewSearchRequest(
-			config.BaseDN,
-			ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-			userSearchFilter,
-			[]string{"dn"},
-			nil,
-		)
-		userSr, err := conn.Search(userSearchRequest)
-		if err != nil || len(userSr.Entries) == 0 {
-			// Fallback: construct DN from username, userDN attribute, and baseDN
-			userDN = fmt.Sprintf("%s=%s,%s", config.UserDN, username, config.BaseDN)
-			utils.LogWarn("User not found, using constructed DN", map[string]interface{}{
+		userDN, err = searchUserDN(ctx, repo, config, username)
+		if err != nil {
+			utils.LogWarn("Failed to search for user DN, using constructed DN", map[string]interface{}{
 				"username": username,
-				"userDN":   userDN,
-				"error":    err,
+				"error":    err.Error(),
 			})
+			userDN = buildBindDN(username, config)
 		} else {
-			// Use the found DN
-			userDN = userSr.Entries[0].DN
 			utils.LogInfo("Found user DN", map[string]interface{}{
 				"username": username,
 				"userDN":   userDN,
@@ -487,29 +559,21 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 		"scope":    "base",
 	})
 	// Request all attributes first to see what's available
-	userSearchRequest := ldap.NewSearchRequest(
-		userDN,
-		ldap.ScopeBaseObject, ldap.NeverDerefAliases, 0, 0, false,
-		"(objectClass=*)",
-		[]string{"*"}, // Request all attributes to see what's available
-		nil,
-	)
-
-	userSr, err := conn.Search(userSearchRequest)
+	entries, err := repo.Search(ctx, userDN, ldap.ScopeBaseObject, "(objectClass=*)", []string{"*"})
 	if err != nil {
 		utils.LogWarn("Failed to search user for memberOf", map[string]interface{}{
 			"username": username,
 			"userDN":   userDN,
 			"error":    err.Error(),
 		})
-	} else if len(userSr.Entries) == 0 {
+	} else if len(entries) == 0 {
 		utils.LogWarn("User entry not found when searching for memberOf", map[string]interface{}{
 			"username": username,
 			"userDN":   userDN,
 		})
 	} else {
 		// Log all available attributes for debugging
-		entry := userSr.Entries[0]
+		entry := entries[0]
 		allAttrs := entry.Attributes
 		attrNames := make([]string, 0, len(allAttrs))
 		for _, attr := range allAttrs {
@@ -587,15 +651,7 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 		"searchFilter": searchFilter,
 	})
 
-	searchRequest := ldap.NewSearchRequest(
-		config.GroupDN,
-		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-		searchFilter,
-		[]string{"cn"},
-		nil,
-	)
-
-	sr, err := conn.Search(searchRequest)
+	fallbackEntries, err := repo.Search(ctx, config.GroupDN, ldap.ScopeWholeSubtree, searchFilter, []string{"cn"})
 	if err != nil {
 		utils.LogWarn("Fallback search failed", map[string]interface{}{
 			"username": username,
@@ -608,11 +664,11 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 	utils.LogInfo("Fallback search completed", map[string]interface{}{
 		"username":    username,
 		"userDN":      userDN,
-		"entry_count": len(sr.Entries),
+		"entry_count": len(fallbackEntries),
 	})
 
-	groups := make([]string, 0, len(sr.Entries))
-	for _, entry := range sr.Entries {
+	groups := make([]string, 0, len(fallbackEntries))
+	for _, entry := range fallbackEntries {
 		if cn := entry.GetAttributeValue("cn"); cn != "" {
 			groups = append(groups, cn)
 		}

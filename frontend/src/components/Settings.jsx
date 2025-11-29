@@ -1145,6 +1145,52 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
                                         </p>
                                     </div>
 
+                                    {/* TLS Configuration */}
+                                    <div className="border-t border-gray-700 pt-4">
+                                        <h3 className="text-md font-semibold text-white mb-3 flex items-center">
+                                            <Lock size={18} className="mr-2 text-yellow-400" /> TLS Configuration
+                                        </h3>
+
+                                        <div className="flex items-center space-x-3 mb-4">
+                                            <input
+                                                type="checkbox"
+                                                id="ldap-insecure-skip-verify"
+                                                checked={config.insecureSkipVerify || false}
+                                                onChange={(e) => setConfig({ ...config, insecureSkipVerify: e.target.checked })}
+                                                className="w-4 h-4 text-yellow-600 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500"
+                                            />
+                                            <label htmlFor="ldap-insecure-skip-verify" className="text-gray-300">
+                                                Skip TLS Certificate Verification
+                                            </label>
+                                        </div>
+                                        {config.insecureSkipVerify && (
+                                            <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-500/50 rounded-lg">
+                                                <div className="flex items-start space-x-2">
+                                                    <AlertCircle size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
+                                                    <p className="text-xs text-yellow-400">
+                                                        <strong>Warning:</strong> This option disables TLS certificate verification.
+                                                        This should only be used in development or with self-signed certificates.
+                                                        It makes the connection vulnerable to man-in-the-middle attacks.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-400 mb-2">CA Certificate (PEM format, optional)</label>
+                                            <textarea
+                                                value={config.caCert || ''}
+                                                onChange={(e) => setConfig({ ...config, caCert: e.target.value })}
+                                                placeholder="-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+                                                rows={6}
+                                                className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-mono text-xs"
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Paste the CA certificate in PEM format for TLS verification. Leave empty to use system CA certificates.
+                                            </p>
+                                        </div>
+                                    </div>
+
                                     <button
                                         onClick={handleSaveConfig}
                                         disabled={loading}
