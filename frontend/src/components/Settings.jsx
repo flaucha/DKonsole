@@ -78,16 +78,20 @@ const Settings = () => {
 
     return (
         <div className="p-6 max-w-5xl mx-auto">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-6 h-10">
                 <h1 className="text-2xl font-bold text-white">Settings</h1>
-                {activeTab === 'appearance' && (
-                    <button
-                        onClick={handleResetDefaults}
-                        className="flex items-center px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors"
-                    >
-                        <Trash2 size={14} className="mr-2" /> Reset Defaults
-                    </button>
-                )}
+                <div className="h-8">
+                    {activeTab === 'appearance' ? (
+                        <button
+                            onClick={handleResetDefaults}
+                            className="flex items-center px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+                        >
+                            <Trash2 size={14} className="mr-2" /> Reset Defaults
+                        </button>
+                    ) : (
+                        <div className="h-8"></div>
+                    )}
+                </div>
             </div>
 
             <div className="flex space-x-1 border-b border-gray-700 mb-6 relative">
