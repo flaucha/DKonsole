@@ -389,6 +389,13 @@ func (s *Service) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		// Log claims for debugging
+		utils.LogInfo("AuthMiddleware: extracted claims from JWT", map[string]interface{}{
+			"username":   claims.Username,
+			"role":       claims.Role,
+			"permissions": claims.Permissions,
+		})
+
 		ctx := context.WithValue(r.Context(), userContextKey, claims)
 		next(w, r.WithContext(ctx))
 	}

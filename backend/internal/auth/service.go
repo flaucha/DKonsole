@@ -184,6 +184,14 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 
 	// Generate JWT
 	expirationTime := time.Now().Add(24 * time.Hour)
+
+	// Log permissions before creating JWT
+	utils.LogInfo("Login: creating JWT with permissions", map[string]interface{}{
+		"username":   req.Username,
+		"role":       role,
+		"permissions": permissions,
+	})
+
 	claims := &AuthClaims{
 		Claims: models.Claims{
 			Username:    req.Username,
@@ -200,6 +208,13 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
+
+	// Log token creation success
+	utils.LogInfo("Login: JWT token created successfully", map[string]interface{}{
+		"username":   req.Username,
+		"role":       role,
+		"permissions": permissions,
+	})
 
 	return &LoginResult{
 		Response: LoginResponse{
