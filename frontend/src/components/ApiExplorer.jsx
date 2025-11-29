@@ -15,7 +15,7 @@ const ApiExplorer = ({ namespace }) => {
     const [objects, setObjects] = useState([]);
     const [loadingApis, setLoadingApis] = useState(false);
     const [loadingObjects, setLoadingObjects] = useState(false);
-    const [scopeFilter, setScopeFilter] = useState('namespaced'); // namespaced | cluster | all
+    const [scopeFilter] = useState('namespaced'); // Only namespaced resources allowed
     const [yamlResource, setYamlResource] = useState(null); // {name, namespace, kind}
     const [showSuggestions, setShowSuggestions] = useState(false);
     const searchRef = useRef(null);
@@ -43,7 +43,7 @@ const ApiExplorer = ({ namespace }) => {
             group: selected.group,
             version: selected.version,
             resource: selected.resource,
-            namespace: selected.namespaced ? namespace : '',
+            namespace: namespace || '',
             namespaced: selected.namespaced ? 'true' : 'false',
         });
         if (currentCluster) params.append('cluster', currentCluster);
@@ -145,28 +145,9 @@ const ApiExplorer = ({ namespace }) => {
                     </div>
 
                     <div className="bg-gray-800 border border-gray-700 rounded-md flex overflow-hidden text-sm shrink-0">
-                        <button
-                            onClick={() => setScopeFilter('namespaced')}
-                            className={`px-3 py-1.5 flex items-center space-x-1 ${scopeFilter === 'namespaced' ? 'bg-blue-900 text-blue-100' : 'text-gray-300 hover:bg-gray-700'}`}
-                            title="Show namespaced resources"
-                        >
-                            <MapPin size={14} /> <span className="hidden sm:inline">Namespaced</span>
-                        </button>
-                        <button
-                            onClick={() => setScopeFilter('cluster')}
-                            className={`px-3 py-1.5 flex items-center space-x-1 ${scopeFilter === 'cluster' ? 'bg-blue-900 text-blue-100' : 'text-gray-300 hover:bg-gray-700'}`}
-                            title="Show cluster-wide resources"
-                        >
-                            <Globe size={14} /> <span className="hidden sm:inline">Cluster</span>
-                        </button>
-                        <button
-                            onClick={() => setScopeFilter('all')}
-                            className={`px-3 py-1.5 flex items-center space-x-1 ${scopeFilter === 'all' ? 'bg-blue-900 text-blue-100' : 'text-gray-300 hover:bg-gray-700'}`}
-                            title="Show all resources"
-                        >
-                            <span className="hidden sm:inline">All</span>
-                            <span className="sm:hidden">All</span>
-                        </button>
+                        <div className="px-3 py-1.5 flex items-center space-x-1 bg-blue-900 text-blue-100">
+                            <MapPin size={14} /> <span className="hidden sm:inline">Namespaced Only</span>
+                        </div>
                     </div>
                 </div>
             </div>

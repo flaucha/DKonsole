@@ -8,9 +8,9 @@ import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowC
 import { useHelmReleases } from '../hooks/useHelmReleases';
 import { parseErrorResponse, parseError } from '../utils/errorParser';
 
-const HelmChartManager = () => {
+const HelmChartManager = ({ namespace }) => {
     const { currentCluster } = useSettings();
-    const { authFetch } = useAuth();
+    const { authFetch, user } = useAuth();
     const [expandedId, setExpandedId] = useState(null);
     const [sortField, setSortField] = useState('name');
     const [sortDirection, setSortDirection] = useState('asc');
@@ -59,7 +59,20 @@ const HelmChartManager = () => {
         return sortDirection === 'asc' ? '↑' : '↓';
     };
 
+    // Helper to check if user has edit or admin permission for a namespace
+    const hasEditPermission = (ns) => {
+        if (!user || !user.permissions) return false;
+        if (user.role === 'admin') return true; // Core admin has full access
+        const permission = user.permissions[ns];
+        return permission === 'edit' || permission === 'admin';
+    };
+
+    // Filter releases by namespace and search text
     const filteredReleases = releases.filter(release => {
+        // Only show releases in the user's namespace
+        if (namespace && release.namespace !== namespace) {
+            return false;
+        }
         if (!filter) return true;
         const searchText = filter.toLowerCase();
         return (
@@ -261,13 +274,15 @@ const HelmChartManager = () => {
                     </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                    <button
-                        onClick={() => setInstallModalOpen(true)}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm transition-colors flex items-center"
-                    >
-                        <Download size={14} className="mr-2" />
-                        Install Chart
-                    </button>
+                    {namespace && hasEditPermission(namespace) && (
+                        <button
+                            onClick={() => setInstallModalOpen(true)}
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm transition-colors flex items-center"
+                        >
+                            <Download size={14} className="mr-2" />
+                            Install Chart
+                        </button>
+                    )}
                     <button
                         onClick={() => refetch()}
                         className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
@@ -350,32 +365,41 @@ const HelmChartManager = () => {
                                         {menuOpen === releaseKey && (
                                             <div className="absolute right-0 mt-1 w-40 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
                                                 <div className="flex flex-col">
-                                                    <button
-                                                        onClick={() => {
-                                                            setUpgradeRelease(release);
-                                                            setUpgradeForm({
-                                                                chart: release.chart || '',
-                                                                version: '',
-                                                                repo: '',
-                                                                valuesYaml: ''
-                                                            });
-                                                            setMenuOpen(null);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2 text-sm text-blue-300 hover:bg-blue-900/40 flex items-center"
-                                                    >
-                                                        <ArrowUp size={14} className="mr-2" />
-                                                        Upgrade
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setConfirmAction({ release });
-                                                            setMenuOpen(null);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40 flex items-center"
-                                                    >
-                                                        <Trash2 size={14} className="mr-2" />
-                                                        Uninstall
-                                                    </button>
+                                                    {hasEditPermission(release.namespace) && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setUpgradeRelease(release);
+                                                                    setUpgradeForm({
+                                                                        chart: release.chart || '',
+                                                                        version: '',
+                                                                        repo: '',
+                                                                        valuesYaml: ''
+                                                                    });
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-blue-300 hover:bg-blue-900/40 flex items-center"
+                                                            >
+                                                                <ArrowUp size={14} className="mr-2" />
+                                                                Upgrade
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setConfirmAction({ release });
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40 flex items-center"
+                                                            >
+                                                                <Trash2 size={14} className="mr-2" />
+                                                                Uninstall
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    {!hasEditPermission(release.namespace) && (
+                                                        <div className="px-4 py-2 text-xs text-gray-500">
+                                                            View only
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}

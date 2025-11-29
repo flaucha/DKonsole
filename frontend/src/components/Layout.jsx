@@ -239,21 +239,9 @@ const Layout = ({ children, headerContent }) => {
                         </SubMenu>
 
                         <SidebarItem
-                            icon={Server}
-                            label="Nodes"
-                            to={getPath('Nodes')}
-                        />
-
-                        <SidebarItem
                             icon={Database}
                             label="Namespaces"
                             to="/dashboard/namespaces"
-                        />
-
-                        <SidebarItem
-                            icon={Gauge}
-                            label="Resource Quotas"
-                            to="/dashboard/resource-quotas"
                         />
 
                         <SidebarItem

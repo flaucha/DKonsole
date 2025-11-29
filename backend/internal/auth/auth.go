@@ -331,10 +331,15 @@ func (s *Service) MeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Write JSON response (HTTP layer)
-	utils.JSONResponse(w, http.StatusOK, map[string]string{
+	response := map[string]interface{}{
 		"username": claims.Username,
 		"role":     claims.Role,
-	})
+	}
+	// Include permissions if available
+	if claims.Permissions != nil {
+		response["permissions"] = claims.Permissions
+	}
+	utils.JSONResponse(w, http.StatusOK, response)
 }
 
 // AuthMiddleware is an HTTP middleware that protects routes by requiring valid JWT authentication.

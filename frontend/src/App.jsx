@@ -109,7 +109,7 @@ const Dashboard = () => {
                     } />
                     <Route path="helm-charts" element={
                         <Suspense fallback={<Loading message="Loading Helm charts..." />}>
-                            <HelmChartManager />
+                            <HelmChartManager namespace={selectedNamespace} />
                         </Suspense>
                     } />
                     {/* Fallback */}
