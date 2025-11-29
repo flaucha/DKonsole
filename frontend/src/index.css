@@ -240,22 +240,6 @@
   --color-blue-600: 160 110 60;
   --color-blue-500: 180 130 80;
   --color-blue-400: 200 150 100;
-}/* Cyberpunk Theme (Neon/Black) */
-  --color-gray-900: 0 0 0;
-  --color-gray-800: 15 15 15;
-  --color-gray-750: 25 25 25;
-  --color-gray-700: 40 40 40;
-  --color-gray-600: 255 255 0; /* Yellow */
-  --color-gray-500: 0 255 255; /* Cyan */
-  --color-gray-400: 255 0 255; /* Magenta */
-  --color-gray-300: 255 255 255;
-  --color-gray-200: 240 240 240;
-  --color-gray-100: 255 255 255;
-
-  --color-blue-700: 200 200 0;
-  --color-blue-600: 220 220 0;
-  --color-blue-500: 255 230 0; /* Bright Yellow */
-  --color-blue-400: 0 255 255; /* Cyan */
 }
 
 body {
