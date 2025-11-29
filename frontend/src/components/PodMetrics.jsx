@@ -64,7 +64,6 @@ const PodMetrics = ({ pod, namespace }) => {
                     throw new Error(errorText || 'Failed to fetch metrics');
                 }
                 const metricsData = await response.json();
-                logger.info('Metrics data received:', metricsData);
 
                 // Transform data for recharts
                 const transformedData = [];

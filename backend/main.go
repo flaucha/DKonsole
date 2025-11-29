@@ -144,13 +144,6 @@ func main() {
 		settingsRepo := settings.NewRepository(clientset, secretName)
 		if url, err := settingsRepo.GetPrometheusURL(context.Background()); err == nil && url != "" {
 			prometheusURL = url
-			utils.LogInfo("Prometheus URL loaded from ConfigMap", map[string]interface{}{
-				"url": prometheusURL,
-			})
-		} else if prometheusURL != "" {
-			utils.LogInfo("Prometheus URL loaded from environment variable", map[string]interface{}{
-				"url": prometheusURL,
-			})
 		}
 	}
 

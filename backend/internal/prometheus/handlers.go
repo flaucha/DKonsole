@@ -37,13 +37,8 @@ func (h *HTTPHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 	url := h.prometheusURL
 	h.mu.RUnlock()
 
-	enabled := url != ""
-	utils.LogDebug("Prometheus status requested", map[string]interface{}{
-		"prometheus_url": url,
-		"enabled":        enabled,
-	})
 	status := StatusResponse{
-		Enabled: enabled,
+		Enabled: url != "",
 		URL:     url,
 	}
 	utils.JSONResponse(w, http.StatusOK, status)
@@ -62,12 +57,6 @@ func (h *HTTPHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	repo := h.repo
 	promService := h.promService
 	h.mu.RUnlock()
-
-	utils.LogDebug("GetPrometheusMetrics request", map[string]interface{}{
-		"prometheus_url": url,
-		"deployment":     deployment,
-		"namespace":      namespace,
-	})
 
 	if url == "" {
 		utils.LogWarn("Prometheus URL not configured", nil)
@@ -130,12 +119,6 @@ func (h *HTTPHandler) GetPodMetrics(w http.ResponseWriter, r *http.Request) {
 	repo := h.repo
 	promService := h.promService
 	h.mu.RUnlock()
-
-	utils.LogDebug("GetPrometheusPodMetrics request", map[string]interface{}{
-		"prometheus_url": url,
-		"pod":            podName,
-		"namespace":      namespace,
-	})
 
 	if url == "" {
 		utils.ErrorResponse(w, http.StatusServiceUnavailable, "Prometheus URL not configured")
@@ -201,16 +184,9 @@ func (h *HTTPHandler) UpdateURL(newURL string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	utils.LogInfo("Updating Prometheus URL", map[string]interface{}{
-		"old_url": h.prometheusURL,
-		"new_url": newURL,
-	})
 	h.prometheusURL = newURL
 	h.repo = NewHTTPPrometheusRepository(newURL)
 	h.promService = NewService(h.repo)
-	utils.LogInfo("Prometheus URL updated successfully", map[string]interface{}{
-		"url": newURL,
-	})
 }
 
 // GetClusterOverview handles requests for cluster overview metrics
@@ -221,10 +197,6 @@ func (h *HTTPHandler) GetClusterOverview(w http.ResponseWriter, r *http.Request)
 	url := h.prometheusURL
 	promService := h.promService
 	h.mu.RUnlock()
-
-	utils.LogDebug("GetPrometheusClusterOverview request", map[string]interface{}{
-		"prometheus_url": url,
-	})
 
 	if url == "" {
 		utils.ErrorResponse(w, http.StatusServiceUnavailable, "Prometheus URL not configured")
