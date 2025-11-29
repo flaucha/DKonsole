@@ -21,6 +21,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"mime"
 	"net/http"
@@ -41,6 +42,7 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/api"
 	"github.com/flaucha/DKonsole/backend/internal/auth"
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
+	"github.com/flaucha/DKonsole/backend/internal/settings"
 	"github.com/flaucha/DKonsole/backend/internal/health"
 	"github.com/flaucha/DKonsole/backend/internal/helm"
 	"github.com/flaucha/DKonsole/backend/internal/k8s"
@@ -128,12 +130,29 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize auth service with Kubernetes client
+	// Secret name follows Helm chart convention: {release-name}-auth, default: dkonsole-auth
+	secretName := os.Getenv("AUTH_SECRET_NAME")
+	if secretName == "" {
+		secretName = "dkonsole-auth"
+	}
+
+	// Try to get Prometheus URL from ConfigMap first, then fallback to environment variable
+	prometheusURL := os.Getenv("PROMETHEUS_URL")
+	if clientset != nil {
+		// Try to read from ConfigMap
+		settingsRepo := settings.NewRepository(clientset, secretName)
+		if url, err := settingsRepo.GetPrometheusURL(context.Background()); err == nil && url != "" {
+			prometheusURL = url
+		}
+	}
+
 	handlersModel := &models.Handlers{
 		Clients:       make(map[string]*kubernetes.Clientset),
 		Dynamics:      make(map[string]dynamic.Interface),
 		Metrics:       make(map[string]*metricsv.Clientset),
 		RESTConfigs:   make(map[string]*rest.Config),
-		PrometheusURL: os.Getenv("PROMETHEUS_URL"),
+		PrometheusURL: prometheusURL,
 	}
 	handlersModel.Clients["default"] = clientset
 	handlersModel.Dynamics["default"] = dynamicClient
@@ -142,12 +161,6 @@ func main() {
 		handlersModel.Metrics["default"] = metricsClient
 	}
 
-	// Initialize auth service with Kubernetes client
-	// Secret name follows Helm chart convention: {release-name}-auth, default: dkonsole-auth
-	secretName := os.Getenv("AUTH_SECRET_NAME")
-	if secretName == "" {
-		secretName = "dkonsole-auth"
-	}
 	authService, err := auth.NewService(clientset, secretName)
 	if err != nil {
 		utils.LogError(err, "Failed to initialize auth service", nil)
@@ -161,6 +174,8 @@ func main() {
 	podService := pod.NewService(handlersModel, clusterService)
 	prometheusService := prometheus.NewHTTPHandler(handlersModel.PrometheusURL, clusterService)
 	logoService := logo.NewService("./data")
+	settingsFactory := settings.NewServiceFactory(clientset, handlersModel, secretName, prometheusService)
+	settingsService := settingsFactory.NewService()
 
 	mux := http.NewServeMux()
 	// Helper for authenticated routes
@@ -294,6 +309,20 @@ func main() {
 	mux.HandleFunc("/api/prometheus/metrics", secure(prometheusService.GetMetrics))
 	mux.HandleFunc("/api/prometheus/pod-metrics", secure(prometheusService.GetPodMetrics))
 	mux.HandleFunc("/api/prometheus/cluster-overview", secure(prometheusService.GetClusterOverview))
+
+	// Settings handlers - using services
+	mux.HandleFunc("/api/settings/prometheus/url", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			secure(settingsService.GetPrometheusURLHandler)(w, r)
+		} else if r.Method == http.MethodPut {
+			secure(settingsService.UpdatePrometheusURLHandler)(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// Auth handlers - password change
+	mux.HandleFunc("/api/auth/change-password", secure(authService.ChangePasswordHandler))
 
 	// Serve static files from frontend build
 	staticDir := "./static"

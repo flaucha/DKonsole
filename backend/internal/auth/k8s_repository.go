@@ -152,3 +152,31 @@ func (r *K8sUserRepository) CreateSecret(ctx context.Context, username, password
 
 	return nil
 }
+
+// UpdatePassword updates the admin password hash in the Kubernetes secret
+func (r *K8sUserRepository) UpdatePassword(ctx context.Context, passwordHash string) error {
+	// Get existing secret
+	secret, err := r.client.CoreV1().Secrets(r.namespace).Get(ctx, r.secretName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get secret: %w", err)
+	}
+
+	// Update password hash
+	if secret.StringData == nil {
+		secret.StringData = make(map[string]string)
+	}
+	secret.StringData["admin-password-hash"] = passwordHash
+
+	// Update secret
+	_, err = r.client.CoreV1().Secrets(r.namespace).Update(ctx, secret, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to update secret: %w", err)
+	}
+
+	utils.LogInfo("Password updated in Kubernetes secret", map[string]interface{}{
+		"secret_name": r.secretName,
+		"namespace":   r.namespace,
+	})
+
+	return nil
+}

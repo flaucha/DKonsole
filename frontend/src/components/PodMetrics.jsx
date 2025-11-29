@@ -58,6 +58,11 @@ const PodMetrics = ({ pod, namespace }) => {
                 if (currentCluster) params.append('cluster', currentCluster);
 
                 const response = await authFetch(`/api/prometheus/pod-metrics?${params.toString()}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    logger.error('Failed to fetch metrics:', errorText);
+                    throw new Error(errorText || 'Failed to fetch metrics');
+                }
                 const metricsData = await response.json();
 
                 // Transform data for recharts
