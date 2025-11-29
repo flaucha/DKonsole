@@ -135,22 +135,29 @@ func (s *Service) UpdateGroupsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate groups
-	for _, group := range req.Groups.Groups {
+	// Validate groups and filter out empty permissions
+	for i := range req.Groups.Groups {
+		group := &req.Groups.Groups[i]
 		if group.Name == "" {
 			utils.ErrorResponse(w, http.StatusBadRequest, "group name cannot be empty")
 			return
 		}
+
+		// Filter out permissions with empty namespace (incomplete permissions)
+		validPermissions := make([]models.LDAPGroupPermission, 0)
 		for _, perm := range group.Permissions {
 			if perm.Namespace == "" {
-				utils.ErrorResponse(w, http.StatusBadRequest, "namespace cannot be empty")
-				return
+				// Skip empty permissions (user hasn't selected a namespace yet)
+				continue
 			}
 			if perm.Permission != "view" && perm.Permission != "edit" && perm.Permission != "admin" {
 				utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("invalid permission: %s. Must be 'view', 'edit', or 'admin'", perm.Permission))
 				return
 			}
+			validPermissions = append(validPermissions, perm)
 		}
+		// Update group with filtered permissions
+		group.Permissions = validPermissions
 	}
 
 	// Update in repository
@@ -168,7 +175,7 @@ func (s *Service) UpdateGroupsHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetCredentialsHandler returns whether credentials are set (but not the actual credentials)
+// GetCredentialsHandler returns whether credentials are set and the username (but not the password)
 func (s *Service) GetCredentialsHandler(w http.ResponseWriter, r *http.Request) {
 	username, _, err := s.repo.GetCredentials(r.Context())
 	if err != nil {
@@ -178,6 +185,7 @@ func (s *Service) GetCredentialsHandler(w http.ResponseWriter, r *http.Request) 
 
 	utils.JSONResponse(w, http.StatusOK, map[string]interface{}{
 		"configured": username != "",
+		"username":   username,
 	})
 }
 
@@ -192,6 +200,30 @@ func (s *Service) UpdateCredentialsHandler(w http.ResponseWriter, r *http.Reques
 	if req.Username == "" {
 		utils.ErrorResponse(w, http.StatusBadRequest, "username cannot be empty")
 		return
+	}
+
+	// If password is empty, get existing password to keep it
+	if req.Password == "" {
+		existingUsername, existingPassword, err := s.repo.GetCredentials(r.Context())
+		if err != nil {
+			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to get existing credentials: %v", err))
+			return
+		}
+
+		// If username unchanged and password empty, nothing to update
+		if existingUsername == req.Username {
+			utils.JSONResponse(w, http.StatusOK, map[string]string{
+				"message": "No changes to save",
+			})
+			return
+		}
+
+		// Username changed but password empty - use existing password
+		if existingPassword == "" {
+			utils.ErrorResponse(w, http.StatusBadRequest, "password required for new credentials")
+			return
+		}
+		req.Password = existingPassword
 	}
 
 	// Update in repository
