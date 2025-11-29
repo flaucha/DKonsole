@@ -480,6 +480,19 @@ const Settings = () => {
                 </div>
             )}
 
+            {error && (
+                <div className="flex items-center text-red-400 text-sm bg-red-900/20 border border-red-500/50 rounded-lg p-3">
+                    <AlertCircle size={16} className="mr-2" />
+                    {error}
+                </div>
+            )}
+            {success && (
+                <div className="flex items-center text-green-400 text-sm bg-green-900/20 border border-green-500/50 rounded-lg p-3">
+                    <Check size={16} className="mr-2" />
+                    {success}
+                </div>
+            )}
+            </div>
         </div>
     );
 };
