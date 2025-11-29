@@ -61,7 +61,34 @@ const SubMenu = ({ isOpen, children }) => (
 
 const Layout = ({ children, headerContent }) => {
     const { currentCluster } = useSettings();
-    const { logout, authFetch } = useAuth();
+    const { logout, authFetch, user } = useAuth();
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [checkingAdmin, setCheckingAdmin] = useState(true);
+
+    useEffect(() => {
+        // Check if user is admin (core admin or LDAP admin group member)
+        const checkAdmin = async () => {
+            try {
+                const res = await authFetch('/api/settings/prometheus/url');
+                if (res.ok || res.status === 404) {
+                    setIsAdmin(true);
+                } else if (res.status === 403) {
+                    setIsAdmin(false);
+                } else {
+                    setIsAdmin(false);
+                }
+            } catch (err) {
+                setIsAdmin(false);
+            } finally {
+                setCheckingAdmin(false);
+            }
+        };
+        if (user) {
+            checkAdmin();
+        } else {
+            setCheckingAdmin(false);
+        }
+    }, [authFetch, user]);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [expandedMenus, setExpandedMenus] = useState({
         workloads: true,
