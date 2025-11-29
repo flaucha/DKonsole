@@ -26,6 +26,7 @@ import { useWorkloads } from '../hooks/useWorkloads';
 import { formatDateTime } from '../utils/dateUtils';
 import { getExpandableRowClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 import { getStatusBadgeClass } from '../utils/statusBadge';
+import { canEdit, isAdmin } from '../utils/permissions';
 
 // Import extracted detail components
 import NodeDetails from './details/NodeDetails';
@@ -359,7 +360,7 @@ const WorkloadList = ({ namespace, kind }) => {
             <div className="p-4 text-gray-500 italic">
                 No details available.
                 <div className="flex justify-end mt-4">
-                    <EditYamlButton onClick={onEditYAML} />
+                    <EditYamlButton onClick={onEditYAML} namespace={res.namespace} />
                 </div>
             </div>
         );
@@ -604,24 +605,29 @@ const WorkloadList = ({ namespace, kind }) => {
                                         {menuOpen === res.uid && (
                                             <div className="absolute right-0 mt-1 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
                                                 <div className="flex flex-col">
-                                                    <button
-                                                        onClick={() => {
-                                                            setConfirmAction({ res, force: false });
-                                                            setMenuOpen(null);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setConfirmAction({ res, force: true });
-                                                            setMenuOpen(null);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"
-                                                    >
-                                                        Force Delete
-                                                    </button>
+                                                    {/* Only show delete for pods if user has edit permission or is admin */}
+                                                    {(isAdmin(user) || canEdit(user, res.namespace)) && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setConfirmAction({ res, force: false });
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setConfirmAction({ res, force: true });
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"
+                                                            >
+                                                                Force Delete
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}

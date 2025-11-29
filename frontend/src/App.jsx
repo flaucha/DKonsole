@@ -9,6 +9,7 @@ import { SettingsProvider } from './context/SettingsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Setup from './components/Setup';
+import { canEdit, isAdmin } from './utils/permissions';
 
 // Lazy load large components for code splitting
 const WorkloadList = lazy(() => import('./components/WorkloadList'));
@@ -50,6 +51,7 @@ const Dashboard = () => {
     });
     const [showImporter, setShowImporter] = useState(false);
     const location = useLocation();
+    const { user } = useAuth();
 
     // Save to localStorage when namespace changes
     useEffect(() => {
@@ -68,12 +70,15 @@ const Dashboard = () => {
                                 selected={selectedNamespace}
                                 onSelect={setSelectedNamespace}
                             />
-                            <button
-                                onClick={() => setShowImporter(true)}
-                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors border border-blue-500"
-                            >
-                                Import YAML
-                            </button>
+                            {/* Only show Import YAML if user has edit permission or is admin */}
+                            {(isAdmin(user) || canEdit(user, selectedNamespace)) && (
+                                <button
+                                    onClick={() => setShowImporter(true)}
+                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors border border-blue-500"
+                                >
+                                    Import YAML
+                                </button>
+                            )}
                         </div>
                     )
                 }

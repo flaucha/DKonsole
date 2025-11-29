@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, FileText } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { canEdit } from '../../utils/permissions';
 
 export const SmartImage = ({ image }) => {
     const [copied, setCopied] = useState(false);
@@ -137,12 +139,19 @@ export const DataSection = ({ data, isSecret = false }) => {
     );
 };
 
-export const EditYamlButton = ({ onClick }) => (
-    <button
-        onClick={onClick}
-        className="flex items-center px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-md border border-gray-600 text-xs transition-colors font-medium"
-    >
-        <FileText size={14} className="mr-1.5" />
-        Edit YAML
-    </button>
-);
+export const EditYamlButton = ({ onClick, namespace }) => {
+    const { user } = useAuth();
+    // Only show if user has edit permission or is admin
+    if (!canEdit(user, namespace)) {
+        return null;
+    }
+    return (
+        <button
+            onClick={onClick}
+            className="flex items-center px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-md border border-gray-600 text-xs transition-colors font-medium"
+        >
+            <FileText size={14} className="mr-1.5" />
+            Edit YAML
+        </button>
+    );
+};

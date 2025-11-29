@@ -98,7 +98,7 @@ const IngressDetails = ({ details, onEditYAML, namespace }) => {
                 </div>
             )}
             <div className="flex justify-end mt-4">
-                <EditYamlButton onClick={onEditYAML} />
+                <EditYamlButton onClick={onEditYAML} namespace={namespace} />
             </div>
         </div>
     );

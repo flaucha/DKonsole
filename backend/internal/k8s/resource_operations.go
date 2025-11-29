@@ -481,9 +481,12 @@ func (s *Service) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	// Create context
-	ctx, cancel := utils.CreateTimeoutContext()
-	defer cancel()
+	// Use request context (has user permissions)
+	ctx := r.Context()
+
+	// Parse YAML to check namespaces before importing
+	// We need to validate permissions for each resource's namespace
+	// For now, we'll validate during the import process in ImportService
 
 	// Get Clients
 	client, err := s.clusterService.GetClient(r)

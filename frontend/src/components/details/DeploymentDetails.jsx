@@ -76,7 +76,7 @@ const DeploymentDetails = ({ details, onScale, scaling, res, onEditYAML }) => {
                         </div>
                     </div>
                     <div className="flex justify-end mt-4">
-                        <EditYamlButton onClick={onEditYAML} />
+                        <EditYamlButton onClick={onEditYAML} namespace={res?.namespace} />
                     </div>
                 </>
             )}

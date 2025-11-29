@@ -21,7 +21,7 @@ export const ConfigMapDetails = ({ details, onEditYAML, resource, onDataSaved })
                         <Edit2 size={14} className="mr-1.5" />
                         Edit in place
                     </button>
-                    <EditYamlButton onClick={onEditYAML} />
+                    <EditYamlButton onClick={onEditYAML} namespace={resource?.namespace} />
                 </div>
             </div>
             {editingData && (
@@ -60,7 +60,7 @@ export const SecretDetails = ({ details, onEditYAML, resource, onDataSaved }) =>
                         <Edit2 size={14} className="mr-1.5" />
                         Edit in place
                     </button>
-                    <EditYamlButton onClick={onEditYAML} />
+                    <EditYamlButton onClick={onEditYAML} namespace={resource?.namespace} />
                 </div>
             </div>
             {editingData && (

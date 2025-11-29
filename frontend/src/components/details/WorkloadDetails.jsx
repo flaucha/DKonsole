@@ -39,7 +39,7 @@ export const JobDetails = ({ details, onEditYAML, namespace }) => {
                         <DetailRow label="Backoff Limit" value={details.backoffLimit} icon={AlertTriangle} />
                     </div>
                     <div className="flex justify-end mt-4">
-                        <EditYamlButton onClick={onEditYAML} />
+                        <EditYamlButton onClick={onEditYAML} namespace={namespace} />
                     </div>
                 </>
             )}
@@ -87,7 +87,7 @@ export const StatefulSetDetails = ({ details, onEditYAML, namespace }) => {
                         <DetailRow label="Update Strategy" value={details.updateStrategy?.type} icon={Layers} />
                     </div>
                     <div className="flex justify-end mt-4">
-                        <EditYamlButton onClick={onEditYAML} />
+                        <EditYamlButton onClick={onEditYAML} namespace={namespace} />
                     </div>
                 </>
             )}
@@ -120,7 +120,7 @@ export const DaemonSetDetails = ({ details, onEditYAML, namespace }) => {
                         <DetailRow label="Misscheduled" value={details.misscheduled} icon={AlertTriangle} />
                     </div>
                     <div className="flex justify-end mt-4">
-                        <EditYamlButton onClick={onEditYAML} />
+                        <EditYamlButton onClick={onEditYAML} namespace={namespace} />
                     </div>
                 </>
             )}

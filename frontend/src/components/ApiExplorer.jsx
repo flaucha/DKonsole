@@ -92,10 +92,12 @@ const ApiExplorer = ({ namespace }) => {
                 const matchesText = `${a.kind}/${a.resource}`.toLowerCase().includes(q);
                 const matchesScope =
                     scopeFilter === 'all' ? true : scopeFilter === 'namespaced' ? a.namespaced : !a.namespaced;
-                return matchesText && matchesScope;
+                // Non-admin users can only see namespaced resources
+                const matchesPermission = isAdmin || a.namespaced;
+                return matchesText && matchesScope && matchesPermission;
             })
             .sort((a, b) => a.kind.localeCompare(b.kind));
-    }, [apis, filter, scopeFilter]);
+    }, [apis, filter, scopeFilter, isAdmin]);
 
     // Close suggestions when clicking outside
     useEffect(() => {
