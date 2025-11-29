@@ -220,3 +220,4 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: ${{ secrets.DOCKERHUB_USERNAME }}/dkonsole
           readme-filepath: ./dockerhub-readme.md
+        continue-on-error: true  # Don't fail the workflow if README update fails
