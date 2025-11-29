@@ -784,35 +784,79 @@ const WorkloadList = ({ namespace, kind }) => {
             )}
 
             {/* Rollout confirmation modal */}
-            {confirmRollout && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                    <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-md shadow-xl">
-                        <h3 className="text-lg font-semibold text-white mb-2">
-                            Confirm rollout
-                        </h3>
-                        <p className="text-sm text-gray-300 mb-4">
-                            Rollout {confirmRollout.kind} "{confirmRollout.name}"?
-                            <span className="block mt-2 text-xs text-yellow-400">
-                                This will trigger a restart of all pods in the deployment.
-                            </span>
-                        </p>
-                        <div className="flex justify-end space-x-3">
-                            <button
-                                onClick={() => setConfirmRollout(null)}
-                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => handleRolloutDeployment(confirmRollout)}
-                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
-                            >
-                                Rollout
-                            </button>
+            {confirmRollout && (() => {
+                const details = confirmRollout.details;
+                const replicas = details?.replicas || 0;
+                const ready = details?.ready || 0;
+                const readyCount = typeof ready === 'string' ? parseInt(ready.split('/')[0]) || 0 : ready;
+                const totalReplicas = typeof replicas === 'string' ? parseInt(replicas.split('/')[1]) || parseInt(replicas) || 0 : replicas;
+
+                // Determine behavior message based on replica count
+                let behaviorMessage = '';
+                let behaviorColor = 'text-yellow-400';
+
+                if (totalReplicas === 0) {
+                    behaviorMessage = 'Warning: This deployment has 0 replicas. Rollout will have no effect.';
+                    behaviorColor = 'text-gray-400';
+                } else if (totalReplicas === 1) {
+                    behaviorMessage = 'This will restart the single pod, causing a brief service interruption.';
+                    behaviorColor = 'text-orange-400';
+                } else if (totalReplicas <= 3) {
+                    behaviorMessage = `This will restart ${totalReplicas} pods. Kubernetes will perform a rolling update, maintaining at least ${Math.max(1, Math.floor(totalReplicas * 0.5))} pod(s) available during the process.`;
+                    behaviorColor = 'text-yellow-400';
+                } else {
+                    behaviorMessage = `This will restart ${totalReplicas} pods. Kubernetes will perform a rolling update with zero downtime, maintaining service availability throughout the process.`;
+                    behaviorColor = 'text-green-400';
+                }
+
+                return (
+                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                        <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-md shadow-xl">
+                            <h3 className="text-lg font-semibold text-white mb-2">
+                                Confirm rollout
+                            </h3>
+                            <p className="text-sm text-gray-300 mb-3">
+                                Rollout {confirmRollout.kind} "<span className="font-medium text-white">{confirmRollout.name}</span>"?
+                            </p>
+                            {details && (
+                                <div className="mb-3 p-3 bg-gray-800/50 rounded border border-gray-700">
+                                    <div className="text-xs text-gray-400 mb-2">Deployment Information:</div>
+                                    <div className="text-sm text-gray-300">
+                                        <div className="flex justify-between mb-1">
+                                            <span className="text-gray-400">Total Replicas:</span>
+                                            <span className="font-medium text-white">{totalReplicas}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-400">Ready Pods:</span>
+                                            <span className={`font-medium ${readyCount === totalReplicas ? 'text-green-400' : 'text-yellow-400'}`}>
+                                                {readyCount} / {totalReplicas}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            <p className={`text-xs mb-4 ${behaviorColor}`}>
+                                {behaviorMessage}
+                            </p>
+                            <div className="flex justify-end space-x-3">
+                                <button
+                                    onClick={() => setConfirmRollout(null)}
+                                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => handleRolloutDeployment(confirmRollout)}
+                                    disabled={totalReplicas === 0}
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Rollout
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {/* Job created success modal */}
             {createdJob && (
