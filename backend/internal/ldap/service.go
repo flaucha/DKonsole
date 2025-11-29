@@ -690,22 +690,46 @@ func (s *Service) GetUserPermissions(ctx context.Context, username string) (map[
 	// Get user groups
 	groups, err := s.GetUserGroups(ctx, username)
 	if err != nil {
+		utils.LogWarn("Failed to get user groups for permissions", map[string]interface{}{
+			"username": username,
+			"error":    err.Error(),
+		})
 		return nil, err
 	}
+
+	utils.LogInfo("GetUserPermissions: user groups retrieved", map[string]interface{}{
+		"username": username,
+		"groups":   groups,
+	})
 
 	// Get groups configuration
 	groupsConfig, err := s.repo.GetGroups(ctx)
 	if err != nil {
+		utils.LogWarn("Failed to get LDAP groups config", map[string]interface{}{
+			"username": username,
+			"error":    err.Error(),
+		})
 		return nil, fmt.Errorf("failed to get LDAP groups config: %w", err)
 	}
+
+	// Log configured groups for debugging
+	configuredGroupNames := make([]string, 0, len(groupsConfig.Groups))
+	for _, group := range groupsConfig.Groups {
+		configuredGroupNames = append(configuredGroupNames, group.Name)
+	}
+	utils.LogInfo("GetUserPermissions: configured groups", map[string]interface{}{
+		"username":          username,
+		"configured_groups": configuredGroupNames,
+	})
 
 	// Build permissions map: namespace -> highest permission
 	permissions := make(map[string]string)
 
-	// Create a map of group names for quick lookup
+	// Create a map of group names for quick lookup (case-insensitive comparison)
 	groupMap := make(map[string]bool)
 	for _, group := range groups {
-		groupMap[group] = true
+		groupMap[strings.ToLower(group)] = true
+		groupMap[group] = true // Also keep original case for exact match
 	}
 
 	// Permission hierarchy: view < edit < admin
@@ -716,8 +740,12 @@ func (s *Service) GetUserPermissions(ctx context.Context, username string) (map[
 	}
 
 	// Find permissions for user's groups
+	matchedGroups := make([]string, 0)
 	for _, group := range groupsConfig.Groups {
-		if groupMap[group.Name] {
+		// Case-insensitive comparison
+		groupNameLower := strings.ToLower(group.Name)
+		if groupMap[group.Name] || groupMap[groupNameLower] {
+			matchedGroups = append(matchedGroups, group.Name)
 			for _, perm := range group.Permissions {
 				currentLevel := permissionLevel[perm.Permission]
 				existingLevel := 0
@@ -731,6 +759,12 @@ func (s *Service) GetUserPermissions(ctx context.Context, username string) (map[
 			}
 		}
 	}
+
+	utils.LogInfo("GetUserPermissions: permissions calculated", map[string]interface{}{
+		"username":      username,
+		"matched_groups": matchedGroups,
+		"permissions":   permissions,
+	})
 
 	return permissions, nil
 }

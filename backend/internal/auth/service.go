@@ -8,6 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/flaucha/DKonsole/backend/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
 // LDAPAuthenticator defines the interface for LDAP authentication
@@ -113,7 +114,17 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 		permissions, err = s.ldapAuth.GetUserPermissions(ctx, req.Username)
 		if err != nil {
 			// Log error but continue - user is authenticated
+			// Use fmt.Errorf to include error details in logs
+			utils.LogWarn("Failed to get user permissions, continuing with empty permissions", map[string]interface{}{
+				"username": req.Username,
+				"error":    err.Error(),
+			})
 			permissions = make(map[string]string)
+		} else {
+			utils.LogInfo("User permissions retrieved successfully", map[string]interface{}{
+				"username":   req.Username,
+				"permissions": permissions,
+			})
 		}
 	} else {
 		// Auto-detect: try admin first, then LDAP
@@ -150,7 +161,16 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 					permissions, err = s.ldapAuth.GetUserPermissions(ctx, req.Username)
 					if err != nil {
 						// Log error but continue - user is authenticated
+						utils.LogWarn("Failed to get user permissions, continuing with empty permissions", map[string]interface{}{
+							"username": req.Username,
+							"error":    err.Error(),
+						})
 						permissions = make(map[string]string)
+					} else {
+						utils.LogInfo("User permissions retrieved successfully", map[string]interface{}{
+							"username":   req.Username,
+							"permissions": permissions,
+						})
 					}
 				}
 			}

@@ -335,10 +335,20 @@ func (s *Service) MeHandler(w http.ResponseWriter, r *http.Request) {
 		"username": claims.Username,
 		"role":     claims.Role,
 	}
-	// Include permissions if available
+	// Include permissions if available (even if empty map)
 	if claims.Permissions != nil {
 		response["permissions"] = claims.Permissions
+	} else {
+		// Explicitly set empty permissions for non-admin users
+		response["permissions"] = make(map[string]string)
 	}
+
+	utils.LogInfo("MeHandler: returning user info", map[string]interface{}{
+		"username":   claims.Username,
+		"role":       claims.Role,
+		"permissions": response["permissions"],
+	})
+
 	utils.JSONResponse(w, http.StatusOK, response)
 }
 
