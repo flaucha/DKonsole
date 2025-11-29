@@ -61,7 +61,7 @@ const SubMenu = ({ isOpen, children }) => (
 );
 
 const Layout = ({ children, headerContent }) => {
-    const { currentCluster } = useSettings();
+    const { currentCluster, theme } = useSettings();
     const { logout, authFetch, user } = useAuth();
     const [isAdmin, setIsAdmin] = useState(false);
     const [checkingAdmin, setCheckingAdmin] = useState(true);
