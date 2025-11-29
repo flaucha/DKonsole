@@ -708,6 +708,8 @@ const PasswordChangeSettings = ({ authFetch, error, setError, success, setSucces
 // LDAP Settings Component
 const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
     const [config, setConfig] = useState({
+        insecureSkipVerify: false,
+        caCert: '',
         enabled: false,
         url: '',
         baseDN: '',
