@@ -147,12 +147,6 @@ const ClusterOverview = () => {
             {/* Basic Resource Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
-                    icon={Server}
-                    label="Nodes"
-                    value={stats.nodes}
-                    color="bg-blue-600"
-                />
-                <StatCard
                     icon={Layers}
                     label="Namespaces"
                     value={stats.namespaces}
@@ -210,6 +204,7 @@ const ClusterOverview = () => {
                             <thead className="bg-gray-750">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Node</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">CPU Usage</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Memory Usage</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Disk Usage</th>
@@ -222,6 +217,15 @@ const ClusterOverview = () => {
                                 {nodeMetrics.map((node, idx) => (
                                     <tr key={idx} className="hover:bg-gray-750 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{node.name}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-2 py-1 text-xs rounded-full ${
+                                                node.role === 'control-plane'
+                                                    ? 'bg-indigo-900/50 text-indigo-300 border border-indigo-700'
+                                                    : 'bg-blue-900/50 text-blue-300 border border-blue-700'
+                                            }`}>
+                                                {node.role === 'control-plane' ? 'Control Plane' : 'Worker'}
+                                            </span>
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <ProgressBar value={node.cpuUsage} color="purple" />
                                         </td>

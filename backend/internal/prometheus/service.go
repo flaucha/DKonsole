@@ -376,8 +376,15 @@ func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interfac
 			status = "NotReady"
 		}
 
+		// Determine node role
+		role := "worker"
+		if controlPlaneNodes[nodeName] {
+			role = "control-plane"
+		}
+
 		nodes = append(nodes, NodeMetric{
 			Name:      nodeName,
+			Role:      role,
 			CPUUsage:  cpuUsage,
 			MemUsage:  memUsage,
 			DiskUsage: diskUsage,

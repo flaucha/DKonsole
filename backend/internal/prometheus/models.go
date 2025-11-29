@@ -24,6 +24,7 @@ type PodMetricsResponse struct {
 // NodeMetric represents metrics for a single node
 type NodeMetric struct {
 	Name      string  `json:"name"`
+	Role      string  `json:"role"` // "worker" or "control-plane"
 	CPUUsage  float64 `json:"cpuUsage"`
 	MemUsage  float64 `json:"memoryUsage"`
 	DiskUsage float64 `json:"diskUsage"`
