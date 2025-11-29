@@ -50,28 +50,6 @@ const Settings = () => {
         }
     }, [authFetch, user]);
 
-    // Show loading while checking admin status
-    if (checkingAdmin) {
-        return (
-            <div className="p-6 max-w-5xl mx-auto">
-                <div className="text-white">Checking permissions...</div>
-            </div>
-        );
-    }
-
-    // Show error if user is not admin
-    if (!isAdmin) {
-        return (
-            <div className="p-6 max-w-5xl mx-auto">
-                <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 text-center">
-                    <AlertCircle size={48} className="mx-auto mb-4 text-red-400" />
-                    <h2 className="text-xl font-semibold text-white mb-2">Access Denied</h2>
-                    <p className="text-gray-400">You need admin privileges to access settings.</p>
-                </div>
-            </div>
-        );
-    }
-
     const handleResetDefaults = () => {
         setTheme('default');
         setFont('Inter');
@@ -194,7 +172,23 @@ const Settings = () => {
             )}
 
             {activeTab === 'ldap' && (
-                <LDAPSettings authFetch={authFetch} error={error} setError={setError} success={success} setSuccess={setSuccess} />
+                <>
+                    {checkingAdmin ? (
+                        <div className="p-6 max-w-5xl mx-auto">
+                            <div className="text-white">Checking permissions...</div>
+                        </div>
+                    ) : !isAdmin ? (
+                        <div className="p-6 max-w-5xl mx-auto">
+                            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 text-center">
+                                <AlertCircle size={48} className="mx-auto mb-4 text-red-400" />
+                                <h2 className="text-xl font-semibold text-white mb-2">Access Denied</h2>
+                                <p className="text-gray-400">You need admin privileges to access LDAP settings.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <LDAPSettings authFetch={authFetch} error={error} setError={setError} success={success} setSuccess={setSuccess} />
+                    )}
+                </>
             )}
 
             {activeTab === 'appearance' && (
