@@ -7,10 +7,11 @@ import { getStatusBadgeClass } from '../utils/statusBadge';
 import { formatDateTime } from '../utils/dateUtils';
 import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 import { useNamespaces } from '../hooks/useNamespaces';
+import { isAdmin } from '../utils/permissions';
 
 const NamespaceManager = () => {
     const { currentCluster } = useSettings();
-    const { authFetch } = useAuth();
+    const { authFetch, user } = useAuth();
     const [expandedId, setExpandedId] = useState(null);
     const [sortField, setSortField] = useState('name');
     const [sortDirection, setSortDirection] = useState('asc');

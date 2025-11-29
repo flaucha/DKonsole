@@ -606,7 +606,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                             <div className="absolute right-0 mt-1 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
                                                 <div className="flex flex-col">
                                                     {/* Only show delete for pods if user has edit permission or is admin */}
-                                                    {(isAdmin(user) || canEdit(user, res.namespace)) && (
+                                                    {(isAdmin(user) || canEdit(user, res.namespace)) ? (
                                                         <>
                                                             <button
                                                                 onClick={() => {
@@ -627,6 +627,10 @@ const WorkloadList = ({ namespace, kind }) => {
                                                                 Force Delete
                                                             </button>
                                                         </>
+                                                    ) : (
+                                                        <div className="px-4 py-2 text-xs text-gray-500">
+                                                            View only
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
