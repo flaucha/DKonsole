@@ -449,22 +449,61 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 	})
 
 	// First, try to get groups from memberOf attribute on the user entry (AD-style)
+	utils.LogInfo("Searching for memberOf attribute", map[string]interface{}{
+		"username": username,
+		"userDN":   userDN,
+		"scope":    "base",
+	})
+	// Request all attributes first to see what's available
 	userSearchRequest := ldap.NewSearchRequest(
 		userDN,
 		ldap.ScopeBaseObject, ldap.NeverDerefAliases, 0, 0, false,
 		"(objectClass=*)",
-		[]string{"memberOf"},
+		[]string{"*"}, // Request all attributes to see what's available
 		nil,
 	)
 
 	userSr, err := conn.Search(userSearchRequest)
-	if err == nil && len(userSr.Entries) > 0 {
-		// Extract groups from memberOf attribute
-		memberOf := userSr.Entries[0].GetAttributeValues("memberOf")
-		utils.LogInfo("Found memberOf attributes", map[string]interface{}{
+	if err != nil {
+		utils.LogWarn("Failed to search user for memberOf", map[string]interface{}{
 			"username": username,
-			"memberOf": memberOf,
+			"userDN":   userDN,
+			"error":    err.Error(),
 		})
+	} else if len(userSr.Entries) == 0 {
+		utils.LogWarn("User entry not found when searching for memberOf", map[string]interface{}{
+			"username": username,
+			"userDN":   userDN,
+		})
+	} else {
+		// Log all available attributes for debugging
+		entry := userSr.Entries[0]
+		allAttrs := entry.Attributes
+		attrNames := make([]string, 0, len(allAttrs))
+		for _, attr := range allAttrs {
+			attrNames = append(attrNames, attr.Name)
+		}
+		utils.LogInfo("User entry attributes", map[string]interface{}{
+			"username":     username,
+			"userDN":       userDN,
+			"attributes":   attrNames,
+		})
+
+		// Extract groups from memberOf attribute
+		memberOf := entry.GetAttributeValues("memberOf")
+		utils.LogInfo("Found memberOf attributes", map[string]interface{}{
+			"username":     username,
+			"userDN":       userDN,
+			"memberOf":     memberOf,
+			"memberOf_count": len(memberOf),
+		})
+		if len(memberOf) == 0 {
+			utils.LogWarn("User has no memberOf attributes", map[string]interface{}{
+				"username": username,
+				"userDN":   userDN,
+				"available_attributes": attrNames,
+			})
+		}
 		groups := make([]string, 0, len(memberOf))
 		for _, groupDN := range memberOf {
 			// Extract group name from DN
@@ -508,6 +547,13 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 		searchFilter = fmt.Sprintf("(&(objectClass=groupOfNames)(member=%s)%s)", userDN, config.UserFilter)
 	}
 
+	utils.LogInfo("Trying fallback search for groups", map[string]interface{}{
+		"username":     username,
+		"userDN":       userDN,
+		"groupDN":      config.GroupDN,
+		"searchFilter": searchFilter,
+	})
+
 	searchRequest := ldap.NewSearchRequest(
 		config.GroupDN,
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
@@ -518,8 +564,19 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 
 	sr, err := conn.Search(searchRequest)
 	if err != nil {
+		utils.LogWarn("Fallback search failed", map[string]interface{}{
+			"username": username,
+			"userDN":   userDN,
+			"error":    err.Error(),
+		})
 		return nil, fmt.Errorf("failed to search LDAP: %w", err)
 	}
+
+	utils.LogInfo("Fallback search completed", map[string]interface{}{
+		"username":    username,
+		"userDN":      userDN,
+		"entry_count": len(sr.Entries),
+	})
 
 	groups := make([]string, 0, len(sr.Entries))
 	for _, entry := range sr.Entries {
@@ -527,6 +584,11 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 			groups = append(groups, cn)
 		}
 	}
+
+	utils.LogInfo("Groups extracted from fallback search", map[string]interface{}{
+		"username": username,
+		"groups":   groups,
+	})
 
 	return groups, nil
 }
