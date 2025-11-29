@@ -402,12 +402,13 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 		memberOf := userSr.Entries[0].GetAttributeValues("memberOf")
 		groups := make([]string, 0, len(memberOf))
 		for _, groupDN := range memberOf {
-			// Extract CN from group DN (e.g., "cn=admin,ou=groups,dc=glauth,dc=com" -> "admin")
+			// Extract group name from DN
+			// Try CN first (e.g., "cn=admin,ou=groups,dc=glauth,dc=com" -> "admin")
 			if strings.HasPrefix(groupDN, "cn=") {
 				cn := strings.Split(strings.Split(groupDN, ",")[0], "=")[1]
 				groups = append(groups, cn)
 			} else if strings.Contains(groupDN, "cn=") {
-				// Handle cases like "ou=admin,ou=groups,dc=glauth,dc=com" where CN might be in a different position
+				// Handle cases where CN is in a different position
 				parts := strings.Split(groupDN, ",")
 				for _, part := range parts {
 					if strings.HasPrefix(part, "cn=") {
@@ -416,6 +417,10 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 						break
 					}
 				}
+			} else if strings.HasPrefix(groupDN, "ou=") {
+				// Handle cases where group DN starts with OU (e.g., "ou=devsA,ou=groups,dc=glauth,dc=com" -> "devsA")
+				ou := strings.Split(strings.Split(groupDN, ",")[0], "=")[1]
+				groups = append(groups, ou)
 			}
 		}
 		if len(groups) > 0 {

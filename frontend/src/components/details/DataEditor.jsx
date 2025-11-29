@@ -3,6 +3,7 @@ import { Save, X, Plus, Trash2, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { logger } from '../../utils/logger';
+import { parseErrorResponse, parseError } from '../../utils/errorParser';
 
 export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
     const { authFetch } = useAuth();
@@ -25,7 +26,7 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
 
     const handleKeyChange = (oldKey, newKey) => {
         if (oldKey === newKey) return;
-        
+
         const newData = { ...editingData };
         const value = newData[oldKey];
         delete newData[oldKey];
@@ -56,18 +57,18 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
             // Get current resource YAML
             const yamlUrl = `/api/resource/yaml?kind=${resource.kind}&name=${resource.name}${resource.namespace ? `&namespace=${resource.namespace}` : ''}${currentCluster ? `&cluster=${currentCluster}` : ''}`;
             const yamlRes = await authFetch(yamlUrl);
-            
+
             if (!yamlRes.ok) {
                 throw new Error('Failed to load resource YAML');
             }
 
             const yamlText = await yamlRes.text();
-            
+
             // Verify YAML has required fields
             if (!yamlText.includes('kind:') && !yamlText.includes('kind:')) {
                 throw new Error('YAML from server is missing kind field');
             }
-            
+
             // Parse YAML to update data field - more robust approach
             const lines = yamlText.split('\n');
             let dataStartIndex = -1;
@@ -79,7 +80,7 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 const trimmed = line.trim();
-                
+
                 if (trimmed === 'data:' || trimmed.startsWith('data:')) {
                     dataStartIndex = i;
                     dataIndent = line.search(/\S/);
@@ -187,7 +188,7 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
             });
 
             if (!saveRes.ok) {
-                const errorText = await saveRes.text();
+                const errorText = await parseErrorResponse(saveRes);
                 // Log the YAML for debugging if there's an error
                 logger.error('YAML that failed:', newYaml.substring(0, 500));
                 logger.error('Error from server:', errorText);
@@ -197,7 +198,7 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
             onSaved?.();
             onClose();
         } catch (err) {
-            setError(err.message);
+            setError(parseError(err));
         } finally {
             setSaving(false);
         }
@@ -309,4 +310,3 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
         </div>
     );
 };
-

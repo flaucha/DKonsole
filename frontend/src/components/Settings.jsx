@@ -3,6 +3,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Server, Palette, Type, Plus, Check, AlertCircle, Trash2, Settings as SettingsIcon, Info, Github, Mail, Coffee, Code, Lock, Save, Users, Key } from 'lucide-react';
+import { parseErrorResponse, parseError } from '../utils/errorParser';
 
 const Settings = () => {
     const {
@@ -267,10 +268,11 @@ const Settings = () => {
                                                             setSuccess('Logo uploaded successfully! Refreshing...');
                                                             setTimeout(() => window.location.reload(), 1500);
                                                         } else {
-                                                            throw new Error(await res.text());
+                                                            const errorText = await parseErrorResponse(res);
+                                                            throw new Error(errorText);
                                                         }
                                                     })
-                                                    .catch((err) => setError(err.message));
+                                                    .catch((err) => setError(parseError(err)));
                                             }}
                                         />
                                     </label>
@@ -412,11 +414,11 @@ const PrometheusURLSettings = ({ authFetch, error, setError, success, setSuccess
                 setSuccess('Prometheus URL updated successfully! Reloading app...');
                 setTimeout(() => window.location.reload(), 1500);
             } else {
-                const errorText = await res.text();
+                const errorText = await parseErrorResponse(res);
                 setError(errorText || 'Failed to update Prometheus URL');
             }
         } catch (err) {
-            setError(err.message || 'Failed to update Prometheus URL');
+            setError(parseError(err) || 'Failed to update Prometheus URL');
         } finally {
             setLoading(false);
         }
@@ -524,12 +526,12 @@ const PasswordChangeSettings = ({ authFetch, error, setError, success, setSucces
                     window.location.href = '/login';
                 }, 2000);
             } else {
-                const errorText = await res.text();
+                const errorText = await parseErrorResponse(res);
                 setError(errorText || 'Failed to change password');
                 setLoading(false);
             }
         } catch (err) {
-            setError(err.message || 'Failed to change password');
+            setError(parseError(err) || 'Failed to change password');
             setLoading(false);
         }
     };
@@ -743,11 +745,11 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
             if (res.ok) {
                 setSuccess('LDAP configuration saved successfully!');
             } else {
-                const errorText = await res.text();
+                const errorText = await parseErrorResponse(res);
                 setError(errorText || 'Failed to save LDAP configuration');
             }
         } catch (err) {
-            setError(err.message || 'Failed to save LDAP configuration');
+            setError(parseError(err) || 'Failed to save LDAP configuration');
         } finally {
             setLoading(false);
         }
@@ -772,13 +774,13 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
             if (res.ok) {
                 setSuccess('LDAP configuration saved successfully!');
             } else {
-                const errorText = await res.text();
+                const errorText = await parseErrorResponse(res);
                 setError(errorText || 'Failed to save LDAP configuration');
                 // Revert on error
                 setConfig(config);
             }
         } catch (err) {
-            setError(err.message || 'Failed to save LDAP configuration');
+            setError(parseError(err) || 'Failed to save LDAP configuration');
             // Revert on error
             setConfig(config);
         } finally {
@@ -830,11 +832,11 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
                     password: '*****'
                 });
             } else {
-                const errorText = await res.text();
+                const errorText = await parseErrorResponse(res);
                 setError(errorText || 'Failed to save LDAP credentials');
             }
         } catch (err) {
-            setError(err.message || 'Failed to save LDAP credentials');
+            setError(parseError(err) || 'Failed to save LDAP credentials');
         } finally {
             setLoading(false);
         }
@@ -873,13 +875,13 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
                 setTestResult('success');
                 setTestMessage('Connection test successful');
             } else {
-                const errorText = await res.text();
+                const errorText = await parseErrorResponse(res);
                 setTestResult('error');
                 setTestMessage(errorText || 'LDAP connection test failed');
             }
         } catch (err) {
             setTestResult('error');
-            setTestMessage(err.message || 'LDAP connection test failed');
+            setTestMessage(parseError(err) || 'LDAP connection test failed');
         } finally {
             setTestLoading(false);
         }
@@ -912,11 +914,11 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
                 // Update local state to remove incomplete permissions
                 setGroups(groupsToSend.groups);
             } else {
-                const errorText = await res.text();
+                const errorText = await parseErrorResponse(res);
                 setError(errorText || 'Failed to save LDAP groups');
             }
         } catch (err) {
-            setError(err.message || 'Failed to save LDAP groups');
+            setError(parseError(err) || 'Failed to save LDAP groups');
         } finally {
             setLoading(false);
         }

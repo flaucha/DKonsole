@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
 import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 import { useHelmReleases } from '../hooks/useHelmReleases';
+import { parseErrorResponse, parseError } from '../utils/errorParser';
 
 const HelmChartManager = () => {
     const { currentCluster } = useSettings();
@@ -161,8 +162,8 @@ const HelmChartManager = () => {
             });
 
             if (!res.ok) {
-                const errorData = await res.json().catch(() => ({ message: 'Failed to upgrade Helm release' }));
-                throw new Error(errorData.message || 'Failed to upgrade Helm release');
+                const errorText = await parseErrorResponse(res);
+                throw new Error(errorText || 'Failed to upgrade Helm release');
             }
 
             const result = await res.json();
@@ -212,8 +213,8 @@ const HelmChartManager = () => {
             });
 
             if (!res.ok) {
-                const errorData = await res.json().catch(() => ({ message: 'Failed to install Helm chart' }));
-                throw new Error(errorData.message || 'Failed to install Helm chart');
+                const errorText = await parseErrorResponse(res);
+                throw new Error(errorText || 'Failed to install Helm chart');
             }
 
             const result = await res.json();
