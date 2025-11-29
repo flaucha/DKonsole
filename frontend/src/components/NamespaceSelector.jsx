@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Search, Database } from 'lucide-react';
+import { ChevronDown, Search, Database, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { logger } from '../utils/logger';
 
