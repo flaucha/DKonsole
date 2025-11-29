@@ -15,11 +15,11 @@ const DataDir = "./data"
 // LogoStorage defines the interface for logo file storage operations
 type LogoStorage interface {
 	// Save saves a logo file with the given extension and content
-	Save(ctx context.Context, ext string, content io.Reader) error
+	Save(ctx context.Context, logoType string, ext string, content io.Reader) error
 	// Get returns the file path of the logo with the given extension, if it exists
-	Get(ctx context.Context, ext string) (string, error)
-	// Remove removes all existing logo files
-	RemoveAll(ctx context.Context) error
+	Get(ctx context.Context, logoType string, ext string) (string, error)
+	// Remove removes all existing logo files of the specified type
+	RemoveAll(ctx context.Context, logoType string) error
 	// EnsureDataDir ensures the data directory exists
 	EnsureDataDir(ctx context.Context) error
 }
@@ -45,8 +45,14 @@ func (s *FileSystemLogoStorage) EnsureDataDir(ctx context.Context) error {
 }
 
 // Save saves a logo file with the given extension and content
-func (s *FileSystemLogoStorage) Save(ctx context.Context, ext string, content io.Reader) error {
-	destPath := filepath.Join(s.dataDir, "logo"+ext)
+func (s *FileSystemLogoStorage) Save(ctx context.Context, logoType string, ext string, content io.Reader) error {
+	var filename string
+	if logoType == "light" {
+		filename = "logo-light" + ext
+	} else {
+		filename = "logo" + ext
+	}
+	destPath := filepath.Join(s.dataDir, filename)
 	absPath, _ := filepath.Abs(destPath)
 
 	dst, err := os.Create(destPath)
@@ -60,14 +66,21 @@ func (s *FileSystemLogoStorage) Save(ctx context.Context, ext string, content io
 	}
 
 	utils.LogInfo("Saving logo", map[string]interface{}{
+		"type": logoType,
 		"path": absPath,
 	})
 	return nil
 }
 
 // Get returns the file path of the logo with the given extension, if it exists
-func (s *FileSystemLogoStorage) Get(ctx context.Context, ext string) (string, error) {
-	path := filepath.Join(s.dataDir, "logo"+ext)
+func (s *FileSystemLogoStorage) Get(ctx context.Context, logoType string, ext string) (string, error) {
+	var filename string
+	if logoType == "light" {
+		filename = "logo-light" + ext
+	} else {
+		filename = "logo" + ext
+	}
+	path := filepath.Join(s.dataDir, filename)
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
 			return "", fmt.Errorf("logo not found")
@@ -77,11 +90,17 @@ func (s *FileSystemLogoStorage) Get(ctx context.Context, ext string) (string, er
 	return path, nil
 }
 
-// RemoveAll removes all existing logo files
-func (s *FileSystemLogoStorage) RemoveAll(ctx context.Context) error {
+// RemoveAll removes all existing logo files of the specified type
+func (s *FileSystemLogoStorage) RemoveAll(ctx context.Context, logoType string) error {
 	extensions := []string{".png", ".svg"}
+	var filenamePrefix string
+	if logoType == "light" {
+		filenamePrefix = "logo-light"
+	} else {
+		filenamePrefix = "logo"
+	}
 	for _, ext := range extensions {
-		path := filepath.Join(s.dataDir, "logo"+ext)
+		path := filepath.Join(s.dataDir, filenamePrefix+ext)
 		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 			// Log but don't fail if file doesn't exist
 			utils.LogWarn("Failed to remove logo file", map[string]interface{}{

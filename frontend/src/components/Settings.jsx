@@ -307,41 +307,81 @@ const Settings = () => {
                             <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
                                 <Server size={20} className="mr-2 text-pink-400" /> Custom Logo
                             </h2>
-                            <div className="flex items-start space-x-4">
+                            <div className="space-y-6">
                                 <div className="flex-1">
                                     <p className="text-sm text-gray-400 mb-4">
-                                        Upload a custom logo (PNG or SVG) to replace the default application logo.
+                                        Upload custom logos (PNG or SVG) to replace the default application logos. You can upload separate logos for dark and light themes.
                                     </p>
-                                    <label className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors border border-gray-600 hover:border-gray-500 shadow-sm">
-                                        <Plus size={16} className="mr-2" /> Upload New Logo
-                                        <input
-                                            type="file"
-                                            className="hidden"
-                                            accept=".png,.svg"
-                                            onChange={(e) => {
-                                                const file = e.target.files[0];
-                                                if (!file) return;
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm text-gray-300 mb-2">Logo for Dark Themes</label>
+                                            <label className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors border border-gray-600 hover:border-gray-500 shadow-sm">
+                                                <Plus size={16} className="mr-2" /> Upload Dark Theme Logo
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept=".png,.svg"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files[0];
+                                                        if (!file) return;
 
-                                                const formData = new FormData();
-                                                formData.append('logo', file);
+                                                        const formData = new FormData();
+                                                        formData.append('logo', file);
+                                                        formData.append('type', 'normal');
 
-                                                authFetch('/api/logo', {
-                                                    method: 'POST',
-                                                    body: formData,
-                                                })
-                                                    .then(async (res) => {
-                                                        if (res.ok) {
-                                                            setSuccess('Logo uploaded successfully! Refreshing...');
-                                                            setTimeout(() => window.location.reload(), 1500);
-                                                        } else {
-                                                            const errorText = await parseErrorResponse(res);
-                                                            throw new Error(errorText);
-                                                        }
-                                                    })
-                                                    .catch((err) => setError(parseError(err)));
-                                            }}
-                                        />
-                                    </label>
+                                                        authFetch('/api/logo', {
+                                                            method: 'POST',
+                                                            body: formData,
+                                                        })
+                                                            .then(async (res) => {
+                                                                if (res.ok) {
+                                                                    setSuccess('Logo uploaded successfully! Refreshing...');
+                                                                    setTimeout(() => window.location.reload(), 1500);
+                                                                } else {
+                                                                    const errorText = await parseErrorResponse(res);
+                                                                    throw new Error(errorText);
+                                                                }
+                                                            })
+                                                            .catch((err) => setError(parseError(err)));
+                                                    }}
+                                                />
+                                            </label>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-gray-300 mb-2">Logo for Light Themes</label>
+                                            <label className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors border border-gray-600 hover:border-gray-500 shadow-sm">
+                                                <Plus size={16} className="mr-2" /> Upload Light Theme Logo
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept=".png,.svg"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files[0];
+                                                        if (!file) return;
+
+                                                        const formData = new FormData();
+                                                        formData.append('logo', file);
+                                                        formData.append('type', 'light');
+
+                                                        authFetch('/api/logo', {
+                                                            method: 'POST',
+                                                            body: formData,
+                                                        })
+                                                            .then(async (res) => {
+                                                                if (res.ok) {
+                                                                    setSuccess('Logo uploaded successfully! Refreshing...');
+                                                                    setTimeout(() => window.location.reload(), 1500);
+                                                                } else {
+                                                                    const errorText = await parseErrorResponse(res);
+                                                                    throw new Error(errorText);
+                                                                }
+                                                            })
+                                                            .catch((err) => setError(parseError(err)));
+                                                    }}
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

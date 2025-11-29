@@ -134,11 +134,13 @@ const Layout = ({ children, headerContent }) => {
         setLogoSrc(defaultLogoSrc);
 
         // Add timestamp to prevent browser caching
-        authFetch(`/api/logo?t=${Date.now()}`)
+        // Use logo-light for light themes, logo normal for dark themes
+        const logoType = isLightTheme ? 'light' : 'normal';
+        authFetch(`/api/logo?type=${logoType}&t=${Date.now()}`)
             .then(res => {
                 if (res.ok && res.status === 200) {
                     // Custom logo exists, use it
-                    setLogoSrc(`/api/logo?t=${Date.now()}`);
+                    setLogoSrc(`/api/logo?type=${logoType}&t=${Date.now()}`);
                 } else {
                     // No custom logo, use theme-appropriate default
                     setLogoSrc(defaultLogoSrc);
