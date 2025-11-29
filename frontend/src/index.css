@@ -248,6 +248,10 @@ body {
 }
 
 /* Theme-specific overrides for light and cream modes */
+html {
+  scrollbar-gutter: stable;
+}
+
 [data-theme="light"] body {
   color: rgb(var(--color-gray-100)) !important;
 }
