@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/flaucha/DKonsole/backend/internal/models"
 	"github.com/flaucha/DKonsole/backend/internal/prometheus"
@@ -33,14 +35,14 @@ type UpdatePrometheusURLRequest struct {
 
 // GetPrometheusURLHandler returns the current Prometheus URL
 func (s *Service) GetPrometheusURLHandler(w http.ResponseWriter, r *http.Request) {
-	url, err := s.repo.GetPrometheusURL(r.Context())
+	promURL, err := s.repo.GetPrometheusURL(r.Context())
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get Prometheus URL: %v", err))
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to get Prometheus URL: %v", err))
 		return
 	}
 
 	utils.JSONResponse(w, http.StatusOK, map[string]string{
-		"url": url,
+		"url": promURL,
 	})
 }
 
@@ -48,21 +50,26 @@ func (s *Service) GetPrometheusURLHandler(w http.ResponseWriter, r *http.Request
 func (s *Service) UpdatePrometheusURLHandler(w http.ResponseWriter, r *http.Request) {
 	var req UpdatePrometheusURLRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		utils.ErrorResponse(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	// Validate URL format (basic validation)
+	// Validate URL format
 	if req.URL != "" {
-		if !(len(req.URL) > 7 && (req.URL[:7] == "http://" || req.URL[:8] == "https://")) {
-			utils.ErrorResponse(w, http.StatusBadRequest, "Invalid URL format. Must start with http:// or https://")
+		if !strings.HasPrefix(req.URL, "http://") && !strings.HasPrefix(req.URL, "https://") {
+			utils.ErrorResponse(w, http.StatusBadRequest, "invalid URL format. Must start with http:// or https://")
+			return
+		}
+		// Validate URL is parseable
+		if _, err := url.Parse(req.URL); err != nil {
+			utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("invalid URL format: %v", err))
 			return
 		}
 	}
 
 	// Update in repository
 	if err := s.repo.UpdatePrometheusURL(r.Context(), req.URL); err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to update Prometheus URL: %v", err))
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to update Prometheus URL: %v", err))
 		return
 	}
 

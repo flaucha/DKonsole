@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -16,8 +16,8 @@ import (
 // K8sUserRepository implements UserRepository using Kubernetes secrets.
 // It reads credentials from the "dkonsole-auth" secret in the current namespace.
 type K8sUserRepository struct {
-	client    kubernetes.Interface
-	namespace string
+	client     kubernetes.Interface
+	namespace  string
 	secretName string
 }
 
@@ -121,9 +121,9 @@ func (r *K8sUserRepository) CreateSecret(ctx context.Context, username, password
 		},
 		Type: corev1.SecretTypeOpaque,
 		StringData: map[string]string{
-			"admin-username":    username,
+			"admin-username":      username,
 			"admin-password-hash": passwordHash,
-			"jwt-secret":        jwtSecret,
+			"jwt-secret":          jwtSecret,
 		},
 	}
 

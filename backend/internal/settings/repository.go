@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -21,10 +21,10 @@ type Repository interface {
 
 // K8sRepository implements Repository using Kubernetes ConfigMap
 type K8sRepository struct {
-	client     kubernetes.Interface
-	namespace  string
+	client        kubernetes.Interface
+	namespace     string
 	configMapName string
-	secretName string
+	secretName    string
 }
 
 // NewRepository creates a new K8sRepository instance
@@ -98,7 +98,7 @@ func (r *K8sRepository) GetPrometheusURL(ctx context.Context) (string, error) {
 // UpdatePrometheusURL updates the Prometheus URL in ConfigMap
 func (r *K8sRepository) UpdatePrometheusURL(ctx context.Context, url string) error {
 	if r.client == nil {
-		return fmt.Errorf("Kubernetes client not available")
+		return fmt.Errorf("kubernetes client not available")
 	}
 
 	// Try to get existing ConfigMap
@@ -117,7 +117,7 @@ func (r *K8sRepository) UpdatePrometheusURL(ctx context.Context, url string) err
 			}
 			_, err = r.client.CoreV1().ConfigMaps(r.namespace).Create(ctx, configMap, metav1.CreateOptions{})
 			if err != nil {
-				return fmt.Errorf("failed to create ConfigMap: %w", err)
+				return fmt.Errorf("failed to create configmap: %w", err)
 			}
 			utils.LogInfo("Created ConfigMap for Prometheus URL", map[string]interface{}{
 				"configmap_name": r.configMapName,
@@ -125,7 +125,7 @@ func (r *K8sRepository) UpdatePrometheusURL(ctx context.Context, url string) err
 			})
 			return nil
 		}
-		return fmt.Errorf("failed to get ConfigMap: %w", err)
+		return fmt.Errorf("failed to get configmap: %w", err)
 	}
 
 	// Update existing ConfigMap
@@ -136,13 +136,13 @@ func (r *K8sRepository) UpdatePrometheusURL(ctx context.Context, url string) err
 
 	_, err = r.client.CoreV1().ConfigMaps(r.namespace).Update(ctx, configMap, metav1.UpdateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to update ConfigMap: %w", err)
+		return fmt.Errorf("failed to update configmap: %w", err)
 	}
 
 	utils.LogInfo("Updated Prometheus URL in ConfigMap", map[string]interface{}{
 		"configmap_name": r.configMapName,
 		"namespace":      r.namespace,
-		"url":             url,
+		"url":            url,
 	})
 
 	return nil

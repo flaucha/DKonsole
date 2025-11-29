@@ -9,9 +9,9 @@ import (
 
 // ServiceFactory creates and configures settings services
 type ServiceFactory struct {
-	k8sClient        kubernetes.Interface
-	handlersModel    *models.Handlers
-	secretName       string
+	k8sClient         kubernetes.Interface
+	handlersModel     *models.Handlers
+	secretName        string
 	prometheusService *prometheus.HTTPHandler
 }
 

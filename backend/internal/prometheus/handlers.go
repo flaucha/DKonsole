@@ -54,7 +54,6 @@ func (h *HTTPHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 
 	h.mu.RLock()
 	url := h.prometheusURL
-	repo := h.repo
 	promService := h.promService
 	h.mu.RUnlock()
 
@@ -65,12 +64,14 @@ func (h *HTTPHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify repository is using correct URL
-	if repo == nil {
+	h.mu.RLock()
+	repoNil := h.repo == nil
+	h.mu.RUnlock()
+	if repoNil {
 		utils.LogWarn("Prometheus repository is nil, recreating", nil)
 		h.mu.Lock()
 		h.repo = NewHTTPPrometheusRepository(url)
 		h.promService = NewService(h.repo)
-		repo = h.repo
 		promService = h.promService
 		h.mu.Unlock()
 	}
@@ -116,7 +117,6 @@ func (h *HTTPHandler) GetPodMetrics(w http.ResponseWriter, r *http.Request) {
 
 	h.mu.RLock()
 	url := h.prometheusURL
-	repo := h.repo
 	promService := h.promService
 	h.mu.RUnlock()
 
@@ -126,12 +126,14 @@ func (h *HTTPHandler) GetPodMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify repository is using correct URL
-	if repo == nil {
+	h.mu.RLock()
+	repoNil := h.repo == nil
+	h.mu.RUnlock()
+	if repoNil {
 		utils.LogWarn("Prometheus repository is nil, recreating", nil)
 		h.mu.Lock()
 		h.repo = NewHTTPPrometheusRepository(url)
 		h.promService = NewService(h.repo)
-		repo = h.repo
 		promService = h.promService
 		h.mu.Unlock()
 	}

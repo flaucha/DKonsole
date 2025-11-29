@@ -449,13 +449,13 @@ func (s *Service) ChangePasswordHandler(w http.ResponseWriter, r *http.Request) 
 	// Hash new password
 	newPasswordHash, err := HashPassword(req.NewPassword)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to hash password: %v", err))
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to hash password: %v", err))
 		return
 	}
 
 	// Update password in secret
 	if err := k8sRepo.UpdatePassword(ctx, newPasswordHash); err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to update password: %v", err))
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to update password: %v", err))
 		return
 	}
 
