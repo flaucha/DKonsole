@@ -20,6 +20,12 @@ type contextKey string
 
 const userContextKey contextKey = "user"
 
+// UserContextKey returns the context key for user information
+// This is exported so other packages can access user information from context
+func UserContextKey() contextKey {
+	return userContextKey
+}
+
 // Service provides HTTP handlers for authentication operations.
 // It follows a layered architecture:
 //   - Handler (HTTP): Handles HTTP requests/responses

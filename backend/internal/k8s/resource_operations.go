@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/yaml"
 
+	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -38,6 +39,21 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate namespace access if resource is namespaced
+	ctx := r.Context()
+	if namespaced && namespace != "" {
+		// Check if user has edit or admin permission
+		canEdit, err := permissions.CanPerformAction(ctx, namespace, "edit")
+		if err != nil {
+			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
+			return
+		}
+		if !canEdit {
+			utils.ErrorResponse(w, http.StatusForbidden, fmt.Sprintf("Edit permission required for namespace: %s", namespace))
+			return
+		}
+	}
+
 	// Read YAML from request body
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -48,8 +64,8 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 
 	yamlData := string(body)
 
-	// Create context with timeout
-	ctx, cancel := utils.CreateTimeoutContext()
+	// Use request context (already has permissions validated above)
+	ctx, cancel := utils.CreateRequestContext(r)
 	defer cancel()
 
 	// Get Dynamic Client
@@ -514,8 +530,23 @@ func (s *Service) DeleteResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate namespace access if namespace is provided
+	ctx := r.Context()
+	if namespace != "" {
+		// Check if user has edit or admin permission
+		canEdit, err := permissions.CanPerformAction(ctx, namespace, "edit")
+		if err != nil {
+			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
+			return
+		}
+		if !canEdit {
+			utils.ErrorResponse(w, http.StatusForbidden, fmt.Sprintf("Edit permission required for namespace: %s", namespace))
+			return
+		}
+	}
+
 	// Create context
-	ctx, cancel := utils.CreateTimeoutContext()
+	ctx, cancel := utils.CreateRequestContext(r)
 	defer cancel()
 
 	// Get Dynamic Client

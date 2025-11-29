@@ -13,6 +13,7 @@ import (
 
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
 	"github.com/flaucha/DKonsole/backend/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -45,6 +46,18 @@ func (s *Service) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
 	params, err := utils.ParsePodParams(r)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Validate namespace access
+	ctx := r.Context()
+	hasAccess, err := permissions.HasNamespaceAccess(ctx, params.Namespace)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
+		return
+	}
+	if !hasAccess {
+		utils.ErrorResponse(w, http.StatusForbidden, fmt.Sprintf("Access denied to namespace: %s", params.Namespace))
 		return
 	}
 
@@ -123,6 +136,18 @@ func (s *Service) GetPodEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate namespace access
+	ctx := r.Context()
+	hasAccess, err := permissions.HasNamespaceAccess(ctx, params.Namespace)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
+		return
+	}
+	if !hasAccess {
+		utils.ErrorResponse(w, http.StatusForbidden, fmt.Sprintf("Access denied to namespace: %s", params.Namespace))
+		return
+	}
+
 	// Get Kubernetes client for this request
 	client, err := s.clusterService.GetClient(r)
 	if err != nil {
@@ -159,6 +184,18 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 	params, err := utils.ParsePodParams(r)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Validate namespace access
+	ctx := r.Context()
+	canEdit, err := permissions.CanPerformAction(ctx, params.Namespace, "edit")
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
+		return
+	}
+	if !canEdit {
+		utils.ErrorResponse(w, http.StatusForbidden, fmt.Sprintf("Edit permission required for namespace: %s", params.Namespace))
 		return
 	}
 

@@ -6,6 +6,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -63,8 +64,21 @@ func (s *Service) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 	resourceService := NewResourceService(resourceRepo, gvrResolver)
 
 	// Create context
-	ctx, cancel := utils.CreateTimeoutContext()
+	ctx, cancel := utils.CreateRequestContext(r)
 	defer cancel()
+
+	// Validate namespace access if resource is namespaced
+	if namespacedParam && namespace != "" && namespace != "all" {
+		hasAccess, err := permissions.HasNamespaceAccess(ctx, namespace)
+		if err != nil {
+			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
+			return
+		}
+		if !hasAccess {
+			utils.ErrorResponse(w, http.StatusForbidden, fmt.Sprintf("Access denied to namespace: %s", namespace))
+			return
+		}
+	}
 
 	// Prepare request
 	getReq := GetResourceRequest{

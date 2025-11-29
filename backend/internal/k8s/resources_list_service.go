@@ -12,6 +12,7 @@ import (
 
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
 	"github.com/flaucha/DKonsole/backend/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/permissions"
 )
 
 // ResourceListService provides business logic for listing Kubernetes resources
@@ -40,12 +41,38 @@ type ListResourcesRequest struct {
 
 // ListResources fetches and transforms Kubernetes resources of a specific kind
 // This is the business logic layer that handles the transformation of different resource types
+// It filters resources based on user permissions before returning them
 func (s *ResourceListService) ListResources(ctx context.Context, req ListResourcesRequest) ([]models.Resource, error) {
+	// Get user's allowed namespaces
+	allowedNamespaces, err := permissions.GetAllowedNamespaces(ctx)
+	if err != nil {
+		// If we can't get permissions, deny access (fail secure)
+		return nil, fmt.Errorf("failed to get user permissions: %w", err)
+	}
+
 	ns := req.Namespace
 	allNamespaces := req.AllNamespaces
 	if ns == "" {
 		ns = "default"
 	}
+
+	// If user is not admin and has restricted permissions, validate namespace access
+	if len(allowedNamespaces) > 0 {
+		// User has restricted permissions - check if requested namespace is allowed
+		if !allNamespaces && ns != "" {
+			hasAccess, err := permissions.HasNamespaceAccess(ctx, ns)
+			if err != nil {
+				return nil, fmt.Errorf("failed to check namespace access: %w", err)
+			}
+			if !hasAccess {
+				return nil, fmt.Errorf("access denied to namespace: %s", ns)
+			}
+		}
+		// If allNamespaces is requested but user has restrictions, we'll query all
+		// and filter the results afterwards (this is acceptable for now)
+		// TODO: Optimize by querying only allowed namespaces when allNamespaces=true
+	}
+
 	listNamespace := ns
 	if allNamespaces {
 		listNamespace = ""
@@ -58,66 +85,73 @@ func (s *ResourceListService) ListResources(ctx context.Context, req ListResourc
 	}
 
 	var resources []models.Resource
-	var err error
+	var listErr error
 
 	// Delegate to specific transformer based on kind
 	switch req.Kind {
 	case "Deployment":
-		resources, err = s.listDeployments(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listDeployments(ctx, req.Client, listNamespace, listOpts)
 	case "Node":
-		resources, err = s.listNodes(ctx, req.Client, listOpts)
+		resources, listErr = s.listNodes(ctx, req.Client, listOpts)
 	case "Pod":
-		resources, err = s.listPods(ctx, req.Client, req.MetricsClient, listNamespace, listOpts)
+		resources, listErr = s.listPods(ctx, req.Client, req.MetricsClient, listNamespace, listOpts)
 	case "ConfigMap":
-		resources, err = s.listConfigMaps(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listConfigMaps(ctx, req.Client, listNamespace, listOpts)
 	case "Secret":
-		resources, err = s.listSecrets(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listSecrets(ctx, req.Client, listNamespace, listOpts)
 	case "Job":
-		resources, err = s.listJobs(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listJobs(ctx, req.Client, listNamespace, listOpts)
 	case "CronJob":
-		resources, err = s.listCronJobs(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listCronJobs(ctx, req.Client, listNamespace, listOpts)
 	case "StatefulSet":
-		resources, err = s.listStatefulSets(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listStatefulSets(ctx, req.Client, listNamespace, listOpts)
 	case "DaemonSet":
-		resources, err = s.listDaemonSets(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listDaemonSets(ctx, req.Client, listNamespace, listOpts)
 	case "HorizontalPodAutoscaler":
-		resources, err = s.listHPAs(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listHPAs(ctx, req.Client, listNamespace, listOpts)
 	case "Service":
-		resources, err = s.listServices(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listServices(ctx, req.Client, listNamespace, listOpts)
 	case "Ingress":
-		resources, err = s.listIngresses(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listIngresses(ctx, req.Client, listNamespace, listOpts)
 	case "ServiceAccount":
-		resources, err = s.listServiceAccounts(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listServiceAccounts(ctx, req.Client, listNamespace, listOpts)
 	case "Role":
-		resources, err = s.listRoles(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listRoles(ctx, req.Client, listNamespace, listOpts)
 	case "ClusterRole":
-		resources, err = s.listClusterRoles(ctx, req.Client, listOpts)
+		resources, listErr = s.listClusterRoles(ctx, req.Client, listOpts)
 	case "RoleBinding":
-		resources, err = s.listRoleBindings(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listRoleBindings(ctx, req.Client, listNamespace, listOpts)
 	case "ClusterRoleBinding":
-		resources, err = s.listClusterRoleBindings(ctx, req.Client, listOpts)
+		resources, listErr = s.listClusterRoleBindings(ctx, req.Client, listOpts)
 	case "NetworkPolicy":
-		resources, err = s.listNetworkPolicies(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listNetworkPolicies(ctx, req.Client, listNamespace, listOpts)
 	case "PersistentVolumeClaim":
-		resources, err = s.listPVCs(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listPVCs(ctx, req.Client, listNamespace, listOpts)
 	case "PersistentVolume":
-		resources, err = s.listPVs(ctx, req.Client, listOpts)
+		resources, listErr = s.listPVs(ctx, req.Client, listOpts)
 	case "StorageClass":
-		resources, err = s.listStorageClasses(ctx, req.Client, listOpts)
+		resources, listErr = s.listStorageClasses(ctx, req.Client, listOpts)
 	case "ResourceQuota":
-		resources, err = s.listResourceQuotas(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listResourceQuotas(ctx, req.Client, listNamespace, listOpts)
 	case "LimitRange":
-		resources, err = s.listLimitRanges(ctx, req.Client, listNamespace, listOpts)
+		resources, listErr = s.listLimitRanges(ctx, req.Client, listNamespace, listOpts)
 	default:
 		// Return empty list for unknown kinds
 		resources = []models.Resource{}
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to list %s resources: %w", req.Kind, err)
+	if listErr != nil {
+		return nil, fmt.Errorf("failed to list %s resources: %w", req.Kind, listErr)
 	}
 
-	return resources, nil
+	// Filter resources based on user permissions (final check)
+	// This ensures that even if we query all namespaces, we only return resources the user has access to
+	filteredResources, err := permissions.FilterResources(ctx, resources)
+	if err != nil {
+		return nil, fmt.Errorf("failed to filter resources by permissions: %w", err)
+	}
+
+	return filteredResources, nil
 }
 
 // Transformer functions - Each function transforms a specific Kubernetes resource type
