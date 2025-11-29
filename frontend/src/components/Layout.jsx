@@ -209,72 +209,19 @@ const Layout = ({ children, headerContent }) => {
                             to="/dashboard/overview"
                         />
 
-                        {/* Workloads */}
-                        <SidebarItem
-                            icon={Box}
-                            label="Workloads"
-                            hasChildren
-                            expanded={expandedMenus.workloads}
-                            onClick={() => toggleMenu('workloads')}
-                        />
-                        <SubMenu isOpen={expandedMenus.workloads}>
-                            {['Deployments', 'Pods', 'ConfigMaps', 'Secrets', 'Jobs', 'CronJobs', 'StatefulSets', 'DaemonSets', 'HPA'].map(item => (
-                                <SubItem
-                                    key={item}
-                                    label={item}
-                                    to={getPath(item)}
-                                />
-                            ))}
-                        </SubMenu>
-
-                        {/* Networking */}
-                        <SidebarItem
-                            icon={Network}
-                            label="Networking"
-                            hasChildren
-                            expanded={expandedMenus.networking}
-                            onClick={() => toggleMenu('networking')}
-                        />
-                        <SubMenu isOpen={expandedMenus.networking}>
-                            {['Services', 'Ingresses', 'Network Policies'].map(item => (
-                                <SubItem
-                                    key={item}
-                                    label={item}
-                                    to={getPath(item)}
-                                />
-                            ))}
-                        </SubMenu>
-
-                        {/* Storage */}
-                        <SidebarItem
-                            icon={HardDrive}
-                            label="Storage"
-                            hasChildren
-                            expanded={expandedMenus.storage}
-                            onClick={() => toggleMenu('storage')}
-                        />
-                        <SubMenu isOpen={expandedMenus.storage}>
-                            {['PVCs', 'PVs', 'Storage Classes'].map(item => (
-                                <SubItem
-                                    key={item}
-                                    label={item}
-                                    to={getPath(item)}
-                                />
-                            ))}
-                        </SubMenu>
-
-                        {/* Access Control - Only for admins */}
-                        {!checkingAdmin && isAdmin && (
+                        {/* Only show other menu items if user has permissions */}
+                        {!checkingAdmin && hasPermissions && (
                             <>
+                                {/* Workloads */}
                                 <SidebarItem
-                                    icon={Shield}
-                                    label="Access Control"
+                                    icon={Box}
+                                    label="Workloads"
                                     hasChildren
-                                    expanded={expandedMenus.accessControl}
-                                    onClick={() => toggleMenu('accessControl')}
+                                    expanded={expandedMenus.workloads}
+                                    onClick={() => toggleMenu('workloads')}
                                 />
-                                <SubMenu isOpen={expandedMenus.accessControl}>
-                                    {['Service Accounts', 'Roles', 'Role Bindings', 'Cluster Roles', 'Cluster Role Bindings'].map(item => (
+                                <SubMenu isOpen={expandedMenus.workloads}>
+                                    {['Deployments', 'Pods', 'ConfigMaps', 'Secrets', 'Jobs', 'CronJobs', 'StatefulSets', 'DaemonSets', 'HPA'].map(item => (
                                         <SubItem
                                             key={item}
                                             label={item}
@@ -282,32 +229,90 @@ const Layout = ({ children, headerContent }) => {
                                         />
                                     ))}
                                 </SubMenu>
+
+                                {/* Networking */}
+                                <SidebarItem
+                                    icon={Network}
+                                    label="Networking"
+                                    hasChildren
+                                    expanded={expandedMenus.networking}
+                                    onClick={() => toggleMenu('networking')}
+                                />
+                                <SubMenu isOpen={expandedMenus.networking}>
+                                    {['Services', 'Ingresses', 'Network Policies'].map(item => (
+                                        <SubItem
+                                            key={item}
+                                            label={item}
+                                            to={getPath(item)}
+                                        />
+                                    ))}
+                                </SubMenu>
+
+                                {/* Storage */}
+                                <SidebarItem
+                                    icon={HardDrive}
+                                    label="Storage"
+                                    hasChildren
+                                    expanded={expandedMenus.storage}
+                                    onClick={() => toggleMenu('storage')}
+                                />
+                                <SubMenu isOpen={expandedMenus.storage}>
+                                    {['PVCs', 'PVs', 'Storage Classes'].map(item => (
+                                        <SubItem
+                                            key={item}
+                                            label={item}
+                                            to={getPath(item)}
+                                        />
+                                    ))}
+                                </SubMenu>
+
+                                {/* Access Control - Only for admins */}
+                                {isAdmin && (
+                                    <>
+                                        <SidebarItem
+                                            icon={Shield}
+                                            label="Access Control"
+                                            hasChildren
+                                            expanded={expandedMenus.accessControl}
+                                            onClick={() => toggleMenu('accessControl')}
+                                        />
+                                        <SubMenu isOpen={expandedMenus.accessControl}>
+                                            {['Service Accounts', 'Roles', 'Role Bindings', 'Cluster Roles', 'Cluster Role Bindings'].map(item => (
+                                                <SubItem
+                                                    key={item}
+                                                    label={item}
+                                                    to={getPath(item)}
+                                                />
+                                            ))}
+                                        </SubMenu>
+                                    </>
+                                )}
+
+                                <SidebarItem
+                                    icon={Database}
+                                    label="Namespaces"
+                                    to="/dashboard/namespaces"
+                                />
+
+                                <SidebarItem
+                                    icon={ListTree}
+                                    label="API Explorer"
+                                    to="/dashboard/api-explorer"
+                                />
+
+                                <SidebarItem
+                                    icon={Package}
+                                    label="Helm Charts"
+                                    to="/dashboard/helm-charts"
+                                />
+
+                                <SidebarItem
+                                    icon={Settings}
+                                    label="Settings"
+                                    to="/dashboard/settings"
+                                />
                             </>
                         )}
-
-                        <SidebarItem
-                            icon={Database}
-                            label="Namespaces"
-                            to="/dashboard/namespaces"
-                        />
-
-                        <SidebarItem
-                            icon={ListTree}
-                            label="API Explorer"
-                            to="/dashboard/api-explorer"
-                        />
-
-                        <SidebarItem
-                            icon={Package}
-                            label="Helm Charts"
-                            to="/dashboard/helm-charts"
-                        />
-
-                        <SidebarItem
-                            icon={Settings}
-                            label="Settings"
-                            to="/dashboard/settings"
-                        />
                     </nav>
 
                     <div className="mt-auto border-t border-gray-800">
