@@ -573,10 +573,11 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 		"userDN":   userDN,
 	})
 
-	// Fallback: Search for groups with member attribute (standard LDAP)
-	searchFilter := fmt.Sprintf("(&(objectClass=groupOfNames)(member=%s))", userDN)
+	// Fallback: Search for groups with member or uniqueMember attribute
+	// Try both groupOfNames (member) and groupOfUniqueNames (uniqueMember)
+	searchFilter := fmt.Sprintf("(|(member=%s)(uniqueMember=%s))", userDN, userDN)
 	if config.UserFilter != "" {
-		searchFilter = fmt.Sprintf("(&(objectClass=groupOfNames)(member=%s)%s)", userDN, config.UserFilter)
+		searchFilter = fmt.Sprintf("(&(|(member=%s)(uniqueMember=%s))%s)", userDN, userDN, config.UserFilter)
 	}
 
 	utils.LogInfo("Trying fallback search for groups", map[string]interface{}{
