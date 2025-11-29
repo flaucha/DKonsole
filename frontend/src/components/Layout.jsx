@@ -303,6 +303,15 @@ const Layout = ({ children, headerContent }) => {
                                     ))}
                                 </SubMenu>
 
+                                {/* Nodes - Only for admins */}
+                                {isAdmin && (
+                                    <SidebarItem
+                                        icon={Server}
+                                        label="Nodes"
+                                        to="/dashboard/workloads/Node"
+                                    />
+                                )}
+
                                 {/* Access Control - Only for admins */}
                                 {isAdmin && (
                                     <>
