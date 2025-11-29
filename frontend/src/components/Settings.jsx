@@ -20,6 +20,58 @@ const Settings = () => {
     const [isAdmin, setIsAdmin] = useState(false);
     const [checkingAdmin, setCheckingAdmin] = useState(true);
 
+    useEffect(() => {
+        // Check if user is admin (core admin or LDAP admin group member)
+        // We check by trying to access a settings endpoint
+        const checkAdmin = async () => {
+            try {
+                const res = await authFetch('/api/settings/prometheus/url');
+                if (res.ok || res.status === 404) {
+                    // If we can access it (or it doesn't exist), user is admin
+                    setIsAdmin(true);
+                } else if (res.status === 403) {
+                    // Forbidden - user is not admin
+                    setIsAdmin(false);
+                } else {
+                    // Other error - assume not admin for security
+                    setIsAdmin(false);
+                }
+            } catch (err) {
+                // Error accessing - assume not admin for security
+                setIsAdmin(false);
+            } finally {
+                setCheckingAdmin(false);
+            }
+        };
+        if (user) {
+            checkAdmin();
+        } else {
+            setCheckingAdmin(false);
+        }
+    }, [authFetch, user]);
+
+    // Show loading while checking admin status
+    if (checkingAdmin) {
+        return (
+            <div className="p-6 max-w-5xl mx-auto">
+                <div className="text-white">Checking permissions...</div>
+            </div>
+        );
+    }
+
+    // Show error if user is not admin
+    if (!isAdmin) {
+        return (
+            <div className="p-6 max-w-5xl mx-auto">
+                <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 text-center">
+                    <AlertCircle size={48} className="mx-auto mb-4 text-red-400" />
+                    <h2 className="text-xl font-semibold text-white mb-2">Access Denied</h2>
+                    <p className="text-gray-400">You need admin privileges to access settings.</p>
+                </div>
+            </div>
+        );
+    }
+
     const handleResetDefaults = () => {
         setTheme('default');
         setFont('Inter');
