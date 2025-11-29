@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.2.8-green.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.2.8
+git checkout v1.3.0
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -115,18 +115,34 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.2.8"
+  tag: "1.3.0"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.2.8`
+- **Unified**: `dkonsole/dkonsole:1.3.0`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.3.0 (2025-11-29)
+**✨ Deployment Rollout & UI Improvements**
+
+This release adds deployment rollout functionality, improves search UX, and enhances the permission system.
+
+- **Deployment Rollout**: Added rollout button for deployments with detailed confirmation dialog
+  - Shows deployment strategy information (RollingUpdate/Recreate)
+  - Displays replica count, ready pods, and strategy parameters
+  - Provides detailed behavior explanation based on strategy and replica count
+- **Search Field Clear Button**: Added "X" button to all search/filter fields for quick clearing
+- **Light Mode Logo Support**: Separate logo upload for light themes with automatic fallback
+- **LDAP Configuration**: Consolidated all LDAP configuration into a single `ldap-config` Secret
+- **Settings Scroll**: Improved scroll behavior - only content area scrolls, tabs remain fixed
+- **Overview Enhancements**: Separate display for Worker Nodes and Control Planes with role indicators
+- **Permission System**: Refined permission system with clearer hierarchy (view < edit < admin)
 
 ### v1.2.8 (2025-11-29)
 **✨ Settings Management & Metrics Fixes**
@@ -166,35 +182,6 @@ This release introduces a web-based setup mode for initial configuration and aut
   - Prevents duplicate setup attempts
   - Automatic redirect to login after successful setup
 - **Security**: Passwords are now hashed using Argon2id with secure random salt generation
-
-### v1.2.6 (2025-11-27)
-**✨ UI Enhancements & Logo Fixes**
-
-This release adds success notifications, service DNS display, and fixes logo loading consistency.
-
-- **CronJob Trigger Success Popup**: Added success notification when manually triggering a CronJob with link to job details
-- **Service DNS Display**: Added DNS information to Service details with click-to-copy functionality
-- **Build Script Auto-Commit**: Build script now automatically commits and pushes changes before building
-- **Logo Loading Fix**: Fixed logo display consistency between login and main page
-  - Login page now uses same logo as main page (custom or default)
-  - GET endpoint for `/api/logo` is now public (no authentication required)
-  - Added timestamp to logo URL to prevent browser caching
-
-### v1.2.5 (2025-11-26)
-**✨ Enhanced Resource Management & UI Improvements**
-
-This release adds comprehensive pod list views, improved navigation, and fixes several UI issues.
-
-- **Deployment Image SHA Display**: Smart image SHA handling with shortened display, hover tooltip, and click-to-copy
-- **Pod List Tabs**: Added "Pod List" tabs to Deployment, DaemonSet, and StatefulSet details with navigation to pod details
-- **Ingress Service Links**: Display and navigate to services pointed to by ingresses
-- **Service Selector Tab**: Added "Selector" tab showing associated pods
-- **Job Runs Tab**: Added "Runs" tab listing job pods
-- **CronJob Manual Run**: Added manual run button for CronJobs
-- **CronJob Status Colors**: Improved status colors (Succeeded=green, Failed=red, others=yellow)
-- **YAML Editor Fix**: Fixed duplicate `apiVersion` field issue
-- **CronJob Trigger Fix**: Fixed EOF error when triggering CronJobs
-- **Action Menu Alignment**: Fixed three-dot menu alignment in all lists
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 
