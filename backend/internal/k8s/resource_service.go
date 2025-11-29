@@ -45,7 +45,7 @@ type UpdateResourceRequest struct {
 func (s *ResourceService) UpdateResource(ctx context.Context, req UpdateResourceRequest) error {
 	// Validate namespace access if resource is namespaced
 	if req.Namespace != "" {
-		// Check if user has edit or admin permission
+		// Check if user has edit permission
 		canEdit, err := permissions.CanPerformAction(ctx, req.Namespace, "edit")
 		if err != nil {
 			return fmt.Errorf("failed to check permissions: %w", err)
@@ -180,7 +180,7 @@ func (s *ResourceService) DeleteResource(ctx context.Context, req DeleteResource
 
 	// Validate namespace access if resource is namespaced
 	if meta.Namespaced && req.Namespace != "" {
-		// Check if user has edit or admin permission
+		// Check if user has edit permission
 		canEdit, err := permissions.CanPerformAction(ctx, req.Namespace, "edit")
 		if err != nil {
 			return fmt.Errorf("failed to check permissions: %w", err)

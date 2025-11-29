@@ -66,6 +66,8 @@ const Settings = () => {
         { id: 'nebula', name: 'Nebula Pink', color: '#0a0a1e' },
         { id: 'dracula', name: 'Dracula', color: '#282a36' },
         { id: 'cyberpunk', name: 'Cyberpunk', color: '#000000' },
+        { id: 'light', name: 'Light Mode', color: '#ffffff' },
+        { id: 'cream', name: 'Cream', color: '#f5f5dc' },
     ];
 
     const fontGroups = {

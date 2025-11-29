@@ -42,7 +42,7 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 	// Validate namespace access if resource is namespaced
 	ctx := r.Context()
 	if namespaced && namespace != "" {
-		// Check if user has edit or admin permission
+		// Check if user has edit permission
 		canEdit, err := permissions.CanPerformAction(ctx, namespace, "edit")
 		if err != nil {
 			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
@@ -533,7 +533,7 @@ func (s *Service) DeleteResource(w http.ResponseWriter, r *http.Request) {
 	// Validate namespace access if namespace is provided
 	ctx := r.Context()
 	if namespace != "" {
-		// Check if user has edit or admin permission
+		// Check if user has edit permission
 		canEdit, err := permissions.CanPerformAction(ctx, namespace, "edit")
 		if err != nil {
 			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
