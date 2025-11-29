@@ -9,12 +9,25 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
+// LDAPAdminChecker defines interface for checking LDAP admin groups
+type LDAPAdminChecker interface {
+	GetUserGroups(ctx context.Context, username string) ([]string, error)
+	GetConfig(ctx context.Context) (*models.LDAPConfig, error)
+}
+
 // Service provides permission checking and filtering functionality
-type Service struct{}
+type Service struct {
+	ldapAdminChecker LDAPAdminChecker
+}
 
 // NewService creates a new permissions service
 func NewService() *Service {
 	return &Service{}
+}
+
+// SetLDAPAdminChecker sets the LDAP admin checker
+func (s *Service) SetLDAPAdminChecker(checker LDAPAdminChecker) {
+	s.ldapAdminChecker = checker
 }
 
 // GetUserFromContext extracts user information from the request context
@@ -237,4 +250,57 @@ func FilterResources(ctx context.Context, resources []models.Resource) ([]models
 	}
 
 	return filtered, nil
+}
+
+// IsAdmin checks if the user is an admin (core admin or LDAP admin group member)
+func IsAdmin(ctx context.Context, ldapAdminChecker LDAPAdminChecker) (bool, error) {
+	claims, err := GetUserFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	// Core admin has full access
+	if claims.Role == "admin" {
+		return true, nil
+	}
+
+	// Check if user belongs to LDAP admin groups
+	if ldapAdminChecker != nil {
+		config, err := ldapAdminChecker.GetConfig(ctx)
+		if err == nil && config != nil && config.Enabled && len(config.AdminGroups) > 0 {
+			// Get user's groups
+			userGroups, err := ldapAdminChecker.GetUserGroups(ctx, claims.Username)
+			if err == nil {
+				// Check if user belongs to any admin group
+				for _, adminGroup := range config.AdminGroups {
+					for _, userGroup := range userGroups {
+						if userGroup == adminGroup {
+							utils.LogInfo("User is LDAP admin group member", map[string]interface{}{
+								"username":   claims.Username,
+								"admin_group": adminGroup,
+							})
+							return true, nil
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return false, nil
+}
+
+// RequireAdmin validates that the user is an admin (core admin or LDAP admin group member)
+// Returns an error if the user is not an admin
+func RequireAdmin(ctx context.Context, ldapAdminChecker LDAPAdminChecker) error {
+	isAdmin, err := IsAdmin(ctx, ldapAdminChecker)
+	if err != nil {
+		return fmt.Errorf("failed to check admin status: %w", err)
+	}
+
+	if !isAdmin {
+		return fmt.Errorf("admin access required")
+	}
+
+	return nil
 }

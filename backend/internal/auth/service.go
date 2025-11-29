@@ -15,6 +15,8 @@ type LDAPAuthenticator interface {
 	AuthenticateUser(ctx context.Context, username, password string) error
 	GetUserPermissions(ctx context.Context, username string) (map[string]string, error)
 	ValidateUserGroup(ctx context.Context, username string) error
+	GetUserGroups(ctx context.Context, username string) ([]string, error)
+	GetConfig(ctx context.Context) (*models.LDAPConfig, error)
 }
 
 // AuthService provides business logic for authentication operations.
