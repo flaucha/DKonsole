@@ -10,7 +10,7 @@ const Login = () => {
     const [error, setError] = useState('');
     const [logoSrc, setLogoSrc] = useState(defaultLogo);
     const [ldapEnabled, setLdapEnabled] = useState(false);
-    const [activeTab, setActiveTab] = useState('core'); // 'core' or 'ldap'
+    const [activeTab, setActiveTab] = useState('ldap'); // 'core' or 'ldap' - default to LDAP
     const { login } = useAuth();
     const navigate = useNavigate();
 
@@ -37,7 +37,9 @@ const Login = () => {
             .then(data => {
                 if (data && data.enabled) {
                     setLdapEnabled(true);
-                    setActiveTab('core'); // Default to core tab
+                    setActiveTab('ldap'); // Default to LDAP tab when enabled
+                } else {
+                    setActiveTab('core'); // Default to core if LDAP is not enabled
                 }
             })
             .catch(() => { });
@@ -89,17 +91,17 @@ const Login = () => {
                     <div className="flex space-x-1 border-b border-gray-700 mb-6">
                         <button
                             type="button"
-                            className={`flex-1 pb-2 px-4 flex items-center justify-center font-medium transition-colors ${activeTab === 'core' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
-                            onClick={() => setActiveTab('core')}
-                        >
-                            <Shield size={18} className="mr-2" /> CORE
-                        </button>
-                        <button
-                            type="button"
                             className={`flex-1 pb-2 px-4 flex items-center justify-center font-medium transition-colors ${activeTab === 'ldap' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
                             onClick={() => setActiveTab('ldap')}
                         >
                             <Users size={18} className="mr-2" /> LDAP
+                        </button>
+                        <button
+                            type="button"
+                            className={`flex-1 pb-2 px-4 flex items-center justify-center font-medium transition-colors ${activeTab === 'core' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                            onClick={() => setActiveTab('core')}
+                        >
+                            <Shield size={18} className="mr-2" /> CORE
                         </button>
                     </div>
                 )}
