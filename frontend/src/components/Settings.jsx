@@ -124,7 +124,7 @@ const Settings = () => {
             </div>
 
             {activeTab === 'clusters' && (
-                <div className="space-y-6">
+                <div className="w-full space-y-6">
                     <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
                         <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
                             <Server size={20} className="mr-2 text-blue-400" /> Configured Clusters
@@ -154,21 +154,17 @@ const Settings = () => {
             )}
 
             {activeTab === 'general' && (
-                <>
+                <div className="w-full">
                     {checkingAdmin ? (
-                        <div className="p-6 max-w-5xl mx-auto">
-                            <div className="text-white">Checking permissions...</div>
-                        </div>
+                        <div className="text-white">Checking permissions...</div>
                     ) : !isAdmin ? (
-                        <div className="p-6 max-w-5xl mx-auto">
-                            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 text-center">
-                                <AlertCircle size={48} className="mx-auto mb-4 text-red-400" />
-                                <h2 className="text-xl font-semibold text-white mb-2">Access Denied</h2>
-                                <p className="text-gray-400">You need admin privileges to access general settings.</p>
-                            </div>
+                        <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 text-center">
+                            <AlertCircle size={48} className="mx-auto mb-4 text-red-400" />
+                            <h2 className="text-xl font-semibold text-white mb-2">Access Denied</h2>
+                            <p className="text-gray-400">You need admin privileges to access general settings.</p>
                         </div>
                     ) : (
-                        <div className="space-y-6">
+                        <div className="w-full space-y-6">
                             {/* Prometheus URL Settings */}
                             <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
                                 <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
@@ -186,31 +182,27 @@ const Settings = () => {
                             </div>
                         </div>
                     )}
-                </>
+                </div>
             )}
 
             {activeTab === 'ldap' && (
-                <>
+                <div className="w-full">
                     {checkingAdmin ? (
-                        <div className="p-6 max-w-5xl mx-auto">
-                            <div className="text-white">Checking permissions...</div>
-                        </div>
+                        <div className="text-white">Checking permissions...</div>
                     ) : !isAdmin ? (
-                        <div className="p-6 max-w-5xl mx-auto">
-                            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 text-center">
-                                <AlertCircle size={48} className="mx-auto mb-4 text-red-400" />
-                                <h2 className="text-xl font-semibold text-white mb-2">Access Denied</h2>
-                                <p className="text-gray-400">You need admin privileges to access LDAP settings.</p>
-                            </div>
+                        <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 text-center">
+                            <AlertCircle size={48} className="mx-auto mb-4 text-red-400" />
+                            <h2 className="text-xl font-semibold text-white mb-2">Access Denied</h2>
+                            <p className="text-gray-400">You need admin privileges to access LDAP settings.</p>
                         </div>
                     ) : (
                         <LDAPSettings authFetch={authFetch} error={error} setError={setError} success={success} setSuccess={setSuccess} />
                     )}
-                </>
+                </div>
             )}
 
             {activeTab === 'appearance' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Theme Column */}
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg h-full">
@@ -390,7 +382,7 @@ const Settings = () => {
             )}
 
             {activeTab === 'about' && (
-                <div className="space-y-6">
+                <div className="w-full space-y-6">
                     <div className="bg-gray-800 p-8 rounded-lg border border-gray-700 shadow-lg">
                         <div className="flex items-center mb-6">
                             <Code size={32} className="mr-3 text-blue-400" />
