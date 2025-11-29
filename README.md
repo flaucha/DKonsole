@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.2.7-green.svg)
+![Version](https://img.shields.io/badge/version-1.2.8-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.2.7
+git checkout v1.2.8
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -115,18 +115,38 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.2.7"
+  tag: "1.2.8"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.2.7`
+- **Unified**: `dkonsole/dkonsole:1.2.8`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.2.8 (2025-11-29)
+**✨ Settings Management & Metrics Fixes**
+
+This release adds settings management and fixes Prometheus metrics functionality.
+
+- **Settings Module**: New settings management system for application configuration
+  - Prometheus URL configuration via web interface
+  - Password change functionality with confirmation dialog
+  - Settings stored in Kubernetes ConfigMap for persistence
+  - Dynamic Prometheus service updates without restart
+- **Favicon Size**: Increased favicon size from 120x120 to 512x512 for better visibility
+- **Password Change UX**: Improved password change flow with confirmation popup
+  - Shows warning about automatic logout
+  - Requires explicit confirmation before changing password
+  - Automatic logout and redirect to login after password change
+- **Prometheus Metrics Fix**: Fixed metrics not working after URL update
+  - Added thread-safe URL updates with mutex protection
+  - Prometheus service now updates dynamically when URL changes
+  - ConfigMap is read at startup to load saved Prometheus URL
 
 ### v1.2.7 (2025-11-28)
 **✨ Setup Mode & Auto-Reload**

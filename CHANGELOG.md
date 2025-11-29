@@ -5,6 +5,32 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.8] - 2025-11-29
+
+### ✨ Added
+
+- **Settings Module**: New settings management system for application configuration
+  - Prometheus URL configuration via web interface
+  - Password change functionality with confirmation dialog
+  - Settings stored in Kubernetes ConfigMap for persistence
+  - Dynamic Prometheus service updates without restart
+
+### 🔧 Changed
+
+- **Favicon Size**: Increased favicon size from 120x120 to 512x512 for better visibility
+- **Password Change UX**: Improved password change flow with confirmation popup (similar to delete confirmations)
+  - Shows warning about automatic logout
+  - Requires explicit confirmation before changing password
+  - Automatic logout and redirect to login after password change
+
+### 🐛 Fixed
+
+- **Prometheus Metrics**: Fixed metrics not working after URL update
+  - Added thread-safe URL updates with mutex protection
+  - Prometheus service now updates dynamically when URL changes
+  - ConfigMap is read at startup to load saved Prometheus URL
+  - Metrics tab now displays correctly after URL configuration
+
 ## [1.2.7] - 2025-11-28
 
 ### ✨ Added

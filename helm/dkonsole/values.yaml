@@ -34,7 +34,7 @@ allowedOrigins: ""
 # -----------------------------------------------------------------------------
 image:
   repository: dkonsole/dkonsole
-  tag: "1.2.7"
+  tag: "1.2.8"
   pullPolicy: Always
 
 # Image pull secrets (optional)
