@@ -8,17 +8,42 @@ import { formatDate } from '../utils/dateUtils';
 
 const ApiExplorer = ({ namespace }) => {
     const { currentCluster } = useSettings();
-    const { authFetch } = useAuth();
+    const { authFetch, user } = useAuth();
     const [apis, setApis] = useState([]);
     const [filter, setFilter] = useState('');
     const [selected, setSelected] = useState(null);
     const [objects, setObjects] = useState([]);
     const [loadingApis, setLoadingApis] = useState(false);
     const [loadingObjects, setLoadingObjects] = useState(false);
-    const [scopeFilter] = useState('namespaced'); // Only namespaced resources allowed
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [checkingAdmin, setCheckingAdmin] = useState(true);
+    const [scopeFilter, setScopeFilter] = useState('namespaced'); // 'namespaced', 'cluster', or 'all'
     const [yamlResource, setYamlResource] = useState(null); // {name, namespace, kind}
     const [showSuggestions, setShowSuggestions] = useState(false);
     const searchRef = useRef(null);
+
+    // Check if user is admin
+    useEffect(() => {
+        const checkAdmin = async () => {
+            try {
+                const res = await authFetch('/api/settings/prometheus/url');
+                if (res.ok || res.status === 404) {
+                    setIsAdmin(true);
+                } else {
+                    setIsAdmin(false);
+                }
+            } catch (err) {
+                setIsAdmin(false);
+            } finally {
+                setCheckingAdmin(false);
+            }
+        };
+        if (user) {
+            checkAdmin();
+        } else {
+            setCheckingAdmin(false);
+        }
+    }, [authFetch, user]);
 
     const fetchApis = () => {
         setLoadingApis(true);
@@ -144,11 +169,46 @@ const ApiExplorer = ({ namespace }) => {
                         )}
                     </div>
 
-                    <div className="bg-gray-800 border border-gray-700 rounded-md flex overflow-hidden text-sm shrink-0">
-                        <div className="px-3 py-1.5 flex items-center space-x-1 bg-blue-900 text-blue-100">
-                            <MapPin size={14} /> <span className="hidden sm:inline">Namespaced Only</span>
+                    {!checkingAdmin && isAdmin ? (
+                        <div className="bg-gray-800 border border-gray-700 rounded-md flex overflow-hidden text-sm shrink-0">
+                            <button
+                                onClick={() => setScopeFilter('namespaced')}
+                                className={`px-3 py-1.5 flex items-center space-x-1 transition-colors ${
+                                    scopeFilter === 'namespaced'
+                                        ? 'bg-blue-900 text-blue-100'
+                                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                                }`}
+                            >
+                                <MapPin size={14} /> <span className="hidden sm:inline">Namespaced</span>
+                            </button>
+                            <button
+                                onClick={() => setScopeFilter('cluster')}
+                                className={`px-3 py-1.5 flex items-center space-x-1 transition-colors border-l border-gray-700 ${
+                                    scopeFilter === 'cluster'
+                                        ? 'bg-blue-900 text-blue-100'
+                                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                                }`}
+                            >
+                                <Globe size={14} /> <span className="hidden sm:inline">Cluster</span>
+                            </button>
+                            <button
+                                onClick={() => setScopeFilter('all')}
+                                className={`px-3 py-1.5 flex items-center space-x-1 transition-colors border-l border-gray-700 ${
+                                    scopeFilter === 'all'
+                                        ? 'bg-blue-900 text-blue-100'
+                                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                                }`}
+                            >
+                                <ListTree size={14} /> <span className="hidden sm:inline">All</span>
+                            </button>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="bg-gray-800 border border-gray-700 rounded-md flex overflow-hidden text-sm shrink-0">
+                            <div className="px-3 py-1.5 flex items-center space-x-1 bg-blue-900 text-blue-100">
+                                <MapPin size={14} /> <span className="hidden sm:inline">Namespaced Only</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
