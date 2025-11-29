@@ -493,6 +493,35 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 	return groups, nil
 }
 
+// ValidateUserGroup checks if the user belongs to the required group (if configured)
+func (s *Service) ValidateUserGroup(ctx context.Context, username string) error {
+	config, err := s.repo.GetConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get LDAP config: %w", err)
+	}
+
+	// If no required group is configured, allow all authenticated users
+	if config.RequiredGroup == "" {
+		return nil
+	}
+
+	// Get user groups
+	groups, err := s.GetUserGroups(ctx, username)
+	if err != nil {
+		return fmt.Errorf("failed to get user groups: %w", err)
+	}
+
+	// Check if user belongs to required group
+	for _, group := range groups {
+		if group == config.RequiredGroup {
+			return nil
+		}
+	}
+
+	// User doesn't belong to required group
+	return fmt.Errorf("user is not a member of required group: %s", config.RequiredGroup)
+}
+
 // GetUserPermissions retrieves the permissions for a user based on their LDAP groups
 func (s *Service) GetUserPermissions(ctx context.Context, username string) (map[string]string, error) {
 	// Get user groups

@@ -647,7 +647,8 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
         baseDN: '',
         userDN: 'uid',
         groupDN: '',
-        userFilter: ''
+        userFilter: '',
+        requiredGroup: ''
     });
     const [credentials, setCredentials] = useState({
         username: '',
@@ -1049,6 +1050,20 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
                                             placeholder="ou=groups,dc=example,dc=com"
                                             className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                                         />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Required Group (Optional)</label>
+                                        <input
+                                            type="text"
+                                            value={config.requiredGroup || ''}
+                                            onChange={(e) => setConfig({ ...config, requiredGroup: e.target.value })}
+                                            placeholder="access_group (leave empty to allow all authenticated users)"
+                                            className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Only users in this group will be allowed to login. Leave empty to allow all authenticated LDAP users.
+                                        </p>
                                     </div>
 
                                     <button

@@ -280,12 +280,13 @@ func NormalizeKind(kind string) string {
 
 // LDAPConfig representa la configuración del servidor LDAP
 type LDAPConfig struct {
-	Enabled    bool   `json:"enabled"`
-	URL        string `json:"url"`
-	BaseDN     string `json:"baseDN"`
-	UserDN     string `json:"userDN"`
-	GroupDN    string `json:"groupDN"`
-	UserFilter string `json:"userFilter,omitempty"`
+	Enabled      bool   `json:"enabled"`
+	URL          string `json:"url"`
+	BaseDN       string `json:"baseDN"`
+	UserDN       string `json:"userDN"`
+	GroupDN      string `json:"groupDN"`
+	UserFilter   string `json:"userFilter,omitempty"`
+	RequiredGroup string `json:"requiredGroup,omitempty"` // Grupo requerido para acceso (opcional)
 }
 
 // LDAPGroupPermission representa los permisos de un grupo LDAP para un namespace

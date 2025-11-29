@@ -14,6 +14,7 @@ import (
 type LDAPAuthenticator interface {
 	AuthenticateUser(ctx context.Context, username, password string) error
 	GetUserPermissions(ctx context.Context, username string) (map[string]string, error)
+	ValidateUserGroup(ctx context.Context, username string) error
 }
 
 // AuthService provides business logic for authentication operations.
@@ -100,6 +101,10 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 		if err != nil {
 			return nil, ErrInvalidCredentials
 		}
+		// Check if user belongs to required group (if configured)
+		if err := s.ldapAuth.ValidateUserGroup(ctx, req.Username); err != nil {
+			return nil, ErrInvalidCredentials
+		}
 		// LDAP authentication successful
 		role = "user"
 		// Get user permissions from LDAP groups
@@ -132,13 +137,19 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 		if role == "" && s.ldapAuth != nil {
 			err := s.ldapAuth.AuthenticateUser(ctx, req.Username, req.Password)
 			if err == nil {
-				// LDAP authentication successful
-				role = "user"
-				// Get user permissions from LDAP groups
-				permissions, err = s.ldapAuth.GetUserPermissions(ctx, req.Username)
-				if err != nil {
-					// Log error but continue - user is authenticated
-					permissions = make(map[string]string)
+				// Check if user belongs to required group (if configured)
+				if err := s.ldapAuth.ValidateUserGroup(ctx, req.Username); err != nil {
+					// User doesn't belong to required group, continue to try other methods or fail
+					// Don't set role, authentication will fail
+				} else {
+					// LDAP authentication successful
+					role = "user"
+					// Get user permissions from LDAP groups
+					permissions, err = s.ldapAuth.GetUserPermissions(ctx, req.Username)
+					if err != nil {
+						// Log error but continue - user is authenticated
+						permissions = make(map[string]string)
+					}
 				}
 			}
 		}
