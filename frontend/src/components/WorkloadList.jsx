@@ -100,6 +100,7 @@ const WorkloadList = ({ namespace, kind }) => {
     const [editingResource, setEditingResource] = useState(null);
     const [menuOpen, setMenuOpen] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
+    const [confirmRollout, setConfirmRollout] = useState(null);
     const [allResources, setAllResources] = useState([]);
     const [scaling, setScaling] = useState(null);
     const [triggering, setTriggering] = useState(null);
@@ -353,6 +354,7 @@ const WorkloadList = ({ namespace, kind }) => {
     const handleRolloutDeployment = async (res) => {
         if (!res.namespace) return;
         setRollingOut(res.name);
+        setConfirmRollout(null);
         const params = new URLSearchParams();
         if (currentCluster) params.append('cluster', currentCluster);
 
@@ -624,17 +626,13 @@ const WorkloadList = ({ namespace, kind }) => {
                                             <PlayCircle size={16} />
                                         </button>
                                     )}
-                                    {kind === 'Deployment' && (
+                                    {kind === 'Deployment' && (isAdmin(user) || canEdit(user, res.namespace)) && (
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                if (isAdmin(user) || canEdit(user, res.namespace)) {
-                                                    handleRolloutDeployment(res);
-                                                } else {
-                                                    alert('You need edit permissions to perform rollout');
-                                                }
+                                                setConfirmRollout(res);
                                             }}
-                                            disabled={rollingOut === res.name || (!isAdmin(user) && !canEdit(user, res.namespace))}
+                                            disabled={rollingOut === res.name}
                                             className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-green-400 transition-colors disabled:opacity-50"
                                             title="Rollout deployment"
                                         >
@@ -757,6 +755,37 @@ const WorkloadList = ({ namespace, kind }) => {
                                 }`}
                             >
                                 {confirmAction.force ? 'Force Delete' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Rollout confirmation modal */}
+            {confirmRollout && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-md shadow-xl">
+                        <h3 className="text-lg font-semibold text-white mb-2">
+                            Confirm rollout
+                        </h3>
+                        <p className="text-sm text-gray-300 mb-4">
+                            Rollout {confirmRollout.kind} "{confirmRollout.name}"?
+                            <span className="block mt-2 text-xs text-yellow-400">
+                                This will trigger a restart of all pods in the deployment.
+                            </span>
+                        </p>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={() => setConfirmRollout(null)}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleRolloutDeployment(confirmRollout)}
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+                            >
+                                Rollout
                             </button>
                         </div>
                     </div>
