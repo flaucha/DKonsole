@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-ldap/ldap/v3"
 
@@ -63,8 +64,16 @@ func (s *Service) TestConnection(ctx context.Context, req TestConnectionRequest)
 	}
 	defer conn.Close()
 
-	// Bind with credentials
-	bindDN := fmt.Sprintf("%s=%s,%s", req.UserDN, req.Username, req.BaseDN)
+	// Determine bind DN: if username contains "=", it's already a DN, otherwise construct it
+	var bindDN string
+	if strings.Contains(req.Username, "=") {
+		// Username is already a full DN
+		bindDN = req.Username
+	} else {
+		// Construct DN from username, userDN attribute, and baseDN
+		bindDN = fmt.Sprintf("%s=%s,%s", req.UserDN, req.Username, req.BaseDN)
+	}
+
 	if err := conn.Bind(bindDN, req.Password); err != nil {
 		return fmt.Errorf("failed to bind to LDAP server: %w", err)
 	}
@@ -82,6 +91,22 @@ func (s *Service) GetConfigHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Don't return credentials in the response
 	utils.JSONResponse(w, http.StatusOK, config)
+}
+
+// GetLDAPStatusHandler returns whether LDAP is enabled (public endpoint for login page)
+func (s *Service) GetLDAPStatusHandler(w http.ResponseWriter, r *http.Request) {
+	config, err := s.repo.GetConfig(r.Context())
+	if err != nil {
+		// If error, assume LDAP is not enabled
+		utils.JSONResponse(w, http.StatusOK, map[string]interface{}{
+			"enabled": false,
+		})
+		return
+	}
+
+	utils.JSONResponse(w, http.StatusOK, map[string]interface{}{
+		"enabled": config != nil && config.Enabled,
+	})
 }
 
 // UpdateConfigHandler updates the LDAP configuration
@@ -131,7 +156,10 @@ func (s *Service) GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Service) UpdateGroupsHandler(w http.ResponseWriter, r *http.Request) {
 	var req UpdateGroupsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.ErrorResponse(w, http.StatusBadRequest, "invalid request body")
+		utils.LogWarn("Failed to decode LDAP groups request", map[string]interface{}{
+			"error": err.Error(),
+		})
+		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("invalid request body: %v", err))
 		return
 	}
 
@@ -277,8 +305,16 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password strin
 	}
 	defer conn.Close()
 
-	// Bind with user credentials
-	bindDN := fmt.Sprintf("%s=%s,%s", config.UserDN, username, config.BaseDN)
+	// Determine bind DN: if username contains "=", it's already a DN, otherwise construct it
+	var bindDN string
+	if strings.Contains(username, "=") {
+		// Username is already a full DN
+		bindDN = username
+	} else {
+		// Construct DN from username, userDN attribute, and baseDN
+		bindDN = fmt.Sprintf("%s=%s,%s", config.UserDN, username, config.BaseDN)
+	}
+
 	if err := conn.Bind(bindDN, password); err != nil {
 		return fmt.Errorf("failed to bind to LDAP server: %w", err)
 	}
@@ -310,15 +346,87 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 	defer conn.Close()
 
 	// Bind with service account credentials
-	bindDN := fmt.Sprintf("%s=%s,%s", config.UserDN, serviceUsername, config.BaseDN)
+	// Determine bind DN: if serviceUsername contains "=", it's already a DN, otherwise construct it
+	var bindDN string
+	if strings.Contains(serviceUsername, "=") {
+		// Service username is already a full DN
+		bindDN = serviceUsername
+	} else {
+		// Construct DN from service username, userDN attribute, and baseDN
+		bindDN = fmt.Sprintf("%s=%s,%s", config.UserDN, serviceUsername, config.BaseDN)
+	}
 	if err := conn.Bind(bindDN, servicePassword); err != nil {
 		return nil, fmt.Errorf("failed to bind to LDAP server: %w", err)
 	}
 
-	// Search for user groups
-	searchFilter := fmt.Sprintf("(&(objectClass=groupOfNames)(member=%s=%s,%s))", config.UserDN, username, config.BaseDN)
+	// Determine user DN for search
+	var userDN string
+	if strings.Contains(username, "=") {
+		// Username is already a full DN
+		userDN = username
+	} else {
+		// Search for user first to get the full DN
+		userSearchFilter := fmt.Sprintf("(%s=%s)", config.UserDN, username)
+		if config.UserFilter != "" {
+			userSearchFilter = fmt.Sprintf("(&(%s=%s)%s)", config.UserDN, username, config.UserFilter)
+		}
+		userSearchRequest := ldap.NewSearchRequest(
+			config.BaseDN,
+			ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
+			userSearchFilter,
+			[]string{"dn"},
+			nil,
+		)
+		userSr, err := conn.Search(userSearchRequest)
+		if err != nil || len(userSr.Entries) == 0 {
+			// Fallback: construct DN from username, userDN attribute, and baseDN
+			userDN = fmt.Sprintf("%s=%s,%s", config.UserDN, username, config.BaseDN)
+		} else {
+			// Use the found DN
+			userDN = userSr.Entries[0].DN
+		}
+	}
+
+	// First, try to get groups from memberOf attribute on the user entry (AD-style)
+	userSearchRequest := ldap.NewSearchRequest(
+		userDN,
+		ldap.ScopeBaseObject, ldap.NeverDerefAliases, 0, 0, false,
+		"(objectClass=*)",
+		[]string{"memberOf"},
+		nil,
+	)
+
+	userSr, err := conn.Search(userSearchRequest)
+	if err == nil && len(userSr.Entries) > 0 {
+		// Extract groups from memberOf attribute
+		memberOf := userSr.Entries[0].GetAttributeValues("memberOf")
+		groups := make([]string, 0, len(memberOf))
+		for _, groupDN := range memberOf {
+			// Extract CN from group DN (e.g., "cn=admin,ou=groups,dc=glauth,dc=com" -> "admin")
+			if strings.HasPrefix(groupDN, "cn=") {
+				cn := strings.Split(strings.Split(groupDN, ",")[0], "=")[1]
+				groups = append(groups, cn)
+			} else if strings.Contains(groupDN, "cn=") {
+				// Handle cases like "ou=admin,ou=groups,dc=glauth,dc=com" where CN might be in a different position
+				parts := strings.Split(groupDN, ",")
+				for _, part := range parts {
+					if strings.HasPrefix(part, "cn=") {
+						cn := strings.Split(part, "=")[1]
+						groups = append(groups, cn)
+						break
+					}
+				}
+			}
+		}
+		if len(groups) > 0 {
+			return groups, nil
+		}
+	}
+
+	// Fallback: Search for groups with member attribute (standard LDAP)
+	searchFilter := fmt.Sprintf("(&(objectClass=groupOfNames)(member=%s))", userDN)
 	if config.UserFilter != "" {
-		searchFilter = fmt.Sprintf("(&(objectClass=groupOfNames)(member=%s=%s,%s)%s)", config.UserDN, username, config.BaseDN, config.UserFilter)
+		searchFilter = fmt.Sprintf("(&(objectClass=groupOfNames)(member=%s)%s)", userDN, config.UserFilter)
 	}
 
 	searchRequest := ldap.NewSearchRequest(

@@ -892,10 +892,12 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
 
         // Filter out incomplete permissions (empty namespace) before sending
         const groupsToSend = {
-            groups: groups.groups.map(group => ({
-                ...group,
-                permissions: group.permissions.filter(perm => perm.namespace !== '')
-            }))
+            groups: {
+                groups: groups.groups.map(group => ({
+                    ...group,
+                    permissions: group.permissions.filter(perm => perm.namespace !== '')
+                }))
+            }
         };
 
         try {
@@ -908,7 +910,7 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
             if (res.ok) {
                 setSuccess('LDAP groups configuration saved successfully!');
                 // Update local state to remove incomplete permissions
-                setGroups(groupsToSend);
+                setGroups(groupsToSend.groups);
             } else {
                 const errorText = await res.text();
                 setError(errorText || 'Failed to save LDAP groups');

@@ -231,6 +231,7 @@ func (s *Service) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	loginReq := LoginRequest{
 		Username: creds.Username,
 		Password: creds.Password,
+		IDP:      creds.IDP, // "core", "ldap", or "" for auto-detect
 	}
 
 	// Call service (business logic layer)

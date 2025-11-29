@@ -146,6 +146,7 @@ type HelmRelease struct {
 type Credentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	IDP      string `json:"idp,omitempty"` // "core" or "ldap" - optional, defaults to trying both
 }
 
 // Claims representa los claims del JWT

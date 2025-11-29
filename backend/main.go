@@ -335,6 +335,8 @@ func main() {
 	mux.HandleFunc("/api/auth/change-password", secure(authService.ChangePasswordHandler))
 
 	// LDAP handlers - using services
+	// Public endpoint to check LDAP status (for login page)
+	mux.HandleFunc("/api/ldap/status", public(ldapService.GetLDAPStatusHandler))
 	mux.HandleFunc("/api/ldap/config", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			secure(ldapService.GetConfigHandler)(w, r)

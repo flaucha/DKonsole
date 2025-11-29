@@ -43,6 +43,7 @@ func (s *AuthService) SetLDAPAuthenticator(ldapAuth LDAPAuthenticator) {
 type LoginRequest struct {
 	Username string // Username for authentication
 	Password string // Password for authentication
+	IDP      string // Identity Provider: "core" for admin, "ldap" for LDAP, "" for auto-detect
 }
 
 // LoginResponse represents the response after successful login.
@@ -59,6 +60,7 @@ type LoginResult struct {
 
 // Login authenticates a user and generates a JWT token.
 // It first tries admin authentication, then falls back to LDAP if enabled.
+// If IDP is specified ("core" or "ldap"), only that method is tried.
 // Returns a JWT token valid for 24 hours if authentication succeeds.
 //
 // Returns ErrInvalidCredentials if username or password is incorrect.
@@ -66,35 +68,78 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 	var role string
 	var permissions map[string]string
 
-	// Try admin authentication first
-	adminUser, err := s.userRepo.GetAdminUser()
-	if err == nil {
+	// If IDP is specified, only try that method
+	if req.IDP == "core" {
+		// Only try admin authentication
+		adminUser, err := s.userRepo.GetAdminUser()
+		if err != nil {
+			return nil, ErrInvalidCredentials
+		}
 		adminPassHash, err := s.userRepo.GetAdminPasswordHash()
+		if err != nil {
+			return nil, ErrInvalidCredentials
+		}
+		// Verify username
+		if req.Username != adminUser {
+			return nil, ErrInvalidCredentials
+		}
+		// Verify password using Argon2
+		match, err := VerifyPassword(req.Password, adminPassHash)
+		if err != nil || !match {
+			return nil, ErrInvalidCredentials
+		}
+		// Admin authentication successful
+		role = "admin"
+		permissions = nil // Admin has full access
+	} else if req.IDP == "ldap" {
+		// Only try LDAP authentication
+		if s.ldapAuth == nil {
+			return nil, ErrInvalidCredentials
+		}
+		err := s.ldapAuth.AuthenticateUser(ctx, req.Username, req.Password)
+		if err != nil {
+			return nil, ErrInvalidCredentials
+		}
+		// LDAP authentication successful
+		role = "user"
+		// Get user permissions from LDAP groups
+		permissions, err = s.ldapAuth.GetUserPermissions(ctx, req.Username)
+		if err != nil {
+			// Log error but continue - user is authenticated
+			permissions = make(map[string]string)
+		}
+	} else {
+		// Auto-detect: try admin first, then LDAP
+		// Try admin authentication first
+		adminUser, err := s.userRepo.GetAdminUser()
 		if err == nil {
-			// Verify username
-			if req.Username == adminUser {
-				// Verify password using Argon2
-				match, err := VerifyPassword(req.Password, adminPassHash)
-				if err == nil && match {
-					// Admin authentication successful
-					role = "admin"
-					permissions = nil // Admin has full access
+			adminPassHash, err := s.userRepo.GetAdminPasswordHash()
+			if err == nil {
+				// Verify username
+				if req.Username == adminUser {
+					// Verify password using Argon2
+					match, err := VerifyPassword(req.Password, adminPassHash)
+					if err == nil && match {
+						// Admin authentication successful
+						role = "admin"
+						permissions = nil // Admin has full access
+					}
 				}
 			}
 		}
-	}
 
-	// If admin auth failed and LDAP is available, try LDAP
-	if role == "" && s.ldapAuth != nil {
-		err := s.ldapAuth.AuthenticateUser(ctx, req.Username, req.Password)
-		if err == nil {
-			// LDAP authentication successful
-			role = "user"
-			// Get user permissions from LDAP groups
-			permissions, err = s.ldapAuth.GetUserPermissions(ctx, req.Username)
-			if err != nil {
-				// Log error but continue - user is authenticated
-				permissions = make(map[string]string)
+		// If admin auth failed and LDAP is available, try LDAP
+		if role == "" && s.ldapAuth != nil {
+			err := s.ldapAuth.AuthenticateUser(ctx, req.Username, req.Password)
+			if err == nil {
+				// LDAP authentication successful
+				role = "user"
+				// Get user permissions from LDAP groups
+				permissions, err = s.ldapAuth.GetUserPermissions(ctx, req.Username)
+				if err != nil {
+					// Log error but continue - user is authenticated
+					permissions = make(map[string]string)
+				}
 			}
 		}
 	}
