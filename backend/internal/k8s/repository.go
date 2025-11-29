@@ -56,13 +56,45 @@ func NewK8sClusterStatsRepository(client kubernetes.Interface) *K8sClusterStatsR
 	return &K8sClusterStatsRepository{client: client}
 }
 
-// GetNodeCount returns the number of nodes
+// isControlPlaneNode checks if a node is a control plane/master node
+// Control plane nodes are identified by:
+// - Taints with key "node-role.kubernetes.io/control-plane" or "node-role.kubernetes.io/master"
+// - Labels with "node-role.kubernetes.io/control-plane" or "node-role.kubernetes.io/master"
+func isControlPlaneNode(node corev1.Node) bool {
+	// Check labels
+	if val, ok := node.Labels["node-role.kubernetes.io/control-plane"]; ok && val != "" {
+		return true
+	}
+	if val, ok := node.Labels["node-role.kubernetes.io/master"]; ok && val != "" {
+		return true
+	}
+
+	// Check taints
+	for _, taint := range node.Spec.Taints {
+		if taint.Key == "node-role.kubernetes.io/control-plane" || taint.Key == "node-role.kubernetes.io/master" {
+			return true
+		}
+	}
+
+	return false
+}
+
+// GetNodeCount returns the number of worker nodes (excluding control plane nodes)
 func (r *K8sClusterStatsRepository) GetNodeCount(ctx context.Context) (int, error) {
 	nodes, err := r.client.CoreV1().Nodes().List(ctx, metav1.ListOptions{Limit: 500})
 	if err != nil {
 		return 0, fmt.Errorf("failed to get node count: %w", err)
 	}
-	return len(nodes.Items), nil
+
+	// Filter out control plane nodes
+	workerNodeCount := 0
+	for _, node := range nodes.Items {
+		if !isControlPlaneNode(node) {
+			workerNodeCount++
+		}
+	}
+
+	return workerNodeCount, nil
 }
 
 // GetNamespaceCount returns the number of namespaces

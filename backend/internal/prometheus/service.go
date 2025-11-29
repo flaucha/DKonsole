@@ -274,8 +274,33 @@ func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interfac
 		}
 	}
 
-	// Process each Kubernetes node
+	// Helper function to check if a node is a control plane node
+	isControlPlaneNode := func(node corev1.Node) bool {
+		// Check labels
+		if val, ok := node.Labels["node-role.kubernetes.io/control-plane"]; ok && val != "" {
+			return true
+		}
+		if val, ok := node.Labels["node-role.kubernetes.io/master"]; ok && val != "" {
+			return true
+		}
+
+		// Check taints
+		for _, taint := range node.Spec.Taints {
+			if taint.Key == "node-role.kubernetes.io/control-plane" || taint.Key == "node-role.kubernetes.io/master" {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	// Process each Kubernetes node (excluding control plane nodes)
 	for _, k8sNode := range k8sNodes.Items {
+		// Skip control plane nodes
+		if isControlPlaneNode(k8sNode) {
+			continue
+		}
+
 		nodeName := k8sNode.Name
 		instance := nodeToInstance[nodeName]
 
