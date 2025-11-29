@@ -269,6 +269,7 @@ func main() {
 	mux.HandleFunc("/api/crds/yaml", secure(apiService.GetCRDYaml))
 
 	mux.HandleFunc("/api/scale", secure(k8sService.ScaleResource))
+	mux.HandleFunc("/api/deployments/rollout", secure(k8sService.RolloutDeployment))
 	mux.HandleFunc("/api/overview", secure(k8sService.GetClusterStats))
 
 	// Helm handlers - using services

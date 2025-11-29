@@ -104,6 +104,7 @@ const WorkloadList = ({ namespace, kind }) => {
     const [scaling, setScaling] = useState(null);
     const [triggering, setTriggering] = useState(null);
     const [createdJob, setCreatedJob] = useState(null);
+    const [rollingOut, setRollingOut] = useState(null);
 
     // Early return if kind is not provided
     if (!kind) {
@@ -346,6 +347,34 @@ const WorkloadList = ({ namespace, kind }) => {
             alert(err.message || 'Failed to trigger cronjob');
         } finally {
             setTriggering(null);
+        }
+    };
+
+    const handleRolloutDeployment = async (res) => {
+        if (!res.namespace) return;
+        setRollingOut(res.name);
+        const params = new URLSearchParams();
+        if (currentCluster) params.append('cluster', currentCluster);
+
+        try {
+            const resp = await authFetch(`/api/deployments/rollout?${params.toString()}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    namespace: res.namespace,
+                    name: res.name
+                })
+            });
+            if (!resp.ok) {
+                const errorText = await resp.text().catch(() => 'Rollout failed');
+                throw new Error(errorText || 'Rollout failed');
+            }
+            // Refresh the list to show updated deployment
+            refetch();
+        } catch (err) {
+            alert(err.message || 'Failed to rollout deployment');
+        } finally {
+            setRollingOut(null);
         }
     };
 
@@ -593,6 +622,19 @@ const WorkloadList = ({ namespace, kind }) => {
                                             title="Trigger manual run"
                                         >
                                             <PlayCircle size={16} />
+                                        </button>
+                                    )}
+                                    {kind === 'Deployment' && (isAdmin(user) || canEdit(user, res.namespace)) && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRolloutDeployment(res);
+                                            }}
+                                            disabled={rollingOut === res.name}
+                                            className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-green-400 transition-colors disabled:opacity-50"
+                                            title="Rollout deployment"
+                                        >
+                                            <RefreshCw size={16} className={rollingOut === res.name ? 'animate-spin' : ''} />
                                         </button>
                                     )}
                                     <div className="relative">

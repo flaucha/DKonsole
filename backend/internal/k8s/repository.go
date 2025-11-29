@@ -3,7 +3,9 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -164,6 +166,8 @@ func (r *K8sClusterStatsRepository) GetPVCount(ctx context.Context) (int, error)
 type DeploymentRepository interface {
 	GetScale(ctx context.Context, namespace, name string) (*autoscalingv1.Scale, error)
 	UpdateScale(ctx context.Context, namespace, name string, scale *autoscalingv1.Scale) (*autoscalingv1.Scale, error)
+	GetDeployment(ctx context.Context, namespace, name string) (*appsv1.Deployment, error)
+	UpdateDeployment(ctx context.Context, namespace string, deployment *appsv1.Deployment) (*appsv1.Deployment, error)
 }
 
 // K8sDeploymentRepository implements DeploymentRepository
@@ -194,4 +198,22 @@ func (r *K8sDeploymentRepository) UpdateScale(ctx context.Context, namespace, na
 		return nil, fmt.Errorf("failed to update deployment scale: %w", err)
 	}
 	return updatedScale, nil
+}
+
+// GetDeployment gets a deployment by name
+func (r *K8sDeploymentRepository) GetDeployment(ctx context.Context, namespace, name string) (*appsv1.Deployment, error) {
+	deployment, err := r.client.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get deployment: %w", err)
+	}
+	return deployment, nil
+}
+
+// UpdateDeployment updates a deployment
+func (r *K8sDeploymentRepository) UpdateDeployment(ctx context.Context, namespace string, deployment *appsv1.Deployment) (*appsv1.Deployment, error) {
+	updatedDeployment, err := r.client.AppsV1().Deployments(namespace).Update(ctx, deployment, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update deployment: %w", err)
+	}
+	return updatedDeployment, nil
 }
