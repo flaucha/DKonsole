@@ -236,9 +236,17 @@ func (s *AuthService) GetCurrentUser(ctx context.Context) (*models.Claims, error
 	}
 
 	var username, role string
+	var permissions map[string]string
 	if claims, ok := userVal.(*AuthClaims); ok {
 		username = claims.Username
 		role = claims.Role
+		permissions = claims.Permissions
+
+		utils.LogInfo("GetCurrentUser: extracted from AuthClaims", map[string]interface{}{
+			"username":   username,
+			"role":       role,
+			"permissions": permissions,
+		})
 	} else if claims, ok := userVal.(map[string]interface{}); ok {
 		if u, ok := claims["username"].(string); ok {
 			username = u
