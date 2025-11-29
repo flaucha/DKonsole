@@ -50,8 +50,13 @@ const Setup = () => {
     }, []);
 
     const handleLogoError = () => {
-        if (logoSrc !== defaultLogo) {
-            setLogoSrc(defaultLogo);
+        // If logo fails to load, fallback to theme-appropriate default logo
+        const currentTheme = localStorage.getItem('theme') || 'default';
+        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
+        const fallbackLogo = isLightTheme ? logoLight : defaultLogo;
+
+        if (logoSrc !== fallbackLogo) {
+            setLogoSrc(fallbackLogo);
         }
     };
 

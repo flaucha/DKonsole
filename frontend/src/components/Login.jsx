@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, Shield, Users } from 'lucide-react';
 import defaultLogo from '../assets/logo-full.svg';
+import logoLight from '../assets/logo-light.svg';
 
 const Login = () => {
     const [username, setUsername] = useState('');
@@ -15,17 +16,31 @@ const Login = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
+        // Get current theme from localStorage
+        const currentTheme = localStorage.getItem('theme') || 'default';
+        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
+
+        // Determine default logo based on theme
+        const defaultLogoSrc = isLightTheme ? logoLight : defaultLogo;
+        setLogoSrc(defaultLogoSrc);
+
         // Try to load custom logo from API (no auth required for logo endpoint)
         // Same logic as Layout.jsx to ensure consistency
         // Add timestamp to prevent browser caching
         fetch(`/api/logo?t=${Date.now()}`)
             .then(res => {
                 if (res.ok && res.status === 200) {
-                    // Add timestamp to prevent caching
+                    // Custom logo exists, use it
                     setLogoSrc(`/api/logo?t=${Date.now()}`);
+                } else {
+                    // No custom logo, use theme-appropriate default
+                    setLogoSrc(defaultLogoSrc);
                 }
             })
-            .catch(() => { });
+            .catch(() => {
+                // On error, use theme-appropriate default
+                setLogoSrc(defaultLogoSrc);
+            });
 
         // Check if LDAP is enabled
         fetch('/api/ldap/status')
@@ -46,9 +61,13 @@ const Login = () => {
     }, []);
 
     const handleLogoError = () => {
-        // If logo fails to load, fallback to default logo
-        if (logoSrc !== defaultLogo) {
-            setLogoSrc(defaultLogo);
+        // If logo fails to load, fallback to theme-appropriate default logo
+        const currentTheme = localStorage.getItem('theme') || 'default';
+        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
+        const fallbackLogo = isLightTheme ? logoLight : defaultLogo;
+
+        if (logoSrc !== fallbackLogo) {
+            setLogoSrc(fallbackLogo);
         }
     };
 

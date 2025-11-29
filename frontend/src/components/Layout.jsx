@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database, Gauge, Package, LogOut, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import defaultLogo from '../assets/logo-full.svg';
+import logoLight from '../assets/logo-light.svg';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -124,21 +125,39 @@ const Layout = ({ children, headerContent }) => {
     const location = useLocation();
 
     useEffect(() => {
+        // Get current theme from settings
+        const currentTheme = theme || localStorage.getItem('theme') || 'default';
+        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
+
+        // Determine default logo based on theme
+        const defaultLogoSrc = isLightTheme ? logoLight : defaultLogo;
+        setLogoSrc(defaultLogoSrc);
+
         // Add timestamp to prevent browser caching
         authFetch(`/api/logo?t=${Date.now()}`)
             .then(res => {
                 if (res.ok && res.status === 200) {
-                    // Add timestamp to prevent caching
+                    // Custom logo exists, use it
                     setLogoSrc(`/api/logo?t=${Date.now()}`);
+                } else {
+                    // No custom logo, use theme-appropriate default
+                    setLogoSrc(defaultLogoSrc);
                 }
             })
-            .catch(() => { });
-    }, [authFetch]);
+            .catch(() => {
+                // On error, use theme-appropriate default
+                setLogoSrc(defaultLogoSrc);
+            });
+    }, [authFetch, theme]);
 
     const handleLogoError = () => {
-        // If logo fails to load, fallback to default logo
-        if (logoSrc !== defaultLogo) {
-            setLogoSrc(defaultLogo);
+        // If logo fails to load, fallback to theme-appropriate default logo
+        const currentTheme = theme || localStorage.getItem('theme') || 'default';
+        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
+        const fallbackLogo = isLightTheme ? logoLight : defaultLogo;
+
+        if (logoSrc !== fallbackLogo) {
+            setLogoSrc(fallbackLogo);
         }
     };
 
