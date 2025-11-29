@@ -3,6 +3,7 @@ package prometheus
 import (
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
@@ -14,6 +15,7 @@ type HTTPHandler struct {
 	repo           Repository
 	clusterService *cluster.Service
 	promService    *Service
+	mu             sync.RWMutex // Mutex for thread-safe URL updates
 }
 
 // NewHTTPHandler creates a new Prometheus HTTP handler
@@ -31,14 +33,18 @@ func NewHTTPHandler(prometheusURL string, clusterService *cluster.Service) *HTTP
 
 // GetStatus returns the Prometheus service status
 func (h *HTTPHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
-	enabled := h.prometheusURL != ""
+	h.mu.RLock()
+	url := h.prometheusURL
+	h.mu.RUnlock()
+
+	enabled := url != ""
 	utils.LogDebug("Prometheus status requested", map[string]interface{}{
-		"prometheus_url": h.prometheusURL,
+		"prometheus_url": url,
 		"enabled":        enabled,
 	})
 	status := StatusResponse{
 		Enabled: enabled,
-		URL:     h.prometheusURL,
+		URL:     url,
 	}
 	utils.JSONResponse(w, http.StatusOK, status)
 }
@@ -51,23 +57,33 @@ func (h *HTTPHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	namespace := r.URL.Query().Get("namespace")
 	rangeParam := r.URL.Query().Get("range")
 
+	h.mu.RLock()
+	url := h.prometheusURL
+	repo := h.repo
+	promService := h.promService
+	h.mu.RUnlock()
+
 	utils.LogDebug("GetPrometheusMetrics request", map[string]interface{}{
-		"prometheus_url": h.prometheusURL,
+		"prometheus_url": url,
 		"deployment":     deployment,
 		"namespace":      namespace,
 	})
 
-	if h.prometheusURL == "" {
+	if url == "" {
 		utils.LogWarn("Prometheus URL not configured", nil)
 		utils.ErrorResponse(w, http.StatusServiceUnavailable, "Prometheus URL not configured")
 		return
 	}
 
 	// Verify repository is using correct URL
-	if h.repo == nil {
+	if repo == nil {
 		utils.LogWarn("Prometheus repository is nil, recreating", nil)
-		h.repo = NewHTTPPrometheusRepository(h.prometheusURL)
+		h.mu.Lock()
+		h.repo = NewHTTPPrometheusRepository(url)
 		h.promService = NewService(h.repo)
+		repo = h.repo
+		promService = h.promService
+		h.mu.Unlock()
 	}
 
 	if deployment == "" || namespace == "" {
@@ -91,7 +107,7 @@ func (h *HTTPHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call service (business logic layer)
-	response, err := h.promService.GetDeploymentMetrics(ctx, req)
+	response, err := promService.GetDeploymentMetrics(ctx, req)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get metrics: %v", err))
 		return
@@ -109,22 +125,32 @@ func (h *HTTPHandler) GetPodMetrics(w http.ResponseWriter, r *http.Request) {
 	namespace := r.URL.Query().Get("namespace")
 	rangeParam := r.URL.Query().Get("range")
 
+	h.mu.RLock()
+	url := h.prometheusURL
+	repo := h.repo
+	promService := h.promService
+	h.mu.RUnlock()
+
 	utils.LogDebug("GetPrometheusPodMetrics request", map[string]interface{}{
-		"prometheus_url": h.prometheusURL,
+		"prometheus_url": url,
 		"pod":            podName,
 		"namespace":      namespace,
 	})
 
-	if h.prometheusURL == "" {
+	if url == "" {
 		utils.ErrorResponse(w, http.StatusServiceUnavailable, "Prometheus URL not configured")
 		return
 	}
 
 	// Verify repository is using correct URL
-	if h.repo == nil {
+	if repo == nil {
 		utils.LogWarn("Prometheus repository is nil, recreating", nil)
-		h.repo = NewHTTPPrometheusRepository(h.prometheusURL)
+		h.mu.Lock()
+		h.repo = NewHTTPPrometheusRepository(url)
 		h.promService = NewService(h.repo)
+		repo = h.repo
+		promService = h.promService
+		h.mu.Unlock()
 	}
 
 	if podName == "" || namespace == "" {
@@ -144,7 +170,7 @@ func (h *HTTPHandler) GetPodMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call service (business logic layer)
-	response, err := h.promService.GetPodMetrics(ctx, req)
+	response, err := promService.GetPodMetrics(ctx, req)
 	if err != nil {
 		utils.LogError(err, "Failed to get pod metrics", map[string]interface{}{
 			"pod":       podName,
@@ -172,6 +198,9 @@ func (h *HTTPHandler) GetPodMetrics(w http.ResponseWriter, r *http.Request) {
 
 // UpdateURL updates the Prometheus URL and recreates the repository and service
 func (h *HTTPHandler) UpdateURL(newURL string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	utils.LogInfo("Updating Prometheus URL", map[string]interface{}{
 		"old_url": h.prometheusURL,
 		"new_url": newURL,
@@ -188,11 +217,16 @@ func (h *HTTPHandler) UpdateURL(newURL string) {
 // Refactored to use layered architecture:
 // Handler (HTTP) -> Service (Business Logic) -> Repository (Data Access)
 func (h *HTTPHandler) GetClusterOverview(w http.ResponseWriter, r *http.Request) {
+	h.mu.RLock()
+	url := h.prometheusURL
+	promService := h.promService
+	h.mu.RUnlock()
+
 	utils.LogDebug("GetPrometheusClusterOverview request", map[string]interface{}{
-		"prometheus_url": h.prometheusURL,
+		"prometheus_url": url,
 	})
 
-	if h.prometheusURL == "" {
+	if url == "" {
 		utils.ErrorResponse(w, http.StatusServiceUnavailable, "Prometheus URL not configured")
 		return
 	}
@@ -216,7 +250,7 @@ func (h *HTTPHandler) GetClusterOverview(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Call service (business logic layer)
-	response, err := h.promService.GetClusterOverview(ctx, req, client)
+	response, err := promService.GetClusterOverview(ctx, req, client)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get cluster overview: %v", err))
 		return
