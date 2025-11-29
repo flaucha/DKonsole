@@ -138,7 +138,7 @@ const ClusterOverview = () => {
                             color="bg-yellow-600"
                         />
                     </div>
-                    {/* Second row: Worker Nodes */}
+                    {/* Second row: Worker Nodes, Ingress, PVCs, PVs */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <StatCard
                             icon={Server}
@@ -146,6 +146,26 @@ const ClusterOverview = () => {
                             value={clusterStats.totalNodes}
                             color="bg-blue-600"
                         />
+                        <StatCard
+                            icon={Globe}
+                            label="Ingresses"
+                            value={stats.ingresses}
+                            color="bg-pink-600"
+                        />
+                        <StatCard
+                            icon={HardDrive}
+                            label="PVCs"
+                            value={stats.pvcs}
+                            color="bg-orange-600"
+                        />
+                        {isAdmin && (
+                            <StatCard
+                                icon={HardDrive}
+                                label="PVs"
+                                value={stats.pvs}
+                                color="bg-red-600"
+                            />
+                        )}
                     </div>
                 </div>
             )}
@@ -176,26 +196,6 @@ const ClusterOverview = () => {
                     value={stats.services}
                     color="bg-yellow-600"
                 />
-                <StatCard
-                    icon={Globe}
-                    label="Ingresses"
-                    value={stats.ingresses}
-                    color="bg-pink-600"
-                />
-                <StatCard
-                    icon={HardDrive}
-                    label="PVCs"
-                    value={stats.pvcs}
-                    color="bg-orange-600"
-                />
-                {isAdmin && (
-                    <StatCard
-                        icon={HardDrive}
-                        label="PVs"
-                        value={stats.pvs}
-                        color="bg-red-600"
-                    />
-                )}
             </div>
 
             {/* Node Metrics Table - Only if Prometheus is enabled */}
