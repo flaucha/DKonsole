@@ -12,8 +12,8 @@ const HelmChartManager = ({ namespace }) => {
     const { currentCluster } = useSettings();
     const { authFetch, user } = useAuth();
 
-    // Check if user is admin (core admin or LDAP admin group member)
-    const isAdmin = user && (user.role === 'admin' || (user.permissions && Object.keys(user.permissions).length === 0 && user.role !== 'user'));
+    // Check if user is admin (core admin has role='admin', LDAP admin groups have no permissions but are admins)
+    const isAdmin = user && user.role === 'admin';
     const [expandedId, setExpandedId] = useState(null);
     const [sortField, setSortField] = useState('name');
     const [sortDirection, setSortDirection] = useState('asc');
