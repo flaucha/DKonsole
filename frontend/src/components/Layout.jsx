@@ -215,7 +215,7 @@ const Layout = ({ children, headerContent }) => {
                 <div
                     className={`bg-black border-r border-gray-800 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                         sidebarOpen
-                            ? 'w-64 translate-x-0 opacity-100'
+                            ? 'min-w-[200px] w-auto translate-x-0 opacity-100'
                             : 'w-0 -translate-x-full opacity-0 pointer-events-none'
                     }`}
                     style={{
@@ -223,8 +223,8 @@ const Layout = ({ children, headerContent }) => {
                         transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
                 >
-                    {/* Overview con botón de cerrar - siempre visible */}
-                    <div className={`px-2 pt-4 transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
+                    <nav className={`flex-1 px-2 pt-4 space-y-1 overflow-y-auto transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
+                        {/* Overview con botón de cerrar */}
                         <div className="flex items-center justify-between px-4 py-2 mb-1">
                             <NavLink
                                 to="/dashboard/overview"
@@ -245,8 +245,6 @@ const Layout = ({ children, headerContent }) => {
                                 </button>
                             )}
                         </div>
-                    </div>
-                    <nav className={`flex-1 px-2 space-y-1 overflow-y-auto transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
 
                         {/* Only show other menu items if user has permissions */}
                         {!checkingAdmin && hasPermissions && (
