@@ -1,7 +1,6 @@
 package settings
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -31,9 +30,7 @@ type UpdatePrometheusURLRequest struct {
 
 // GetPrometheusURLHandler returns the current Prometheus URL
 func (s *Service) GetPrometheusURLHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	url, err := s.repo.GetPrometheusURL(ctx)
+	url, err := s.repo.GetPrometheusURL(r.Context())
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get Prometheus URL: %v", err))
 		return
@@ -46,8 +43,6 @@ func (s *Service) GetPrometheusURLHandler(w http.ResponseWriter, r *http.Request
 
 // UpdatePrometheusURLHandler updates the Prometheus URL
 func (s *Service) UpdatePrometheusURLHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
 	var req UpdatePrometheusURLRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
@@ -63,7 +58,7 @@ func (s *Service) UpdatePrometheusURLHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Update in repository
-	if err := s.repo.UpdatePrometheusURL(ctx, req.URL); err != nil {
+	if err := s.repo.UpdatePrometheusURL(r.Context(), req.URL); err != nil {
 		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to update Prometheus URL: %v", err))
 		return
 	}
