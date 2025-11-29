@@ -300,9 +300,12 @@ const HelmChartManager = ({ namespace }) => {
                     </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                    {namespace && hasEditPermission(namespace) && (
+                    {(isAdmin || (namespace && namespace !== 'all' && hasEditPermission(namespace))) && (
                         <button
-                            onClick={() => setInstallModalOpen(true)}
+                            onClick={() => {
+                                setInstallForm(prev => ({ ...prev, namespace: namespace === 'all' ? '' : namespace }));
+                                setInstallModalOpen(true);
+                            }}
                             className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm transition-colors flex items-center"
                         >
                             <Download size={14} className="mr-2" />
