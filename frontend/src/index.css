@@ -205,17 +205,17 @@
 }
 
 [data-theme="light"] {
-  /* Light Mode Theme (White) */
-  --color-gray-900: 255 255 255;
-  --color-gray-800: 249 250 251;
-  --color-gray-750: 243 244 246;
-  --color-gray-700: 229 231 235;
-  --color-gray-600: 209 213 219;
-  --color-gray-500: 156 163 175;
-  --color-gray-400: 107 114 128;
-  --color-gray-300: 75 85 99;
-  --color-gray-200: 55 65 81;
-  --color-gray-100: 31 41 55;
+  /* Light Mode Theme (White) - Inverted for proper contrast */
+  --color-gray-900: 255 255 255; /* Main background - white */
+  --color-gray-800: 249 250 251; /* Card backgrounds - very light gray */
+  --color-gray-750: 243 244 246; /* Hover states - light gray */
+  --color-gray-700: 229 231 235; /* Borders, dividers - medium light gray */
+  --color-gray-600: 209 213 219; /* Disabled states - gray */
+  --color-gray-500: 156 163 175; /* Placeholder text - medium gray */
+  --color-gray-400: 107 114 128; /* Secondary text - dark gray */
+  --color-gray-300: 75 85 99; /* Primary text - darker gray */
+  --color-gray-200: 55 65 81; /* Headings - very dark gray */
+  --color-gray-100: 17 24 39; /* Strong text - almost black */
 
   --color-blue-700: 29 78 216;
   --color-blue-600: 37 99 235;
@@ -224,19 +224,19 @@
 }
 
 [data-theme="cream"] {
-  /* Cream Theme (Sepia/Beige) */
-  --color-gray-900: 250 247 240;
-  --color-gray-800: 245 241 230;
-  --color-gray-750: 240 235 220;
-  --color-gray-700: 235 229 210;
-  --color-gray-600: 220 210 190;
-  --color-gray-500: 200 185 165;
-  --color-gray-400: 170 150 130;
-  --color-gray-300: 140 120 100;
-  --color-gray-200: 110 90 70;
-  --color-gray-100: 80 65 50;
+  /* Cream Theme (Sepia/Beige) - Inverted for proper contrast */
+  --color-gray-900: 250 247 240; /* Main background - cream */
+  --color-gray-800: 245 241 230; /* Card backgrounds - light cream */
+  --color-gray-750: 240 235 220; /* Hover states - cream */
+  --color-gray-700: 235 229 210; /* Borders, dividers - medium cream */
+  --color-gray-600: 220 210 190; /* Disabled states - beige */
+  --color-gray-500: 180 165 145; /* Placeholder text - sepia */
+  --color-gray-400: 140 120 100; /* Secondary text - dark sepia */
+  --color-gray-300: 100 80 60; /* Primary text - darker sepia */
+  --color-gray-200: 70 55 40; /* Headings - very dark sepia */
+  --color-gray-100: 45 35 25; /* Strong text - almost black sepia */
 
-  --color-blue-700: 139 90 43;
+  --color-blue-700: 139 90 43; /* Brown/sepia accent */
   --color-blue-600: 160 110 60;
   --color-blue-500: 180 130 80;
   --color-blue-400: 200 150 100;
@@ -245,6 +245,71 @@
 body {
   @apply bg-gray-900 text-gray-100;
   font-family: var(--font-family);
+}
+
+/* Theme-specific overrides for light and cream modes */
+[data-theme="light"] body {
+  color: rgb(var(--color-gray-100)) !important;
+}
+
+[data-theme="light"] .text-white,
+[data-theme="light"] .text-white * {
+  color: rgb(var(--color-gray-100)) !important;
+}
+
+[data-theme="light"] .bg-black,
+[data-theme="light"] .bg-black * {
+  background-color: rgb(var(--color-gray-900)) !important;
+}
+
+[data-theme="light"] header.bg-black {
+  background-color: rgb(var(--color-gray-800)) !important;
+}
+
+[data-theme="light"] .bg-black.border-r {
+  background-color: rgb(var(--color-gray-800)) !important;
+}
+
+[data-theme="cream"] body {
+  color: rgb(var(--color-gray-100)) !important;
+}
+
+[data-theme="cream"] .text-white,
+[data-theme="cream"] .text-white * {
+  color: rgb(var(--color-gray-100)) !important;
+}
+
+[data-theme="cream"] .bg-black,
+[data-theme="cream"] .bg-black * {
+  background-color: rgb(var(--color-gray-900)) !important;
+}
+
+[data-theme="cream"] header.bg-black {
+  background-color: rgb(var(--color-gray-800)) !important;
+}
+
+[data-theme="cream"] .bg-black.border-r {
+  background-color: rgb(var(--color-gray-800)) !important;
+}
+
+/* Ensure borders are visible in light modes */
+[data-theme="light"] .border-gray-800,
+[data-theme="light"] .border-gray-700 {
+  border-color: rgb(var(--color-gray-700)) !important;
+}
+
+[data-theme="cream"] .border-gray-800,
+[data-theme="cream"] .border-gray-700 {
+  border-color: rgb(var(--color-gray-700)) !important;
+}
+
+/* Improve hover states in light modes */
+[data-theme="light"] .hover\:text-white:hover {
+  color: rgb(var(--color-gray-100)) !important;
+}
+
+[data-theme="cream"] .hover\:text-white:hover {
+  color: rgb(var(--color-gray-100)) !important;
 }
 
 @keyframes fadeIn {
