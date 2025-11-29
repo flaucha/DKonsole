@@ -43,7 +43,8 @@ const Setup = () => {
         // Get current theme from localStorage
         const currentTheme = localStorage.getItem('theme') || 'default';
         const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
-        const defaultLogoSrc = isLightTheme ? logoLight : defaultLogo;
+        // Use /logo-light.svg for light themes (served from static directory)
+        const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;
         setLogoSrc(defaultLogoSrc);
 
         // Try to load custom logo from API (no auth required for logo endpoint)
@@ -68,7 +69,7 @@ const Setup = () => {
         // If logo fails to load, fallback to theme-appropriate default logo
         const currentTheme = localStorage.getItem('theme') || 'default';
         const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
-        const fallbackLogo = isLightTheme ? logoLight : defaultLogo;
+        const fallbackLogo = isLightTheme ? '/logo-light.svg' : defaultLogo;
 
         if (logoSrc !== fallbackLogo) {
             setLogoSrc(fallbackLogo);

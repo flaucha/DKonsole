@@ -2,6 +2,7 @@ package logo
 
 import (
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"github.com/flaucha/DKonsole/backend/internal/utils"
@@ -103,7 +104,21 @@ func (s *Service) GetLogo(w http.ResponseWriter, r *http.Request) {
 	// Call service to get logo path (business logic layer)
 	logoPath, err := s.logoService.GetLogoPath(ctx, logoType)
 	if err != nil {
-		// Logo not found - return 404
+		// Logo not found - try to serve default logo from static directory
+		if logoType == "light" {
+			// Try to serve logo-light.svg from static directory
+			staticLogoPath := filepath.Join("./static", "logo-light.svg")
+			if _, err := filepath.Abs(staticLogoPath); err == nil {
+				if _, err := os.Stat(staticLogoPath); err == nil {
+					utils.LogDebug("Serving default light logo", map[string]interface{}{
+						"path": staticLogoPath,
+					})
+					http.ServeFile(w, r, staticLogoPath)
+					return
+				}
+			}
+		}
+		// Logo not found and no default available - return 404
 		// Frontend will handle this gracefully and use default logo
 		http.Error(w, "Logo not found", http.StatusNotFound)
 		return
