@@ -34,12 +34,13 @@ type NodeMetric struct {
 
 // ClusterStats represents aggregated cluster statistics from Prometheus
 type ClusterStats struct {
-	TotalNodes     int     `json:"totalNodes"`
-	AvgCPUUsage    float64 `json:"avgCpuUsage"`
-	AvgMemoryUsage float64 `json:"avgMemoryUsage"`
-	NetworkTraffic float64 `json:"networkTraffic"`
-	CPUTrend       float64 `json:"cpuTrend"`
-	MemoryTrend    float64 `json:"memoryTrend"`
+	TotalNodes       int     `json:"totalNodes"`
+	ControlPlaneNodes int    `json:"controlPlaneNodes"`
+	AvgCPUUsage      float64 `json:"avgCpuUsage"`
+	AvgMemoryUsage   float64 `json:"avgMemoryUsage"`
+	NetworkTraffic   float64 `json:"networkTraffic"`
+	CPUTrend         float64 `json:"cpuTrend"`
+	MemoryTrend      float64 `json:"memoryTrend"`
 }
 
 // ClusterOverviewResponse includes cluster-wide metrics

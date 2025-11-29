@@ -145,13 +145,13 @@ type GetClusterOverviewRequest struct {
 // GetClusterOverview fetches cluster-wide metrics including node metrics and cluster stats
 func (s *Service) GetClusterOverview(ctx context.Context, req GetClusterOverviewRequest, client kubernetes.Interface) (*ClusterOverviewResponse, error) {
 	// Get node metrics
-	nodeMetrics, err := s.getNodeMetrics(ctx, client)
+	nodeMetrics, controlPlaneCount, controlPlaneNodes, err := s.getNodeMetrics(ctx, client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node metrics: %w", err)
 	}
 
 	// Calculate cluster stats
-	clusterStats := s.calculateClusterStats(nodeMetrics)
+	clusterStats := s.calculateClusterStats(nodeMetrics, controlPlaneCount, controlPlaneNodes)
 
 	return &ClusterOverviewResponse{
 		NodeMetrics:  nodeMetrics,
@@ -159,18 +159,48 @@ func (s *Service) GetClusterOverview(ctx context.Context, req GetClusterOverview
 	}, nil
 }
 
+// isControlPlaneNode checks if a node is a control plane/master node
+func isControlPlaneNode(node corev1.Node) bool {
+	// Check labels
+	if val, ok := node.Labels["node-role.kubernetes.io/control-plane"]; ok && val != "" {
+		return true
+	}
+	if val, ok := node.Labels["node-role.kubernetes.io/master"]; ok && val != "" {
+		return true
+	}
+
+	// Check taints
+	for _, taint := range node.Spec.Taints {
+		if taint.Key == "node-role.kubernetes.io/control-plane" || taint.Key == "node-role.kubernetes.io/master" {
+			return true
+		}
+	}
+
+	return false
+}
+
 // getNodeMetrics fetches metrics for all nodes
-func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interface) ([]NodeMetric, error) {
+func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interface) ([]NodeMetric, int, map[string]bool, error) {
 	var nodes []NodeMetric
+	controlPlaneCount := 0
+	controlPlaneNodes := make(map[string]bool)
 
 	if client == nil {
-		return nodes, fmt.Errorf("kubernetes client is nil")
+		return nodes, 0, controlPlaneNodes, fmt.Errorf("kubernetes client is nil")
 	}
 
 	// Get nodes from Kubernetes API
 	k8sNodes, err := client.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nodes, fmt.Errorf("failed to list nodes: %w", err)
+		return nodes, 0, controlPlaneNodes, fmt.Errorf("failed to list nodes: %w", err)
+	}
+
+	// Count and mark control plane nodes
+	for _, node := range k8sNodes.Items {
+		if isControlPlaneNode(node) {
+			controlPlaneCount++
+			controlPlaneNodes[node.Name] = true
+		}
 	}
 
 	// Get node status from Kubernetes
@@ -274,33 +304,8 @@ func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interfac
 		}
 	}
 
-	// Helper function to check if a node is a control plane node
-	isControlPlaneNode := func(node corev1.Node) bool {
-		// Check labels
-		if val, ok := node.Labels["node-role.kubernetes.io/control-plane"]; ok && val != "" {
-			return true
-		}
-		if val, ok := node.Labels["node-role.kubernetes.io/master"]; ok && val != "" {
-			return true
-		}
-
-		// Check taints
-		for _, taint := range node.Spec.Taints {
-			if taint.Key == "node-role.kubernetes.io/control-plane" || taint.Key == "node-role.kubernetes.io/master" {
-				return true
-			}
-		}
-
-		return false
-	}
-
-	// Process each Kubernetes node (excluding control plane nodes)
+	// Process each Kubernetes node (including control plane nodes)
 	for _, k8sNode := range k8sNodes.Items {
-		// Skip control plane nodes
-		if isControlPlaneNode(k8sNode) {
-			continue
-		}
-
 		nodeName := k8sNode.Name
 		instance := nodeToInstance[nodeName]
 
@@ -382,19 +387,32 @@ func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interfac
 		})
 	}
 
-	return nodes, nil
+	return nodes, controlPlaneCount, controlPlaneNodes, nil
 }
 
 // calculateClusterStats calculates aggregated cluster statistics
-func (s *Service) calculateClusterStats(nodes []NodeMetric) *ClusterStats {
-	if len(nodes) == 0 {
+func (s *Service) calculateClusterStats(nodes []NodeMetric, controlPlaneCount int, controlPlaneNodes map[string]bool) *ClusterStats {
+	// Separate worker nodes from control plane nodes for stats calculation
+	workerNodes := []NodeMetric{}
+	for _, node := range nodes {
+		// Only include worker nodes in stats calculation
+		if !controlPlaneNodes[node.Name] {
+			workerNodes = append(workerNodes, node)
+		}
+	}
+
+	// Count worker nodes
+	workerNodeCount := len(workerNodes)
+
+	if len(workerNodes) == 0 {
 		return &ClusterStats{
-			TotalNodes:     0,
-			AvgCPUUsage:    0.0,
-			AvgMemoryUsage: 0.0,
-			NetworkTraffic: 0.0,
-			CPUTrend:       0.0,
-			MemoryTrend:    0.0,
+			TotalNodes:       0,
+			ControlPlaneNodes: controlPlaneCount,
+			AvgCPUUsage:      0.0,
+			AvgMemoryUsage:   0.0,
+			NetworkTraffic:   0.0,
+			CPUTrend:         0.0,
+			MemoryTrend:      0.0,
 		}
 	}
 
@@ -403,15 +421,17 @@ func (s *Service) calculateClusterStats(nodes []NodeMetric) *ClusterStats {
 	totalNetworkRx := 0.0
 	totalNetworkTx := 0.0
 
-	for _, node := range nodes {
+	// Calculate averages for worker nodes only (excluding control plane from averages)
+	for _, node := range workerNodes {
 		totalCPU += node.CPUUsage
 		totalMem += node.MemUsage
 		totalNetworkRx += node.NetworkRx
 		totalNetworkTx += node.NetworkTx
 	}
 
-	avgCPU := totalCPU / float64(len(nodes))
-	avgMem := totalMem / float64(len(nodes))
+	// Use worker node count for averages
+	avgCPU := totalCPU / float64(len(workerNodes))
+	avgMem := totalMem / float64(len(workerNodes))
 	networkTraffic := (totalNetworkRx + totalNetworkTx) / 1024 // Convert to MB/s
 
 	// Calculate trends (simplified - for now set to 0.0)
@@ -419,11 +439,12 @@ func (s *Service) calculateClusterStats(nodes []NodeMetric) *ClusterStats {
 	memoryTrend := 0.0
 
 	return &ClusterStats{
-		TotalNodes:     len(nodes),
-		AvgCPUUsage:    avgCPU,
-		AvgMemoryUsage: avgMem,
-		NetworkTraffic: networkTraffic,
-		CPUTrend:       cpuTrend,
-		MemoryTrend:    memoryTrend,
+		TotalNodes:       workerNodeCount,
+		ControlPlaneNodes: controlPlaneCount,
+		AvgCPUUsage:      avgCPU,
+		AvgMemoryUsage:   avgMem,
+		NetworkTraffic:   networkTraffic,
+		CPUTrend:         cpuTrend,
+		MemoryTrend:      memoryTrend,
 	}
 }

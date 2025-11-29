@@ -108,12 +108,18 @@ const ClusterOverview = () => {
 
             {/* Prometheus Metrics Stats - Only if enabled */}
             {prometheusEnabled && clusterStats && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     <StatCard
                         icon={Server}
                         label="Worker Nodes"
                         value={clusterStats.totalNodes}
                         color="bg-blue-600"
+                    />
+                    <StatCard
+                        icon={Server}
+                        label="Control Planes"
+                        value={clusterStats.controlPlaneNodes || 0}
+                        color="bg-indigo-600"
                     />
                     <StatCard
                         icon={Cpu}
