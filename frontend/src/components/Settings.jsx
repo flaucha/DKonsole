@@ -90,33 +90,33 @@ const Settings = () => {
                 )}
             </div>
 
-            <div className="flex space-x-1 border-b border-gray-700 mb-6">
+            <div className="flex space-x-1 border-b border-gray-700 mb-6 relative">
                 <button
-                    className={`pb-2 px-4 flex items-center font-medium transition-colors ${activeTab === 'clusters' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                    className={`pb-2 px-4 flex items-center font-medium transition-colors h-10 ${activeTab === 'clusters' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300 border-b-2 border-transparent'}`}
                     onClick={() => setActiveTab('clusters')}
                 >
                     <Server size={18} className="mr-2" /> Clusters
                 </button>
                 <button
-                    className={`pb-2 px-4 flex items-center font-medium transition-colors ${activeTab === 'appearance' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                    className={`pb-2 px-4 flex items-center font-medium transition-colors h-10 ${activeTab === 'appearance' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300 border-b-2 border-transparent'}`}
                     onClick={() => setActiveTab('appearance')}
                 >
                     <Palette size={18} className="mr-2" /> Appearance
                 </button>
                 <button
-                    className={`pb-2 px-4 flex items-center font-medium transition-colors ${activeTab === 'general' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                    className={`pb-2 px-4 flex items-center font-medium transition-colors h-10 ${activeTab === 'general' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300 border-b-2 border-transparent'}`}
                     onClick={() => setActiveTab('general')}
                 >
                     <SettingsIcon size={18} className="mr-2" /> General
                 </button>
                 <button
-                    className={`pb-2 px-4 flex items-center font-medium transition-colors ${activeTab === 'ldap' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                    className={`pb-2 px-4 flex items-center font-medium transition-colors h-10 ${activeTab === 'ldap' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300 border-b-2 border-transparent'}`}
                     onClick={() => setActiveTab('ldap')}
                 >
                     <Users size={18} className="mr-2" /> LDAP
                 </button>
                 <button
-                    className={`pb-2 px-4 flex items-center font-medium transition-colors ${activeTab === 'about' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                    className={`pb-2 px-4 flex items-center font-medium transition-colors h-10 ${activeTab === 'about' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300 border-b-2 border-transparent'}`}
                     onClick={() => setActiveTab('about')}
                 >
                     <Info size={18} className="mr-2" /> About
