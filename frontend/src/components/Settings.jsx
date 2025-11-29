@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Server, Palette, Type, Plus, Check, AlertCircle, Trash2, Settings as SettingsIcon, Info, Github, Mail, Coffee, Code, Lock, Save } from 'lucide-react';
+import { Server, Palette, Type, Plus, Check, AlertCircle, Trash2, Settings as SettingsIcon, Info, Github, Mail, Coffee, Code, Lock, Save, Users, Key } from 'lucide-react';
 
 const Settings = () => {
     const {
@@ -75,6 +75,12 @@ const Settings = () => {
                     <SettingsIcon size={18} className="mr-2" /> General
                 </button>
                 <button
+                    className={`pb-2 px-4 flex items-center font-medium transition-colors ${activeTab === 'ldap' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                    onClick={() => setActiveTab('ldap')}
+                >
+                    <Users size={18} className="mr-2" /> LDAP
+                </button>
+                <button
                     className={`pb-2 px-4 flex items-center font-medium transition-colors ${activeTab === 'about' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
                     onClick={() => setActiveTab('about')}
                 >
@@ -130,6 +136,10 @@ const Settings = () => {
                         <PasswordChangeSettings authFetch={authFetch} error={error} setError={setError} success={success} setSuccess={setSuccess} />
                     </div>
                 </div>
+            )}
+
+            {activeTab === 'ldap' && (
+                <LDAPSettings authFetch={authFetch} error={error} setError={setError} success={success} setSuccess={setSuccess} />
             )}
 
             {activeTab === 'appearance' && (
@@ -621,6 +631,444 @@ const PasswordChangeSettings = ({ authFetch, error, setError, success, setSucces
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// LDAP Settings Component
+const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
+    const [config, setConfig] = useState({
+        enabled: false,
+        url: '',
+        baseDN: '',
+        userDN: 'uid',
+        groupDN: '',
+        userFilter: ''
+    });
+    const [credentials, setCredentials] = useState({
+        username: '',
+        password: ''
+    });
+    const [groups, setGroups] = useState({ groups: [] });
+    const [loading, setLoading] = useState(false);
+    const [testLoading, setTestLoading] = useState(false);
+    const [namespaces, setNamespaces] = useState([]);
+
+    useEffect(() => {
+        loadConfig();
+        loadGroups();
+        loadNamespaces();
+    }, [authFetch]);
+
+    const loadConfig = async () => {
+        try {
+            const res = await authFetch('/api/ldap/config');
+            if (res.ok) {
+                const data = await res.json();
+                setConfig(data);
+            }
+        } catch (err) {
+            // Ignore errors - LDAP might not be configured
+        }
+    };
+
+    const loadGroups = async () => {
+        try {
+            const res = await authFetch('/api/ldap/groups');
+            if (res.ok) {
+                const data = await res.json();
+                setGroups(data);
+            }
+        } catch (err) {
+            // Ignore errors
+        }
+    };
+
+    const loadNamespaces = async () => {
+        try {
+            const res = await authFetch('/api/namespaces');
+            if (res.ok) {
+                const data = await res.json();
+                setNamespaces(data.map(ns => ns.name || ns));
+            }
+        } catch (err) {
+            // Ignore errors
+        }
+    };
+
+    const handleSaveConfig = async () => {
+        setError('');
+        setSuccess('');
+        setLoading(true);
+
+        try {
+            const res = await authFetch('/api/ldap/config', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ config }),
+            });
+
+            if (res.ok) {
+                setSuccess('LDAP configuration saved successfully!');
+            } else {
+                const errorText = await res.text();
+                setError(errorText || 'Failed to save LDAP configuration');
+            }
+        } catch (err) {
+            setError(err.message || 'Failed to save LDAP configuration');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSaveCredentials = async () => {
+        setError('');
+        setSuccess('');
+        setLoading(true);
+
+        try {
+            const res = await authFetch('/api/ldap/credentials', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(credentials),
+            });
+
+            if (res.ok) {
+                setSuccess('LDAP credentials saved successfully!');
+                setCredentials({ username: '', password: '' });
+            } else {
+                const errorText = await res.text();
+                setError(errorText || 'Failed to save LDAP credentials');
+            }
+        } catch (err) {
+            setError(err.message || 'Failed to save LDAP credentials');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleTestConnection = async () => {
+        setError('');
+        setSuccess('');
+        setTestLoading(true);
+
+        try {
+            const res = await authFetch('/api/ldap/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: config.url,
+                    baseDN: config.baseDN,
+                    userDN: config.userDN,
+                    username: credentials.username,
+                    password: credentials.password,
+                }),
+            });
+
+            if (res.ok) {
+                setSuccess('LDAP connection test successful!');
+            } else {
+                const errorText = await res.text();
+                setError(errorText || 'LDAP connection test failed');
+            }
+        } catch (err) {
+            setError(err.message || 'LDAP connection test failed');
+        } finally {
+            setTestLoading(false);
+        }
+    };
+
+    const handleSaveGroups = async () => {
+        setError('');
+        setSuccess('');
+        setLoading(true);
+
+        try {
+            const res = await authFetch('/api/ldap/groups', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(groups),
+            });
+
+            if (res.ok) {
+                setSuccess('LDAP groups configuration saved successfully!');
+            } else {
+                const errorText = await res.text();
+                setError(errorText || 'Failed to save LDAP groups');
+            }
+        } catch (err) {
+            setError(err.message || 'Failed to save LDAP groups');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const addGroup = () => {
+        setGroups({
+            groups: [...groups.groups, { name: '', permissions: [] }]
+        });
+    };
+
+    const removeGroup = (index) => {
+        setGroups({
+            groups: groups.groups.filter((_, i) => i !== index)
+        });
+    };
+
+    const updateGroup = (index, field, value) => {
+        const newGroups = [...groups.groups];
+        newGroups[index] = { ...newGroups[index], [field]: value };
+        setGroups({ groups: newGroups });
+    };
+
+    const addPermission = (groupIndex) => {
+        const newGroups = [...groups.groups];
+        newGroups[groupIndex].permissions = [
+            ...newGroups[groupIndex].permissions,
+            { namespace: '', permission: 'view' }
+        ];
+        setGroups({ groups: newGroups });
+    };
+
+    const removePermission = (groupIndex, permIndex) => {
+        const newGroups = [...groups.groups];
+        newGroups[groupIndex].permissions = newGroups[groupIndex].permissions.filter((_, i) => i !== permIndex);
+        setGroups({ groups: newGroups });
+    };
+
+    const updatePermission = (groupIndex, permIndex, field, value) => {
+        const newGroups = [...groups.groups];
+        newGroups[groupIndex].permissions[permIndex] = {
+            ...newGroups[groupIndex].permissions[permIndex],
+            [field]: value
+        };
+        setGroups({ groups: newGroups });
+    };
+
+    return (
+        <div className="space-y-6">
+            {/* LDAP Server Configuration */}
+            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
+                <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <Server size={20} className="mr-2 text-blue-400" /> LDAP Server Configuration
+                </h2>
+                <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                        <input
+                            type="checkbox"
+                            id="ldap-enabled"
+                            checked={config.enabled}
+                            onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
+                            className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                        />
+                        <label htmlFor="ldap-enabled" className="text-gray-300">Enable LDAP Authentication</label>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">LDAP URL</label>
+                        <input
+                            type="text"
+                            value={config.url}
+                            onChange={(e) => setConfig({ ...config, url: e.target.value })}
+                            placeholder="ldap://ldap.example.com:389"
+                            className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Base DN</label>
+                        <input
+                            type="text"
+                            value={config.baseDN}
+                            onChange={(e) => setConfig({ ...config, baseDN: e.target.value })}
+                            placeholder="dc=example,dc=com"
+                            className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">User DN Attribute</label>
+                        <input
+                            type="text"
+                            value={config.userDN}
+                            onChange={(e) => setConfig({ ...config, userDN: e.target.value })}
+                            placeholder="uid"
+                            className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Group DN</label>
+                        <input
+                            type="text"
+                            value={config.groupDN}
+                            onChange={(e) => setConfig({ ...config, groupDN: e.target.value })}
+                            placeholder="ou=groups,dc=example,dc=com"
+                            className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                        />
+                    </div>
+
+                    <button
+                        onClick={handleSaveConfig}
+                        disabled={loading}
+                        className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                    >
+                        <Save size={16} className="mr-2" />
+                        {loading ? 'Saving...' : 'Save Configuration'}
+                    </button>
+                </div>
+            </div>
+
+            {/* LDAP Credentials */}
+            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
+                <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <Key size={20} className="mr-2 text-yellow-400" /> LDAP Service Account Credentials
+                </h2>
+                <p className="text-sm text-gray-400 mb-4">
+                    Credentials for the service account used to query LDAP for user groups.
+                </p>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Username</label>
+                        <input
+                            type="text"
+                            value={credentials.username}
+                            onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
+                            placeholder="service-account"
+                            className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Password</label>
+                        <input
+                            type="password"
+                            value={credentials.password}
+                            onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+                            placeholder="Enter password"
+                            className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                        />
+                    </div>
+
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={handleSaveCredentials}
+                            disabled={loading}
+                            className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                        >
+                            <Save size={16} className="mr-2" />
+                            {loading ? 'Saving...' : 'Save Credentials'}
+                        </button>
+                        <button
+                            onClick={handleTestConnection}
+                            disabled={testLoading || !config.url || !credentials.username || !credentials.password}
+                            className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                        >
+                            <Check size={16} className="mr-2" />
+                            {testLoading ? 'Testing...' : 'Test Connection'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* LDAP Groups and Permissions */}
+            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
+                <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <Users size={20} className="mr-2 text-purple-400" /> LDAP Groups and Permissions
+                </h2>
+                <p className="text-sm text-gray-400 mb-4">
+                    Configure which LDAP groups have access to which namespaces and with what permissions.
+                </p>
+
+                <div className="space-y-4">
+                    {groups.groups.map((group, groupIndex) => (
+                        <div key={groupIndex} className="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                            <div className="flex items-center justify-between mb-3">
+                                <input
+                                    type="text"
+                                    value={group.name}
+                                    onChange={(e) => updateGroup(groupIndex, 'name', e.target.value)}
+                                    placeholder="Group name (e.g., developers)"
+                                    className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                                />
+                                <button
+                                    onClick={() => removeGroup(groupIndex)}
+                                    className="ml-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-2">
+                                {group.permissions.map((perm, permIndex) => (
+                                    <div key={permIndex} className="flex items-center space-x-2">
+                                        <select
+                                            value={perm.namespace}
+                                            onChange={(e) => updatePermission(groupIndex, permIndex, 'namespace', e.target.value)}
+                                            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        >
+                                            <option value="">Select namespace</option>
+                                            {namespaces.map(ns => (
+                                                <option key={ns} value={ns}>{ns}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            value={perm.permission}
+                                            onChange={(e) => updatePermission(groupIndex, permIndex, 'permission', e.target.value)}
+                                            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        >
+                                            <option value="view">View</option>
+                                            <option value="edit">Edit</option>
+                                            <option value="admin">Admin</option>
+                                        </select>
+                                        <button
+                                            onClick={() => removePermission(groupIndex, permIndex)}
+                                            className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    onClick={() => addPermission(groupIndex)}
+                                    className="flex items-center px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors text-sm"
+                                >
+                                    <Plus size={14} className="mr-2" /> Add Permission
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+
+                    <button
+                        onClick={addGroup}
+                        className="flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+                    >
+                        <Plus size={16} className="mr-2" /> Add Group
+                    </button>
+
+                    <button
+                        onClick={handleSaveGroups}
+                        disabled={loading}
+                        className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                    >
+                        <Save size={16} className="mr-2" />
+                        {loading ? 'Saving...' : 'Save Groups Configuration'}
+                    </button>
+                </div>
+            </div>
+
+            {error && (
+                <div className="flex items-center text-red-400 text-sm bg-red-900/20 border border-red-500/50 rounded-lg p-3">
+                    <AlertCircle size={16} className="mr-2" />
+                    {error}
+                </div>
+            )}
+            {success && (
+                <div className="flex items-center text-green-400 text-sm bg-green-900/20 border border-green-500/50 rounded-lg p-3">
+                    <Check size={16} className="mr-2" />
+                    {success}
                 </div>
             )}
         </div>

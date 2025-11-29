@@ -10,11 +10,18 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
+// LDAPAuthenticator defines the interface for LDAP authentication
+type LDAPAuthenticator interface {
+	AuthenticateUser(ctx context.Context, username, password string) error
+	GetUserPermissions(ctx context.Context, username string) (map[string]string, error)
+}
+
 // AuthService provides business logic for authentication operations.
 // It handles user authentication, password verification, and JWT token generation.
 type AuthService struct {
-	userRepo  UserRepository
-	jwtSecret []byte
+	userRepo      UserRepository
+	jwtSecret     []byte
+	ldapAuth      LDAPAuthenticator // Optional LDAP authenticator
 }
 
 // NewAuthService creates a new AuthService with the provided user repository and JWT secret.
@@ -23,7 +30,13 @@ func NewAuthService(userRepo UserRepository, jwtSecret []byte) *AuthService {
 	return &AuthService{
 		userRepo:  userRepo,
 		jwtSecret: jwtSecret,
+		ldapAuth:  nil,
 	}
+}
+
+// SetLDAPAuthenticator sets the LDAP authenticator for the service
+func (s *AuthService) SetLDAPAuthenticator(ldapAuth LDAPAuthenticator) {
+	s.ldapAuth = ldapAuth
 }
 
 // LoginRequest represents login credentials provided by the user.
@@ -45,33 +58,49 @@ type LoginResult struct {
 }
 
 // Login authenticates a user and generates a JWT token.
-// It verifies the username and password against the configured admin credentials,
-// and returns a JWT token valid for 24 hours if authentication succeeds.
+// It first tries admin authentication, then falls back to LDAP if enabled.
+// Returns a JWT token valid for 24 hours if authentication succeeds.
 //
 // Returns ErrInvalidCredentials if username or password is incorrect.
 func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult, error) {
-	// Get admin credentials from repository
+	var role string
+	var permissions map[string]string
+
+	// Try admin authentication first
 	adminUser, err := s.userRepo.GetAdminUser()
-	if err != nil {
-		return nil, fmt.Errorf("server configuration error: %w", err)
+	if err == nil {
+		adminPassHash, err := s.userRepo.GetAdminPasswordHash()
+		if err == nil {
+			// Verify username
+			if req.Username == adminUser {
+				// Verify password using Argon2
+				match, err := VerifyPassword(req.Password, adminPassHash)
+				if err == nil && match {
+					// Admin authentication successful
+					role = "admin"
+					permissions = nil // Admin has full access
+				}
+			}
+		}
 	}
 
-	adminPassHash, err := s.userRepo.GetAdminPasswordHash()
-	if err != nil {
-		return nil, fmt.Errorf("server configuration error: %w", err)
+	// If admin auth failed and LDAP is available, try LDAP
+	if role == "" && s.ldapAuth != nil {
+		err := s.ldapAuth.AuthenticateUser(ctx, req.Username, req.Password)
+		if err == nil {
+			// LDAP authentication successful
+			role = "user"
+			// Get user permissions from LDAP groups
+			permissions, err = s.ldapAuth.GetUserPermissions(ctx, req.Username)
+			if err != nil {
+				// Log error but continue - user is authenticated
+				permissions = make(map[string]string)
+			}
+		}
 	}
 
-	// Verify username
-	if req.Username != adminUser {
-		return nil, ErrInvalidCredentials
-	}
-
-	// Verify password using Argon2
-	match, err := VerifyPassword(req.Password, adminPassHash)
-	if err != nil {
-		return nil, fmt.Errorf("password verification error: %w", err)
-	}
-	if !match {
+	// If still no role, authentication failed
+	if role == "" {
 		return nil, ErrInvalidCredentials
 	}
 
@@ -79,8 +108,9 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &AuthClaims{
 		Claims: models.Claims{
-			Username: req.Username,
-			Role:     "admin",
+			Username:    req.Username,
+			Role:        role,
+			Permissions: permissions,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
@@ -95,7 +125,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 
 	return &LoginResult{
 		Response: LoginResponse{
-			Role: "admin",
+			Role: role,
 		},
 		Token:   tokenString,
 		Expires: expirationTime,

@@ -45,6 +45,7 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/health"
 	"github.com/flaucha/DKonsole/backend/internal/helm"
 	"github.com/flaucha/DKonsole/backend/internal/k8s"
+	"github.com/flaucha/DKonsole/backend/internal/ldap"
 	"github.com/flaucha/DKonsole/backend/internal/logo"
 	"github.com/flaucha/DKonsole/backend/internal/middleware"
 	"github.com/flaucha/DKonsole/backend/internal/models"
@@ -167,6 +168,14 @@ func main() {
 		utils.LogError(err, "Failed to initialize auth service", nil)
 		os.Exit(1)
 	}
+
+	// Initialize LDAP service (non-blocking - will work even if LDAP is not configured)
+	ldapFactory := ldap.NewServiceFactory(clientset, secretName)
+	ldapService := ldapFactory.NewService()
+
+	// Connect LDAP to auth service (non-blocking - will check if enabled on first login)
+	// We set it up here so it's available, but it won't block startup if LDAP is not configured
+	authService.SetLDAPAuthenticator(ldapService)
 
 	clusterService := cluster.NewService(handlersModel)
 	k8sService := k8s.NewService(handlersModel, clusterService)
@@ -324,6 +333,42 @@ func main() {
 
 	// Auth handlers - password change
 	mux.HandleFunc("/api/auth/change-password", secure(authService.ChangePasswordHandler))
+
+	// LDAP handlers - using services
+	mux.HandleFunc("/api/ldap/config", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			secure(ldapService.GetConfigHandler)(w, r)
+		} else if r.Method == http.MethodPut {
+			secure(ldapService.UpdateConfigHandler)(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+	mux.HandleFunc("/api/ldap/groups", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			secure(ldapService.GetGroupsHandler)(w, r)
+		} else if r.Method == http.MethodPut {
+			secure(ldapService.UpdateGroupsHandler)(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+	mux.HandleFunc("/api/ldap/credentials", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			secure(ldapService.GetCredentialsHandler)(w, r)
+		} else if r.Method == http.MethodPut {
+			secure(ldapService.UpdateCredentialsHandler)(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+	mux.HandleFunc("/api/ldap/test", secure(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			ldapService.TestConnectionHandler(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}))
 
 	// Serve static files from frontend build
 	staticDir := "./static"

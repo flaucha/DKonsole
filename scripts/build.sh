@@ -11,8 +11,14 @@ else
     VERSION="1.1.9"
 fi
 
-# Use test version for testing (add -test-1 suffix)
-TEST_VERSION="${VERSION}-test-1"
+# Use test version for testing (add -test-1 suffix only if version doesn't already have a suffix)
+if [[ "$VERSION" == *"-"* ]]; then
+    # Version already has a suffix (e.g., 1.3.0-alfa1), use it directly
+    TEST_VERSION="$VERSION"
+else
+    # No suffix, add -test-1
+    TEST_VERSION="${VERSION}-test-1"
+fi
 
 echo "=========================================="
 echo "🔨 DKonsole Build v${TEST_VERSION}"

@@ -150,8 +150,9 @@ type Credentials struct {
 
 // Claims representa los claims del JWT
 type Claims struct {
-	Username         string      `json:"username"`
-	Role             string      `json:"role"`
+	Username    string            `json:"username"`
+	Role        string            `json:"role"`
+	Permissions map[string]string `json:"permissions,omitempty"` // namespace -> permission (view/edit/admin)
 	RegisteredClaims interface{} `json:"-"` // Se manejará con jwt.RegisteredClaims en el paquete auth
 }
 
@@ -274,4 +275,31 @@ func NormalizeKind(kind string) string {
 		return alias
 	}
 	return kind
+}
+
+// LDAPConfig representa la configuración del servidor LDAP
+type LDAPConfig struct {
+	Enabled    bool   `json:"enabled"`
+	URL        string `json:"url"`
+	BaseDN     string `json:"baseDN"`
+	UserDN     string `json:"userDN"`
+	GroupDN    string `json:"groupDN"`
+	UserFilter string `json:"userFilter,omitempty"`
+}
+
+// LDAPGroupPermission representa los permisos de un grupo LDAP para un namespace
+type LDAPGroupPermission struct {
+	Namespace string `json:"namespace"`
+	Permission string `json:"permission"` // "view", "edit", "admin"
+}
+
+// LDAPGroup representa un grupo LDAP con sus permisos
+type LDAPGroup struct {
+	Name        string                `json:"name"`
+	Permissions []LDAPGroupPermission `json:"permissions"`
+}
+
+// LDAPGroupsConfig representa la configuración de grupos LDAP
+type LDAPGroupsConfig struct {
+	Groups []LDAPGroup `json:"groups"`
 }

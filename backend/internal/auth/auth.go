@@ -35,6 +35,15 @@ type Service struct {
 	secretName  string
 }
 
+// SetLDAPAuthenticator sets the LDAP authenticator for the auth service
+func (s *Service) SetLDAPAuthenticator(ldapAuth LDAPAuthenticator) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.authService != nil {
+		s.authService.SetLDAPAuthenticator(ldapAuth)
+	}
+}
+
 // NewService creates a new authentication service with default configuration.
 // It initializes the user repository and JWT services.
 // If k8sClient is provided, it will try to use Kubernetes secrets.
