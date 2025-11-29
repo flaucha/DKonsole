@@ -665,6 +665,19 @@ const WorkloadList = ({ namespace, kind }) => {
                                             </div>
                                         )}
                                     </div>
+                                    {kind === 'Deployment' && (isAdmin(user) || canEdit(user, res.namespace)) && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRolloutDeployment(res);
+                                            }}
+                                            disabled={rollingOut === res.name}
+                                            className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-green-400 transition-colors disabled:opacity-50"
+                                            title="Rollout deployment"
+                                        >
+                                            <RefreshCw size={16} className={rollingOut === res.name ? 'animate-spin' : ''} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
