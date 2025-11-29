@@ -611,7 +611,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                     <div className="col-span-1"></div>
                                 )}
                                 <div className={`${kind === 'Pod' ? 'col-span-1' : kind === 'PersistentVolumeClaim' ? 'col-span-2' : 'col-span-2'} flex justify-end items-center space-x-2 pr-2`} onClick={(e) => e.stopPropagation()}>
-                    {kind === 'CronJob' && (
+                                    {kind === 'CronJob' && (
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -622,19 +622,6 @@ const WorkloadList = ({ namespace, kind }) => {
                                             title="Trigger manual run"
                                         >
                                             <PlayCircle size={16} />
-                                        </button>
-                                    )}
-                                    {kind === 'Deployment' && (isAdmin(user) || canEdit(user, res.namespace)) && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleRolloutDeployment(res);
-                                            }}
-                                            disabled={rollingOut === res.name}
-                                            className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-green-400 transition-colors disabled:opacity-50"
-                                            title="Rollout deployment"
-                                        >
-                                            <RefreshCw size={16} className={rollingOut === res.name ? 'animate-spin' : ''} />
                                         </button>
                                     )}
                                     <div className="relative">
