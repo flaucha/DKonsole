@@ -108,39 +108,45 @@ const ClusterOverview = () => {
 
             {/* Prometheus Metrics Stats - Only if enabled */}
             {prometheusEnabled && clusterStats && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <StatCard
-                        icon={Server}
-                        label="Worker Nodes"
-                        value={clusterStats.totalNodes}
-                        color="bg-blue-600"
-                    />
-                    <StatCard
-                        icon={Server}
-                        label="Control Planes"
-                        value={clusterStats.controlPlaneNodes || 0}
-                        color="bg-indigo-600"
-                    />
-                    <StatCard
-                        icon={Cpu}
-                        label="Avg CPU Usage"
-                        value={`${clusterStats.avgCpuUsage?.toFixed(1)}%`}
-                        color="bg-purple-600"
-                        trend={clusterStats.cpuTrend}
-                    />
-                    <StatCard
-                        icon={HardDrive}
-                        label="Avg Memory Usage"
-                        value={`${clusterStats.avgMemoryUsage?.toFixed(1)}%`}
-                        color="bg-green-600"
-                        trend={clusterStats.memoryTrend}
-                    />
-                    <StatCard
-                        icon={Network}
-                        label="Network Traffic"
-                        value={`${clusterStats.networkTraffic?.toFixed(2)} MB/s`}
-                        color="bg-yellow-600"
-                    />
+                <div className="space-y-4">
+                    {/* First row: Control Planes */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <StatCard
+                            icon={Server}
+                            label="Control Planes"
+                            value={clusterStats.controlPlaneNodes || 0}
+                            color="bg-indigo-600"
+                        />
+                        <StatCard
+                            icon={Cpu}
+                            label="Avg CPU Usage"
+                            value={`${clusterStats.avgCpuUsage?.toFixed(1)}%`}
+                            color="bg-purple-600"
+                            trend={clusterStats.cpuTrend}
+                        />
+                        <StatCard
+                            icon={HardDrive}
+                            label="Avg Memory Usage"
+                            value={`${clusterStats.avgMemoryUsage?.toFixed(1)}%`}
+                            color="bg-green-600"
+                            trend={clusterStats.memoryTrend}
+                        />
+                        <StatCard
+                            icon={Network}
+                            label="Network Traffic"
+                            value={`${clusterStats.networkTraffic?.toFixed(2)} MB/s`}
+                            color="bg-yellow-600"
+                        />
+                    </div>
+                    {/* Second row: Worker Nodes */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <StatCard
+                            icon={Server}
+                            label="Worker Nodes"
+                            value={clusterStats.totalNodes}
+                            color="bg-blue-600"
+                        />
+                    </div>
                 </div>
             )}
 
