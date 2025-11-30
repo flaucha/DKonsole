@@ -240,15 +240,15 @@ const WorkloadList = ({ namespace, kind }) => {
                     return num / (1024 * 1024);
                 }
                 case 'ready': {
-                    if (kind !== 'Pod' || !item.details?.ready) return -1;
+                    if (kind !== 'Pod' || !item.details?.ready) return 0;
                     const readyStr = item.details.ready.toString();
                     const parts = readyStr.split('/');
                     if (parts.length === 2) {
                         const ready = parseFloat(parts[0]) || 0;
                         const total = parseFloat(parts[1]) || 0;
-                        return total > 0 ? (ready / total) : -1;
+                        return total > 0 ? (ready / total) : 0;
                     }
-                    return -1;
+                    return 0;
                 }
                 case 'restarts': {
                     if (kind !== 'Pod') return 0;
@@ -583,7 +583,12 @@ const WorkloadList = ({ namespace, kind }) => {
                 <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('status')}>
                     Status {renderSortIndicator('status')}
                 </div>
-                <div className={`${kind === 'Pod' ? 'col-span-2' : 'col-span-3'} cursor-pointer hover:text-gray-300 flex items-center`} onClick={() => handleSort('created')}>
+                {kind === 'Pod' && (
+                    <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('ready')}>
+                        Ready {renderSortIndicator('ready')}
+                    </div>
+                )}
+                <div className={`${kind === 'Pod' ? 'col-span-1' : 'col-span-3'} cursor-pointer hover:text-gray-300 flex items-center`} onClick={() => handleSort('created')}>
                     Age {renderSortIndicator('created')}
                 </div>
                 {kind === 'Pod' && (
@@ -630,7 +635,12 @@ const WorkloadList = ({ namespace, kind }) => {
                                         {res.status}
                                     </span>
                                 </div>
-                                <div className={`${kind === 'Pod' ? 'col-span-2' : 'col-span-3'} text-sm text-gray-400`}>
+                                {kind === 'Pod' && (
+                                    <div className="col-span-1 text-sm text-gray-400">
+                                        {res.details?.ready || '-'}
+                                    </div>
+                                )}
+                                <div className={`${kind === 'Pod' ? 'col-span-1' : 'col-span-3'} text-sm text-gray-400`}>
                                     {formatDateTime(res.created)}
                                 </div>
                                 {kind === 'Pod' && (
