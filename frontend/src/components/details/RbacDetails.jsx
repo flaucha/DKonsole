@@ -8,6 +8,9 @@ export const ServiceAccountDetails = ({ details, onEditYAML }) => {
 
     return (
         <div className="p-4 bg-gray-900/50 rounded-md mt-2 space-y-4">
+            <div className="flex justify-end mb-2">
+                <EditYamlButton onClick={onEditYAML} />
+            </div>
             <div>
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Secrets</h4>
                 {secrets.length > 0 ? (
@@ -36,9 +39,6 @@ export const ServiceAccountDetails = ({ details, onEditYAML }) => {
                     <div className="text-sm text-gray-500 italic">No image pull secrets</div>
                 )}
             </div>
-            <div className="flex justify-end mt-4">
-                <EditYamlButton onClick={onEditYAML} />
-            </div>
         </div>
     );
 };
@@ -48,6 +48,9 @@ export const RoleDetails = ({ details, onEditYAML }) => {
 
     return (
         <div className="p-4 bg-gray-900/50 rounded-md mt-2">
+            <div className="flex justify-end mb-2">
+                <EditYamlButton onClick={onEditYAML} />
+            </div>
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Policy Rules</h4>
             <div className="overflow-x-auto">
                 <table className="min-w-full text-xs text-left">
@@ -75,9 +78,6 @@ export const RoleDetails = ({ details, onEditYAML }) => {
                     </tbody>
                 </table>
             </div>
-            <div className="flex justify-end mt-4">
-                <EditYamlButton onClick={onEditYAML} />
-            </div>
         </div>
     );
 };
@@ -88,6 +88,9 @@ export const BindingDetails = ({ details, onEditYAML }) => {
 
     return (
         <div className="p-4 bg-gray-900/50 rounded-md mt-2 space-y-4">
+            <div className="flex justify-end mb-2">
+                <EditYamlButton onClick={onEditYAML} />
+            </div>
             <div>
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Role Reference</h4>
                 <div className="flex items-center space-x-2 text-sm text-gray-300">
@@ -118,9 +121,6 @@ export const BindingDetails = ({ details, onEditYAML }) => {
                         </tbody>
                     </table>
                 </div>
-            </div>
-            <div className="flex justify-end mt-4">
-                <EditYamlButton onClick={onEditYAML} />
             </div>
         </div>
     );

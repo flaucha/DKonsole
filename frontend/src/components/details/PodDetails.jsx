@@ -90,6 +90,9 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
             <div className={`transition-all duration-300 ease-in-out flex-1 flex flex-col ${isFullHeightTab ? 'min-h-0' : ''}`}>
                 {activeTab === 'details' ? (
                     <div className="p-4 bg-gray-900/50 rounded-md animate-fadeIn">
+                        <div className="flex justify-end mb-2">
+                            <EditYamlButton onClick={onEditYAML} namespace={pod?.namespace} />
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                             <div>
                                 <DetailRow label="Node" value={details.node} icon={Server} />
@@ -103,9 +106,6 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                                 {metrics.cpu && <DetailRow label="CPU" value={metrics.cpu} icon={Activity} />}
                                 {metrics.memory && <DetailRow label="Memory" value={metrics.memory} icon={HardDrive} />}
                             </div>
-                        </div>
-                        <div className="flex justify-end space-x-2">
-                            <EditYamlButton onClick={onEditYAML} namespace={pod?.namespace} />
                         </div>
                     </div>
                 ) : activeTab === 'logs' ? (

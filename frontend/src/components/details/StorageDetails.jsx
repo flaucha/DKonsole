@@ -4,6 +4,9 @@ import { DetailRow, EditYamlButton } from './CommonDetails';
 
 const StorageDetails = ({ details, onEditYAML }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">
+        <div className="flex justify-end mb-2">
+            <EditYamlButton onClick={onEditYAML} />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <DetailRow label="Access Modes" value={details.accessModes} icon={Tag} />
             <DetailRow label="Storage Class" value={details.storageClassName} icon={Layers} />
@@ -21,9 +24,6 @@ const StorageDetails = ({ details, onEditYAML }) => (
                     icon={FileText}
                 />
             )}
-        </div>
-        <div className="flex justify-end mt-4">
-            <EditYamlButton onClick={onEditYAML} />
         </div>
     </div>
 );

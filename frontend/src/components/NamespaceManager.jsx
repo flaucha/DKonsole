@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Database, RefreshCw, Tag, Clock, MoreVertical, FileText, ChevronDown, Search, X } from 'lucide-react';
+import { Database, RefreshCw, Tag, Clock, MoreVertical, FileText, ChevronDown, Search, X, Plus } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import YamlEditor from './YamlEditor';
@@ -141,6 +141,22 @@ const NamespaceManager = () => {
                     </span>
                 </div>
                 <div className="flex items-center space-x-2">
+                    {isAdmin(user) && (
+                        <button
+                            onClick={() => {
+                                setEditingYaml({
+                                    kind: 'Namespace',
+                                    namespaced: false,
+                                    isNew: true
+                                });
+                            }}
+                            className="flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm transition-colors"
+                            title="Create new namespace"
+                        >
+                            <Plus size={16} className="mr-1.5" />
+                            Add
+                        </button>
+                    )}
                     <button
                         onClick={() => refetch()}
                         className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
@@ -256,6 +272,10 @@ const NamespaceManager = () => {
                                     <div className="px-6 py-4 bg-gray-900/30 border-t border-gray-800">
                                         <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden">
                                             <div className="p-4 space-y-6">
+                                            {/* Edit YAML Button */}
+                                            <div className="flex justify-end mb-2">
+                                                <EditYamlButton onClick={() => setEditingYaml({ name: ns.name, kind: 'Namespace', namespaced: false })} />
+                                            </div>
                                             {/* Basic Information */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
@@ -307,11 +327,6 @@ const NamespaceManager = () => {
                                                     </div>
                                                 </div>
                                             )}
-
-                                            {/* Actions */}
-                                            <div className="flex justify-end mt-4">
-                                                <EditYamlButton onClick={() => setEditingYaml({ name: ns.name, kind: 'Namespace', namespaced: false })} />
-                                            </div>
                                             </div>
                                         </div>
                                     </div>

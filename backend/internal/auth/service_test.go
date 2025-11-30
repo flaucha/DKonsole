@@ -272,12 +272,31 @@ func TestAuthService_LoginWithLDAP(t *testing.T) {
 		expectedPerms     map[string]string
 	}{
 		{
-			name: "successful LDAP login with admin permissions (empty)",
+			name: "successful LDAP login with no permissions (empty map)",
 			ldapAuth: &mockLDAPAuthenticator{
 				authenticateUserErr:  nil,
 				validateUserGroupErr: nil,
 				getUserPermissionsFunc: func(ctx context.Context, username string) (map[string]string, error) {
-					return map[string]string{}, nil // Empty permissions = admin
+					return map[string]string{}, nil // Empty permissions = user with no access
+				},
+			},
+			req: LoginRequest{
+				Username: "ldapuser",
+				Password: "ldappass",
+				IDP:      "ldap",
+			},
+			wantErr:      false,
+			checkToken:   true,
+			expectedRole: "user",
+			expectedPerms: map[string]string{}, // User with empty permissions
+		},
+		{
+			name: "successful LDAP login with admin permissions (nil)",
+			ldapAuth: &mockLDAPAuthenticator{
+				authenticateUserErr:  nil,
+				validateUserGroupErr: nil,
+				getUserPermissionsFunc: func(ctx context.Context, username string) (map[string]string, error) {
+					return nil, nil // Nil permissions = admin
 				},
 			},
 			req: LoginRequest{

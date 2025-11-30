@@ -4,6 +4,7 @@ import Editor from '@monaco-editor/react';
 import { defineMonacoTheme } from '../config/monacoTheme';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { parseErrorResponse, parseError } from '../utils/errorParser';
 
 const YamlEditor = ({ resource, onClose, onSaved }) => {
     const { name, namespace, kind, group, version, resource: resourceName, namespaced } = resource || {};
@@ -32,6 +33,32 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
 
     useEffect(() => {
         if (!resource) return;
+
+        // If it's a new resource, provide a template
+        if (resource.isNew) {
+            let template = '';
+            if (kind === 'Namespace') {
+                template = `apiVersion: v1
+kind: Namespace
+metadata:
+  name: example-namespace
+  labels:
+    app: example
+`;
+            } else {
+                // Generic template for other resources
+                template = `apiVersion: v1
+kind: ${kind}
+metadata:
+  name: example-${kind.toLowerCase()}
+${namespace ? `  namespace: ${namespace}` : ''}
+`;
+            }
+            setContent(template);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         setError('');
         authFetch(buildUrl())
@@ -97,9 +124,14 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
                     <div className="flex items-center space-x-2">
                         <FileText size={18} className="text-gray-400" />
                         <span className="font-mono text-sm text-gray-200">{kind}</span>
-                        <span className="text-gray-500">/</span>
-                        <span className="font-mono text-sm text-gray-200">{name}</span>
+                        {name && (
+                            <>
+                                <span className="text-gray-500">/</span>
+                                <span className="font-mono text-sm text-gray-200">{name}</span>
+                            </>
+                        )}
                         {namespace && <span className="text-xs text-gray-500">({namespace})</span>}
+                        {resource?.isNew && <span className="text-xs text-blue-400">(New)</span>}
                     </div>
                     <div className="flex items-center space-x-2">
                         <button

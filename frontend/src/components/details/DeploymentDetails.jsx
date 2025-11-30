@@ -36,6 +36,9 @@ const DeploymentDetails = ({ details, onScale, scaling, res, onEditYAML }) => {
 
             {activeTab === 'details' && (
                 <>
+                    <div className="flex justify-end mb-2">
+                        <EditYamlButton onClick={onEditYAML} namespace={res?.namespace} />
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <div className="mb-2">
@@ -77,9 +80,6 @@ const DeploymentDetails = ({ details, onScale, scaling, res, onEditYAML }) => {
                                 icon={Tag}
                             />
                         </div>
-                    </div>
-                    <div className="flex justify-end mt-4">
-                        <EditYamlButton onClick={onEditYAML} namespace={res?.namespace} />
                     </div>
                 </>
             )}

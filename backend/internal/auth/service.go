@@ -130,11 +130,19 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 			permissions = make(map[string]string)
 			role = "user"
 		} else {
-			// If permissions is empty, user is admin (has full access)
-			if len(permissions) == 0 {
+			// Check if user is in admin group (permissions will be nil for admin)
+			// If permissions is nil, user is admin (has full access)
+			// If permissions is empty map, user has no permissions (should not see anything)
+			// If permissions has entries, user has limited permissions
+			if permissions == nil {
 				role = "admin"
-				permissions = nil // Admin has full access
 				utils.LogInfo("User is LDAP admin, setting role to admin", map[string]interface{}{
+					"username": req.Username,
+				})
+			} else if len(permissions) == 0 {
+				// User has no permissions - should not see anything
+				role = "user"
+				utils.LogInfo("User has no permissions, setting role to user with empty permissions", map[string]interface{}{
 					"username": req.Username,
 				})
 			} else {
@@ -198,11 +206,19 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 						permissions = make(map[string]string)
 						role = "user"
 					} else {
-						// If permissions is empty, user is admin (has full access)
-						if len(permissions) == 0 {
+						// Check if user is in admin group (permissions will be nil for admin)
+						// If permissions is nil, user is admin (has full access)
+						// If permissions is empty map, user has no permissions (should not see anything)
+						// If permissions has entries, user has limited permissions
+						if permissions == nil {
 							role = "admin"
-							permissions = nil // Admin has full access
 							utils.LogInfo("User is LDAP admin, setting role to admin", map[string]interface{}{
+								"username": req.Username,
+							})
+						} else if len(permissions) == 0 {
+							// User has no permissions - should not see anything
+							role = "user"
+							utils.LogInfo("User has no permissions, setting role to user with empty permissions", map[string]interface{}{
 								"username": req.Username,
 							})
 						} else {
