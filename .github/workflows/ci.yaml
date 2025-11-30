@@ -198,7 +198,10 @@ jobs:
           # Extract major.minor for additional tag
           MAJOR_MINOR=$(echo $VERSION | cut -d. -f1,2)
           TAGS="$TAGS,$IMAGE:$MAJOR_MINOR"
-          echo "📌 Tagging as $VERSION and $MAJOR_MINOR"
+
+          # Always tag as latest for the most recent stable release
+          TAGS="$TAGS,$IMAGE:latest"
+          echo "📌 Tagging as $VERSION, $MAJOR_MINOR, and latest"
 
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
           echo "🏷️  Docker image tags: $TAGS"
