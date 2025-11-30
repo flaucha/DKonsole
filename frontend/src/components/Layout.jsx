@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database, Gauge, Package, LogOut, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
+import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database, Gauge, Package, LogOut, PanelLeftClose, PanelLeftOpen, X, Siren } from 'lucide-react';
 import defaultLogo from '../assets/logo-full.svg';
 import logoLight from '../assets/logo-light.svg';
 import { useSettings } from '../context/SettingsContext';
@@ -194,6 +194,7 @@ const Layout = ({ children, headerContent }) => {
         networking: false,
         storage: false,
         accessControl: false,
+        adminArea: false,
     });
     const [logoSrc, setLogoSrc] = useState(defaultLogo);
     const location = useLocation();
@@ -250,6 +251,7 @@ const Layout = ({ children, headerContent }) => {
                 networking: false,
                 storage: false,
                 accessControl: false,
+                adminArea: false,
                 [menu]: true
             };
         });
@@ -442,32 +444,45 @@ const Layout = ({ children, headerContent }) => {
                                     </>
                                 )}
 
-                                {/* Nodes - Only for admins */}
+                                {/* Admin Area - Only for admins */}
                                 {isAdmin && (
-                                    <SidebarItem
-                                        icon={Server}
-                                        label="Nodes"
-                                        to="/dashboard/workloads/Node"
-                                    />
+                                    <>
+                                        <SidebarItem
+                                            icon={Siren}
+                                            label="Admin Area"
+                                            hasChildren
+                                            expanded={expandedMenus.adminArea}
+                                            onClick={() => toggleMenu('adminArea')}
+                                        />
+                                        <SubMenu isOpen={expandedMenus.adminArea} animationStyle={menuAnimation} animationSpeed={menuAnimationSpeed}>
+                                            <SubItem
+                                                label="Nodes"
+                                                to="/dashboard/workloads/Node"
+                                            />
+                                            <SubItem
+                                                label="Namespaces"
+                                                to="/dashboard/namespaces"
+                                            />
+                                            <SubItem
+                                                label="API Explorer"
+                                                to="/dashboard/api-explorer"
+                                            />
+                                            <SubItem
+                                                label="Helm Charts"
+                                                to="/dashboard/helm-charts"
+                                            />
+                                        </SubMenu>
+                                    </>
                                 )}
 
-                                <SidebarItem
-                                    icon={Database}
-                                    label="Namespaces"
-                                    to="/dashboard/namespaces"
-                                />
-
-                                <SidebarItem
-                                    icon={ListTree}
-                                    label="API Explorer"
-                                    to="/dashboard/api-explorer"
-                                />
-
-                                <SidebarItem
-                                    icon={Package}
-                                    label="Helm Charts"
-                                    to="/dashboard/helm-charts"
-                                />
+                                {/* Helm Charts - Only for users with namespace permissions (non-admin) */}
+                                {!isAdmin && hasPermissions && (
+                                    <SidebarItem
+                                        icon={Package}
+                                        label="Helm Charts"
+                                        to="/dashboard/helm-charts"
+                                    />
+                                )}
                             </>
                         )}
                     </nav>
