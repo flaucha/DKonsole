@@ -34,12 +34,15 @@
 [data-font-size="small"] {
   font-size: 14px;
 }
+
 [data-font-size="normal"] {
   font-size: 16px;
 }
+
 [data-font-size="large"] {
   font-size: 18px;
 }
+
 [data-font-size="xl"] {
   font-size: 20px;
 }
@@ -50,21 +53,25 @@
   --radius-md: 0px;
   --radius-lg: 0px;
 }
+
 [data-border-radius="sm"] {
   --radius-sm: 0.125rem;
   --radius-md: 0.25rem;
   --radius-lg: 0.375rem;
 }
+
 [data-border-radius="md"] {
   --radius-sm: 0.125rem;
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
 }
+
 [data-border-radius="lg"] {
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
 }
+
 [data-border-radius="xl"] {
   --radius-sm: 0.375rem;
   --radius-md: 0.75rem;
@@ -94,7 +101,8 @@
   /* Forest Theme (Green/Dark) */
   --color-gray-900: 2 44 34;
   --color-gray-800: 6 78 59;
-  --color-gray-750: 20 83 45; /* Custom mix */
+  --color-gray-750: 20 83 45;
+  /* Custom mix */
   --color-gray-700: 22 101 52;
   --color-gray-600: 34 197 94;
   --color-gray-500: 74 222 128;
@@ -103,7 +111,8 @@
   --color-gray-200: 220 252 231;
   --color-gray-100: 240 253 244;
 
-  --color-blue-700: 21 128 61; /* Reusing Green as primary accent */
+  --color-blue-700: 21 128 61;
+  /* Reusing Green as primary accent */
   --color-blue-600: 22 163 74;
   --color-blue-500: 34 197 94;
   --color-blue-400: 74 222 128;
@@ -122,7 +131,8 @@
   --color-gray-200: 254 226 226;
   --color-gray-100: 254 242 242;
 
-  --color-blue-700: 154 52 18; /* Orange/Red accent */
+  --color-blue-700: 154 52 18;
+  /* Orange/Red accent */
   --color-blue-600: 194 65 12;
   --color-blue-500: 234 88 12;
   --color-blue-400: 251 146 60;
@@ -206,16 +216,26 @@
 
 [data-theme="light"] {
   /* Light Mode Theme (White) - Inverted for proper contrast */
-  --color-gray-900: 255 255 255; /* Main background - white */
-  --color-gray-800: 249 250 251; /* Card backgrounds - very light gray */
-  --color-gray-750: 243 244 246; /* Hover states - light gray */
-  --color-gray-700: 229 231 235; /* Borders, dividers - medium light gray */
-  --color-gray-600: 209 213 219; /* Disabled states - gray */
-  --color-gray-500: 156 163 175; /* Placeholder text - medium gray */
-  --color-gray-400: 107 114 128; /* Secondary text - dark gray */
-  --color-gray-300: 75 85 99; /* Primary text - darker gray */
-  --color-gray-200: 55 65 81; /* Headings - very dark gray */
-  --color-gray-100: 17 24 39; /* Strong text - almost black */
+  --color-gray-900: 255 255 255;
+  /* Main background - white */
+  --color-gray-800: 249 250 251;
+  /* Card backgrounds - very light gray */
+  --color-gray-750: 243 244 246;
+  /* Hover states - light gray */
+  --color-gray-700: 229 231 235;
+  /* Borders, dividers - medium light gray */
+  --color-gray-600: 209 213 219;
+  /* Disabled states - gray */
+  --color-gray-500: 156 163 175;
+  /* Placeholder text - medium gray */
+  --color-gray-400: 107 114 128;
+  /* Secondary text - dark gray */
+  --color-gray-300: 75 85 99;
+  /* Primary text - darker gray */
+  --color-gray-200: 55 65 81;
+  /* Headings - very dark gray */
+  --color-gray-100: 17 24 39;
+  /* Strong text - almost black */
 
   --color-blue-700: 29 78 216;
   --color-blue-600: 37 99 235;
@@ -225,18 +245,29 @@
 
 [data-theme="cream"] {
   /* Cream Theme (Sepia/Beige) - Inverted for proper contrast */
-  --color-gray-900: 250 247 240; /* Main background - cream */
-  --color-gray-800: 245 241 230; /* Card backgrounds - light cream */
-  --color-gray-750: 240 235 220; /* Hover states - cream */
-  --color-gray-700: 235 229 210; /* Borders, dividers - medium cream */
-  --color-gray-600: 220 210 190; /* Disabled states - beige */
-  --color-gray-500: 180 165 145; /* Placeholder text - sepia */
-  --color-gray-400: 140 120 100; /* Secondary text - dark sepia */
-  --color-gray-300: 100 80 60; /* Primary text - darker sepia */
-  --color-gray-200: 70 55 40; /* Headings - very dark sepia */
-  --color-gray-100: 45 35 25; /* Strong text - almost black sepia */
+  --color-gray-900: 250 247 240;
+  /* Main background - cream */
+  --color-gray-800: 245 241 230;
+  /* Card backgrounds - light cream */
+  --color-gray-750: 240 235 220;
+  /* Hover states - cream */
+  --color-gray-700: 235 229 210;
+  /* Borders, dividers - medium cream */
+  --color-gray-600: 220 210 190;
+  /* Disabled states - beige */
+  --color-gray-500: 180 165 145;
+  /* Placeholder text - sepia */
+  --color-gray-400: 140 120 100;
+  /* Secondary text - dark sepia */
+  --color-gray-300: 100 80 60;
+  /* Primary text - darker sepia */
+  --color-gray-200: 70 55 40;
+  /* Headings - very dark sepia */
+  --color-gray-100: 45 35 25;
+  /* Strong text - almost black sepia */
 
-  --color-blue-700: 139 90 43; /* Brown/sepia accent */
+  --color-blue-700: 139 90 43;
+  /* Brown/sepia accent */
   --color-blue-600: 160 110 60;
   --color-blue-500: 180 130 80;
   --color-blue-400: 200 150 100;
@@ -248,9 +279,6 @@ body {
 }
 
 /* Theme-specific overrides for light and cream modes */
-html {
-  scrollbar-gutter: stable;
-}
 
 [data-theme="light"] body {
   color: rgb(var(--color-gray-100)) !important;
@@ -321,6 +349,7 @@ html {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -339,24 +368,28 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(31, 41, 55, 0.5); /* gray-800 with transparency */
+  background: rgba(31, 41, 55, 0.5);
+  /* gray-800 with transparency */
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(75, 85, 99, 0.8); /* gray-600 with transparency */
+  background: rgba(75, 85, 99, 0.8);
+  /* gray-600 with transparency */
   border-radius: 5px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(107, 114, 128, 0.9); /* gray-500 with transparency */
+  background: rgba(107, 114, 128, 0.9);
+  /* gray-500 with transparency */
   background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:active {
-  background: rgba(156, 163, 175, 1); /* gray-400 */
+  background: rgba(156, 163, 175, 1);
+  /* gray-400 */
   background-clip: padding-box;
 }
 
@@ -369,17 +402,20 @@ html {
 /* Darker scrollbar for dark backgrounds */
 .bg-black ::-webkit-scrollbar-track,
 .bg-gray-900 ::-webkit-scrollbar-track {
-  background: rgba(17, 24, 39, 0.8); /* gray-900 with transparency */
+  background: rgba(17, 24, 39, 0.8);
+  /* gray-900 with transparency */
 }
 
 .bg-black ::-webkit-scrollbar-thumb,
 .bg-gray-900 ::-webkit-scrollbar-thumb {
-  background: rgba(55, 65, 81, 0.8); /* gray-700 with transparency */
+  background: rgba(55, 65, 81, 0.8);
+  /* gray-700 with transparency */
 }
 
 .bg-black ::-webkit-scrollbar-thumb:hover,
 .bg-gray-900 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(75, 85, 99, 0.9); /* gray-600 with transparency */
+  background: rgba(75, 85, 99, 0.9);
+  /* gray-600 with transparency */
 }
 
 /* Firefox dark backgrounds */
