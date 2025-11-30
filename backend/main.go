@@ -185,7 +185,20 @@ func main() {
 	helmService := helm.NewService(handlersModel, clusterService)
 	podService := pod.NewService(handlersModel, clusterService)
 	prometheusService := prometheus.NewHTTPHandler(handlersModel.PrometheusURL, clusterService)
-	logoService := logo.NewService("./data")
+
+	// Get namespace for logo ConfigMap (default to "dkonsole")
+	logoNamespace := os.Getenv("POD_NAMESPACE")
+	if logoNamespace == "" {
+		// Try to read from service account namespace file
+		if nsBytes, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
+			logoNamespace = strings.TrimSpace(string(nsBytes))
+		}
+	}
+	if logoNamespace == "" {
+		logoNamespace = "dkonsole" // Default fallback
+	}
+
+	logoService := logo.NewService(clientset, logoNamespace)
 	settingsFactory := settings.NewServiceFactory(clientset, handlersModel, secretName, prometheusService)
 	settingsService := settingsFactory.NewService()
 

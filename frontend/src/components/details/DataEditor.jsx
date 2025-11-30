@@ -21,10 +21,11 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
         }
 
         // Convert data object to array of entries with unique IDs
+        // Ensure all values are strings (ConfigMaps require string values)
         const dataEntries = Object.entries(data).map(([key, value], index) => ({
             id: `entry_${index}_${key}`,
             key,
-            value
+            value: value !== null && value !== undefined ? String(value) : ''
         }));
         setEntries(dataEntries);
     }, [data]);
@@ -125,32 +126,39 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
             // Build new data section
             const dataLines = [];
             // Convert entries array back to object for saving
+            // Ensure all values are strings (ConfigMaps and Secrets require string values)
             const editingData = {};
             entries.forEach(entry => {
-                editingData[entry.key] = entry.value;
+                // Convert to string explicitly to handle numbers and other types
+                const stringValue = entry.value !== null && entry.value !== undefined ? String(entry.value) : '';
+                editingData[entry.key] = stringValue;
             });
             for (const [key, value] of Object.entries(editingData)) {
+                // Ensure value is always a string
+                const stringValue = value !== null && value !== undefined ? String(value) : '';
+
                 if (isSecret) {
                     // Encode to base64 for secrets
                     // Use UTF-8 safe encoding
-                    const encoded = btoa(unescape(encodeURIComponent(value)));
+                    const encoded = btoa(unescape(encodeURIComponent(stringValue)));
                     dataLines.push(`${' '.repeat(dataIndent + 2)}${key}: ${encoded}`);
                 } else {
-                    // For ConfigMaps, check if value needs special formatting
-                    if (value === '') {
+                    // For ConfigMaps, all values must be strings
+                    // Always quote values to ensure they're treated as strings in YAML
+                    // This prevents numbers from being interpreted as numeric types
+                    if (stringValue === '') {
                         dataLines.push(`${' '.repeat(dataIndent + 2)}${key}: ""`);
-                    } else if (value.includes('\n')) {
+                    } else if (stringValue.includes('\n')) {
                         // Multi-line value - use YAML block scalar
                         dataLines.push(`${' '.repeat(dataIndent + 2)}${key}: |`);
-                        value.split('\n').forEach(line => {
+                        stringValue.split('\n').forEach(line => {
                             dataLines.push(`${' '.repeat(dataIndent + 4)}${line}`);
                         });
-                    } else if (value.includes(':') || value.includes('#') || value.trim() !== value || value.startsWith('|') || value.startsWith('>')) {
-                        // Value needs quoting
-                        const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-                        dataLines.push(`${' '.repeat(dataIndent + 2)}${key}: "${escaped}"`);
                     } else {
-                        dataLines.push(`${' '.repeat(dataIndent + 2)}${key}: ${value}`);
+                        // Always quote ConfigMap values to ensure they're strings
+                        // Escape special characters
+                        const escaped = stringValue.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+                        dataLines.push(`${' '.repeat(dataIndent + 2)}${key}: "${escaped}"`);
                     }
                 }
             }
@@ -209,7 +217,9 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
             onSaved?.();
             onClose();
         } catch (err) {
-            setError(parseError(err));
+            const errorMessage = parseError(err) || err.message || 'Failed to save changes';
+            setError(errorMessage);
+            logger.error('Error saving data:', errorMessage, err);
         } finally {
             setSaving(false);
         }

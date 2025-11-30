@@ -17,11 +17,15 @@ type LogoStorage interface {
 	// Save saves a logo file with the given extension and content
 	Save(ctx context.Context, logoType string, ext string, content io.Reader) error
 	// Get returns the file path of the logo with the given extension, if it exists
+	// For ConfigMap storage, this returns base64-encoded content
 	Get(ctx context.Context, logoType string, ext string) (string, error)
 	// Remove removes all existing logo files of the specified type
 	RemoveAll(ctx context.Context, logoType string) error
 	// EnsureDataDir ensures the data directory exists
 	EnsureDataDir(ctx context.Context) error
+	// GetLogoContent returns the decoded logo content as bytes (for ConfigMap storage)
+	// For filesystem storage, this should return nil, nil
+	GetLogoContent(ctx context.Context, logoType string, ext string) ([]byte, error)
 }
 
 // FileSystemLogoStorage implements LogoStorage using the local filesystem
@@ -110,4 +114,9 @@ func (s *FileSystemLogoStorage) RemoveAll(ctx context.Context, logoType string) 
 		}
 	}
 	return nil
+}
+
+// GetLogoContent returns nil for filesystem storage (not used)
+func (s *FileSystemLogoStorage) GetLogoContent(ctx context.Context, logoType string, ext string) ([]byte, error) {
+	return nil, nil // Filesystem storage doesn't use this method
 }

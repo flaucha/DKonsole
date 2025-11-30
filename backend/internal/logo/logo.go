@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -15,15 +17,25 @@ type Service struct {
 }
 
 // NewService creates a new logo service
-func NewService(dataDir string) *Service {
+// If client is provided, uses ConfigMap storage; otherwise uses filesystem storage
+func NewService(client kubernetes.Interface, namespace string) *Service {
 	// Create dependencies
 	validator := NewDefaultLogoValidator(5 << 20) // 5MB max size
-	storage := NewFileSystemLogoStorage(dataDir)
+
+	var storage LogoStorage
+	if client != nil {
+		// Use ConfigMap storage
+		storage = NewConfigMapLogoStorage(client, namespace)
+	} else {
+		// Fallback to filesystem storage
+		storage = NewFileSystemLogoStorage("./data")
+	}
+
 	logoService := NewLogoService(validator, storage)
 
 	return &Service{
 		logoService: logoService,
-		dataDir:     dataDir,
+		dataDir:     "./data", // Keep for backward compatibility
 	}
 }
 
@@ -101,8 +113,8 @@ func (s *Service) GetLogo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Call service to get logo path (business logic layer)
-	logoPath, err := s.logoService.GetLogoPath(ctx, logoType)
+	// Try to get logo content (works for both ConfigMap and filesystem storage)
+	content, contentType, err := s.logoService.GetLogoContent(ctx, logoType)
 	if err != nil {
 		// Logo not found - try to serve default logo from static directory
 		if logoType == "light" {
@@ -124,10 +136,26 @@ func (s *Service) GetLogo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	absPath, _ := filepath.Abs(logoPath)
-	utils.LogDebug("Serving logo", map[string]interface{}{
-		"type": logoType,
-		"path": absPath,
+	// If contentType is empty, it means we got a filesystem path (backward compatibility)
+	if contentType == "" {
+		// This is a filesystem path, serve it as a file
+		logoPath := string(content)
+		absPath, _ := filepath.Abs(logoPath)
+		utils.LogDebug("Serving logo from filesystem", map[string]interface{}{
+			"type": logoType,
+			"path": absPath,
+		})
+		http.ServeFile(w, r, logoPath)
+		return
+	}
+
+	// This is ConfigMap storage - serve content from memory
+	utils.LogDebug("Serving logo from ConfigMap", map[string]interface{}{
+		"type":        logoType,
+		"contentType": contentType,
+		"size":        len(content),
 	})
-	http.ServeFile(w, r, logoPath)
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(http.StatusOK)
+	w.Write(content)
 }

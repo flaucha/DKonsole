@@ -473,6 +473,10 @@ const Layout = ({ children, headerContent }) => {
                                                 label="Helm Charts"
                                                 to="/dashboard/helm-charts"
                                             />
+                                            <SubItem
+                                                label="Settings"
+                                                to="/dashboard/settings"
+                                            />
                                         </SubMenu>
                                     </>
                                 )}
