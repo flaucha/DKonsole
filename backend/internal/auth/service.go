@@ -109,8 +109,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 			return nil, ErrInvalidCredentials
 		}
 		// LDAP authentication successful
-		role = "user"
-		// Get user permissions from LDAP groups
+		// Get user permissions from LDAP groups first to check if user is admin
 		permissions, err = s.ldapAuth.GetUserPermissions(ctx, req.Username)
 		if err != nil {
 			// Log error but continue - user is authenticated
@@ -120,11 +119,22 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 				"error":    err.Error(),
 			})
 			permissions = make(map[string]string)
+			role = "user"
 		} else {
-			utils.LogInfo("User permissions retrieved successfully", map[string]interface{}{
-				"username":    req.Username,
-				"permissions": permissions,
-			})
+			// If permissions is empty, user is admin (has full access)
+			if len(permissions) == 0 {
+				role = "admin"
+				permissions = nil // Admin has full access
+				utils.LogInfo("User is LDAP admin, setting role to admin", map[string]interface{}{
+					"username": req.Username,
+				})
+			} else {
+				role = "user"
+				utils.LogInfo("User permissions retrieved successfully", map[string]interface{}{
+					"username":    req.Username,
+					"permissions": permissions,
+				})
+			}
 		}
 	} else {
 		// Auto-detect: try admin first, then LDAP
@@ -156,8 +166,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 					// Don't set role, authentication will fail
 				} else {
 					// LDAP authentication successful
-					role = "user"
-					// Get user permissions from LDAP groups
+					// Get user permissions from LDAP groups first to check if user is admin
 					permissions, err = s.ldapAuth.GetUserPermissions(ctx, req.Username)
 					if err != nil {
 						// Log error but continue - user is authenticated
@@ -166,11 +175,22 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 							"error":    err.Error(),
 						})
 						permissions = make(map[string]string)
+						role = "user"
 					} else {
-						utils.LogInfo("User permissions retrieved successfully", map[string]interface{}{
-							"username":    req.Username,
-							"permissions": permissions,
-						})
+						// If permissions is empty, user is admin (has full access)
+						if len(permissions) == 0 {
+							role = "admin"
+							permissions = nil // Admin has full access
+							utils.LogInfo("User is LDAP admin, setting role to admin", map[string]interface{}{
+								"username": req.Username,
+							})
+						} else {
+							role = "user"
+							utils.LogInfo("User permissions retrieved successfully", map[string]interface{}{
+								"username":    req.Username,
+								"permissions": permissions,
+							})
+						}
 					}
 				}
 			}
