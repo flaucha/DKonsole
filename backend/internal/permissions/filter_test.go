@@ -50,7 +50,7 @@ func TestFilterAllowedNamespaces(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name: "user with no permissions sees all (treated as admin)",
+			name: "user with no permissions sees none",
 			ctx: context.WithValue(
 				context.Background(),
 				auth.UserContextKey(),
@@ -61,22 +61,22 @@ func TestFilterAllowedNamespaces(t *testing.T) {
 				},
 			),
 			namespaces: []string{"ns1", "ns2", "ns3"},
-			want:       []string{"ns1", "ns2", "ns3"},
+			want:       []string{},
 			wantErr:    false,
 		},
 		{
-			name: "empty permissions means admin sees all",
+			name: "user with empty permissions sees none",
 			ctx: context.WithValue(
 				context.Background(),
 				auth.UserContextKey(),
 				&models.Claims{
-					Username:    "admin",
+					Username:    "user",
 					Role:        "user",
 					Permissions: map[string]string{},
 				},
 			),
 			namespaces: []string{"ns1", "ns2", "ns3"},
-			want:       []string{"ns1", "ns2", "ns3"},
+			want:       []string{},
 			wantErr:    false,
 		},
 		{
@@ -182,12 +182,12 @@ func TestGetAllowedNamespaces(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "empty permissions means admin (returns empty)",
+			name: "user with empty permissions returns empty list",
 			ctx: context.WithValue(
 				context.Background(),
 				auth.UserContextKey(),
 				&models.Claims{
-					Username:    "admin",
+					Username:    "user",
 					Role:        "user",
 					Permissions: map[string]string{},
 				},
@@ -320,7 +320,7 @@ func TestFilterResources(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "user with no permissions sees all (treated as admin)",
+			name: "user with no permissions sees only cluster-scoped resources",
 			ctx: context.WithValue(
 				context.Background(),
 				auth.UserContextKey(),
@@ -336,7 +336,6 @@ func TestFilterResources(t *testing.T) {
 			},
 			want: []models.Resource{
 				{Name: "node1", Namespace: "", Kind: "Node"},
-				{Name: "res1", Namespace: "ns1", Kind: "Pod"},
 			},
 			wantErr: false,
 		},

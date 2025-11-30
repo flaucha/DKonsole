@@ -83,18 +83,18 @@ func TestHasNamespaceAccess(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "empty permissions means admin access",
+			name: "user with empty permissions has no access",
 			ctx: context.WithValue(
 				context.Background(),
 				auth.UserContextKey(),
 				&models.Claims{
-					Username:    "admin",
+					Username:    "user",
 					Role:        "user",
 					Permissions: map[string]string{},
 				},
 			),
 			namespace: "any-namespace",
-			want:      true,
+			want:      false,
 			wantErr:   false,
 		},
 		{
@@ -197,19 +197,19 @@ func TestGetPermissionLevel(t *testing.T) {
 			wantErr:   true,
 		},
 		{
-			name: "empty permissions means edit (admin)",
+			name: "user with empty permissions has no access",
 			ctx: context.WithValue(
 				context.Background(),
 				auth.UserContextKey(),
 				&models.Claims{
-					Username:    "admin",
+					Username:    "user",
 					Role:        "user",
 					Permissions: map[string]string{},
 				},
 			),
 			namespace: "any-namespace",
-			want:      "edit",
-			wantErr:   false,
+			want:      "",
+			wantErr:   true,
 		},
 		{
 			name:      "no user in context",

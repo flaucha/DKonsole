@@ -256,12 +256,6 @@ func FilterResources(ctx context.Context, resources []models.Resource) ([]models
 		return resources, nil
 	}
 
-	// If permissions is empty, user has no access (not admin)
-	// Note: len() for nil maps is defined as zero, so we can omit the nil check
-	if len(claims.Permissions) == 0 {
-		return []models.Resource{}, nil
-	}
-
 	// Filter resources based on namespace permissions
 	filtered := make([]models.Resource, 0)
 	for _, resource := range resources {
