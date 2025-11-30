@@ -26,8 +26,8 @@ func AuditMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		// Extract user if available (set by AuthMiddleware or handler)
 		user := "anonymous"
-		// Use the same context key as auth package to avoid import cycle
-		// This matches auth.userContextKey = "user"
+		// Use the same context key as auth package (must match auth.userContextKey = "user")
+		//nolint:goconst // This string must match auth.userContextKey to avoid import cycle
 		userVal := r.Context().Value("user")
 		if userVal != nil {
 			// Try different claim types for compatibility

@@ -162,8 +162,8 @@ func AuditLogLegacy(r *http.Request, action, resourceKind, resourceName, namespa
 	user := "anonymous"
 	// Try to get user from context - this will need to be adapted based on how Claims is structured
 	// For now, we'll use a simple approach
-	// Use the same context key as auth package to avoid import cycle
-	// This matches auth.userContextKey = "user"
+	// Use the same context key as auth package (must match auth.userContextKey = "user")
+	//nolint:goconst // This string must match auth.userContextKey to avoid import cycle
 	if userVal := r.Context().Value("user"); userVal != nil {
 		// This will need to be updated when we move auth to its own package
 		if claims, ok := userVal.(interface{ Username() string }); ok {
