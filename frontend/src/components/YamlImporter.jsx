@@ -4,6 +4,7 @@ import Editor from '@monaco-editor/react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { parseErrorResponse, parseError } from '../utils/errorParser';
+import { defineMonacoTheme, DKONSOLE_THEME } from '../utils/monacoTheme';
 
 const YamlImporter = ({ onClose }) => {
     const { currentCluster } = useSettings();
@@ -88,9 +89,12 @@ const YamlImporter = ({ onClose }) => {
                     <Editor
                         height="100%"
                         defaultLanguage="yaml"
-                        theme="vs-dark"
+                        theme={DKONSOLE_THEME}
                         value={content}
                         onChange={(value) => setContent(value)}
+                        onMount={(editor, monaco) => {
+                            defineMonacoTheme(monaco);
+                        }}
                         options={{
                             minimap: { enabled: false },
                             scrollBeyondLastLine: false,

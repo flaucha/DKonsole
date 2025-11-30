@@ -7,6 +7,7 @@ import { formatDateTime } from '../utils/dateUtils';
 import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 import { useHelmReleases } from '../hooks/useHelmReleases';
 import { parseErrorResponse, parseError } from '../utils/errorParser';
+import { defineMonacoTheme, DKONSOLE_THEME } from '../utils/monacoTheme';
 
 const HelmChartManager = ({ namespace }) => {
     const { currentCluster } = useSettings();
@@ -451,54 +452,54 @@ const HelmChartManager = ({ namespace }) => {
                                     <div className="px-6 py-4 bg-gray-900/30 border-t border-gray-800">
                                         <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden">
                                             <div className="p-4 space-y-6">
-                                            {/* Basic Information */}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
-                                                        <Package size={12} className="mr-1" />
-                                                        Chart
-                                                    </h4>
-                                                    <div className="text-sm text-gray-300">{release.chart || '-'}</div>
-                                                    {release.appVersion && (
-                                                        <div className="text-xs text-gray-500 mt-1">App Version: {release.appVersion}</div>
-                                                    )}
+                                                {/* Basic Information */}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                            <Package size={12} className="mr-1" />
+                                                            Chart
+                                                        </h4>
+                                                        <div className="text-sm text-gray-300">{release.chart || '-'}</div>
+                                                        {release.appVersion && (
+                                                            <div className="text-xs text-gray-500 mt-1">App Version: {release.appVersion}</div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                            <Tag size={12} className="mr-1" />
+                                                            Version
+                                                        </h4>
+                                                        <div className="text-sm text-gray-300">{release.version || '-'}</div>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                            <Clock size={12} className="mr-1" />
+                                                            Last Updated
+                                                        </h4>
+                                                        <div className="text-sm text-gray-300">{formatDateTime(release.updated)}</div>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                            <Tag size={12} className="mr-1" />
+                                                            Revision
+                                                        </h4>
+                                                        <div className="text-sm text-gray-300">{release.revision || '-'}</div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
-                                                        <Tag size={12} className="mr-1" />
-                                                        Version
-                                                    </h4>
-                                                    <div className="text-sm text-gray-300">{release.version || '-'}</div>
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
-                                                        <Clock size={12} className="mr-1" />
-                                                        Last Updated
-                                                    </h4>
-                                                    <div className="text-sm text-gray-300">{formatDateTime(release.updated)}</div>
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
-                                                        <Tag size={12} className="mr-1" />
-                                                        Revision
-                                                    </h4>
-                                                    <div className="text-sm text-gray-300">{release.revision || '-'}</div>
-                                                </div>
-                                            </div>
 
-                                            {/* Description */}
-                                            {release.description && (
-                                                <div>
-                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</h4>
-                                                    <div className="text-sm text-gray-300">{release.description}</div>
-                                                </div>
-                                            )}
+                                                {/* Description */}
+                                                {release.description && (
+                                                    <div>
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</h4>
+                                                        <div className="text-sm text-gray-300">{release.description}</div>
+                                                    </div>
+                                                )}
 
-                                            {/* Status */}
-                                            <div>
-                                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Status</h4>
-                                                {getStatusBadge(release.status)}
-                                            </div>
+                                                {/* Status */}
+                                                <div>
+                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Status</h4>
+                                                    {getStatusBadge(release.status)}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -629,9 +630,12 @@ const HelmChartManager = ({ namespace }) => {
                                         <Editor
                                             height="100%"
                                             defaultLanguage="yaml"
-                                            theme="vs-dark"
+                                            theme={DKONSOLE_THEME}
                                             value={upgradeForm.valuesYaml}
                                             onChange={(value) => setUpgradeForm({ ...upgradeForm, valuesYaml: value || '' })}
+                                            onMount={(editor, monaco) => {
+                                                defineMonacoTheme(monaco);
+                                            }}
                                             options={{
                                                 minimap: { enabled: false },
                                                 scrollBeyondLastLine: false,
@@ -809,9 +813,12 @@ const HelmChartManager = ({ namespace }) => {
                                         <Editor
                                             height="100%"
                                             defaultLanguage="yaml"
-                                            theme="vs-dark"
+                                            theme={DKONSOLE_THEME}
                                             value={installForm.valuesYaml}
                                             onChange={(value) => setInstallForm({ ...installForm, valuesYaml: value || '' })}
+                                            onMount={(editor, monaco) => {
+                                                defineMonacoTheme(monaco);
+                                            }}
                                             options={{
                                                 minimap: { enabled: false },
                                                 scrollBeyondLastLine: false,

@@ -3,6 +3,7 @@ import { X, Save, AlertTriangle, Loader2, Activity } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { defineMonacoTheme, DKONSOLE_THEME } from '../utils/monacoTheme';
 
 const QuotaEditor = ({ resource, onClose, onSaved }) => {
     const { name, namespace, kind } = resource || {};
@@ -165,9 +166,12 @@ spec:
                         <Editor
                             height="100%"
                             defaultLanguage="yaml"
-                            theme="vs-dark"
+                            theme={DKONSOLE_THEME}
                             value={content}
                             onChange={(value) => setContent(value)}
+                            onMount={(editor, monaco) => {
+                                defineMonacoTheme(monaco);
+                            }}
                             options={{
                                 minimap: { enabled: false },
                                 scrollBeyondLastLine: false,
