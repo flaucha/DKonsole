@@ -77,8 +77,8 @@ const Settings = () => {
     };
 
     return (
-        <div className="flex flex-col h-full max-w-5xl mx-auto w-full overflow-hidden">
-            <div className="flex-shrink-0 p-6 pb-0">
+        <div className="flex flex-col h-full max-w-5xl mx-auto w-full">
+            <div className="flex-shrink-0 p-6 pb-0 overflow-hidden">
                 <div className="flex justify-between items-center mb-6 h-10">
                     <h1 className="text-2xl font-bold text-white">Settings</h1>
                     <div className="h-8">
@@ -129,7 +129,7 @@ const Settings = () => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 pb-6 w-full">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 pb-6">
             {activeTab === 'clusters' && (
                 <div className="w-full space-y-6">
                     <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
