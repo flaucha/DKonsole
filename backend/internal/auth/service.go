@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -77,10 +78,18 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 		// Only try admin authentication
 		adminUser, err := s.userRepo.GetAdminUser()
 		if err != nil {
+			// Check if it's a configuration error
+			if errors.Is(err, ErrAdminUserNotSet) || errors.Is(err, ErrAdminPasswordNotSet) {
+				return nil, fmt.Errorf("server configuration error: %w", err)
+			}
 			return nil, ErrInvalidCredentials
 		}
 		adminPassHash, err := s.userRepo.GetAdminPasswordHash()
 		if err != nil {
+			// Check if it's a configuration error
+			if errors.Is(err, ErrAdminUserNotSet) || errors.Is(err, ErrAdminPasswordNotSet) {
+				return nil, fmt.Errorf("server configuration error: %w", err)
+			}
 			return nil, ErrInvalidCredentials
 		}
 		// Verify username
@@ -140,9 +149,21 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 		// Auto-detect: try admin first, then LDAP
 		// Try admin authentication first
 		adminUser, err := s.userRepo.GetAdminUser()
-		if err == nil {
+		if err != nil {
+			// Check if it's a configuration error
+			if errors.Is(err, ErrAdminUserNotSet) || errors.Is(err, ErrAdminPasswordNotSet) {
+				return nil, fmt.Errorf("server configuration error: %w", err)
+			}
+			// For other errors, continue to LDAP
+		} else {
 			adminPassHash, err := s.userRepo.GetAdminPasswordHash()
-			if err == nil {
+			if err != nil {
+				// Check if it's a configuration error
+				if errors.Is(err, ErrAdminUserNotSet) || errors.Is(err, ErrAdminPasswordNotSet) {
+					return nil, fmt.Errorf("server configuration error: %w", err)
+				}
+				// For other errors, continue to LDAP
+			} else {
 				// Verify username
 				if req.Username == adminUser {
 					// Verify password using Argon2

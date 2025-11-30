@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/flaucha/DKonsole/backend/internal/auth"
 	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
@@ -202,7 +203,15 @@ func TestResourceService_DeleteResource(t *testing.T) {
 			repo, resolver := tt.setupMocks()
 			service := NewResourceService(repo, resolver)
 
-			err := service.DeleteResource(context.Background(), tt.req)
+			// Create context with user for permission checks
+			ctx := context.WithValue(context.Background(), auth.UserContextKey(), &auth.AuthClaims{
+				Claims: models.Claims{
+					Username: "admin",
+					Role:     "admin",
+				},
+			})
+
+			err := service.DeleteResource(ctx, tt.req)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeleteResource() error = %v, wantErr %v", err, tt.wantErr)
@@ -403,7 +412,15 @@ spec:
 			repo, resolver := tt.setupMocks()
 			service := NewResourceService(repo, resolver)
 
-			err := service.UpdateResource(context.Background(), tt.req)
+			// Create context with user for permission checks
+			ctx := context.WithValue(context.Background(), auth.UserContextKey(), &auth.AuthClaims{
+				Claims: models.Claims{
+					Username: "admin",
+					Role:     "admin",
+				},
+			})
+
+			err := service.UpdateResource(ctx, tt.req)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UpdateResource() error = %v, wantErr %v", err, tt.wantErr)
