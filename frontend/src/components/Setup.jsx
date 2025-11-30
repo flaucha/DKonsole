@@ -49,11 +49,13 @@ const Setup = () => {
 
         // Try to load custom logo from API (no auth required for logo endpoint)
         // Use logo-light for light themes, logo normal for dark themes
+        // Add timestamp to prevent browser caching (use same timestamp for consistency)
         const logoType = isLightTheme ? 'light' : 'normal';
-        fetch(`/api/logo?type=${logoType}&t=${Date.now()}`)
+        const timestamp = Date.now();
+        fetch(`/api/logo?type=${logoType}&t=${timestamp}`)
             .then(res => {
                 if (res.ok && res.status === 200) {
-                    setLogoSrc(`/api/logo?type=${logoType}&t=${Date.now()}`);
+                    setLogoSrc(`/api/logo?type=${logoType}&t=${timestamp}`);
                 } else {
                     // No custom logo, use theme-appropriate default
                     setLogoSrc(defaultLogoSrc);

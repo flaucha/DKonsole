@@ -27,14 +27,15 @@ const Login = () => {
 
         // Try to load custom logo from API (no auth required for logo endpoint)
         // Same logic as Layout.jsx to ensure consistency
-        // Add timestamp to prevent browser caching
+        // Add timestamp to prevent browser caching (use same timestamp for consistency)
         // Use logo-light for light themes, logo normal for dark themes
         const logoType = isLightTheme ? 'light' : 'normal';
-        fetch(`/api/logo?type=${logoType}&t=${Date.now()}`)
+        const timestamp = Date.now();
+        fetch(`/api/logo?type=${logoType}&t=${timestamp}`)
             .then(res => {
                 if (res.ok && res.status === 200) {
-                    // Custom logo exists, use it
-                    setLogoSrc(`/api/logo?type=${logoType}&t=${Date.now()}`);
+                    // Custom logo exists, use it (use same timestamp)
+                    setLogoSrc(`/api/logo?type=${logoType}&t=${timestamp}`);
                 } else {
                     // No custom logo, use theme-appropriate default
                     setLogoSrc(defaultLogoSrc);

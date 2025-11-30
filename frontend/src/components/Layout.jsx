@@ -197,7 +197,7 @@ const Layout = ({ children, headerContent }) => {
         accessControl: false,
         adminArea: false,
     });
-    const [logoSrc, setLogoSrc] = useState(defaultLogo);
+    const [logoSrc, setLogoSrc] = useState(null); // Start with null to avoid showing default before checking custom logo
     const location = useLocation();
 
     useEffect(() => {
@@ -208,16 +208,18 @@ const Layout = ({ children, headerContent }) => {
         // Determine default logo based on theme
         // Use /logo-light.svg for light themes (served from static directory)
         const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;
-        setLogoSrc(defaultLogoSrc);
 
-        // Add timestamp to prevent browser caching
+        // Add timestamp to prevent browser caching (use same timestamp for consistency)
         // Use logo-light for light themes, logo normal for dark themes
         const logoType = isLightTheme ? 'light' : 'normal';
-        authFetch(`/api/logo?type=${logoType}&t=${Date.now()}`)
+        const timestamp = Date.now();
+
+        // Try to load custom logo first, then fallback to default if not found
+        authFetch(`/api/logo?type=${logoType}&t=${timestamp}`)
             .then(res => {
                 if (res.ok && res.status === 200) {
-                    // Custom logo exists, use it
-                    setLogoSrc(`/api/logo?type=${logoType}&t=${Date.now()}`);
+                    // Custom logo exists, use it (use same timestamp)
+                    setLogoSrc(`/api/logo?type=${logoType}&t=${timestamp}`);
                 } else {
                     // No custom logo, use theme-appropriate default
                     setLogoSrc(defaultLogoSrc);
@@ -309,12 +311,14 @@ const Layout = ({ children, headerContent }) => {
                         )}
                     </button>
                     <div className="flex items-center justify-center">
-                        <img
-                            src={logoSrc}
-                            alt="Logo"
-                            className="h-12 max-h-12 object-contain"
-                            onError={handleLogoError}
-                        />
+                        {logoSrc && (
+                            <img
+                                src={logoSrc}
+                                alt="Logo"
+                                className="h-12 max-h-12 object-contain"
+                                onError={handleLogoError}
+                            />
+                        )}
                     </div>
                 </div>
                 <div className="flex items-center space-x-2">
