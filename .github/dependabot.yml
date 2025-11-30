@@ -12,15 +12,10 @@ updates:
       - "go"
     reviewers:
       - "flaucha"
-    # Permitir que dependabot actualice automáticamente si los checks pasan
     commit-message:
       prefix: "chore"
+      prefix-development: "chore"
       include: "scope"
-    # Agrupar actualizaciones de dependencias relacionadas
-    groups:
-      go-dependencies:
-        patterns:
-          - "*"
 
   # Frontend - npm
   - package-ecosystem: "npm"
@@ -38,15 +33,10 @@ updates:
         update-types: ["version-update:semver-patch"]
     reviewers:
       - "flaucha"
-    # Permitir que dependabot actualice automáticamente si los checks pasan
     commit-message:
       prefix: "chore"
+      prefix-development: "chore"
       include: "scope"
-    # Agrupar actualizaciones de dependencias relacionadas
-    groups:
-      npm-dependencies:
-        patterns:
-          - "*"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -58,4 +48,5 @@ updates:
       - "ci"
     commit-message:
       prefix: "chore"
+      prefix-development: "chore"
       include: "scope"
