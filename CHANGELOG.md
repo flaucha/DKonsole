@@ -7,16 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Security
-- **CRITICAL**: Fixed LDAP injection vulnerability in user authentication and group search
-  - Added input sanitization using `ldap.EscapeFilter()` for all user-controlled LDAP filters
-  - Implemented username validation to reject dangerous characters
-  - Added DN format validation for direct DN authentication
-  - Addresses OWASP A03:2021 (Injection)
-- Added comprehensive unit tests for LDAP validation functions
+## [1.3.1] - 2025-11-30
 
-### Changed
-- LDAP search filters now properly escape user input to prevent injection attacks
+### 🔧 Changed
+
+- **Monaco Editor Theme Consistency**: Monaco Editor now uses consistent `vs-dark` theme across all application themes
+  - Fixed font colors in light and cream themes to match dark theme appearance
+  - Monaco Editor elements properly excluded from theme color overrides
+  - Improved code readability in all theme modes
+
+### ✨ Added
+
+- **Admin Area Submenu**: New "Admin Area" submenu with police siren icon
+  - Groups "Nodes", "Namespaces", "API Explorer", and "Helm Charts" under admin-only submenu
+  - Only accessible to administrators
+  - Non-admin users with namespace permissions see "Helm Charts" outside the submenu
+
+### 🐛 Fixed
+
+- **Sidebar Menu Behavior**: Fixed sidebar menu expansion behavior
+  - Only one menu item can be expanded at a time
+  - Opening a new menu automatically closes the previously open one
+  - All menus start in closed state by default
+- **User Menu**: Centralized user actions in header
+  - User menu displays username with type (CORE/LDAP)
+  - Settings and Logout moved to user menu dropdown
+  - Improved header space management
 
 ## [1.3.0] - 2025-11-29
 
