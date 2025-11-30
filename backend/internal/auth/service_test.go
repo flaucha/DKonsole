@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -26,6 +28,44 @@ func (m *mockUserRepository) GetAdminPasswordHash() (string, error) {
 		return "", ErrAdminPasswordNotSet
 	}
 	return m.adminPassword, nil
+}
+
+// mockLDAPAuthenticator is a mock implementation of LDAPAuthenticator for testing
+type mockLDAPAuthenticator struct {
+	authenticateUserErr    error
+	validateUserGroupErr   error
+	getUserPermissionsFunc func(ctx context.Context, username string) (map[string]string, error)
+	getUserGroupsFunc      func(ctx context.Context, username string) ([]string, error)
+	getConfigFunc          func(ctx context.Context) (*models.LDAPConfig, error)
+}
+
+func (m *mockLDAPAuthenticator) AuthenticateUser(ctx context.Context, username, password string) error {
+	return m.authenticateUserErr
+}
+
+func (m *mockLDAPAuthenticator) ValidateUserGroup(ctx context.Context, username string) error {
+	return m.validateUserGroupErr
+}
+
+func (m *mockLDAPAuthenticator) GetUserPermissions(ctx context.Context, username string) (map[string]string, error) {
+	if m.getUserPermissionsFunc != nil {
+		return m.getUserPermissionsFunc(ctx, username)
+	}
+	return nil, nil
+}
+
+func (m *mockLDAPAuthenticator) GetUserGroups(ctx context.Context, username string) ([]string, error) {
+	if m.getUserGroupsFunc != nil {
+		return m.getUserGroupsFunc(ctx, username)
+	}
+	return nil, nil
+}
+
+func (m *mockLDAPAuthenticator) GetConfig(ctx context.Context) (*models.LDAPConfig, error) {
+	if m.getConfigFunc != nil {
+		return m.getConfigFunc(ctx)
+	}
+	return nil, nil
 }
 
 func TestAuthService_Login(t *testing.T) {
@@ -211,6 +251,169 @@ func TestAuthService_GetCurrentUser(t *testing.T) {
 				}
 				if user.Username == "" {
 					t.Errorf("GetCurrentUser() username is empty")
+				}
+			}
+		})
+	}
+}
+
+func TestAuthService_LoginWithLDAP(t *testing.T) {
+	jwtSecret := []byte("test-secret-key-must-be-at-least-32-characters-long")
+	mockRepo := &mockUserRepository{}
+
+	tests := []struct {
+		name              string
+		ldapAuth          *mockLDAPAuthenticator
+		req               LoginRequest
+		wantErr           bool
+		errMsg            string
+		checkToken        bool
+		expectedRole      string
+		expectedPerms     map[string]string
+	}{
+		{
+			name: "successful LDAP login with admin permissions (empty)",
+			ldapAuth: &mockLDAPAuthenticator{
+				authenticateUserErr:  nil,
+				validateUserGroupErr: nil,
+				getUserPermissionsFunc: func(ctx context.Context, username string) (map[string]string, error) {
+					return map[string]string{}, nil // Empty permissions = admin
+				},
+			},
+			req: LoginRequest{
+				Username: "ldapuser",
+				Password: "ldappass",
+				IDP:      "ldap",
+			},
+			wantErr:      false,
+			checkToken:   true,
+			expectedRole: "admin",
+			expectedPerms: nil, // Admin has nil permissions
+		},
+		{
+			name: "successful LDAP login with user permissions",
+			ldapAuth: &mockLDAPAuthenticator{
+				authenticateUserErr:  nil,
+				validateUserGroupErr: nil,
+				getUserPermissionsFunc: func(ctx context.Context, username string) (map[string]string, error) {
+					return map[string]string{
+						"namespace1": "view",
+						"namespace2": "edit",
+					}, nil
+				},
+			},
+			req: LoginRequest{
+				Username: "ldapuser",
+				Password: "ldappass",
+				IDP:      "ldap",
+			},
+			wantErr:      false,
+			checkToken:   true,
+			expectedRole: "user",
+			expectedPerms: map[string]string{
+				"namespace1": "view",
+				"namespace2": "edit",
+			},
+		},
+		{
+			name: "LDAP authentication failed",
+			ldapAuth: &mockLDAPAuthenticator{
+				authenticateUserErr:  fmt.Errorf("invalid credentials"),
+				validateUserGroupErr: nil,
+			},
+			req: LoginRequest{
+				Username: "ldapuser",
+				Password: "wrongpass",
+				IDP:      "ldap",
+			},
+			wantErr: true,
+			errMsg:  "Invalid credentials",
+		},
+		{
+			name:     "LDAP disabled",
+			ldapAuth: nil,
+			req: LoginRequest{
+				Username: "ldapuser",
+				Password: "ldappass",
+				IDP:      "ldap",
+			},
+			wantErr: true,
+			errMsg:  "Invalid credentials",
+		},
+		{
+			name: "user not in required group",
+			ldapAuth: &mockLDAPAuthenticator{
+				authenticateUserErr:  nil,
+				validateUserGroupErr: fmt.Errorf("user not in required group"),
+			},
+			req: LoginRequest{
+				Username: "ldapuser",
+				Password: "ldappass",
+				IDP:      "ldap",
+			},
+			wantErr: true,
+			errMsg:  "Invalid credentials",
+		},
+		{
+			name: "failed to get permissions, continues as user",
+			ldapAuth: &mockLDAPAuthenticator{
+				authenticateUserErr:  nil,
+				validateUserGroupErr: nil,
+				getUserPermissionsFunc: func(ctx context.Context, username string) (map[string]string, error) {
+					return nil, fmt.Errorf("failed to get permissions")
+				},
+			},
+			req: LoginRequest{
+				Username: "ldapuser",
+				Password: "ldappass",
+				IDP:      "ldap",
+			},
+			wantErr:      false,
+			checkToken:   true,
+			expectedRole: "user",
+			expectedPerms: map[string]string{}, // Empty map when error
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := NewAuthService(mockRepo, jwtSecret)
+			if tt.ldapAuth != nil {
+				service.SetLDAPAuthenticator(tt.ldapAuth)
+			}
+
+			result, err := service.Login(context.Background(), tt.req)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Login() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Login() expected error but got nil")
+					return
+				}
+				if tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("Login() error = %v, want error containing %v", err, tt.errMsg)
+				}
+				return
+			}
+
+			if result == nil {
+				t.Errorf("Login() result is nil")
+				return
+			}
+
+			if tt.checkToken {
+				if result.Token == "" {
+					t.Errorf("Login() token is empty")
+				}
+				if result.Response.Role != tt.expectedRole {
+					t.Errorf("Login() role = %v, want %v", result.Response.Role, tt.expectedRole)
+				}
+				if result.Expires.Before(time.Now()) {
+					t.Errorf("Login() expiration time is in the past")
 				}
 			}
 		})
