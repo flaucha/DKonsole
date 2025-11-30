@@ -77,7 +77,7 @@ const Settings = () => {
     };
 
     return (
-        <div className="flex flex-col h-full max-w-5xl mx-auto">
+        <div className="flex flex-col h-full max-w-5xl mx-auto w-full overflow-hidden">
             <div className="flex-shrink-0 p-6 pb-0">
                 <div className="flex justify-between items-center mb-6 h-10">
                     <h1 className="text-2xl font-bold text-white">Settings</h1>
@@ -129,7 +129,7 @@ const Settings = () => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 pb-6">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 pb-6 w-full">
             {activeTab === 'clusters' && (
                 <div className="w-full space-y-6">
                     <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
@@ -1095,9 +1095,9 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full">
             {/* LDAP Main Container */}
-            <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-lg">
+            <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-lg w-full">
                 {/* LDAP Tabs */}
                 <div className="flex space-x-1 border-b border-gray-700 px-6 pt-4">
                     <button
