@@ -5,7 +5,6 @@ import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { getStatusBadgeClass } from '../utils/statusBadge';
 import { formatDate } from '../utils/dateUtils';
-import { defineMonacoTheme, DKONSOLE_THEME } from '../utils/monacoTheme';
 
 const CRDExplorer = ({ namespace }) => {
     const { currentCluster } = useSettings();
@@ -250,11 +249,8 @@ const CRDExplorer = ({ namespace }) => {
                             <Editor
                                 height="100%"
                                 defaultLanguage="yaml"
-                                theme={DKONSOLE_THEME}
+                                theme="vs-dark"
                                 value={yamlView.content}
-                                onMount={(editor, monaco) => {
-                                    defineMonacoTheme(monaco);
-                                }}
                                 options={{
                                     readOnly: true,
                                     minimap: { enabled: false },

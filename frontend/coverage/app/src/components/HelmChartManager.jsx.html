@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/765</span>
+                <span class='fraction'>0/758</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/765</span>
+                <span class='fraction'>0/758</span>
             </div>
         
             
@@ -981,14 +981,7 @@
 <a name='L916'></a><a href='#L916'>916</a>
 <a name='L917'></a><a href='#L917'>917</a>
 <a name='L918'></a><a href='#L918'>918</a>
-<a name='L919'></a><a href='#L919'>919</a>
-<a name='L920'></a><a href='#L920'>920</a>
-<a name='L921'></a><a href='#L921'>921</a>
-<a name='L922'></a><a href='#L922'>922</a>
-<a name='L923'></a><a href='#L923'>923</a>
-<a name='L924'></a><a href='#L924'>924</a>
-<a name='L925'></a><a href='#L925'>925</a>
-<a name='L926'></a><a href='#L926'>926</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L919'></a><a href='#L919'>919</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -997,7 +990,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1612,8 +1604,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1638,7 +1628,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1795,9 +1784,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1922,7 +1908,6 @@
 <span class="cstat-no" title="statement not covered" >import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';</span>
 <span class="cstat-no" title="statement not covered" >import { useHelmReleases } from '../hooks/useHelmReleases';</span>
 <span class="cstat-no" title="statement not covered" >import { parseErrorResponse, parseError } from '../utils/errorParser';</span>
-<span class="cstat-no" title="statement not covered" >import { defineMonacoTheme, DKONSOLE_THEME } from '../utils/monacoTheme';</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const HelmChartManager = ({ namespace }) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const { currentCluster } = useSettings();</span>
@@ -2545,12 +2530,9 @@
 <span class="cstat-no" title="statement not covered" >                                        &lt;Editor</span>
 <span class="cstat-no" title="statement not covered" >                                            height="100%"</span>
 <span class="cstat-no" title="statement not covered" >                                            defaultLanguage="yaml"</span>
-<span class="cstat-no" title="statement not covered" >                                            theme={DKONSOLE_THEME}</span>
+<span class="cstat-no" title="statement not covered" >                                            theme="vs-dark"</span>
 <span class="cstat-no" title="statement not covered" >                                            value={upgradeForm.valuesYaml}</span>
 <span class="cstat-no" title="statement not covered" >                                            onChange={(value) =&gt; setUpgradeForm({ ...upgradeForm, valuesYaml: value || '' })}</span>
-<span class="cstat-no" title="statement not covered" >                                            onMount={(editor, monaco) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >                                                defineMonacoTheme(monaco);</span>
-<span class="cstat-no" title="statement not covered" >                                            }}</span>
 <span class="cstat-no" title="statement not covered" >                                            options={{</span>
 <span class="cstat-no" title="statement not covered" >                                                minimap: { enabled: false },</span>
 <span class="cstat-no" title="statement not covered" >                                                scrollBeyondLastLine: false,</span>
@@ -2728,12 +2710,9 @@
 <span class="cstat-no" title="statement not covered" >                                        &lt;Editor</span>
 <span class="cstat-no" title="statement not covered" >                                            height="100%"</span>
 <span class="cstat-no" title="statement not covered" >                                            defaultLanguage="yaml"</span>
-<span class="cstat-no" title="statement not covered" >                                            theme={DKONSOLE_THEME}</span>
+<span class="cstat-no" title="statement not covered" >                                            theme="vs-dark"</span>
 <span class="cstat-no" title="statement not covered" >                                            value={installForm.valuesYaml}</span>
 <span class="cstat-no" title="statement not covered" >                                            onChange={(value) =&gt; setInstallForm({ ...installForm, valuesYaml: value || '' })}</span>
-<span class="cstat-no" title="statement not covered" >                                            onMount={(editor, monaco) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >                                                defineMonacoTheme(monaco);</span>
-<span class="cstat-no" title="statement not covered" >                                            }}</span>
 <span class="cstat-no" title="statement not covered" >                                            options={{</span>
 <span class="cstat-no" title="statement not covered" >                                                minimap: { enabled: false },</span>
 <span class="cstat-no" title="statement not covered" >                                                scrollBeyondLastLine: false,</span>
@@ -2845,7 +2824,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-30T13:10:00.783Z
+                at 2025-11-30T13:15:36.289Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

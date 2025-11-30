@@ -7,7 +7,6 @@ import { formatDateTime } from '../utils/dateUtils';
 import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 import { useHelmReleases } from '../hooks/useHelmReleases';
 import { parseErrorResponse, parseError } from '../utils/errorParser';
-import { defineMonacoTheme, DKONSOLE_THEME } from '../utils/monacoTheme';
 
 const HelmChartManager = ({ namespace }) => {
     const { currentCluster } = useSettings();
@@ -630,12 +629,9 @@ const HelmChartManager = ({ namespace }) => {
                                         <Editor
                                             height="100%"
                                             defaultLanguage="yaml"
-                                            theme={DKONSOLE_THEME}
+                                            theme="vs-dark"
                                             value={upgradeForm.valuesYaml}
                                             onChange={(value) => setUpgradeForm({ ...upgradeForm, valuesYaml: value || '' })}
-                                            onMount={(editor, monaco) => {
-                                                defineMonacoTheme(monaco);
-                                            }}
                                             options={{
                                                 minimap: { enabled: false },
                                                 scrollBeyondLastLine: false,
@@ -813,12 +809,9 @@ const HelmChartManager = ({ namespace }) => {
                                         <Editor
                                             height="100%"
                                             defaultLanguage="yaml"
-                                            theme={DKONSOLE_THEME}
+                                            theme="vs-dark"
                                             value={installForm.valuesYaml}
                                             onChange={(value) => setInstallForm({ ...installForm, valuesYaml: value || '' })}
-                                            onMount={(editor, monaco) => {
-                                                defineMonacoTheme(monaco);
-                                            }}
                                             options={{
                                                 minimap: { enabled: false },
                                                 scrollBeyondLastLine: false,

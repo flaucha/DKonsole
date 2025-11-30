@@ -3,7 +3,6 @@ import { X, Save, AlertTriangle, Loader2, Tag } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
-import { defineMonacoTheme, DKONSOLE_THEME } from '../utils/monacoTheme';
 
 const LimitRangeEditor = ({ resource, onClose, onSaved }) => {
     const { name, namespace, kind } = resource || {};
@@ -174,12 +173,9 @@ spec:
                         <Editor
                             height="100%"
                             defaultLanguage="yaml"
-                            theme={DKONSOLE_THEME}
+                            theme="vs-dark"
                             value={content}
                             onChange={(value) => setContent(value)}
-                            onMount={(editor, monaco) => {
-                                defineMonacoTheme(monaco);
-                            }}
                             options={{
                                 minimap: { enabled: false },
                                 scrollBeyondLastLine: false,
