@@ -8,7 +8,7 @@ import { parseErrorResponse, parseError } from '../../utils/errorParser';
 export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
     const { authFetch } = useAuth();
     const { currentCluster } = useSettings();
-    const [editingData, setEditingData] = useState({});
+    const [entries, setEntries] = useState([]); // Array of {id, key, value}
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
@@ -16,37 +16,43 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
     // Note: For Secrets, the backend already decodes the values, so we use them directly
     useEffect(() => {
         if (!data) {
-            setEditingData({});
+            setEntries([]);
             return;
         }
 
-        // Data comes already decoded from backend for Secrets
-        setEditingData({ ...data });
+        // Convert data object to array of entries with unique IDs
+        const dataEntries = Object.entries(data).map(([key, value], index) => ({
+            id: `entry_${index}_${key}`,
+            key,
+            value
+        }));
+        setEntries(dataEntries);
     }, [data]);
 
-    const handleKeyChange = (oldKey, newKey) => {
-        if (oldKey === newKey) return;
-
-        const newData = { ...editingData };
-        const value = newData[oldKey];
-        delete newData[oldKey];
-        newData[newKey] = value;
-        setEditingData(newData);
+    const handleKeyChange = (id, newKey) => {
+        setEntries(entries.map(entry =>
+            entry.id === id ? { ...entry, key: newKey } : entry
+        ));
     };
 
-    const handleValueChange = (key, value) => {
-        setEditingData({ ...editingData, [key]: value });
+    const handleValueChange = (id, value) => {
+        setEntries(entries.map(entry =>
+            entry.id === id ? { ...entry, value } : entry
+        ));
     };
 
     const handleAddPair = () => {
-        const newKey = `key${Object.keys(editingData).length + 1}`;
-        setEditingData({ ...editingData, [newKey]: '' });
+        const newKey = `key${entries.length + 1}`;
+        const newEntry = {
+            id: `new_${Date.now()}_${Math.random()}`,
+            key: newKey,
+            value: ''
+        };
+        setEntries([...entries, newEntry]);
     };
 
-    const handleRemovePair = (key) => {
-        const newData = { ...editingData };
-        delete newData[key];
-        setEditingData(newData);
+    const handleRemovePair = (id) => {
+        setEntries(entries.filter(entry => entry.id !== id));
     };
 
     const handleSave = async () => {
@@ -118,6 +124,11 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
 
             // Build new data section
             const dataLines = [];
+            // Convert entries array back to object for saving
+            const editingData = {};
+            entries.forEach(entry => {
+                editingData[entry.key] = entry.value;
+            });
             for (const [key, value] of Object.entries(editingData)) {
                 if (isSecret) {
                     // Encode to base64 for secrets
@@ -231,19 +242,19 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-4">
                     <div className="space-y-3">
-                        {Object.entries(editingData).map(([key, value]) => (
-                            <div key={key} className="bg-gray-800/50 p-4 rounded-md border border-gray-700/50">
+                        {entries.map((entry) => (
+                            <div key={entry.id} className="bg-gray-800/50 p-4 rounded-md border border-gray-700/50">
                                 <div className="flex gap-2 mb-2">
                                     <input
                                         type="text"
-                                        value={key}
-                                        onChange={(e) => handleKeyChange(key, e.target.value)}
+                                        value={entry.key}
+                                        onChange={(e) => handleKeyChange(entry.id, e.target.value)}
                                         className="flex-1 px-3 py-2 bg-gray-900 border border-gray-600 rounded text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-gray-500"
                                         placeholder="Key"
                                         disabled={saving}
                                     />
                                     <button
-                                        onClick={() => handleRemovePair(key)}
+                                        onClick={() => handleRemovePair(entry.id)}
                                         className="px-3 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-200 rounded border border-red-700/50 transition-colors"
                                         disabled={saving}
                                         title="Remove key"
@@ -252,18 +263,18 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
                                     </button>
                                 </div>
                                 <textarea
-                                    value={value}
-                                    onChange={(e) => handleValueChange(key, e.target.value)}
+                                    value={entry.value}
+                                    onChange={(e) => handleValueChange(entry.id, e.target.value)}
                                     className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded text-sm font-mono text-gray-200 placeholder-gray-500 focus:outline-none focus:border-gray-500 resize-y min-h-[80px]"
                                     placeholder="Value"
                                     disabled={saving}
-                                    rows={Math.max(3, value.split('\n').length)}
+                                    rows={Math.max(3, entry.value.split('\n').length)}
                                 />
                             </div>
                         ))}
                     </div>
 
-                    {Object.keys(editingData).length === 0 && (
+                    {entries.length === 0 && (
                         <div className="text-center py-8 text-gray-500 italic">
                             No data entries. Click "Add Key-Value Pair" to add one.
                         </div>

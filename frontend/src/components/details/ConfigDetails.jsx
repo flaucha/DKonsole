@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Edit2 } from 'lucide-react';
-import { DataSection } from './CommonDetails';
+import { DataSection, EditYamlButton } from './CommonDetails';
 import { DataEditor } from './DataEditor';
 import { useAuth } from '../../context/AuthContext';
 import { canEdit, isAdmin } from '../../utils/permissions';
@@ -27,6 +27,9 @@ export const ConfigMapDetails = ({ details, onEditYAML, resource, onDataSaved })
                         </button>
                     </div>
                 )}
+                <div className="flex justify-end mt-4">
+                    <EditYamlButton onClick={onEditYAML} namespace={resource?.namespace} />
+                </div>
             </div>
             {editingData && (
                 <DataEditor
@@ -68,6 +71,9 @@ export const SecretDetails = ({ details, onEditYAML, resource, onDataSaved }) =>
                         </button>
                     </div>
                 )}
+                <div className="flex justify-end mt-4">
+                    <EditYamlButton onClick={onEditYAML} namespace={resource?.namespace} />
+                </div>
             </div>
             {editingData && (
                 <DataEditor
