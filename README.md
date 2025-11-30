@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.3.1-green.svg)
+![Version](https://img.shields.io/badge/version-1.3.2-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.3.1
+git checkout v1.3.2
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -153,18 +153,27 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.3.1"
+  tag: "1.3.2"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.3.1`
+- **Unified**: `dkonsole/dkonsole:1.3.2`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.3.2 (2025-11-30)
+**🔧 Security Workflow Fix**
+
+This release temporarily disables SARIF uploads due to permission issues.
+
+- **Security Workflow**: Temporarily disabled SARIF uploads due to permission issues
+  - Trivy scans still run but results are not uploaded to GitHub Security
+  - Will be re-enabled once permissions are properly configured
 
 ### v1.3.1 (2025-11-30)
 **🔧 Monaco Editor Theme Consistency & UI Improvements**

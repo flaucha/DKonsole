@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2025-11-30
+
+### 🔧 Changed
+
+- **Security Workflow**: Temporarily disabled SARIF uploads due to permission issues
+  - Trivy scans still run but results are not uploaded to GitHub Security
+  - Will be re-enabled once permissions are properly configured
+
 ## [1.3.1] - 2025-11-30
 
 ### 🔧 Changed
