@@ -183,8 +183,8 @@ const Settings = () => {
                                 <PrometheusURLSettings authFetch={authFetch} error={error} setError={setError} success={success} setSuccess={setSuccess} />
                             </div>
 
-                            {/* Password Change Settings - Only for CORE users, not LDAP */}
-                            {user && (!user.permissions || Object.keys(user.permissions).length === 0) && (
+                            {/* Password Change Settings - Only for CORE admin, not LDAP admin or regular users */}
+                            {user && user.role === 'admin' && (user.idp === 'core' || !user.idp) && (
                                 <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
                                     <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
                                         <SettingsIcon size={20} className="mr-2 text-red-400" /> Change Password

@@ -46,11 +46,6 @@ ingress:
       hosts:
         - dkonsole.example.com
 
-persistence:
-  enabled: true
-  storageClass: "gp2"  # Change to your storage class
-  size: 5Gi
-
 resources:
   backend:
     requests:

@@ -83,17 +83,6 @@ spec:
           periodSeconds: 5
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
-        volumeMounts:
-        {{- if .Values.persistence.enabled }}
-        - name: data
-          mountPath: /home/app/data
-        {{- end }}
-      volumes:
-      {{- if .Values.persistence.enabled }}
-      - name: data
-        persistentVolumeClaim:
-          claimName: {{ include "dkonsole.fullname" . }}-data
-      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -153,6 +153,7 @@ type Credentials struct {
 type Claims struct {
 	Username         string            `json:"username"`
 	Role             string            `json:"role"`
+	IDP              string            `json:"idp,omitempty"`         // Identity Provider: "core" or "ldap"
 	Permissions      map[string]string `json:"permissions,omitempty"` // namespace -> permission (view/edit)
 	RegisteredClaims interface{}       `json:"-"`                     // Se manejará con jwt.RegisteredClaims en el paquete auth
 }

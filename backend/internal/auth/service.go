@@ -72,9 +72,11 @@ type LoginResult struct {
 func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult, error) {
 	var role string
 	var permissions map[string]string
+	var idp string // Identity Provider: "core" or "ldap"
 
 	// If IDP is specified, only try that method
 	if req.IDP == "core" {
+		idp = "core"
 		// Only try admin authentication
 		adminUser, err := s.userRepo.GetAdminUser()
 		if err != nil {
@@ -104,7 +106,9 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 		// Admin authentication successful
 		role = "admin"
 		permissions = nil // Admin has full access
+		idp = "core"
 	} else if req.IDP == "ldap" {
+		idp = "ldap"
 		// Only try LDAP authentication
 		if s.ldapAuth == nil {
 			return nil, ErrInvalidCredentials
@@ -180,6 +184,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 						// Admin authentication successful
 						role = "admin"
 						permissions = nil // Admin has full access
+						idp = "core"
 					}
 				}
 			}
@@ -187,6 +192,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 
 		// If admin auth failed and LDAP is available, try LDAP
 		if role == "" && s.ldapAuth != nil {
+			idp = "ldap"
 			err := s.ldapAuth.AuthenticateUser(ctx, req.Username, req.Password)
 			if err == nil {
 				// Check if user belongs to required group (if configured)
@@ -253,6 +259,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 		Claims: models.Claims{
 			Username:    req.Username,
 			Role:        role,
+			IDP:         idp,
 			Permissions: permissions,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{

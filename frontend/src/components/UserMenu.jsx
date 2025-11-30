@@ -13,10 +13,17 @@ const UserMenu = () => {
     const getUserDisplayName = () => {
         if (!user) return 'Unknown';
 
-        // If user has permissions, it's LDAP user
-        // If user has role 'admin' and no permissions, it's CORE user
-        const isLDAP = user.permissions && Object.keys(user.permissions).length > 0;
-        const prefix = isLDAP ? 'LDAP' : 'CORE';
+        // Use idp field if available, otherwise infer from permissions
+        let prefix = 'CORE';
+        if (user.idp === 'ldap') {
+            prefix = 'LDAP';
+        } else if (user.permissions && Object.keys(user.permissions).length > 0) {
+            // LDAP user with permissions (view/edit)
+            prefix = 'LDAP';
+        } else if (user.role === 'admin' && !user.idp) {
+            // Core admin (default)
+            prefix = 'CORE';
+        }
 
         return `${prefix}\\${user.username}`;
     };

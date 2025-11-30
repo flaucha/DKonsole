@@ -60,8 +60,11 @@ const ClusterOverview = () => {
     const nodeMetrics = metrics.data?.nodeMetrics || [];
 
     // Check if user has permissions (admin or LDAP permissions)
-    const isAdmin = user && user.role === 'admin';
-    const hasPermissions = isAdmin || (user && user.permissions && Object.keys(user.permissions).length > 0);
+    // LDAP admins and core admins have full access
+    const isAdminUser = user && user.role === 'admin';
+    // Regular users need explicit permissions
+    const hasExplicitPermissions = user && user.permissions && Object.keys(user.permissions).length > 0;
+    const hasPermissions = isAdminUser || hasExplicitPermissions;
 
     // If user has no permissions, show message
     if (!hasPermissions) {

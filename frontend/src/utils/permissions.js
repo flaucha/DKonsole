@@ -13,6 +13,26 @@ export const isAdmin = (user) => {
 };
 
 /**
+ * Check if user is LDAP admin
+ * @param {Object} user - User object from auth context
+ * @returns {boolean}
+ */
+export const isLDAPAdmin = (user) => {
+    if (!user) return false;
+    return user.role === 'admin' && user.idp === 'ldap';
+};
+
+/**
+ * Check if user is core admin
+ * @param {Object} user - User object from auth context
+ * @returns {boolean}
+ */
+export const isCoreAdmin = (user) => {
+    if (!user) return false;
+    return user.role === 'admin' && (user.idp === 'core' || !user.idp);
+};
+
+/**
  * Check if user has edit permission for a namespace
  * @param {Object} user - User object from auth context
  * @param {string} namespace - Namespace to check

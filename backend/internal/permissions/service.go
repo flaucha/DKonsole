@@ -73,7 +73,7 @@ func GetUserFromContext(ctx context.Context) (*models.Claims, error) {
 
 // HasNamespaceAccess checks if the user has access to a specific namespace
 // Returns true if:
-// - User is admin (no permissions means full access)
+// - User is admin (role == "admin" means full access, including LDAP admins)
 // - User has any permission (view/edit) for the namespace
 func HasNamespaceAccess(ctx context.Context, namespace string) (bool, error) {
 	claims, err := GetUserFromContext(ctx)
@@ -81,12 +81,17 @@ func HasNamespaceAccess(ctx context.Context, namespace string) (bool, error) {
 		return false, err
 	}
 
-	// Admin has full access (permissions is nil or empty)
-	if claims.Role == "admin" || claims.Permissions == nil || len(claims.Permissions) == 0 {
+	// Admin has full access (role == "admin" includes both core and LDAP admins)
+	if claims.Role == "admin" {
 		return true, nil
 	}
 
 	// Check if user has any permission for this namespace
+	// If permissions is nil or empty, user has no access (not admin)
+	if claims.Permissions == nil || len(claims.Permissions) == 0 {
+		return false, nil
+	}
+
 	_, hasAccess := claims.Permissions[namespace]
 	return hasAccess, nil
 }
@@ -101,8 +106,14 @@ func GetPermissionLevel(ctx context.Context, namespace string) (string, error) {
 	}
 
 	// Admin has full access (equivalent to "edit" for all namespaces)
-	if claims.Role == "admin" || claims.Permissions == nil || len(claims.Permissions) == 0 {
+	// role == "admin" includes both core and LDAP admins
+	if claims.Role == "admin" {
 		return "edit", nil
+	}
+
+	// If permissions is nil or empty, user has no access (not admin)
+	if claims.Permissions == nil || len(claims.Permissions) == 0 {
+		return "", fmt.Errorf("no access to namespace: %s", namespace)
 	}
 
 	// Get permission for namespace
@@ -150,8 +161,14 @@ func FilterAllowedNamespaces(ctx context.Context, namespaces []string) ([]string
 	}
 
 	// Admin has access to all namespaces
-	if claims.Role == "admin" || claims.Permissions == nil || len(claims.Permissions) == 0 {
+	// role == "admin" includes both core and LDAP admins
+	if claims.Role == "admin" {
 		return namespaces, nil
+	}
+
+	// If permissions is nil or empty, user has no access (not admin)
+	if claims.Permissions == nil || len(claims.Permissions) == 0 {
+		return []string{}, nil
 	}
 
 	// Filter namespaces based on permissions
@@ -173,8 +190,14 @@ func GetAllowedNamespaces(ctx context.Context) ([]string, error) {
 	}
 
 	// Admin has access to all namespaces (return empty list to indicate "all")
-	if claims.Role == "admin" || claims.Permissions == nil || len(claims.Permissions) == 0 {
+	// role == "admin" includes both core and LDAP admins
+	if claims.Role == "admin" {
 		return []string{}, nil // Empty list means "all namespaces"
+	}
+
+	// If permissions is nil or empty, user has no access (not admin)
+	if claims.Permissions == nil || len(claims.Permissions) == 0 {
+		return []string{}, nil // Empty list means no access
 	}
 
 	// Return list of allowed namespaces
@@ -224,8 +247,14 @@ func FilterResources(ctx context.Context, resources []models.Resource) ([]models
 	}
 
 	// Admin has access to all resources
-	if claims.Role == "admin" || claims.Permissions == nil || len(claims.Permissions) == 0 {
+	// role == "admin" includes both core and LDAP admins
+	if claims.Role == "admin" {
 		return resources, nil
+	}
+
+	// If permissions is nil or empty, user has no access (not admin)
+	if claims.Permissions == nil || len(claims.Permissions) == 0 {
+		return []models.Resource{}, nil
 	}
 
 	// Filter resources based on namespace permissions

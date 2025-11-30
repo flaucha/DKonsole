@@ -135,16 +135,7 @@ tolerations: []
 affinity: {}
 
 # -----------------------------------------------------------------------------
-# 11. Persistence (Optional - For custom logos)
-# -----------------------------------------------------------------------------
-persistence:
-  enabled: true
-  storageClass: "" # Specify a storage class name, or leave empty for default
-  accessMode: ReadWriteOnce
-  size: 1Gi
-
-# -----------------------------------------------------------------------------
-# 12. Prometheus Integration (Optional)
+# 11. Prometheus Integration (Optional)
 # -----------------------------------------------------------------------------
 # Configure the Prometheus endpoint to enable historical metrics for Pods
 # If not set, the Metrics tab will not be displayed in Pod details
@@ -156,7 +147,7 @@ persistence:
 prometheusUrl: ""
 
 # -----------------------------------------------------------------------------
-# 13. RBAC Permissions (Required for dashboard functionality)
+# 12. RBAC Permissions (Required for dashboard functionality)
 # -----------------------------------------------------------------------------
 # FULL ACCESS to ALL resources (both cluster-scoped and namespaced) - allows importing ANY Kubernetes resource via YAML
 rbac:

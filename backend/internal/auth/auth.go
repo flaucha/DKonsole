@@ -335,6 +335,10 @@ func (s *Service) MeHandler(w http.ResponseWriter, r *http.Request) {
 		"username": claims.Username,
 		"role":     claims.Role,
 	}
+	// Include IDP if available
+	if claims.IDP != "" {
+		response["idp"] = claims.IDP
+	}
 	// Include permissions if available (even if empty map)
 	if claims.Permissions != nil {
 		response["permissions"] = claims.Permissions
