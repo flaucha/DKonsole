@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/112</span>
+                <span class='fraction'>0/110</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/112</span>
+                <span class='fraction'>0/110</span>
             </div>
         
             
@@ -188,9 +188,7 @@
 <a name='L123'></a><a href='#L123'>123</a>
 <a name='L124'></a><a href='#L124'>124</a>
 <a name='L125'></a><a href='#L125'>125</a>
-<a name='L126'></a><a href='#L126'>126</a>
-<a name='L127'></a><a href='#L127'>127</a>
-<a name='L128'></a><a href='#L128'>128</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L126'></a><a href='#L126'>126</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -227,9 +225,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -278,6 +273,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -355,9 +351,6 @@ import { EditYamlButton } from './CommonDetails';
 <span class="cstat-no" title="statement not covered" >                    &lt;div className="text-sm text-gray-500 italic"&gt;No image pull secrets&lt;/div&gt;</span>
                 )}
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div className="flex justify-end mt-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;EditYamlButton onClick={onEditYAML} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
     );
 <span class="cstat-no" title="statement not covered" >};</span>
@@ -367,7 +360,10 @@ import { EditYamlButton } from './CommonDetails';
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    return (</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="p-4 bg-gray-900/50 rounded-md mt-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2"&gt;Policy Rules&lt;/h4&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-center justify-between mb-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider"&gt;Policy Rules&lt;/h4&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;EditYamlButton onClick={onEditYAML} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="overflow-x-auto"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;table className="min-w-full text-xs text-left"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;thead&gt;</span>
@@ -394,9 +390,6 @@ import { EditYamlButton } from './CommonDetails';
 <span class="cstat-no" title="statement not covered" >                    &lt;/tbody&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/table&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div className="flex justify-end mt-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;EditYamlButton onClick={onEditYAML} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
     );
 <span class="cstat-no" title="statement not covered" >};</span>
@@ -407,6 +400,10 @@ import { EditYamlButton } from './CommonDetails';
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    return (</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="p-4 bg-gray-900/50 rounded-md mt-2 space-y-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-center justify-between mb-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider"&gt;Details&lt;/h4&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;EditYamlButton onClick={onEditYAML} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2"&gt;Role Reference&lt;/h4&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-center space-x-2 text-sm text-gray-300"&gt;</span>
@@ -438,9 +435,6 @@ import { EditYamlButton } from './CommonDetails';
 <span class="cstat-no" title="statement not covered" >                    &lt;/table&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div className="flex justify-end mt-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;EditYamlButton onClick={onEditYAML} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
     );
 <span class="cstat-no" title="statement not covered" >};</span>
@@ -451,7 +445,7 @@ import { EditYamlButton } from './CommonDetails';
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-30T18:52:21.114Z
+                at 2025-11-30T21:25:14.762Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

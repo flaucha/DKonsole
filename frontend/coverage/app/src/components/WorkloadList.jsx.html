@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/854</span>
+                <span class='fraction'>0/859</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/854</span>
+                <span class='fraction'>0/859</span>
             </div>
         
             
@@ -1091,7 +1091,14 @@
 <a name='L1026'></a><a href='#L1026'>1026</a>
 <a name='L1027'></a><a href='#L1027'>1027</a>
 <a name='L1028'></a><a href='#L1028'>1028</a>
-<a name='L1029'></a><a href='#L1029'>1029</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L1029'></a><a href='#L1029'>1029</a>
+<a name='L1030'></a><a href='#L1030'>1030</a>
+<a name='L1031'></a><a href='#L1031'>1031</a>
+<a name='L1032'></a><a href='#L1032'>1032</a>
+<a name='L1033'></a><a href='#L1033'>1033</a>
+<a name='L1034'></a><a href='#L1034'>1034</a>
+<a name='L1035'></a><a href='#L1035'>1035</a>
+<a name='L1036'></a><a href='#L1036'>1036</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1520,9 +1527,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1871,11 +1875,21 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2547,9 +2561,6 @@ import {
 <span class="cstat-no" title="statement not covered" >        if (!res.details) return (</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="p-4 text-gray-500 italic"&gt;</span>
                 No details available.
-<span class="cstat-no" title="statement not covered" >                &lt;div className="flex justify-end mt-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;EditYamlButton onClick={onEditYAML} namespace={res.namespace} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
         );
 <span class="cstat-no" title="statement not covered" >        switch (res.kind) {</span>
@@ -2567,7 +2578,7 @@ import {
 <span class="cstat-no" title="statement not covered" >            case 'Secret': return &lt;SecretDetails details={res.details} onEditYAML={onEditYAML} resource={res} onDataSaved={onDataSaved} /&gt;;</span>
 <span class="cstat-no" title="statement not covered" >            case 'NetworkPolicy': return &lt;NetworkPolicyDetails details={res.details} onEditYAML={onEditYAML} /&gt;;</span>
 <span class="cstat-no" title="statement not covered" >            case 'PersistentVolumeClaim':</span>
-<span class="cstat-no" title="statement not covered" >            case 'PersistentVolume': return &lt;StorageDetails details={res.details} onEditYAML={onEditYAML} /&gt;;</span>
+<span class="cstat-no" title="statement not covered" >            case 'PersistentVolume': return &lt;StorageDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} /&gt;;</span>
 <span class="cstat-no" title="statement not covered" >            case 'StorageClass': return &lt;StorageClassDetails details={res.details} onEditYAML={onEditYAML} /&gt;;</span>
 <span class="cstat-no" title="statement not covered" >            case 'Job': return &lt;JobDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} /&gt;;</span>
 <span class="cstat-no" title="statement not covered" >            case 'CronJob': return &lt;CronJobDetails details={res.details} onEditYAML={onEditYAML} /&gt;;</span>
@@ -2903,7 +2914,17 @@ import {
 <span class="cstat-no" title="statement not covered" >                            &lt;div className={`${getExpandableRowClasses(isExpanded, false)}`}&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                {isExpanded &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                                    &lt;div className="px-6 py-4 bg-gray-900/30 border-t border-gray-800"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                                        &lt;div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                                        &lt;div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden relative"&gt;</span>
+                                            {/* Show Edit YAML button only for resources that don't have it in their detail component */}
+<span class="cstat-no" title="statement not covered" >                                            {res.kind !== 'Deployment' &amp;&amp; res.kind !== 'Pod' &amp;&amp; res.kind !== 'ClusterRole' &amp;&amp; res.kind !== 'ClusterRoleBinding' &amp;&amp;</span>
+<span class="cstat-no" title="statement not covered" >                                             res.kind !== 'Role' &amp;&amp; res.kind !== 'RoleBinding' &amp;&amp;</span>
+<span class="cstat-no" title="statement not covered" >                                             res.kind !== 'CronJob' &amp;&amp; res.kind !== 'StatefulSet' &amp;&amp; res.kind !== 'DaemonSet' &amp;&amp; res.kind !== 'HPA' &amp;&amp;</span>
+<span class="cstat-no" title="statement not covered" >                                             res.kind !== 'Job' &amp;&amp; res.kind !== 'PersistentVolumeClaim' &amp;&amp; res.kind !== 'PersistentVolume' &amp;&amp; res.kind !== 'StorageClass' &amp;&amp;</span>
+<span class="cstat-no" title="statement not covered" >                                             res.kind !== 'ConfigMap' &amp;&amp; res.kind !== 'Secret' &amp;&amp; res.kind !== 'NetworkPolicy' &amp;&amp; res.kind !== 'Service' &amp;&amp; res.kind !== 'Ingress' &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >                                                &lt;div className="absolute top-4 right-4 z-10"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                                                    &lt;EditYamlButton onClick={() =&gt; setEditingResource(res)} namespace={res.namespace} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                                                &lt;/div&gt;</span>
+                                            )}
 <span class="cstat-no" title="statement not covered" >                                            {renderDetails(res)}</span>
 <span class="cstat-no" title="statement not covered" >                                        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                    &lt;/div&gt;</span>
@@ -3154,7 +3175,7 @@ import {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-30T18:52:21.114Z
+                at 2025-11-30T21:25:14.762Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

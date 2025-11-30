@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/142</span>
+                <span class='fraction'>0/139</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/142</span>
+                <span class='fraction'>0/139</span>
             </div>
         
             
@@ -233,15 +233,7 @@
 <a name='L168'></a><a href='#L168'>168</a>
 <a name='L169'></a><a href='#L169'>169</a>
 <a name='L170'></a><a href='#L170'>170</a>
-<a name='L171'></a><a href='#L171'>171</a>
-<a name='L172'></a><a href='#L172'>172</a>
-<a name='L173'></a><a href='#L173'>173</a>
-<a name='L174'></a><a href='#L174'>174</a>
-<a name='L175'></a><a href='#L175'>175</a>
-<a name='L176'></a><a href='#L176'>176</a>
-<a name='L177'></a><a href='#L177'>177</a>
-<a name='L178'></a><a href='#L178'>178</a>
-<a name='L179'></a><a href='#L179'>179</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L171'></a><a href='#L171'>171</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -256,22 +248,17 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -282,10 +269,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -430,40 +414,32 @@
 <span class="cstat-no" title="statement not covered" >    const [username, setUsername] = useState('');</span>
 <span class="cstat-no" title="statement not covered" >    const [password, setPassword] = useState('');</span>
 <span class="cstat-no" title="statement not covered" >    const [error, setError] = useState('');</span>
-<span class="cstat-no" title="statement not covered" >    const [logoSrc, setLogoSrc] = useState(defaultLogo);</span>
 <span class="cstat-no" title="statement not covered" >    const [ldapEnabled, setLdapEnabled] = useState(false);</span>
 <span class="cstat-no" title="statement not covered" >    const [activeTab, setActiveTab] = useState('ldap'); // 'core' or 'ldap' - default to LDAP</span>
 <span class="cstat-no" title="statement not covered" >    const { login } = useAuth();</span>
 <span class="cstat-no" title="statement not covered" >    const navigate = useNavigate();</span>
 &nbsp;
+    // Get current theme and determine default logo immediately
+<span class="cstat-no" title="statement not covered" >    const currentTheme = localStorage.getItem('theme') || 'default';</span>
+<span class="cstat-no" title="statement not covered" >    const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';</span>
+<span class="cstat-no" title="statement not covered" >    const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;</span>
+<span class="cstat-no" title="statement not covered" >    const [logoSrc, setLogoSrc] = useState(defaultLogoSrc); // Show default logo immediately</span>
+&nbsp;
 <span class="cstat-no" title="statement not covered" >    useEffect(() =&gt; {</span>
-        // Get current theme from localStorage
-<span class="cstat-no" title="statement not covered" >        const currentTheme = localStorage.getItem('theme') || 'default';</span>
-<span class="cstat-no" title="statement not covered" >        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';</span>
-&nbsp;
-        // Determine default logo based on theme
-        // Use /logo-light.svg for light themes (served from static directory)
-<span class="cstat-no" title="statement not covered" >        const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;</span>
-<span class="cstat-no" title="statement not covered" >        setLogoSrc(defaultLogoSrc);</span>
-&nbsp;
         // Try to load custom logo from API (no auth required for logo endpoint)
-        // Same logic as Layout.jsx to ensure consistency
-        // Add timestamp to prevent browser caching
-        // Use logo-light for light themes, logo normal for dark themes
+        // Check in background, but show default immediately
 <span class="cstat-no" title="statement not covered" >        const logoType = isLightTheme ? 'light' : 'normal';</span>
-<span class="cstat-no" title="statement not covered" >        fetch(`/api/logo?type=${logoType}&amp;t=${Date.now()}`)</span>
+<span class="cstat-no" title="statement not covered" >        const timestamp = Date.now();</span>
+<span class="cstat-no" title="statement not covered" >        fetch(`/api/logo?type=${logoType}&amp;t=${timestamp}`)</span>
 <span class="cstat-no" title="statement not covered" >            .then(res =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >                if (res.ok &amp;&amp; res.status === 200) {</span>
                     // Custom logo exists, use it
-<span class="cstat-no" title="statement not covered" >                    setLogoSrc(`/api/logo?type=${logoType}&amp;t=${Date.now()}`);</span>
-<span class="cstat-no" title="statement not covered" >                } else {</span>
-                    // No custom logo, use theme-appropriate default
-<span class="cstat-no" title="statement not covered" >                    setLogoSrc(defaultLogoSrc);</span>
+<span class="cstat-no" title="statement not covered" >                    setLogoSrc(`/api/logo?type=${logoType}&amp;t=${timestamp}`);</span>
 <span class="cstat-no" title="statement not covered" >                }</span>
+                // If not found (404), keep default logo (already set)
 <span class="cstat-no" title="statement not covered" >            })</span>
 <span class="cstat-no" title="statement not covered" >            .catch(() =&gt; {</span>
-                // On error, use theme-appropriate default
-<span class="cstat-no" title="statement not covered" >                setLogoSrc(defaultLogoSrc);</span>
+                // On error, keep default logo (already set)
 <span class="cstat-no" title="statement not covered" >            });</span>
 &nbsp;
         // Check if LDAP is enabled
@@ -604,7 +580,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-30T18:52:21.114Z
+                at 2025-11-30T21:25:14.762Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -16,8 +16,13 @@ const Setup = () => {
     const [reloading, setReloading] = useState(false);
     const [setupCompleted, setSetupCompleted] = useState(false);
     const [checkingStatus, setCheckingStatus] = useState(true);
-    const [logoSrc, setLogoSrc] = useState(defaultLogo);
     const navigate = useNavigate();
+
+    // Get current theme and determine default logo immediately
+    const currentTheme = localStorage.getItem('theme') || 'default';
+    const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
+    const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;
+    const [logoSrc, setLogoSrc] = useState(defaultLogoSrc); // Show default logo immediately
 
     useEffect(() => {
         // Check if setup is already completed
@@ -40,30 +45,20 @@ const Setup = () => {
 
         checkSetupStatus();
 
-        // Get current theme from localStorage
-        const currentTheme = localStorage.getItem('theme') || 'default';
-        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
-        // Use /logo-light.svg for light themes (served from static directory)
-        const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;
-        setLogoSrc(defaultLogoSrc);
-
         // Try to load custom logo from API (no auth required for logo endpoint)
-        // Use logo-light for light themes, logo normal for dark themes
-        // Add timestamp to prevent browser caching (use same timestamp for consistency)
+        // Check in background, but show default immediately
         const logoType = isLightTheme ? 'light' : 'normal';
         const timestamp = Date.now();
         fetch(`/api/logo?type=${logoType}&t=${timestamp}`)
             .then(res => {
                 if (res.ok && res.status === 200) {
+                    // Custom logo exists, use it
                     setLogoSrc(`/api/logo?type=${logoType}&t=${timestamp}`);
-                } else {
-                    // No custom logo, use theme-appropriate default
-                    setLogoSrc(defaultLogoSrc);
                 }
+                // If not found (404), keep default logo (already set)
             })
             .catch(() => {
-                // On error, use theme-appropriate default
-                setLogoSrc(defaultLogoSrc);
+                // On error, keep default logo (already set)
             });
     }, []);
 

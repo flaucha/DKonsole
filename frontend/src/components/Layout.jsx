@@ -197,39 +197,33 @@ const Layout = ({ children, headerContent }) => {
         accessControl: false,
         adminArea: false,
     });
-    const [logoSrc, setLogoSrc] = useState(null); // Start with null to avoid showing default before checking custom logo
     const location = useLocation();
 
+    // Get current theme and determine default logo immediately
+    const currentTheme = theme || localStorage.getItem('theme') || 'default';
+    const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
+    const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;
+
+    const [logoSrc, setLogoSrc] = useState(defaultLogoSrc); // Show default logo immediately
+
     useEffect(() => {
-        // Get current theme from settings
-        const currentTheme = theme || localStorage.getItem('theme') || 'default';
-        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
-
-        // Determine default logo based on theme
-        // Use /logo-light.svg for light themes (served from static directory)
-        const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;
-
-        // Add timestamp to prevent browser caching (use same timestamp for consistency)
-        // Use logo-light for light themes, logo normal for dark themes
+        // Use fetch (not authFetch) since /api/logo GET is public
+        // Check for custom logo in background, but show default immediately
         const logoType = isLightTheme ? 'light' : 'normal';
         const timestamp = Date.now();
 
-        // Try to load custom logo first, then fallback to default if not found
-        authFetch(`/api/logo?type=${logoType}&t=${timestamp}`)
+        fetch(`/api/logo?type=${logoType}&t=${timestamp}`)
             .then(res => {
                 if (res.ok && res.status === 200) {
-                    // Custom logo exists, use it (use same timestamp)
+                    // Custom logo exists, use it
                     setLogoSrc(`/api/logo?type=${logoType}&t=${timestamp}`);
-                } else {
-                    // No custom logo, use theme-appropriate default
-                    setLogoSrc(defaultLogoSrc);
                 }
+                // If not found (404), keep default logo (already set)
             })
             .catch(() => {
-                // On error, use theme-appropriate default
-                setLogoSrc(defaultLogoSrc);
+                // On error, keep default logo (already set)
             });
-    }, [authFetch, theme]);
+    }, [theme, isLightTheme]);
 
     const handleLogoError = () => {
         // If logo fails to load, fallback to theme-appropriate default logo
@@ -311,14 +305,12 @@ const Layout = ({ children, headerContent }) => {
                         )}
                     </button>
                     <div className="flex items-center justify-center">
-                        {logoSrc && (
-                            <img
-                                src={logoSrc}
-                                alt="Logo"
-                                className="h-12 max-h-12 object-contain"
-                                onError={handleLogoError}
-                            />
-                        )}
+                        <img
+                            src={logoSrc}
+                            alt="Logo"
+                            className="h-12 max-h-12 object-contain"
+                            onError={handleLogoError}
+                        />
                     </div>
                 </div>
                 <div className="flex items-center space-x-2">

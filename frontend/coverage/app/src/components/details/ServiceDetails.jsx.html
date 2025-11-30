@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/123</span>
+                <span class='fraction'>0/125</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/123</span>
+                <span class='fraction'>0/125</span>
             </div>
         
             
@@ -208,7 +208,9 @@
 <a name='L143'></a><a href='#L143'>143</a>
 <a name='L144'></a><a href='#L144'>144</a>
 <a name='L145'></a><a href='#L145'>145</a>
-<a name='L146'></a><a href='#L146'>146</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -264,6 +266,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -355,7 +359,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import React, { useState } from 'react';</span></span></span>
 <span class="cstat-no" title="statement not covered" >import { Tag } from 'lucide-react';</span>
-<span class="cstat-no" title="statement not covered" >import { EditYamlButton, SmartDNS } from './CommonDetails';</span>
+<span class="cstat-no" title="statement not covered" >import { SmartDNS, EditYamlButton } from './CommonDetails';</span>
 <span class="cstat-no" title="statement not covered" >import AssociatedPods from './AssociatedPods';</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const ServiceDetails = ({ details, onEditYAML, namespace, name }) =&gt; {</span>
@@ -418,7 +422,9 @@
 <span class="cstat-no" title="statement not covered" >                                {name &amp;&amp; namespace &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                                    &lt;div className="flex items-center justify-between bg-gray-800/50 px-4 py-3 rounded-md border border-gray-700/50 hover:bg-gray-800/70 transition-colors"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                        &lt;span className="text-xs font-medium text-gray-400 uppercase tracking-wider"&gt;DNS&lt;/span&gt;</span>
-<span class="cstat-no" title="statement not covered" >                                        &lt;SmartDNS dns={`${name}.${namespace}.svc.cluster.local`} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                                        &lt;div className="flex-1 flex justify-end"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                                            &lt;SmartDNS dns={`${name}.${namespace}.svc.cluster.local`} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                                        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                    &lt;/div&gt;</span>
                                 )}
 <span class="cstat-no" title="statement not covered" >                                &lt;div className="flex items-center justify-between bg-gray-800/50 px-4 py-3 rounded-md border border-gray-700/50 hover:bg-gray-800/70 transition-colors"&gt;</span>
@@ -484,7 +490,7 @@
 <span class="cstat-no" title="statement not covered" >                            })}</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;div className="flex justify-end mt-6"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;div className="flex justify-end mt-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;EditYamlButton onClick={onEditYAML} namespace={namespace} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/&gt;</span>
@@ -505,7 +511,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-30T18:52:21.114Z
+                at 2025-11-30T21:25:14.762Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

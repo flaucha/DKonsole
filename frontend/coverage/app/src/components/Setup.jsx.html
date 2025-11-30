@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/291</span>
+                <span class='fraction'>0/288</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/291</span>
+                <span class='fraction'>0/288</span>
             </div>
         
             
@@ -415,10 +415,7 @@
 <a name='L350'></a><a href='#L350'>350</a>
 <a name='L351'></a><a href='#L351'>351</a>
 <a name='L352'></a><a href='#L352'>352</a>
-<a name='L353'></a><a href='#L353'>353</a>
-<a name='L354'></a><a href='#L354'>354</a>
-<a name='L355'></a><a href='#L355'>355</a>
-<a name='L356'></a><a href='#L356'>356</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L353'></a><a href='#L353'>353</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -437,6 +434,11 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -461,15 +463,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -478,10 +472,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -791,8 +785,13 @@
 <span class="cstat-no" title="statement not covered" >    const [reloading, setReloading] = useState(false);</span>
 <span class="cstat-no" title="statement not covered" >    const [setupCompleted, setSetupCompleted] = useState(false);</span>
 <span class="cstat-no" title="statement not covered" >    const [checkingStatus, setCheckingStatus] = useState(true);</span>
-<span class="cstat-no" title="statement not covered" >    const [logoSrc, setLogoSrc] = useState(defaultLogo);</span>
 <span class="cstat-no" title="statement not covered" >    const navigate = useNavigate();</span>
+&nbsp;
+    // Get current theme and determine default logo immediately
+<span class="cstat-no" title="statement not covered" >    const currentTheme = localStorage.getItem('theme') || 'default';</span>
+<span class="cstat-no" title="statement not covered" >    const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';</span>
+<span class="cstat-no" title="statement not covered" >    const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;</span>
+<span class="cstat-no" title="statement not covered" >    const [logoSrc, setLogoSrc] = useState(defaultLogoSrc); // Show default logo immediately</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    useEffect(() =&gt; {</span>
         // Check if setup is already completed
@@ -815,28 +814,20 @@
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        checkSetupStatus();</span>
 &nbsp;
-        // Get current theme from localStorage
-<span class="cstat-no" title="statement not covered" >        const currentTheme = localStorage.getItem('theme') || 'default';</span>
-<span class="cstat-no" title="statement not covered" >        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';</span>
-        // Use /logo-light.svg for light themes (served from static directory)
-<span class="cstat-no" title="statement not covered" >        const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;</span>
-<span class="cstat-no" title="statement not covered" >        setLogoSrc(defaultLogoSrc);</span>
-&nbsp;
         // Try to load custom logo from API (no auth required for logo endpoint)
-        // Use logo-light for light themes, logo normal for dark themes
+        // Check in background, but show default immediately
 <span class="cstat-no" title="statement not covered" >        const logoType = isLightTheme ? 'light' : 'normal';</span>
-<span class="cstat-no" title="statement not covered" >        fetch(`/api/logo?type=${logoType}&amp;t=${Date.now()}`)</span>
+<span class="cstat-no" title="statement not covered" >        const timestamp = Date.now();</span>
+<span class="cstat-no" title="statement not covered" >        fetch(`/api/logo?type=${logoType}&amp;t=${timestamp}`)</span>
 <span class="cstat-no" title="statement not covered" >            .then(res =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >                if (res.ok &amp;&amp; res.status === 200) {</span>
-<span class="cstat-no" title="statement not covered" >                    setLogoSrc(`/api/logo?type=${logoType}&amp;t=${Date.now()}`);</span>
-<span class="cstat-no" title="statement not covered" >                } else {</span>
-                    // No custom logo, use theme-appropriate default
-<span class="cstat-no" title="statement not covered" >                    setLogoSrc(defaultLogoSrc);</span>
+                    // Custom logo exists, use it
+<span class="cstat-no" title="statement not covered" >                    setLogoSrc(`/api/logo?type=${logoType}&amp;t=${timestamp}`);</span>
 <span class="cstat-no" title="statement not covered" >                }</span>
+                // If not found (404), keep default logo (already set)
 <span class="cstat-no" title="statement not covered" >            })</span>
 <span class="cstat-no" title="statement not covered" >            .catch(() =&gt; {</span>
-                // On error, use theme-appropriate default
-<span class="cstat-no" title="statement not covered" >                setLogoSrc(defaultLogoSrc);</span>
+                // On error, keep default logo (already set)
 <span class="cstat-no" title="statement not covered" >            });</span>
 <span class="cstat-no" title="statement not covered" >    }, []);</span>
 &nbsp;
@@ -1135,7 +1126,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-30T18:52:21.114Z
+                at 2025-11-30T21:25:14.762Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

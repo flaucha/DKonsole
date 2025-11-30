@@ -9,41 +9,32 @@ const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [logoSrc, setLogoSrc] = useState(defaultLogo);
     const [ldapEnabled, setLdapEnabled] = useState(false);
     const [activeTab, setActiveTab] = useState('ldap'); // 'core' or 'ldap' - default to LDAP
     const { login } = useAuth();
     const navigate = useNavigate();
 
+    // Get current theme and determine default logo immediately
+    const currentTheme = localStorage.getItem('theme') || 'default';
+    const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
+    const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;
+    const [logoSrc, setLogoSrc] = useState(defaultLogoSrc); // Show default logo immediately
+
     useEffect(() => {
-        // Get current theme from localStorage
-        const currentTheme = localStorage.getItem('theme') || 'default';
-        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
-
-        // Determine default logo based on theme
-        // Use /logo-light.svg for light themes (served from static directory)
-        const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;
-        setLogoSrc(defaultLogoSrc);
-
         // Try to load custom logo from API (no auth required for logo endpoint)
-        // Same logic as Layout.jsx to ensure consistency
-        // Add timestamp to prevent browser caching (use same timestamp for consistency)
-        // Use logo-light for light themes, logo normal for dark themes
+        // Check in background, but show default immediately
         const logoType = isLightTheme ? 'light' : 'normal';
         const timestamp = Date.now();
         fetch(`/api/logo?type=${logoType}&t=${timestamp}`)
             .then(res => {
                 if (res.ok && res.status === 200) {
-                    // Custom logo exists, use it (use same timestamp)
+                    // Custom logo exists, use it
                     setLogoSrc(`/api/logo?type=${logoType}&t=${timestamp}`);
-                } else {
-                    // No custom logo, use theme-appropriate default
-                    setLogoSrc(defaultLogoSrc);
                 }
+                // If not found (404), keep default logo (already set)
             })
             .catch(() => {
-                // On error, use theme-appropriate default
-                setLogoSrc(defaultLogoSrc);
+                // On error, keep default logo (already set)
             });
 
         // Check if LDAP is enabled
