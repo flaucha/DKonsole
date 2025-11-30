@@ -7,6 +7,7 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/auth"
 	"github.com/flaucha/DKonsole/backend/internal/models"
 )
+
 func TestValidateNamespaceAccess(t *testing.T) {
 	tests := []struct {
 		name      string

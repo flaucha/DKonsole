@@ -12,12 +12,12 @@ import (
 
 // mockHelmReleaseRepository is a mock implementation of HelmReleaseRepository
 type mockHelmReleaseRepository struct {
-	listHelmSecretsFunc      func(ctx context.Context) ([]corev1.Secret, error)
-	listHelmConfigMapsFunc   func(ctx context.Context) ([]corev1.ConfigMap, error)
-	listSecretsInNamespaceFunc func(ctx context.Context, namespace string) ([]corev1.Secret, error)
+	listHelmSecretsFunc           func(ctx context.Context) ([]corev1.Secret, error)
+	listHelmConfigMapsFunc        func(ctx context.Context) ([]corev1.ConfigMap, error)
+	listSecretsInNamespaceFunc    func(ctx context.Context, namespace string) ([]corev1.Secret, error)
 	listConfigMapsInNamespaceFunc func(ctx context.Context, namespace string) ([]corev1.ConfigMap, error)
-	deleteSecretFunc         func(ctx context.Context, namespace, name string) error
-	deleteConfigMapFunc      func(ctx context.Context, namespace, name string) error
+	deleteSecretFunc              func(ctx context.Context, namespace, name string) error
+	deleteConfigMapFunc           func(ctx context.Context, namespace, name string) error
 }
 
 func (m *mockHelmReleaseRepository) ListHelmSecrets(ctx context.Context) ([]corev1.Secret, error) {
@@ -64,11 +64,11 @@ func (m *mockHelmReleaseRepository) DeleteConfigMap(ctx context.Context, namespa
 
 func TestHelmReleaseService_GetHelmReleases(t *testing.T) {
 	tests := []struct {
-		name                    string
-		listHelmSecretsFunc     func(ctx context.Context) ([]corev1.Secret, error)
-		listHelmConfigMapsFunc  func(ctx context.Context) ([]corev1.ConfigMap, error)
-		wantErr                 bool
-		expectedReleaseCount    int
+		name                   string
+		listHelmSecretsFunc    func(ctx context.Context) ([]corev1.Secret, error)
+		listHelmConfigMapsFunc func(ctx context.Context) ([]corev1.ConfigMap, error)
+		wantErr                bool
+		expectedReleaseCount   int
 	}{
 		{
 			name: "successful list with secrets",
@@ -79,9 +79,9 @@ func TestHelmReleaseService_GetHelmReleases(t *testing.T) {
 							Name:      "sh.helm.release.v1.my-app.v1",
 							Namespace: "default",
 							Labels: map[string]string{
-								"owner": "helm",
-								"name":  "my-app",
-								"status": "deployed",
+								"owner":   "helm",
+								"name":    "my-app",
+								"status":  "deployed",
 								"version": "1",
 							},
 							Annotations: map[string]string{
@@ -95,7 +95,7 @@ func TestHelmReleaseService_GetHelmReleases(t *testing.T) {
 			listHelmConfigMapsFunc: func(ctx context.Context) ([]corev1.ConfigMap, error) {
 				return []corev1.ConfigMap{}, nil
 			},
-			wantErr: false,
+			wantErr:              false,
 			expectedReleaseCount: 0, // Will be 0 because we need release data to parse
 		},
 		{
@@ -106,7 +106,7 @@ func TestHelmReleaseService_GetHelmReleases(t *testing.T) {
 			listHelmConfigMapsFunc: func(ctx context.Context) ([]corev1.ConfigMap, error) {
 				return []corev1.ConfigMap{}, nil
 			},
-			wantErr: false,
+			wantErr:              false,
 			expectedReleaseCount: 0,
 		},
 		{
@@ -117,7 +117,7 @@ func TestHelmReleaseService_GetHelmReleases(t *testing.T) {
 			listHelmConfigMapsFunc: func(ctx context.Context) ([]corev1.ConfigMap, error) {
 				return []corev1.ConfigMap{}, nil
 			},
-			wantErr: false,
+			wantErr:              false,
 			expectedReleaseCount: 0,
 		},
 	}
@@ -154,15 +154,15 @@ func TestHelmReleaseService_GetHelmReleases(t *testing.T) {
 
 func TestHelmReleaseService_DeleteHelmRelease(t *testing.T) {
 	tests := []struct {
-		name                        string
-		request                     DeleteHelmReleaseRequest
-		listSecretsInNamespaceFunc  func(ctx context.Context, namespace string) ([]corev1.Secret, error)
+		name                          string
+		request                       DeleteHelmReleaseRequest
+		listSecretsInNamespaceFunc    func(ctx context.Context, namespace string) ([]corev1.Secret, error)
 		listConfigMapsInNamespaceFunc func(ctx context.Context, namespace string) ([]corev1.ConfigMap, error)
-		deleteSecretFunc            func(ctx context.Context, namespace, name string) error
-		deleteConfigMapFunc         func(ctx context.Context, namespace, name string) error
-		wantErr                     bool
-		errMsg                      string
-		expectedDeletedCount        int
+		deleteSecretFunc              func(ctx context.Context, namespace, name string) error
+		deleteConfigMapFunc           func(ctx context.Context, namespace, name string) error
+		wantErr                       bool
+		errMsg                        string
+		expectedDeletedCount          int
 	}{
 		{
 			name: "successful delete with secrets and configmaps",
@@ -204,7 +204,7 @@ func TestHelmReleaseService_DeleteHelmRelease(t *testing.T) {
 			deleteConfigMapFunc: func(ctx context.Context, namespace, name string) error {
 				return nil
 			},
-			wantErr: false,
+			wantErr:              false,
 			expectedDeletedCount: 2, // 1 secret + 1 configmap
 		},
 		{
@@ -242,10 +242,10 @@ func TestHelmReleaseService_DeleteHelmRelease(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := &mockHelmReleaseRepository{
-				listSecretsInNamespaceFunc:  tt.listSecretsInNamespaceFunc,
+				listSecretsInNamespaceFunc:    tt.listSecretsInNamespaceFunc,
 				listConfigMapsInNamespaceFunc: tt.listConfigMapsInNamespaceFunc,
-				deleteSecretFunc:            tt.deleteSecretFunc,
-				deleteConfigMapFunc:         tt.deleteConfigMapFunc,
+				deleteSecretFunc:              tt.deleteSecretFunc,
+				deleteConfigMapFunc:           tt.deleteConfigMapFunc,
 			}
 
 			service := NewHelmReleaseService(mockRepo)

@@ -9,14 +9,14 @@ import (
 
 // mockRepository is a mock implementation of Repository for testing
 type mockRepository struct {
-	config      *models.LDAPConfig
-	groups      *models.LDAPGroupsConfig
-	username    string
-	password    string
-	configErr   error
-	groupsErr   error
-	credsErr    error
-	updateErr   error
+	config          *models.LDAPConfig
+	groups          *models.LDAPGroupsConfig
+	username        string
+	password        string
+	configErr       error
+	groupsErr       error
+	credsErr        error
+	updateErr       error
 	updateGroupsErr error
 	updateCredsErr  error
 }
@@ -181,7 +181,7 @@ func TestService_AuthenticateUser_InvalidUsername(t *testing.T) {
 func TestService_ValidateUserGroup_NoRequiredGroup(t *testing.T) {
 	mockRepo := &mockRepository{
 		config: &models.LDAPConfig{
-			Enabled:      true,
+			Enabled:       true,
 			RequiredGroup: "", // No required group
 		},
 	}

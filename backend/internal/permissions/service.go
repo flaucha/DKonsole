@@ -87,8 +87,9 @@ func HasNamespaceAccess(ctx context.Context, namespace string) (bool, error) {
 	}
 
 	// Check if user has any permission for this namespace
-	// If permissions is nil or empty, user has no access (not admin)
-	if claims.Permissions == nil || len(claims.Permissions) == 0 {
+	// If permissions is empty, user has no access (not admin)
+	// Note: len() for nil maps is defined as zero, so we can omit the nil check
+	if len(claims.Permissions) == 0 {
 		return false, nil
 	}
 

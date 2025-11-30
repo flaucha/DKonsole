@@ -20,13 +20,13 @@ func TestDefaultLogoValidator_ValidateFile(t *testing.T) {
 	validator := NewDefaultLogoValidator(maxSize)
 
 	tests := []struct {
-		name        string
-		filename    string
-		size        int64
-		content     []byte
-		wantExt     string
-		wantErr     bool
-		errMsg      string
+		name     string
+		filename string
+		size     int64
+		content  []byte
+		wantExt  string
+		wantErr  bool
+		errMsg   string
 	}{
 		{
 			name:     "valid PNG file",

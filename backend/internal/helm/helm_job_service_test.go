@@ -48,9 +48,9 @@ func TestHelmJobService_BuildHelmRepoName(t *testing.T) {
 	service := NewHelmJobService(nil)
 
 	tests := []struct {
-		name     string
-		repoURL  string
-		want     string
+		name    string
+		repoURL string
+		want    string
 	}{
 		{
 			name:    "prometheus-community repo",
@@ -111,9 +111,9 @@ func TestHelmJobService_CreateValuesConfigMap(t *testing.T) {
 		expectedCMName      string
 	}{
 		{
-			name:      "successful create ConfigMap with valid YAML",
-			namespace: "default",
-			nameParam: "my-release",
+			name:       "successful create ConfigMap with valid YAML",
+			namespace:  "default",
+			nameParam:  "my-release",
 			valuesYAML: "key: value\nnested:\n  key: nested-value",
 			createConfigMapFunc: func(ctx context.Context, namespace string, cm *corev1.ConfigMap) error {
 				if cm.Name == "" {
@@ -127,9 +127,9 @@ func TestHelmJobService_CreateValuesConfigMap(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:      "empty values YAML returns empty name",
-			namespace: "default",
-			nameParam: "my-release",
+			name:       "empty values YAML returns empty name",
+			namespace:  "default",
+			nameParam:  "my-release",
 			valuesYAML: "",
 			createConfigMapFunc: func(ctx context.Context, namespace string, cm *corev1.ConfigMap) error {
 				return nil
@@ -137,9 +137,9 @@ func TestHelmJobService_CreateValuesConfigMap(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:      "error creating ConfigMap",
-			namespace: "default",
-			nameParam: "my-release",
+			name:       "error creating ConfigMap",
+			namespace:  "default",
+			nameParam:  "my-release",
 			valuesYAML: "key: value",
 			createConfigMapFunc: func(ctx context.Context, namespace string, cm *corev1.ConfigMap) error {
 				return errors.New("create error")
@@ -188,12 +188,12 @@ func TestHelmJobService_CreateValuesConfigMap(t *testing.T) {
 
 func TestHelmJobService_CreateHelmJob(t *testing.T) {
 	tests := []struct {
-		name                string
-		request             CreateHelmJobRequest
+		name                  string
+		request               CreateHelmJobRequest
 		getServiceAccountFunc func(ctx context.Context, namespace, name string) (*corev1.ServiceAccount, error)
-		createJobFunc       func(ctx context.Context, namespace string, job *batchv1.Job) error
-		wantErr             bool
-		errMsg              string
+		createJobFunc         func(ctx context.Context, namespace string, job *batchv1.Job) error
+		wantErr               bool
+		errMsg                string
 	}{
 		{
 			name: "successful create helm job for install",
@@ -264,8 +264,8 @@ func TestHelmJobService_CreateHelmJob(t *testing.T) {
 				return nil, errors.New("not found")
 			},
 			createJobFunc: nil,
-			wantErr: true,
-			errMsg:  "serviceaccount not found",
+			wantErr:       true,
+			errMsg:        "serviceaccount not found",
 		},
 		{
 			name: "error creating job",

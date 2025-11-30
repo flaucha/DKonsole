@@ -12,12 +12,12 @@ func TestWatchService_TransformEvent(t *testing.T) {
 	service := NewWatchService(nil)
 
 	tests := []struct {
-		name      string
-		event     watch.Event
-		wantErr   bool
-		wantType  string
-		wantName  string
-		wantNS    string
+		name     string
+		event    watch.Event
+		wantErr  bool
+		wantType string
+		wantName string
+		wantNS   string
 	}{
 		{
 			name: "valid ADD event",

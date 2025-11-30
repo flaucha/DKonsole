@@ -16,12 +16,12 @@ func TestRateLimitMiddleware(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		requests       int
-		delay          time.Duration
-		isWebSocket    bool
+		name            string
+		requests        int
+		delay           time.Duration
+		isWebSocket     bool
 		wantStatusCodes []int // Expected status codes for each request
-		expectLimitHit bool
+		expectLimitHit  bool
 	}{
 		{
 			name:            "single request should pass",
@@ -38,10 +38,10 @@ func TestRateLimitMiddleware(t *testing.T) {
 			expectLimitHit:  false,
 		},
 		{
-			name:     "websocket request should bypass rate limit",
-			requests: 1,
-			delay:    0,
-			isWebSocket: true,
+			name:            "websocket request should bypass rate limit",
+			requests:        1,
+			delay:           0,
+			isWebSocket:     true,
 			wantStatusCodes: []int{http.StatusOK},
 			expectLimitHit:  false,
 		},
@@ -218,39 +218,39 @@ func TestLoginRateLimitMiddleware(t *testing.T) {
 
 func TestGetClientIP(t *testing.T) {
 	tests := []struct {
-		name           string
-		remoteAddr     string
-		xRealIP        string
-		xForwardedFor  string
-		wantClientIP   string
+		name          string
+		remoteAddr    string
+		xRealIP       string
+		xForwardedFor string
+		wantClientIP  string
 	}{
 		{
-			name:         "X-Real-IP header should be used first",
-			remoteAddr:   "192.168.1.1:12345",
-			xRealIP:      "10.0.0.1",
+			name:          "X-Real-IP header should be used first",
+			remoteAddr:    "192.168.1.1:12345",
+			xRealIP:       "10.0.0.1",
 			xForwardedFor: "192.168.1.2",
-			wantClientIP: "10.0.0.1",
+			wantClientIP:  "10.0.0.1",
 		},
 		{
-			name:         "X-Forwarded-For should be used if X-Real-IP not present",
-			remoteAddr:   "192.168.1.1:12345",
-			xRealIP:      "",
+			name:          "X-Forwarded-For should be used if X-Real-IP not present",
+			remoteAddr:    "192.168.1.1:12345",
+			xRealIP:       "",
 			xForwardedFor: "10.0.0.2",
-			wantClientIP: "10.0.0.2",
+			wantClientIP:  "10.0.0.2",
 		},
 		{
-			name:         "X-Forwarded-For with multiple IPs should use first",
-			remoteAddr:   "192.168.1.1:12345",
-			xRealIP:      "",
+			name:          "X-Forwarded-For with multiple IPs should use first",
+			remoteAddr:    "192.168.1.1:12345",
+			xRealIP:       "",
 			xForwardedFor: "10.0.0.3, 192.168.1.3, 10.0.0.4",
-			wantClientIP: "10.0.0.3",
+			wantClientIP:  "10.0.0.3",
 		},
 		{
-			name:         "RemoteAddr should be used as fallback",
-			remoteAddr:   "192.168.1.4:12345",
-			xRealIP:      "",
+			name:          "RemoteAddr should be used as fallback",
+			remoteAddr:    "192.168.1.4:12345",
+			xRealIP:       "",
 			xForwardedFor: "",
-			wantClientIP: "192.168.1.4",
+			wantClientIP:  "192.168.1.4",
 		},
 	}
 

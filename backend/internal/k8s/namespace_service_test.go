@@ -28,12 +28,12 @@ func TestNamespaceService_GetNamespaces(t *testing.T) {
 	now := metav1.Now()
 
 	tests := []struct {
-		name           string
-		repoFunc       func(ctx context.Context) ([]corev1.Namespace, error)
-		ctx            context.Context
-		wantErr        bool
-		wantCount      int
-		expectedNames  []string
+		name          string
+		repoFunc      func(ctx context.Context) ([]corev1.Namespace, error)
+		ctx           context.Context
+		wantErr       bool
+		wantCount     int
+		expectedNames []string
 	}{
 		{
 			name: "successful list all namespaces (admin)",
@@ -41,15 +41,15 @@ func TestNamespaceService_GetNamespaces(t *testing.T) {
 				return []corev1.Namespace{
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "default",
-							Labels:    map[string]string{"env": "prod"},
+							Name:              "default",
+							Labels:            map[string]string{"env": "prod"},
 							CreationTimestamp: now,
 						},
 						Status: corev1.NamespaceStatus{Phase: corev1.NamespaceActive},
 					},
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "kube-system",
+							Name:              "kube-system",
 							CreationTimestamp: now,
 						},
 						Status: corev1.NamespaceStatus{Phase: corev1.NamespaceActive},
@@ -67,8 +67,8 @@ func TestNamespaceService_GetNamespaces(t *testing.T) {
 					},
 				},
 			),
-			wantErr:   false,
-			wantCount: 2,
+			wantErr:       false,
+			wantCount:     2,
 			expectedNames: []string{"default", "kube-system"},
 		},
 		{

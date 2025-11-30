@@ -10,14 +10,14 @@ import (
 
 // mockClusterStatsRepository is a mock implementation of ClusterStatsRepository
 type mockClusterStatsRepository struct {
-	getNodeCountFunc        func(ctx context.Context) (int, error)
-	getNamespaceCountFunc   func(ctx context.Context) (int, error)
-	getPodCountFunc         func(ctx context.Context) (int, error)
-	getDeploymentCountFunc  func(ctx context.Context) (int, error)
-	getServiceCountFunc     func(ctx context.Context) (int, error)
-	getIngressCountFunc     func(ctx context.Context) (int, error)
-	getPVCCountFunc         func(ctx context.Context) (int, error)
-	getPVCountFunc          func(ctx context.Context) (int, error)
+	getNodeCountFunc       func(ctx context.Context) (int, error)
+	getNamespaceCountFunc  func(ctx context.Context) (int, error)
+	getPodCountFunc        func(ctx context.Context) (int, error)
+	getDeploymentCountFunc func(ctx context.Context) (int, error)
+	getServiceCountFunc    func(ctx context.Context) (int, error)
+	getIngressCountFunc    func(ctx context.Context) (int, error)
+	getPVCCountFunc        func(ctx context.Context) (int, error)
+	getPVCountFunc         func(ctx context.Context) (int, error)
 }
 
 func (m *mockClusterStatsRepository) GetNodeCount(ctx context.Context) (int, error) {
@@ -85,8 +85,8 @@ func TestClusterStatsService_GetClusterStats(t *testing.T) {
 		expectError bool
 	}{
 		{
-			name: "successful stats retrieval",
-			repo: &mockClusterStatsRepository{},
+			name:    "successful stats retrieval",
+			repo:    &mockClusterStatsRepository{},
 			wantErr: false,
 			wantStats: models.ClusterStats{
 				Nodes:       3,

@@ -110,12 +110,12 @@ func TestService_GetPrometheusURLHandler(t *testing.T) {
 
 func TestService_UpdatePrometheusURLHandler(t *testing.T) {
 	tests := []struct {
-		name                   string
-		requestBody            interface{}
-		updateURLFunc          func(ctx context.Context, url string) error
-		wantStatusCode         int
-		wantErrMsg             string
-		expectedURL            string
+		name           string
+		requestBody    interface{}
+		updateURLFunc  func(ctx context.Context, url string) error
+		wantStatusCode int
+		wantErrMsg     string
+		expectedURL    string
 	}{
 		{
 			name: "successful update URL",
@@ -151,8 +151,8 @@ func TestService_UpdatePrometheusURLHandler(t *testing.T) {
 			expectedURL:    "",
 		},
 		{
-			name: "invalid JSON",
-			requestBody: "invalid json",
+			name:           "invalid JSON",
+			requestBody:    "invalid json",
 			wantStatusCode: http.StatusBadRequest,
 			wantErrMsg:     "invalid request body",
 		},

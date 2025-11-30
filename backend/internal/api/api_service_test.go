@@ -52,11 +52,11 @@ func (m *mockDynamicResourceRepository) List(ctx context.Context, gvr schema.Gro
 
 func TestAPIService_ListAPIResources(t *testing.T) {
 	tests := []struct {
-		name                   string
-		listAPIResourcesFunc   func(ctx context.Context) ([]*metav1.APIResourceList, error)
-		wantErr                bool
-		errMsg                 string
-		expectedResourceCount  int
+		name                  string
+		listAPIResourcesFunc  func(ctx context.Context) ([]*metav1.APIResourceList, error)
+		wantErr               bool
+		errMsg                string
+		expectedResourceCount int
 	}{
 		{
 			name: "successful list API resources",
@@ -79,7 +79,7 @@ func TestAPIService_ListAPIResources(t *testing.T) {
 					},
 				}, nil
 			},
-			wantErr: false,
+			wantErr:               false,
 			expectedResourceCount: 2,
 		},
 		{
@@ -103,7 +103,7 @@ func TestAPIService_ListAPIResources(t *testing.T) {
 					},
 				}, nil
 			},
-			wantErr: false,
+			wantErr:               false,
 			expectedResourceCount: 1, // pods/exec should be filtered
 		},
 		{
@@ -115,17 +115,17 @@ func TestAPIService_ListAPIResources(t *testing.T) {
 			errMsg:  "failed to list API resources",
 		},
 		{
-			name: "discovery repository not set",
+			name:                 "discovery repository not set",
 			listAPIResourcesFunc: nil,
-			wantErr: true,
-			errMsg:  "discovery repository not set",
+			wantErr:              true,
+			errMsg:               "discovery repository not set",
 		},
 		{
 			name: "empty API resources list",
 			listAPIResourcesFunc: func(ctx context.Context) ([]*metav1.APIResourceList, error) {
 				return []*metav1.APIResourceList{}, nil
 			},
-			wantErr: false,
+			wantErr:               false,
 			expectedResourceCount: 0,
 		},
 	}
@@ -193,13 +193,13 @@ func TestAPIService_GetResourceYAML(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		request     GetResourceYAMLRequest
-		ctx         context.Context
-		getFunc     func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool) (*unstructured.Unstructured, error)
-		wantErr     bool
-		errMsg      string
-		expectYAML  bool
+		name       string
+		request    GetResourceYAMLRequest
+		ctx        context.Context
+		getFunc    func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool) (*unstructured.Unstructured, error)
+		wantErr    bool
+		errMsg     string
+		expectYAML bool
 	}{
 		{
 			name: "successful get resource YAML",
@@ -238,7 +238,7 @@ func TestAPIService_GetResourceYAML(t *testing.T) {
 				Namespace:  "default",
 				Namespaced: true,
 			},
-			ctx: context.Background(),
+			ctx:     context.Background(),
 			getFunc: nil,
 			wantErr: true,
 			errMsg:  "resource repository not set",

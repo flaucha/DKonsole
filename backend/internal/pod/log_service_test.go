@@ -24,12 +24,12 @@ func (m *mockLogRepository) GetLogStream(ctx context.Context, namespace, podName
 
 func TestLogService_StreamLogs(t *testing.T) {
 	tests := []struct {
-		name           string
-		request        StreamLogsRequest
-		getLogStreamFunc func(ctx context.Context, namespace, podName string, opts *corev1.PodLogOptions) (io.ReadCloser, error)
-		wantErr        bool
-		errMsg         string
-		expectedFollow bool
+		name              string
+		request           StreamLogsRequest
+		getLogStreamFunc  func(ctx context.Context, namespace, podName string, opts *corev1.PodLogOptions) (io.ReadCloser, error)
+		wantErr           bool
+		errMsg            string
+		expectedFollow    bool
 		expectedContainer string
 	}{
 		{
@@ -52,7 +52,7 @@ func TestLogService_StreamLogs(t *testing.T) {
 				}
 				return io.NopCloser(strings.NewReader("test log content")), nil
 			},
-			wantErr: false,
+			wantErr:        false,
 			expectedFollow: false,
 		},
 		{
@@ -69,7 +69,7 @@ func TestLogService_StreamLogs(t *testing.T) {
 				}
 				return io.NopCloser(strings.NewReader("streaming logs...")), nil
 			},
-			wantErr: false,
+			wantErr:        false,
 			expectedFollow: true,
 		},
 		{
@@ -86,7 +86,7 @@ func TestLogService_StreamLogs(t *testing.T) {
 				}
 				return io.NopCloser(strings.NewReader("sidecar logs")), nil
 			},
-			wantErr: false,
+			wantErr:           false,
 			expectedContainer: "sidecar",
 		},
 		{
@@ -120,8 +120,8 @@ func TestLogService_StreamLogs(t *testing.T) {
 				}
 				return io.NopCloser(strings.NewReader("app logs streaming...")), nil
 			},
-			wantErr: false,
-			expectedFollow: true,
+			wantErr:           false,
+			expectedFollow:    true,
 			expectedContainer: "app",
 		},
 	}

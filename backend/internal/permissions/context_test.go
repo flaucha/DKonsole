@@ -7,13 +7,14 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/auth"
 	"github.com/flaucha/DKonsole/backend/internal/models"
 )
+
 func TestGetUserFromContext(t *testing.T) {
 	tests := []struct {
-		name      string
-		ctx       context.Context
-		wantErr   bool
-		wantUser  *models.Claims
-		errMsg    string
+		name     string
+		ctx      context.Context
+		wantErr  bool
+		wantUser *models.Claims
+		errMsg   string
 	}{
 		{
 			name: "valid user from AuthClaims",

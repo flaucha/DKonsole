@@ -22,11 +22,11 @@ func (m *mockLogoValidator) ValidateFile(filename string, size int64, content io
 
 // mockLogoStorage is a mock implementation of LogoStorage
 type mockLogoStorage struct {
-	ensureDataDirFunc    func(ctx context.Context) error
-	saveFunc             func(ctx context.Context, logoType string, ext string, content io.Reader) error
-	getFunc              func(ctx context.Context, logoType string, ext string) (string, error)
-	getLogoContentFunc   func(ctx context.Context, logoType string, ext string) ([]byte, error)
-	removeAllFunc        func(ctx context.Context, logoType string) error
+	ensureDataDirFunc  func(ctx context.Context) error
+	saveFunc           func(ctx context.Context, logoType string, ext string, content io.Reader) error
+	getFunc            func(ctx context.Context, logoType string, ext string) (string, error)
+	getLogoContentFunc func(ctx context.Context, logoType string, ext string) ([]byte, error)
+	removeAllFunc      func(ctx context.Context, logoType string) error
 }
 
 func (m *mockLogoStorage) EnsureDataDir(ctx context.Context) error {
@@ -68,14 +68,14 @@ func TestLogoService_UploadLogo(t *testing.T) {
 	validPNGHeader := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
 
 	tests := []struct {
-		name               string
-		request            UploadLogoRequest
-		ensureDataDirFunc  func(ctx context.Context) error
-		validateFileFunc   func(filename string, size int64, content io.Reader) (string, error)
-		removeAllFunc      func(ctx context.Context, logoType string) error
-		saveFunc           func(ctx context.Context, logoType string, ext string, content io.Reader) error
-		wantErr            bool
-		errMsg             string
+		name              string
+		request           UploadLogoRequest
+		ensureDataDirFunc func(ctx context.Context) error
+		validateFileFunc  func(filename string, size int64, content io.Reader) (string, error)
+		removeAllFunc     func(ctx context.Context, logoType string) error
+		saveFunc          func(ctx context.Context, logoType string, ext string, content io.Reader) error
+		wantErr           bool
+		errMsg            string
 	}{
 		{
 			name: "successful upload PNG normal",
@@ -263,11 +263,11 @@ func TestLogoService_UploadLogo(t *testing.T) {
 
 func TestLogoService_GetLogoPath(t *testing.T) {
 	tests := []struct {
-		name        string
-		logoType    string
-		getFunc     func(ctx context.Context, logoType string, ext string) (string, error)
-		wantErr     bool
-		wantPath    string
+		name     string
+		logoType string
+		getFunc  func(ctx context.Context, logoType string, ext string) (string, error)
+		wantErr  bool
+		wantPath string
 	}{
 		{
 			name:     "get existing normal logo PNG",

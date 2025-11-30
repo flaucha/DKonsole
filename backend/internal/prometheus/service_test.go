@@ -135,11 +135,11 @@ func TestIsControlPlaneNode(t *testing.T) {
 
 func TestService_GetDeploymentMetrics(t *testing.T) {
 	tests := []struct {
-		name          string
-		request       GetDeploymentMetricsRequest
+		name           string
+		request        GetDeploymentMetricsRequest
 		queryRangeFunc func(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error)
-		wantErr       bool
-		errMsg        string
+		wantErr        bool
+		errMsg         string
 	}{
 		{
 			name: "successful get deployment metrics",
@@ -256,11 +256,11 @@ func TestService_GetDeploymentMetrics(t *testing.T) {
 
 func TestService_GetPodMetrics(t *testing.T) {
 	tests := []struct {
-		name          string
-		request       GetPodMetricsRequest
+		name           string
+		request        GetPodMetricsRequest
 		queryRangeFunc func(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error)
-		wantErr       bool
-		errMsg        string
+		wantErr        bool
+		errMsg         string
 	}{
 		{
 			name: "successful get pod metrics",
@@ -345,14 +345,14 @@ func TestService_CalculateClusterStats(t *testing.T) {
 	service := NewService(nil)
 
 	tests := []struct {
-		name                string
-		nodes               []NodeMetric
-		controlPlaneCount   int
-		controlPlaneNodes   map[string]bool
-		wantTotalNodes      int
+		name                  string
+		nodes                 []NodeMetric
+		controlPlaneCount     int
+		controlPlaneNodes     map[string]bool
+		wantTotalNodes        int
 		wantControlPlaneNodes int
-		wantAvgCPU          float64
-		wantAvgMemory       float64
+		wantAvgCPU            float64
+		wantAvgMemory         float64
 	}{
 		{
 			name: "single worker node",
@@ -366,12 +366,12 @@ func TestService_CalculateClusterStats(t *testing.T) {
 					NetworkTx: 500.0,
 				},
 			},
-			controlPlaneCount: 0,
-			controlPlaneNodes: map[string]bool{},
-			wantTotalNodes: 1,
+			controlPlaneCount:     0,
+			controlPlaneNodes:     map[string]bool{},
+			wantTotalNodes:        1,
 			wantControlPlaneNodes: 0,
-			wantAvgCPU: 50.0,
-			wantAvgMemory: 60.0,
+			wantAvgCPU:            50.0,
+			wantAvgMemory:         60.0,
 		},
 		{
 			name: "multiple worker nodes",
@@ -393,12 +393,12 @@ func TestService_CalculateClusterStats(t *testing.T) {
 					NetworkTx: 1000.0,
 				},
 			},
-			controlPlaneCount: 0,
-			controlPlaneNodes: map[string]bool{},
-			wantTotalNodes: 2,
+			controlPlaneCount:     0,
+			controlPlaneNodes:     map[string]bool{},
+			wantTotalNodes:        2,
 			wantControlPlaneNodes: 0,
-			wantAvgCPU: 40.0, // (50 + 30) / 2
-			wantAvgMemory: 50.0, // (60 + 40) / 2
+			wantAvgCPU:            40.0, // (50 + 30) / 2
+			wantAvgMemory:         50.0, // (60 + 40) / 2
 		},
 		{
 			name: "worker nodes with control plane excluded from stats",
@@ -420,22 +420,22 @@ func TestService_CalculateClusterStats(t *testing.T) {
 					NetworkTx: 3000.0,
 				},
 			},
-			controlPlaneCount: 1,
-			controlPlaneNodes: map[string]bool{"control-plane-1": true},
-			wantTotalNodes: 1, // Only worker nodes count
+			controlPlaneCount:     1,
+			controlPlaneNodes:     map[string]bool{"control-plane-1": true},
+			wantTotalNodes:        1, // Only worker nodes count
 			wantControlPlaneNodes: 1,
-			wantAvgCPU: 50.0, // Only worker node CPU
-			wantAvgMemory: 60.0, // Only worker node memory
+			wantAvgCPU:            50.0, // Only worker node CPU
+			wantAvgMemory:         60.0, // Only worker node memory
 		},
 		{
-			name: "empty nodes list",
-			nodes: []NodeMetric{},
-			controlPlaneCount: 0,
-			controlPlaneNodes: map[string]bool{},
-			wantTotalNodes: 0,
+			name:                  "empty nodes list",
+			nodes:                 []NodeMetric{},
+			controlPlaneCount:     0,
+			controlPlaneNodes:     map[string]bool{},
+			wantTotalNodes:        0,
 			wantControlPlaneNodes: 0,
-			wantAvgCPU: 0.0,
-			wantAvgMemory: 0.0,
+			wantAvgCPU:            0.0,
+			wantAvgMemory:         0.0,
 		},
 	}
 

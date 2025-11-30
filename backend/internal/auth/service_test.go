@@ -262,14 +262,14 @@ func TestAuthService_LoginWithLDAP(t *testing.T) {
 	mockRepo := &mockUserRepository{}
 
 	tests := []struct {
-		name              string
-		ldapAuth          *mockLDAPAuthenticator
-		req               LoginRequest
-		wantErr           bool
-		errMsg            string
-		checkToken        bool
-		expectedRole      string
-		expectedPerms     map[string]string
+		name          string
+		ldapAuth      *mockLDAPAuthenticator
+		req           LoginRequest
+		wantErr       bool
+		errMsg        string
+		checkToken    bool
+		expectedRole  string
+		expectedPerms map[string]string
 	}{
 		{
 			name: "successful LDAP login with no permissions (empty map)",
@@ -285,9 +285,9 @@ func TestAuthService_LoginWithLDAP(t *testing.T) {
 				Password: "ldappass",
 				IDP:      "ldap",
 			},
-			wantErr:      false,
-			checkToken:   true,
-			expectedRole: "user",
+			wantErr:       false,
+			checkToken:    true,
+			expectedRole:  "user",
 			expectedPerms: map[string]string{}, // User with empty permissions
 		},
 		{
@@ -304,9 +304,9 @@ func TestAuthService_LoginWithLDAP(t *testing.T) {
 				Password: "ldappass",
 				IDP:      "ldap",
 			},
-			wantErr:      false,
-			checkToken:   true,
-			expectedRole: "admin",
+			wantErr:       false,
+			checkToken:    true,
+			expectedRole:  "admin",
 			expectedPerms: nil, // Admin has nil permissions
 		},
 		{
@@ -387,9 +387,9 @@ func TestAuthService_LoginWithLDAP(t *testing.T) {
 				Password: "ldappass",
 				IDP:      "ldap",
 			},
-			wantErr:      false,
-			checkToken:   true,
-			expectedRole: "user",
+			wantErr:       false,
+			checkToken:    true,
+			expectedRole:  "user",
 			expectedPerms: map[string]string{}, // Empty map when error
 		},
 	}

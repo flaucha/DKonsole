@@ -33,14 +33,14 @@ func (m *mockCronJobRepository) CreateJob(ctx context.Context, namespace string,
 
 func TestCronJobService_TriggerCronJob(t *testing.T) {
 	tests := []struct {
-		name          string
-		namespace     string
-		cronJobName   string
+		name           string
+		namespace      string
+		cronJobName    string
 		getCronJobFunc func(ctx context.Context, namespace, name string) (*batchv1.CronJob, error)
 		createJobFunc  func(ctx context.Context, namespace string, job *batchv1.Job) (*batchv1.Job, error)
-		wantErr       bool
-		wantJobName   string
-		errMsg        string
+		wantErr        bool
+		wantJobName    string
+		errMsg         string
 	}{
 		{
 			name:        "successful trigger",

@@ -38,43 +38,43 @@ func TestFileSystemLogoStorage_Save(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		logoType    string
-		ext         string
-		content     string
-		wantErr     bool
+		name         string
+		logoType     string
+		ext          string
+		content      string
+		wantErr      bool
 		expectedFile string
 	}{
 		{
-			name:        "save normal logo PNG",
-			logoType:    "normal",
-			ext:         ".png",
-			content:     "fake png content",
-			wantErr:     false,
+			name:         "save normal logo PNG",
+			logoType:     "normal",
+			ext:          ".png",
+			content:      "fake png content",
+			wantErr:      false,
 			expectedFile: "logo.png",
 		},
 		{
-			name:        "save light logo PNG",
-			logoType:    "light",
-			ext:         ".png",
-			content:     "fake png content",
-			wantErr:     false,
+			name:         "save light logo PNG",
+			logoType:     "light",
+			ext:          ".png",
+			content:      "fake png content",
+			wantErr:      false,
 			expectedFile: "logo-light.png",
 		},
 		{
-			name:        "save normal logo SVG",
-			logoType:    "normal",
-			ext:         ".svg",
-			content:     "<svg></svg>",
-			wantErr:     false,
+			name:         "save normal logo SVG",
+			logoType:     "normal",
+			ext:          ".svg",
+			content:      "<svg></svg>",
+			wantErr:      false,
 			expectedFile: "logo.svg",
 		},
 		{
-			name:        "save light logo SVG",
-			logoType:    "light",
-			ext:         ".svg",
-			content:     "<svg></svg>",
-			wantErr:     false,
+			name:         "save light logo SVG",
+			logoType:     "light",
+			ext:          ".svg",
+			content:      "<svg></svg>",
+			wantErr:      false,
 			expectedFile: "logo-light.svg",
 		},
 	}
@@ -124,13 +124,13 @@ func TestFileSystemLogoStorage_Get(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		setupFile   bool
-		logoType    string
-		ext         string
-		filename    string
-		wantErr     bool
-		errMsg      string
+		name      string
+		setupFile bool
+		logoType  string
+		ext       string
+		filename  string
+		wantErr   bool
+		errMsg    string
 	}{
 		{
 			name:      "get existing normal logo PNG",
@@ -172,7 +172,7 @@ func TestFileSystemLogoStorage_Get(t *testing.T) {
 			// Setup: create file if needed
 			if tt.setupFile {
 				filePath := filepath.Join(testDir, tt.filename)
-				if err := os.WriteFile(filePath, []byte("test content"), 0644); err != nil {
+				if err := os.WriteFile(filePath, []byte("test content"), 0600); err != nil {
 					t.Fatalf("Failed to create test file: %v", err)
 				}
 			}
@@ -215,34 +215,34 @@ func TestFileSystemLogoStorage_RemoveAll(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
+		name       string
 		setupFiles []string
-		logoType  string
-		wantErr   bool
+		logoType   string
+		wantErr    bool
 	}{
 		{
-			name:      "remove all normal logos",
+			name:       "remove all normal logos",
 			setupFiles: []string{"logo.png", "logo.svg"},
-			logoType:  "normal",
-			wantErr:   false,
+			logoType:   "normal",
+			wantErr:    false,
 		},
 		{
-			name:      "remove all light logos",
+			name:       "remove all light logos",
 			setupFiles: []string{"logo-light.png", "logo-light.svg"},
-			logoType:  "light",
-			wantErr:   false,
+			logoType:   "light",
+			wantErr:    false,
 		},
 		{
-			name:      "remove when no files exist (should not error)",
+			name:       "remove when no files exist (should not error)",
 			setupFiles: []string{},
-			logoType:  "normal",
-			wantErr:   false,
+			logoType:   "normal",
+			wantErr:    false,
 		},
 		{
-			name:      "remove only removes files of correct type",
+			name:       "remove only removes files of correct type",
 			setupFiles: []string{"logo.png", "logo-light.png"},
-			logoType:  "normal",
-			wantErr:   false,
+			logoType:   "normal",
+			wantErr:    false,
 		},
 	}
 
@@ -251,7 +251,7 @@ func TestFileSystemLogoStorage_RemoveAll(t *testing.T) {
 			// Setup: create files
 			for _, filename := range tt.setupFiles {
 				filePath := filepath.Join(tmpDir, filename)
-				if err := os.WriteFile(filePath, []byte("test content"), 0644); err != nil {
+				if err := os.WriteFile(filePath, []byte("test content"), 0600); err != nil {
 					t.Fatalf("Failed to create test file: %v", err)
 				}
 			}

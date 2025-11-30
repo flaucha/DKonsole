@@ -14,9 +14,9 @@ import (
 
 // mockDeploymentRepository is a mock implementation of DeploymentRepository for testing
 type mockDeploymentRepository struct {
-	getScaleFunc        func(ctx context.Context, namespace, name string) (*autoscalingv1.Scale, error)
-	updateScaleFunc     func(ctx context.Context, namespace, name string, scale *autoscalingv1.Scale) (*autoscalingv1.Scale, error)
-	getDeploymentFunc   func(ctx context.Context, namespace, name string) (*appsv1.Deployment, error)
+	getScaleFunc         func(ctx context.Context, namespace, name string) (*autoscalingv1.Scale, error)
+	updateScaleFunc      func(ctx context.Context, namespace, name string, scale *autoscalingv1.Scale) (*autoscalingv1.Scale, error)
+	getDeploymentFunc    func(ctx context.Context, namespace, name string) (*appsv1.Deployment, error)
 	updateDeploymentFunc func(ctx context.Context, namespace string, deployment *appsv1.Deployment) (*appsv1.Deployment, error)
 }
 
@@ -62,16 +62,16 @@ func (m *mockDeploymentRepository) UpdateDeployment(ctx context.Context, namespa
 
 func TestDeploymentService_ScaleDeployment(t *testing.T) {
 	tests := []struct {
-		name              string
-		namespace         string
-		deploymentName    string
-		delta             int
-		currentReplicas   int32
-		getScaleErr       error
-		updateScaleErr    error
-		wantReplicas      int32
-		wantErr           bool
-		errMsg            string
+		name            string
+		namespace       string
+		deploymentName  string
+		delta           int
+		currentReplicas int32
+		getScaleErr     error
+		updateScaleErr  error
+		wantReplicas    int32
+		wantErr         bool
+		errMsg          string
 	}{
 		{
 			name:            "scale up successfully",
@@ -184,14 +184,14 @@ func TestDeploymentService_ScaleDeployment(t *testing.T) {
 
 func TestDeploymentService_RolloutDeployment(t *testing.T) {
 	tests := []struct {
-		name               string
-		namespace          string
-		deploymentName     string
-		getDeploymentErr   error
+		name                string
+		namespace           string
+		deploymentName      string
+		getDeploymentErr    error
 		updateDeploymentErr error
-		wantErr            bool
-		errMsg             string
-		checkAnnotation    bool
+		wantErr             bool
+		errMsg              string
+		checkAnnotation     bool
 	}{
 		{
 			name:            "rollout successful",
@@ -209,12 +209,12 @@ func TestDeploymentService_RolloutDeployment(t *testing.T) {
 			errMsg:           "failed to get deployment",
 		},
 		{
-			name:               "update deployment error",
-			namespace:          "default",
-			deploymentName:     "my-deployment",
+			name:                "update deployment error",
+			namespace:           "default",
+			deploymentName:      "my-deployment",
 			updateDeploymentErr: errors.New("update failed"),
-			wantErr:            true,
-			errMsg:             "failed to update deployment",
+			wantErr:             true,
+			errMsg:              "failed to update deployment",
 		},
 		{
 			name:            "rollout with existing annotations",

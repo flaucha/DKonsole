@@ -41,10 +41,10 @@ func TestLoginHandler(t *testing.T) {
 			checkResponse:  true,
 		},
 		{
-			name:        "invalid JSON body",
-			setupMode:   false,
-			authService: NewAuthService(&mockUserRepository{adminUser: "admin", adminPassword: testPasswordHash}, jwtSecret),
-			requestBody: "invalid-json",
+			name:           "invalid JSON body",
+			setupMode:      false,
+			authService:    NewAuthService(&mockUserRepository{adminUser: "admin", adminPassword: testPasswordHash}, jwtSecret),
+			requestBody:    "invalid-json",
 			wantStatusCode: http.StatusBadRequest,
 			wantErrMsg:     "Invalid request body",
 		},
@@ -338,9 +338,9 @@ func TestChangePasswordHandler(t *testing.T) {
 			wantErrMsg:     "Setup required",
 		},
 		{
-			name:           "K8s repo not available",
-			setupMode:      false,
-			k8sRepo:        nil,
+			name:      "K8s repo not available",
+			setupMode: false,
+			k8sRepo:   nil,
 			ctx: context.WithValue(
 				context.Background(),
 				userContextKey,
