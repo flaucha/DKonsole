@@ -298,6 +298,7 @@ body {
 [data-theme="light"] .monaco-editor .view-lines,
 [data-theme="light"] .monaco-editor .view-line,
 [data-theme="light"] .monaco-editor .view-line span,
+[data-theme="light"] .monaco-editor .view-line span *,
 [data-theme="light"] .monaco-editor .mtk1,
 [data-theme="light"] .monaco-editor .mtk2,
 [data-theme="light"] .monaco-editor .mtk3,
@@ -322,7 +323,7 @@ body {
 [data-theme="light"] .monaco-editor .mtk22,
 [data-theme="light"] .monaco-editor .mtk23,
 [data-theme="light"] .monaco-editor .mtk24 {
-  color: revert !important;
+  color: initial !important;
 }
 
 [data-theme="light"] .bg-black,
@@ -356,6 +357,7 @@ body {
 [data-theme="cream"] .monaco-editor .view-lines,
 [data-theme="cream"] .monaco-editor .view-line,
 [data-theme="cream"] .monaco-editor .view-line span,
+[data-theme="cream"] .monaco-editor .view-line span *,
 [data-theme="cream"] .monaco-editor .mtk1,
 [data-theme="cream"] .monaco-editor .mtk2,
 [data-theme="cream"] .monaco-editor .mtk3,
@@ -380,7 +382,7 @@ body {
 [data-theme="cream"] .monaco-editor .mtk22,
 [data-theme="cream"] .monaco-editor .mtk23,
 [data-theme="cream"] .monaco-editor .mtk24 {
-  color: revert !important;
+  color: initial !important;
 }
 
 [data-theme="cream"] .bg-black,
