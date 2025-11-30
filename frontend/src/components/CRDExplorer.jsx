@@ -1,18 +1,26 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Search, Package, RefreshCw, Globe, MapPin, FileText, X } from 'lucide-react';
-import Editor from '@monaco-editor/react';
+import Editor, { useMonaco } from '@monaco-editor/react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { getStatusBadgeClass } from '../utils/statusBadge';
 import { formatDate } from '../utils/dateUtils';
-import { formatDate } from '../utils/dateUtils';
+import { defineAtomDarkTheme } from '../utils/monacoTheme';
 
 const CRDExplorer = ({ namespace }) => {
     const { currentCluster } = useSettings();
     const { authFetch } = useAuth();
+    const monaco = useMonaco();
     const [crds, setCrds] = useState([]);
     const [filter, setFilter] = useState('');
     const [selected, setSelected] = useState(null);
+
+    // Define custom theme when Monaco is loaded
+    useEffect(() => {
+        if (monaco) {
+            defineAtomDarkTheme(monaco);
+        }
+    }, [monaco]);
     const [resources, setResources] = useState([]);
     const [loadingCRDs, setLoadingCRDs] = useState(false);
     const [loadingResources, setLoadingResources] = useState(false);
@@ -250,7 +258,7 @@ const CRDExplorer = ({ namespace }) => {
                             <Editor
                                 height="100%"
                                 defaultLanguage="yaml"
-                                theme="atom-dark"
+                                theme="atom-dark-custom"
                                 value={yamlView.content}
                                 options={{
                                     readOnly: true,

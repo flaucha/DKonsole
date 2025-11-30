@@ -460,27 +460,7 @@ const Layout = ({ children, headerContent }) => {
                     </nav>
 
                     <div className="mt-auto border-t border-gray-700 bg-gray-800/30">
-                        <NavLink
-                            to="/dashboard/settings"
-                            className={({ isActive }) =>
-                                `w-full flex items-center px-4 py-2 transition-all duration-200 border border-transparent ${
-                                    isActive
-                                        ? 'bg-gray-800 text-gray-100 border-l-4 border-l-blue-500 shadow-md'
-                                        : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800 hover:border-gray-700'
-                                }`
-                            }
-                        >
-                            <Settings size={20} className="mr-3" />
-                            <span className="font-medium">Settings</span>
-                        </NavLink>
-                        <button
-                            onClick={logout}
-                            className="w-full flex items-center px-4 py-2 text-gray-400 hover:text-gray-100 hover:bg-gray-800 transition-all duration-200 border border-transparent hover:border-gray-700"
-                        >
-                            <LogOut size={20} className="mr-3" />
-                            <span className="font-medium">Logout</span>
-                        </button>
-                        <div className="px-4 py-2 border-t border-gray-700 whitespace-nowrap overflow-hidden">
+                        <div className="px-4 py-2 whitespace-nowrap overflow-hidden">
                             <div className="text-xs text-gray-500">User: <span className="text-gray-300 font-medium">{user?.username || 'Unknown'}</span></div>
                         </div>
                     </div>

@@ -58,12 +58,12 @@ const NamespaceSelector = ({ selected, onSelect }) => {
     );
 
     return (
-        <div className="flex items-center space-x-3" ref={dropdownRef}>
-            <span className="text-gray-400 text-sm font-medium hidden md:block">Namespace:</span>
+        <div className="flex items-center space-x-2" ref={dropdownRef}>
+            <span className="text-gray-400 text-xs font-medium hidden md:block">Namespace:</span>
             <div className="relative">
                 <button
                     onClick={() => setIsOpen(!isOpen)}
-                    className="flex items-center justify-between space-x-2 bg-gray-800 border border-gray-700 text-white px-3 py-1.5 rounded-md hover:bg-gray-700 transition-colors min-w-[200px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="flex items-center justify-between space-x-2 bg-gray-800 border border-gray-700 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 transition-colors min-w-[180px] text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 >
                     <div className="flex items-center space-x-2 overflow-hidden">
                         <Database size={14} className="text-gray-400 flex-shrink-0" />

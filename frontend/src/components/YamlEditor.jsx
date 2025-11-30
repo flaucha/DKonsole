@@ -1,18 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { X, Save, AlertTriangle, Loader2, FileText, Copy } from 'lucide-react';
-import Editor from '@monaco-editor/react';
+import Editor, { useMonaco } from '@monaco-editor/react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { defineAtomDarkTheme } from '../utils/monacoTheme';
 
 const YamlEditor = ({ resource, onClose, onSaved }) => {
     const { name, namespace, kind, group, version, resource: resourceName, namespaced } = resource || {};
     const { currentCluster } = useSettings();
     const { authFetch } = useAuth();
+    const monaco = useMonaco();
     const [content, setContent] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [copying, setCopying] = useState(false);
+
+    // Define custom theme when Monaco is loaded
+    useEffect(() => {
+        if (monaco) {
+            defineAtomDarkTheme(monaco);
+        }
+    }, [monaco]);
 
     const buildUrl = () => {
         const params = new URLSearchParams({ kind, name });
@@ -148,7 +157,7 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
                         <Editor
                             height="100%"
                             defaultLanguage="yaml"
-                            theme="atom-dark"
+                            theme="atom-dark-custom"
                             value={content}
                             onChange={(value) => setContent(value)}
                             options={{

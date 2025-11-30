@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/146</span>
+                <span class='fraction'>0/153</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/146</span>
+                <span class='fraction'>0/153</span>
             </div>
         
             
@@ -232,7 +232,17 @@
 <a name='L167'></a><a href='#L167'>167</a>
 <a name='L168'></a><a href='#L168'>168</a>
 <a name='L169'></a><a href='#L169'>169</a>
-<a name='L170'></a><a href='#L170'>170</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -242,6 +252,14 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -403,19 +421,28 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import React, { useEffect, useState } from 'react';</span></span></span>
 <span class="cstat-no" title="statement not covered" >import { X, Save, AlertTriangle, Loader2, FileText, Copy } from 'lucide-react';</span>
-<span class="cstat-no" title="statement not covered" >import Editor from '@monaco-editor/react';</span>
+<span class="cstat-no" title="statement not covered" >import Editor, { useMonaco } from '@monaco-editor/react';</span>
 <span class="cstat-no" title="statement not covered" >import { useSettings } from '../context/SettingsContext';</span>
 <span class="cstat-no" title="statement not covered" >import { useAuth } from '../context/AuthContext';</span>
+<span class="cstat-no" title="statement not covered" >import { defineAtomDarkTheme } from '../utils/monacoTheme';</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const YamlEditor = ({ resource, onClose, onSaved }) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const { name, namespace, kind, group, version, resource: resourceName, namespaced } = resource || {};</span>
 <span class="cstat-no" title="statement not covered" >    const { currentCluster } = useSettings();</span>
 <span class="cstat-no" title="statement not covered" >    const { authFetch } = useAuth();</span>
+<span class="cstat-no" title="statement not covered" >    const monaco = useMonaco();</span>
 <span class="cstat-no" title="statement not covered" >    const [content, setContent] = useState('');</span>
 <span class="cstat-no" title="statement not covered" >    const [loading, setLoading] = useState(true);</span>
 <span class="cstat-no" title="statement not covered" >    const [saving, setSaving] = useState(false);</span>
 <span class="cstat-no" title="statement not covered" >    const [error, setError] = useState('');</span>
 <span class="cstat-no" title="statement not covered" >    const [copying, setCopying] = useState(false);</span>
+&nbsp;
+    // Define custom theme when Monaco is loaded
+<span class="cstat-no" title="statement not covered" >    useEffect(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        if (monaco) {</span>
+<span class="cstat-no" title="statement not covered" >            defineAtomDarkTheme(monaco);</span>
+<span class="cstat-no" title="statement not covered" >        }</span>
+<span class="cstat-no" title="statement not covered" >    }, [monaco]);</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    const buildUrl = () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        const params = new URLSearchParams({ kind, name });</span>
@@ -551,7 +578,7 @@
 <span class="cstat-no" title="statement not covered" >                        &lt;Editor</span>
 <span class="cstat-no" title="statement not covered" >                            height="100%"</span>
 <span class="cstat-no" title="statement not covered" >                            defaultLanguage="yaml"</span>
-<span class="cstat-no" title="statement not covered" >                            theme="atom-dark"</span>
+<span class="cstat-no" title="statement not covered" >                            theme="atom-dark-custom"</span>
 <span class="cstat-no" title="statement not covered" >                            value={content}</span>
 <span class="cstat-no" title="statement not covered" >                            onChange={(value) =&gt; setContent(value)}</span>
 <span class="cstat-no" title="statement not covered" >                            options={{</span>
@@ -577,7 +604,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-30T12:19:52.406Z
+                at 2025-11-30T12:34:09.925Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

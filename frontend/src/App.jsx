@@ -5,6 +5,7 @@ import NamespaceSelector from './components/NamespaceSelector';
 import Loading from './components/Loading';
 import Settings from './components/Settings';
 import About from './components/About';
+import UserMenu from './components/UserMenu';
 import { SettingsProvider } from './context/SettingsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
@@ -65,7 +66,7 @@ const Dashboard = () => {
             <Layout
                 headerContent={
                     !isSettings && (
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
                             <NamespaceSelector
                                 selected={selectedNamespace}
                                 onSelect={setSelectedNamespace}
@@ -74,11 +75,12 @@ const Dashboard = () => {
                             {(isAdmin(user) || canEdit(user, selectedNamespace)) && (
                                 <button
                                     onClick={() => setShowImporter(true)}
-                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors border border-blue-500"
+                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-md transition-colors border border-blue-500"
                                 >
                                     Import YAML
                                 </button>
                             )}
+                            <UserMenu />
                         </div>
                     )
                 }
