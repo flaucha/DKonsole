@@ -3,6 +3,7 @@ import { Server, Layers, Box, Network, Globe, HardDrive, Activity, Database, Cpu
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useClusterOverview } from '../hooks/useClusterOverview';
+import { isAdmin } from '../utils/permissions';
 
 const StatCard = ({ icon: Icon, label, value, color, trend }) => (
     <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 flex items-center shadow-lg">
@@ -61,7 +62,7 @@ const ClusterOverview = () => {
 
     // Check if user has permissions (admin or LDAP permissions)
     // LDAP admins and core admins have full access
-    const isAdminUser = user && user.role === 'admin';
+    const isAdminUser = isAdmin(user);
     // Regular users need explicit permissions
     const hasExplicitPermissions = user && user.permissions && Object.keys(user.permissions).length > 0;
     const hasPermissions = isAdminUser || hasExplicitPermissions;
