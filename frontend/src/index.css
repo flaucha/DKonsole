@@ -288,14 +288,15 @@ body {
   color: rgb(var(--color-gray-100)) !important;
 }
 
-[data-theme="light"] .text-white *:not(.monaco-editor) {
+[data-theme="light"] .text-white * {
   color: rgb(var(--color-gray-100)) !important;
 }
 
 /* Exclude Monaco Editor completely from color overrides - let it use its native vs-dark theme */
-[data-theme="light"] .monaco-editor,
-[data-theme="light"] .monaco-editor * {
-  color: revert-layer !important;
+/* Using higher specificity to override the .text-white * rule */
+[data-theme="light"] .monaco-editor *,
+[data-theme="light"] .text-white .monaco-editor * {
+  color: inherit !important;
 }
 
 [data-theme="light"] .bg-black,
@@ -319,14 +320,15 @@ body {
   color: rgb(var(--color-gray-100)) !important;
 }
 
-[data-theme="cream"] .text-white *:not(.monaco-editor) {
+[data-theme="cream"] .text-white * {
   color: rgb(var(--color-gray-100)) !important;
 }
 
 /* Exclude Monaco Editor completely from color overrides - let it use its native vs-dark theme */
-[data-theme="cream"] .monaco-editor,
-[data-theme="cream"] .monaco-editor * {
-  color: revert-layer !important;
+/* Using higher specificity to override the .text-white * rule */
+[data-theme="cream"] .monaco-editor *,
+[data-theme="cream"] .text-white .monaco-editor * {
+  color: inherit !important;
 }
 
 [data-theme="cream"] .bg-black,
