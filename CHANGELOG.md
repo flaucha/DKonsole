@@ -5,6 +5,58 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-11-29
+
+### ✨ Added
+
+- **Deployment Rollout**: Added rollout button for deployments with detailed confirmation dialog
+  - Shows deployment strategy information (RollingUpdate/Recreate)
+  - Displays replica count, ready pods, and strategy parameters
+  - Provides detailed behavior explanation based on strategy and replica count
+  - Confirmation required before executing rollout
+- **Search Field Clear Button**: Added "X" button to all search/filter fields
+  - Appears when text is entered
+  - One-click clear functionality
+  - Available in WorkloadList, NamespaceManager, ApiExplorer, HelmChartManager, CRDExplorer, and NamespaceSelector
+- **Light Mode Logo Support**: Separate logo upload for light themes
+  - Upload different logos for dark and light themes
+  - Automatic fallback to `logo-light.svg` for light themes when no custom logo is set
+  - Theme-aware logo loading throughout the application
+
+### 🔧 Changed
+
+- **LDAP Configuration Storage**: Consolidated all LDAP configuration into a single Secret
+  - All LDAP data (config, groups, credentials) now stored in `ldap-config` Secret
+  - Removed separate ConfigMap for LDAP configuration
+  - Simplified configuration management
+- **Settings Scroll Behavior**: Improved scroll behavior in Settings section
+  - Scroll now only appears in content area below tabs
+  - Header and tabs remain fixed and always visible
+  - Better UX for long settings pages
+- **Overview Node Display**: Enhanced node information in Overview
+  - Separate display for "Worker Nodes" and "Control Planes"
+  - Correct identification of control plane nodes using labels and taints
+  - Node metrics table shows role (Control Plane/Worker) with color coding
+  - Reorganized cards into 3 rows with 4 columns each
+- **Permission System Refinement**: Improved permission system
+  - Removed "admin" permission level from LDAP groups (only view/edit remain)
+  - Admin role is now managed separately from LDAP groups
+  - Clearer permission hierarchy: view < edit < admin
+  - PVs hidden from users with "view" role
+  - "View only" messages for users without edit permissions
+
+### 🐛 Fixed
+
+- **Settings Tab Alignment**: Fixed tab alignment issues in Settings section
+  - Consistent height for all tabs prevents layout shifts
+  - Fixed header height prevents movement when buttons appear/disappear
+- **Node Count Accuracy**: Fixed worker node count
+  - Control plane nodes correctly excluded from worker node count
+  - Accurate separation between control plane and worker nodes
+- **Logo Loading**: Fixed logo loading for light themes
+  - Proper fallback to default `logo-light.svg` when custom logo not available
+  - Correct path handling for light theme logos
+
 ## [1.2.8] - 2025-11-29
 
 ### ✨ Added

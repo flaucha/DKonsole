@@ -3,6 +3,7 @@ import { Upload, X, Loader2, AlertTriangle } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { parseErrorResponse, parseError } from '../utils/errorParser';
 
 const YamlImporter = ({ onClose }) => {
     const { currentCluster } = useSettings();
@@ -27,14 +28,14 @@ const YamlImporter = ({ onClose }) => {
         })
             .then(async (res) => {
                 if (!res.ok) {
-                    const text = await res.text();
+                    const text = await parseErrorResponse(res);
                     throw new Error(text || 'Failed to import');
                 }
                 const data = await res.json();
                 setSuccess(`Imported ${data.count} resource(s): ${data.resources.join(', ')}`);
                 setContent('');
             })
-            .catch((err) => setError(err.message))
+            .catch((err) => setError(parseError(err)))
             .finally(() => setImporting(false));
     };
 

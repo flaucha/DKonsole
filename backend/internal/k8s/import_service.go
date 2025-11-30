@@ -13,6 +13,7 @@ import (
 	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -83,13 +84,31 @@ func (s *ImportService) ImportResources(ctx context.Context, req ImportResourceR
 			return nil, fmt.Errorf("failed to resolve GVR for kind %s: %w", kind, err)
 		}
 
-		// Namespace defaults
+		// Namespace defaults and permission validation
 		if meta.Namespaced {
 			if obj.GetNamespace() == "" {
 				obj.SetNamespace("default")
 			}
+			// Validate edit permission for namespaced resources
+			canEdit, err := permissions.CanPerformAction(ctx, obj.GetNamespace(), "edit")
+			if err != nil {
+				return nil, fmt.Errorf("failed to check permissions for namespace %s: %w", obj.GetNamespace(), err)
+			}
+			if !canEdit {
+				return nil, fmt.Errorf("edit permission required for namespace: %s", obj.GetNamespace())
+			}
 		} else {
 			obj.SetNamespace("")
+			// Cluster-scoped resources require admin access
+			// Check if user is core admin (pass nil for LDAP checker, will only check core admin)
+			var ldapChecker permissions.LDAPAdminChecker = nil
+			isAdmin, err := permissions.IsAdmin(ctx, ldapChecker)
+			if err != nil {
+				return nil, fmt.Errorf("failed to check admin status: %w", err)
+			}
+			if !isAdmin {
+				return nil, fmt.Errorf("admin access required for cluster-scoped resources")
+			}
 		}
 
 		// Cleanup metadata

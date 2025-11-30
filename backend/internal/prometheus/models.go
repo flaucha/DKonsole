@@ -24,6 +24,7 @@ type PodMetricsResponse struct {
 // NodeMetric represents metrics for a single node
 type NodeMetric struct {
 	Name      string  `json:"name"`
+	Role      string  `json:"role"` // "worker" or "control-plane"
 	CPUUsage  float64 `json:"cpuUsage"`
 	MemUsage  float64 `json:"memoryUsage"`
 	DiskUsage float64 `json:"diskUsage"`
@@ -34,12 +35,13 @@ type NodeMetric struct {
 
 // ClusterStats represents aggregated cluster statistics from Prometheus
 type ClusterStats struct {
-	TotalNodes     int     `json:"totalNodes"`
-	AvgCPUUsage    float64 `json:"avgCpuUsage"`
-	AvgMemoryUsage float64 `json:"avgMemoryUsage"`
-	NetworkTraffic float64 `json:"networkTraffic"`
-	CPUTrend       float64 `json:"cpuTrend"`
-	MemoryTrend    float64 `json:"memoryTrend"`
+	TotalNodes       int     `json:"totalNodes"`
+	ControlPlaneNodes int    `json:"controlPlaneNodes"`
+	AvgCPUUsage      float64 `json:"avgCpuUsage"`
+	AvgMemoryUsage   float64 `json:"avgMemoryUsage"`
+	NetworkTraffic   float64 `json:"networkTraffic"`
+	CPUTrend         float64 `json:"cpuTrend"`
+	MemoryTrend      float64 `json:"memoryTrend"`
 }
 
 // ClusterOverviewResponse includes cluster-wide metrics

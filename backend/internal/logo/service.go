@@ -26,6 +26,7 @@ type UploadLogoRequest struct {
 	Filename string
 	Size     int64
 	Content  io.Reader
+	LogoType string // "normal" or "light"
 }
 
 // UploadLogo uploads and saves a logo file
@@ -51,13 +52,19 @@ func (s *LogoService) UploadLogo(ctx context.Context, req UploadLogoRequest) err
 		return fmt.Errorf("validation failed: %w", err)
 	}
 
-	// Remove existing logos to avoid conflicts
-	if err := s.storage.RemoveAll(ctx); err != nil {
+	// Determine logo type (default to "normal" if not specified)
+	logoType := req.LogoType
+	if logoType == "" {
+		logoType = "normal"
+	}
+
+	// Remove existing logos of this type to avoid conflicts
+	if err := s.storage.RemoveAll(ctx, logoType); err != nil {
 		return fmt.Errorf("failed to remove existing logos: %w", err)
 	}
 
 	// Save new logo
-	if err := s.storage.Save(ctx, ext, contentReaderForStorage); err != nil {
+	if err := s.storage.Save(ctx, logoType, ext, contentReaderForStorage); err != nil {
 		return fmt.Errorf("failed to save logo: %w", err)
 	}
 
@@ -65,11 +72,16 @@ func (s *LogoService) UploadLogo(ctx context.Context, req UploadLogoRequest) err
 }
 
 // GetLogoPath returns the path to an existing logo file
-func (s *LogoService) GetLogoPath(ctx context.Context) (string, error) {
+func (s *LogoService) GetLogoPath(ctx context.Context, logoType string) (string, error) {
 	extensions := []string{".png", ".svg"}
 
+	// Default to "normal" if not specified
+	if logoType == "" {
+		logoType = "normal"
+	}
+
 	for _, ext := range extensions {
-		path, err := s.storage.Get(ctx, ext)
+		path, err := s.storage.Get(ctx, logoType, ext)
 		if err == nil {
 			return path, nil
 		}

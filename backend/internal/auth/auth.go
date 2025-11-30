@@ -20,6 +20,12 @@ type contextKey string
 
 const userContextKey contextKey = "user"
 
+// UserContextKey returns the context key for user information
+// This is exported so other packages can access user information from context
+func UserContextKey() contextKey {
+	return userContextKey
+}
+
 // Service provides HTTP handlers for authentication operations.
 // It follows a layered architecture:
 //   - Handler (HTTP): Handles HTTP requests/responses
@@ -33,6 +39,15 @@ type Service struct {
 	mu          sync.RWMutex       // Mutex for thread-safe reload
 	k8sClient   kubernetes.Interface
 	secretName  string
+}
+
+// SetLDAPAuthenticator sets the LDAP authenticator for the auth service
+func (s *Service) SetLDAPAuthenticator(ldapAuth LDAPAuthenticator) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.authService != nil {
+		s.authService.SetLDAPAuthenticator(ldapAuth)
+	}
 }
 
 // NewService creates a new authentication service with default configuration.
@@ -222,6 +237,7 @@ func (s *Service) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	loginReq := LoginRequest{
 		Username: creds.Username,
 		Password: creds.Password,
+		IDP:      creds.IDP, // "core", "ldap", or "" for auto-detect
 	}
 
 	// Call service (business logic layer)
@@ -315,10 +331,25 @@ func (s *Service) MeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Write JSON response (HTTP layer)
-	utils.JSONResponse(w, http.StatusOK, map[string]string{
+	response := map[string]interface{}{
 		"username": claims.Username,
 		"role":     claims.Role,
+	}
+	// Include permissions if available (even if empty map)
+	if claims.Permissions != nil {
+		response["permissions"] = claims.Permissions
+	} else {
+		// Explicitly set empty permissions for non-admin users
+		response["permissions"] = make(map[string]string)
+	}
+
+	utils.LogInfo("MeHandler: returning user info", map[string]interface{}{
+		"username":   claims.Username,
+		"role":       claims.Role,
+		"permissions": response["permissions"],
 	})
+
+	utils.JSONResponse(w, http.StatusOK, response)
 }
 
 // AuthMiddleware is an HTTP middleware that protects routes by requiring valid JWT authentication.
@@ -357,6 +388,13 @@ func (s *Service) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			utils.ErrorResponse(w, http.StatusUnauthorized, err.Error())
 			return
 		}
+
+		// Log claims for debugging
+		utils.LogInfo("AuthMiddleware: extracted claims from JWT", map[string]interface{}{
+			"username":   claims.Username,
+			"role":       claims.Role,
+			"permissions": claims.Permissions,
+		})
 
 		ctx := context.WithValue(r.Context(), userContextKey, claims)
 		next(w, r.WithContext(ctx))

@@ -146,12 +146,14 @@ type HelmRelease struct {
 type Credentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	IDP      string `json:"idp,omitempty"` // "core" or "ldap" - optional, defaults to trying both
 }
 
 // Claims representa los claims del JWT
 type Claims struct {
-	Username         string      `json:"username"`
-	Role             string      `json:"role"`
+	Username    string            `json:"username"`
+	Role        string            `json:"role"`
+	Permissions map[string]string `json:"permissions,omitempty"` // namespace -> permission (view/edit)
 	RegisteredClaims interface{} `json:"-"` // Se manejará con jwt.RegisteredClaims en el paquete auth
 }
 
@@ -207,12 +209,13 @@ type NodeMetric struct {
 
 // PrometheusClusterStats representa estadísticas agregadas del cluster desde Prometheus
 type PrometheusClusterStats struct {
-	TotalNodes     int     `json:"totalNodes"`
-	AvgCPUUsage    float64 `json:"avgCpuUsage"`
-	AvgMemoryUsage float64 `json:"avgMemoryUsage"`
-	NetworkTraffic float64 `json:"networkTraffic"`
-	CPUTrend       float64 `json:"cpuTrend"`
-	MemoryTrend    float64 `json:"memoryTrend"`
+	TotalNodes       int     `json:"totalNodes"`
+	ControlPlaneNodes int    `json:"controlPlaneNodes"`
+	AvgCPUUsage      float64 `json:"avgCpuUsage"`
+	AvgMemoryUsage   float64 `json:"avgMemoryUsage"`
+	NetworkTraffic   float64 `json:"networkTraffic"`
+	CPUTrend         float64 `json:"cpuTrend"`
+	MemoryTrend      float64 `json:"memoryTrend"`
 }
 
 // ResourceMetaMap contiene el mapeo de tipos de recursos a sus metadatos
@@ -274,4 +277,35 @@ func NormalizeKind(kind string) string {
 		return alias
 	}
 	return kind
+}
+
+// LDAPConfig representa la configuración del servidor LDAP
+type LDAPConfig struct {
+	Enabled           bool     `json:"enabled"`
+	URL               string   `json:"url"`
+	BaseDN            string   `json:"baseDN"`
+	UserDN            string   `json:"userDN"`
+	GroupDN           string   `json:"groupDN"`
+	UserFilter        string   `json:"userFilter,omitempty"`
+	RequiredGroup     string   `json:"requiredGroup,omitempty"` // Grupo requerido para acceso (opcional)
+	AdminGroups       []string `json:"adminGroups,omitempty"`    // Grupos LDAP que tienen acceso de admin al cluster
+	InsecureSkipVerify bool    `json:"insecureSkipVerify,omitempty"` // Skip TLS certificate verification (warning: insecure)
+	CACert            string   `json:"caCert,omitempty"`            // CA certificate in PEM format for TLS verification
+}
+
+// LDAPGroupPermission representa los permisos de un grupo LDAP para un namespace
+type LDAPGroupPermission struct {
+	Namespace string `json:"namespace"`
+	Permission string `json:"permission"` // "view", "edit"
+}
+
+// LDAPGroup representa un grupo LDAP con sus permisos
+type LDAPGroup struct {
+	Name        string                `json:"name"`
+	Permissions []LDAPGroupPermission `json:"permissions"`
+}
+
+// LDAPGroupsConfig representa la configuración de grupos LDAP
+type LDAPGroupsConfig struct {
+	Groups []LDAPGroup `json:"groups"`
 }

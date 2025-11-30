@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 // DeploymentService provides business logic for Deployment operations
@@ -40,4 +41,30 @@ func (s *DeploymentService) ScaleDeployment(ctx context.Context, namespace, name
 	}
 
 	return updatedScale.Spec.Replicas, nil
+}
+
+// RolloutDeployment triggers a rollout/restart of a deployment by updating an annotation
+func (s *DeploymentService) RolloutDeployment(ctx context.Context, namespace, name string) error {
+	// Get the deployment
+	deployment, err := s.repo.GetDeployment(ctx, namespace, name)
+	if err != nil {
+		return fmt.Errorf("failed to get deployment: %w", err)
+	}
+
+	// Ensure annotations map exists
+	if deployment.Spec.Template.Annotations == nil {
+		deployment.Spec.Template.Annotations = make(map[string]string)
+	}
+
+	// Update the restart annotation to trigger a rollout
+	// Using kubectl.kubernetes.io/restartAt annotation
+	deployment.Spec.Template.Annotations["kubectl.kubernetes.io/restartAt"] = time.Now().Format(time.RFC3339)
+
+	// Update the deployment
+	_, err = s.repo.UpdateDeployment(ctx, namespace, deployment)
+	if err != nil {
+		return fmt.Errorf("failed to update deployment: %w", err)
+	}
+
+	return nil
 }

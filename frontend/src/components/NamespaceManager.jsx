@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Database, RefreshCw, Tag, Clock, MoreVertical, FileText, ChevronDown, Search } from 'lucide-react';
+import { Database, RefreshCw, Tag, Clock, MoreVertical, FileText, ChevronDown, Search, X } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import YamlEditor from './YamlEditor';
@@ -7,10 +7,11 @@ import { getStatusBadgeClass } from '../utils/statusBadge';
 import { formatDateTime } from '../utils/dateUtils';
 import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 import { useNamespaces } from '../hooks/useNamespaces';
+import { isAdmin } from '../utils/permissions';
 
 const NamespaceManager = () => {
     const { currentCluster } = useSettings();
-    const { authFetch } = useAuth();
+    const { authFetch, user } = useAuth();
     const [expandedId, setExpandedId] = useState(null);
     const [sortField, setSortField] = useState('name');
     const [sortDirection, setSortDirection] = useState('asc');
@@ -123,8 +124,17 @@ const NamespaceManager = () => {
                             onChange={(e) => setFilter(e.target.value)}
                             onFocus={() => setIsSearchFocused(true)}
                             onBlur={() => setIsSearchFocused(false)}
-                            className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded-md pl-10 pr-4 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-300"
+                            className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded-md pl-10 pr-10 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-300"
                         />
+                        {filter && (
+                            <button
+                                onClick={() => setFilter('')}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                                type="button"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
                     </div>
                     <span className="text-sm text-gray-500">
                         {filteredNamespaces.length} {filteredNamespaces.length === 1 ? 'item' : 'items'}
@@ -198,33 +208,41 @@ const NamespaceManager = () => {
                                         {menuOpen === ns.name && (
                                             <div className="absolute right-0 mt-1 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
                                                 <div className="flex flex-col">
-                                                    <button
-                                                        onClick={() => {
-                                                            setEditingYaml({ name: ns.name, kind: 'Namespace', namespaced: false });
-                                                            setMenuOpen(null);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
-                                                    >
-                                                        Edit YAML
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setConfirmAction({ namespace: ns.name, force: false });
-                                                            setMenuOpen(null);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setConfirmAction({ namespace: ns.name, force: true });
-                                                            setMenuOpen(null);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"
-                                                    >
-                                                        Force Delete
-                                                    </button>
+                                                    {isAdmin(user) ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditingYaml({ name: ns.name, kind: 'Namespace', namespaced: false });
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                                                            >
+                                                                Edit YAML
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setConfirmAction({ namespace: ns.name, force: false });
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setConfirmAction({ namespace: ns.name, force: true });
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"
+                                                            >
+                                                                Force Delete
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <div className="px-4 py-2 text-xs text-gray-500">
+                                                            View only
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}

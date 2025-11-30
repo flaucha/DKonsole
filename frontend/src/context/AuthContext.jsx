@@ -52,18 +52,32 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const login = async (username, password) => {
+    const login = async (username, password, idp = '') => {
         try {
             const res = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify({ username, password, idp }),
             });
 
             if (res.ok) {
                 const data = await res.json();
                 // Token is handled by HttpOnly cookie
-                setUser({ username, role: data.role });
+                // After successful login, fetch full user data including permissions
+                try {
+                    const meRes = await fetch('/api/me');
+                    if (meRes.ok) {
+                        const meData = await meRes.json();
+                        setUser(meData);
+                    } else {
+                        // Fallback to basic user data if /api/me fails
+                        setUser({ username, role: data.role });
+                    }
+                } catch (meError) {
+                    logger.error('Failed to fetch user data after login:', meError);
+                    // Fallback to basic user data
+                    setUser({ username, role: data.role });
+                }
                 return true;
             } else {
                 throw new Error('Invalid credentials');

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, Key, RefreshCw, Loader2 } from 'lucide-react';
 import defaultLogo from '../assets/logo-full.svg';
+import logoLight from '../assets/logo-light.svg';
 import { logger } from '../utils/logger';
 
 const Setup = () => {
@@ -39,19 +40,39 @@ const Setup = () => {
 
         checkSetupStatus();
 
+        // Get current theme from localStorage
+        const currentTheme = localStorage.getItem('theme') || 'default';
+        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
+        // Use /logo-light.svg for light themes (served from static directory)
+        const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;
+        setLogoSrc(defaultLogoSrc);
+
         // Try to load custom logo from API (no auth required for logo endpoint)
-        fetch(`/api/logo?t=${Date.now()}`)
+        // Use logo-light for light themes, logo normal for dark themes
+        const logoType = isLightTheme ? 'light' : 'normal';
+        fetch(`/api/logo?type=${logoType}&t=${Date.now()}`)
             .then(res => {
                 if (res.ok && res.status === 200) {
-                    setLogoSrc(`/api/logo?t=${Date.now()}`);
+                    setLogoSrc(`/api/logo?type=${logoType}&t=${Date.now()}`);
+                } else {
+                    // No custom logo, use theme-appropriate default
+                    setLogoSrc(defaultLogoSrc);
                 }
             })
-            .catch(() => { });
+            .catch(() => {
+                // On error, use theme-appropriate default
+                setLogoSrc(defaultLogoSrc);
+            });
     }, []);
 
     const handleLogoError = () => {
-        if (logoSrc !== defaultLogo) {
-            setLogoSrc(defaultLogo);
+        // If logo fails to load, fallback to theme-appropriate default logo
+        const currentTheme = localStorage.getItem('theme') || 'default';
+        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
+        const fallbackLogo = isLightTheme ? '/logo-light.svg' : defaultLogo;
+
+        if (logoSrc !== fallbackLogo) {
+            setLogoSrc(fallbackLogo);
         }
     };
 

@@ -105,7 +105,7 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                             </div>
                         </div>
                         <div className="flex justify-end space-x-2">
-                            <EditYamlButton onClick={onEditYAML} />
+                            <EditYamlButton onClick={onEditYAML} namespace={pod?.namespace} />
                         </div>
                     </div>
                 ) : activeTab === 'logs' ? (

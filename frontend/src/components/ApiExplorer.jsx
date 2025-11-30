@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Search, ListTree, RefreshCw, Globe, MapPin, FileText, ChevronDown } from 'lucide-react';
+import { Search, ListTree, RefreshCw, Globe, MapPin, FileText, ChevronDown, X } from 'lucide-react';
 import YamlEditor from './YamlEditor';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -8,17 +8,42 @@ import { formatDate } from '../utils/dateUtils';
 
 const ApiExplorer = ({ namespace }) => {
     const { currentCluster } = useSettings();
-    const { authFetch } = useAuth();
+    const { authFetch, user } = useAuth();
     const [apis, setApis] = useState([]);
     const [filter, setFilter] = useState('');
     const [selected, setSelected] = useState(null);
     const [objects, setObjects] = useState([]);
     const [loadingApis, setLoadingApis] = useState(false);
     const [loadingObjects, setLoadingObjects] = useState(false);
-    const [scopeFilter, setScopeFilter] = useState('namespaced'); // namespaced | cluster | all
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [checkingAdmin, setCheckingAdmin] = useState(true);
+    const [scopeFilter, setScopeFilter] = useState('namespaced'); // 'namespaced', 'cluster', or 'all'
     const [yamlResource, setYamlResource] = useState(null); // {name, namespace, kind}
     const [showSuggestions, setShowSuggestions] = useState(false);
     const searchRef = useRef(null);
+
+    // Check if user is admin
+    useEffect(() => {
+        const checkAdmin = async () => {
+            try {
+                const res = await authFetch('/api/settings/prometheus/url');
+                if (res.ok || res.status === 404) {
+                    setIsAdmin(true);
+                } else {
+                    setIsAdmin(false);
+                }
+            } catch (err) {
+                setIsAdmin(false);
+            } finally {
+                setCheckingAdmin(false);
+            }
+        };
+        if (user) {
+            checkAdmin();
+        } else {
+            setCheckingAdmin(false);
+        }
+    }, [authFetch, user]);
 
     const fetchApis = () => {
         setLoadingApis(true);
@@ -43,7 +68,7 @@ const ApiExplorer = ({ namespace }) => {
             group: selected.group,
             version: selected.version,
             resource: selected.resource,
-            namespace: selected.namespaced ? namespace : '',
+            namespace: namespace || '',
             namespaced: selected.namespaced ? 'true' : 'false',
         });
         if (currentCluster) params.append('cluster', currentCluster);
@@ -67,10 +92,12 @@ const ApiExplorer = ({ namespace }) => {
                 const matchesText = `${a.kind}/${a.resource}`.toLowerCase().includes(q);
                 const matchesScope =
                     scopeFilter === 'all' ? true : scopeFilter === 'namespaced' ? a.namespaced : !a.namespaced;
-                return matchesText && matchesScope;
+                // Non-admin users can only see namespaced resources
+                const matchesPermission = isAdmin || a.namespaced;
+                return matchesText && matchesScope && matchesPermission;
             })
             .sort((a, b) => a.kind.localeCompare(b.kind));
-    }, [apis, filter, scopeFilter]);
+    }, [apis, filter, scopeFilter, isAdmin]);
 
     // Close suggestions when clicking outside
     useEffect(() => {
@@ -121,9 +148,18 @@ const ApiExplorer = ({ namespace }) => {
                                 setShowSuggestions(true);
                             }}
                             onFocus={() => setShowSuggestions(true)}
-                            className="w-full bg-gray-800 border border-gray-700 rounded-md pl-8 pr-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500 transition-all"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md pl-8 pr-8 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500 transition-all"
                             placeholder="Search API resources (e.g., pod, deployment, service)..."
                         />
+                        {filter && (
+                            <button
+                                onClick={() => setFilter('')}
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                                type="button"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
                         {showSuggestions && filter && filteredSuggestions.length > 0 && (
                             <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
                                 {filteredSuggestions.map((api) => (
@@ -144,30 +180,46 @@ const ApiExplorer = ({ namespace }) => {
                         )}
                     </div>
 
-                    <div className="bg-gray-800 border border-gray-700 rounded-md flex overflow-hidden text-sm shrink-0">
-                        <button
-                            onClick={() => setScopeFilter('namespaced')}
-                            className={`px-3 py-1.5 flex items-center space-x-1 ${scopeFilter === 'namespaced' ? 'bg-blue-900 text-blue-100' : 'text-gray-300 hover:bg-gray-700'}`}
-                            title="Show namespaced resources"
-                        >
-                            <MapPin size={14} /> <span className="hidden sm:inline">Namespaced</span>
-                        </button>
-                        <button
-                            onClick={() => setScopeFilter('cluster')}
-                            className={`px-3 py-1.5 flex items-center space-x-1 ${scopeFilter === 'cluster' ? 'bg-blue-900 text-blue-100' : 'text-gray-300 hover:bg-gray-700'}`}
-                            title="Show cluster-wide resources"
-                        >
-                            <Globe size={14} /> <span className="hidden sm:inline">Cluster</span>
-                        </button>
-                        <button
-                            onClick={() => setScopeFilter('all')}
-                            className={`px-3 py-1.5 flex items-center space-x-1 ${scopeFilter === 'all' ? 'bg-blue-900 text-blue-100' : 'text-gray-300 hover:bg-gray-700'}`}
-                            title="Show all resources"
-                        >
-                            <span className="hidden sm:inline">All</span>
-                            <span className="sm:hidden">All</span>
-                        </button>
-                    </div>
+                    {!checkingAdmin && isAdmin ? (
+                        <div className="bg-gray-800 border border-gray-700 rounded-md flex overflow-hidden text-sm shrink-0">
+                            <button
+                                onClick={() => setScopeFilter('namespaced')}
+                                className={`px-3 py-1.5 flex items-center space-x-1 transition-colors ${
+                                    scopeFilter === 'namespaced'
+                                        ? 'bg-blue-900 text-blue-100'
+                                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                                }`}
+                            >
+                                <MapPin size={14} /> <span className="hidden sm:inline">Namespaced</span>
+                            </button>
+                            <button
+                                onClick={() => setScopeFilter('cluster')}
+                                className={`px-3 py-1.5 flex items-center space-x-1 transition-colors border-l border-gray-700 ${
+                                    scopeFilter === 'cluster'
+                                        ? 'bg-blue-900 text-blue-100'
+                                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                                }`}
+                            >
+                                <Globe size={14} /> <span className="hidden sm:inline">Cluster</span>
+                            </button>
+                            <button
+                                onClick={() => setScopeFilter('all')}
+                                className={`px-3 py-1.5 flex items-center space-x-1 transition-colors border-l border-gray-700 ${
+                                    scopeFilter === 'all'
+                                        ? 'bg-blue-900 text-blue-100'
+                                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                                }`}
+                            >
+                                <ListTree size={14} /> <span className="hidden sm:inline">All</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="bg-gray-800 border border-gray-700 rounded-md flex overflow-hidden text-sm shrink-0">
+                            <div className="px-3 py-1.5 flex items-center space-x-1 bg-blue-900 text-blue-100">
+                                <MapPin size={14} /> <span className="hidden sm:inline">Namespaced Only</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

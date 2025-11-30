@@ -6,10 +6,14 @@ import { useAuth } from '../context/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
 import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 import { useHelmReleases } from '../hooks/useHelmReleases';
+import { parseErrorResponse, parseError } from '../utils/errorParser';
 
-const HelmChartManager = () => {
+const HelmChartManager = ({ namespace }) => {
     const { currentCluster } = useSettings();
-    const { authFetch } = useAuth();
+    const { authFetch, user } = useAuth();
+
+    // Check if user is admin (core admin has role='admin', LDAP admin groups have no permissions but are admins)
+    const isAdmin = user && user.role === 'admin';
     const [expandedId, setExpandedId] = useState(null);
     const [sortField, setSortField] = useState('name');
     const [sortDirection, setSortDirection] = useState('asc');
@@ -58,7 +62,43 @@ const HelmChartManager = () => {
         return sortDirection === 'asc' ? '↑' : '↓';
     };
 
+    // Helper to check if user has edit or admin permission for a namespace
+    const hasEditPermission = (ns) => {
+        // Admins have full access
+        if (isAdmin) return true;
+        if (!user || !user.permissions) return false;
+        const permission = user.permissions[ns];
+        return permission === 'edit' || permission === 'admin';
+    };
+
+    // Helper to check if user has view permission for a namespace
+    const hasViewPermission = (ns) => {
+        // Admins have full access
+        if (isAdmin) return true;
+        if (!user || !user.permissions) return false;
+        const permission = user.permissions[ns];
+        return permission === 'view' || permission === 'edit' || permission === 'admin';
+    };
+
+    // Filter releases by namespace and search text
     const filteredReleases = releases.filter(release => {
+        // If user is admin, show all releases (no namespace filter)
+        // If user is not admin, filter by namespace and check permissions
+        if (!isAdmin) {
+            // If namespace is "all", filter by user's allowed namespaces
+            if (namespace === 'all') {
+                // Only show releases in namespaces the user has access to
+                if (!hasViewPermission(release.namespace)) {
+                    return false;
+                }
+            } else {
+                // Show only releases in the selected namespace (if user has access)
+                if (release.namespace !== namespace || !hasViewPermission(release.namespace)) {
+                    return false;
+                }
+            }
+        }
+        // Apply search filter
         if (!filter) return true;
         const searchText = filter.toLowerCase();
         return (
@@ -161,8 +201,8 @@ const HelmChartManager = () => {
             });
 
             if (!res.ok) {
-                const errorData = await res.json().catch(() => ({ message: 'Failed to upgrade Helm release' }));
-                throw new Error(errorData.message || 'Failed to upgrade Helm release');
+                const errorText = await parseErrorResponse(res);
+                throw new Error(errorText || 'Failed to upgrade Helm release');
             }
 
             const result = await res.json();
@@ -212,8 +252,8 @@ const HelmChartManager = () => {
             });
 
             if (!res.ok) {
-                const errorData = await res.json().catch(() => ({ message: 'Failed to install Helm chart' }));
-                throw new Error(errorData.message || 'Failed to install Helm chart');
+                const errorText = await parseErrorResponse(res);
+                throw new Error(errorText || 'Failed to install Helm chart');
             }
 
             const result = await res.json();
@@ -252,21 +292,35 @@ const HelmChartManager = () => {
                             onChange={(e) => setFilter(e.target.value)}
                             onFocus={() => setIsSearchFocused(true)}
                             onBlur={() => setIsSearchFocused(false)}
-                            className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded-md pl-10 pr-4 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-300"
+                            className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded-md pl-10 pr-10 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-300"
                         />
+                        {filter && (
+                            <button
+                                onClick={() => setFilter('')}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                                type="button"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
                     </div>
                     <span className="text-sm text-gray-500">
                         {filteredReleases.length} {filteredReleases.length === 1 ? 'item' : 'items'}
                     </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                    <button
-                        onClick={() => setInstallModalOpen(true)}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm transition-colors flex items-center"
-                    >
-                        <Download size={14} className="mr-2" />
-                        Install Chart
-                    </button>
+                    {(isAdmin || (namespace && namespace !== 'all' && hasEditPermission(namespace))) && (
+                        <button
+                            onClick={() => {
+                                setInstallForm(prev => ({ ...prev, namespace: namespace === 'all' ? '' : namespace }));
+                                setInstallModalOpen(true);
+                            }}
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm transition-colors flex items-center"
+                        >
+                            <Download size={14} className="mr-2" />
+                            Install Chart
+                        </button>
+                    )}
                     <button
                         onClick={() => refetch()}
                         className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
@@ -349,32 +403,41 @@ const HelmChartManager = () => {
                                         {menuOpen === releaseKey && (
                                             <div className="absolute right-0 mt-1 w-40 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
                                                 <div className="flex flex-col">
-                                                    <button
-                                                        onClick={() => {
-                                                            setUpgradeRelease(release);
-                                                            setUpgradeForm({
-                                                                chart: release.chart || '',
-                                                                version: '',
-                                                                repo: '',
-                                                                valuesYaml: ''
-                                                            });
-                                                            setMenuOpen(null);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2 text-sm text-blue-300 hover:bg-blue-900/40 flex items-center"
-                                                    >
-                                                        <ArrowUp size={14} className="mr-2" />
-                                                        Upgrade
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setConfirmAction({ release });
-                                                            setMenuOpen(null);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40 flex items-center"
-                                                    >
-                                                        <Trash2 size={14} className="mr-2" />
-                                                        Uninstall
-                                                    </button>
+                                                    {hasEditPermission(release.namespace) && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setUpgradeRelease(release);
+                                                                    setUpgradeForm({
+                                                                        chart: release.chart || '',
+                                                                        version: '',
+                                                                        repo: '',
+                                                                        valuesYaml: ''
+                                                                    });
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-blue-300 hover:bg-blue-900/40 flex items-center"
+                                                            >
+                                                                <ArrowUp size={14} className="mr-2" />
+                                                                Upgrade
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setConfirmAction({ release });
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40 flex items-center"
+                                                            >
+                                                                <Trash2 size={14} className="mr-2" />
+                                                                Uninstall
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    {!hasEditPermission(release.namespace) && (
+                                                        <div className="px-4 py-2 text-xs text-gray-500">
+                                                            View only
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}

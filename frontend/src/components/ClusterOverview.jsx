@@ -1,5 +1,5 @@
 import React from 'react';
-import { Server, Layers, Box, Network, Globe, HardDrive, Activity, Database, Cpu, TrendingUp } from 'lucide-react';
+import { Server, Layers, Box, Network, Globe, HardDrive, Activity, Database, Cpu, TrendingUp, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useClusterOverview } from '../hooks/useClusterOverview';
@@ -46,7 +46,7 @@ const ProgressBar = ({ value, color }) => {
 };
 
 const ClusterOverview = () => {
-    const { authFetch } = useAuth();
+    const { authFetch, user } = useAuth();
     const { currentCluster } = useSettings();
 
     const { overview, prometheusStatus, metrics } = useClusterOverview(authFetch, currentCluster);
@@ -58,6 +58,28 @@ const ClusterOverview = () => {
     const prometheusEnabled = prometheusStatus.data?.enabled || false;
     const clusterStats = metrics.data?.clusterStats;
     const nodeMetrics = metrics.data?.nodeMetrics || [];
+
+    // Check if user has permissions (admin or LDAP permissions)
+    const isAdmin = user && user.role === 'admin';
+    const hasPermissions = isAdmin || (user && user.permissions && Object.keys(user.permissions).length > 0);
+
+    // If user has no permissions, show message
+    if (!hasPermissions) {
+        return (
+            <div className="p-6 max-w-5xl mx-auto">
+                <div className="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-8 text-center">
+                    <AlertCircle size={64} className="mx-auto mb-4 text-yellow-400" />
+                    <h2 className="text-2xl font-semibold text-white mb-2">Sin Permisos</h2>
+                    <p className="text-gray-400 text-lg">
+                        No tienes permisos configurados para acceder a los recursos del cluster.
+                    </p>
+                    <p className="text-gray-500 text-sm mt-2">
+                        Contacta a tu administrador para que te asigne los permisos necesarios.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     if (loading) {
         return <div className="text-gray-400 animate-pulse p-6">Loading cluster overview...</div>;
@@ -86,44 +108,70 @@ const ClusterOverview = () => {
 
             {/* Prometheus Metrics Stats - Only if enabled */}
             {prometheusEnabled && clusterStats && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard
-                        icon={Server}
-                        label="Total Nodes"
-                        value={clusterStats.totalNodes}
-                        color="bg-blue-600"
-                    />
-                    <StatCard
-                        icon={Cpu}
-                        label="Avg CPU Usage"
-                        value={`${clusterStats.avgCpuUsage?.toFixed(1)}%`}
-                        color="bg-purple-600"
-                        trend={clusterStats.cpuTrend}
-                    />
-                    <StatCard
-                        icon={HardDrive}
-                        label="Avg Memory Usage"
-                        value={`${clusterStats.avgMemoryUsage?.toFixed(1)}%`}
-                        color="bg-green-600"
-                        trend={clusterStats.memoryTrend}
-                    />
-                    <StatCard
-                        icon={Network}
-                        label="Network Traffic"
-                        value={`${clusterStats.networkTraffic?.toFixed(2)} MB/s`}
-                        color="bg-yellow-600"
-                    />
+                <div className="space-y-4">
+                    {/* First row: Control Planes */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <StatCard
+                            icon={Server}
+                            label="Control Planes"
+                            value={clusterStats.controlPlaneNodes || 0}
+                            color="bg-indigo-600"
+                        />
+                        <StatCard
+                            icon={Cpu}
+                            label="Avg CPU Usage"
+                            value={`${clusterStats.avgCpuUsage?.toFixed(1)}%`}
+                            color="bg-purple-600"
+                            trend={clusterStats.cpuTrend}
+                        />
+                        <StatCard
+                            icon={HardDrive}
+                            label="Avg Memory Usage"
+                            value={`${clusterStats.avgMemoryUsage?.toFixed(1)}%`}
+                            color="bg-green-600"
+                            trend={clusterStats.memoryTrend}
+                        />
+                        <StatCard
+                            icon={Network}
+                            label="Network Traffic"
+                            value={`${clusterStats.networkTraffic?.toFixed(2)} MB/s`}
+                            color="bg-yellow-600"
+                        />
+                    </div>
+                    {/* Second row: Worker Nodes, Ingress, PVCs, PVs */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <StatCard
+                            icon={Server}
+                            label="Worker Nodes"
+                            value={clusterStats.totalNodes}
+                            color="bg-blue-600"
+                        />
+                        <StatCard
+                            icon={Globe}
+                            label="Ingresses"
+                            value={stats.ingresses}
+                            color="bg-pink-600"
+                        />
+                        <StatCard
+                            icon={HardDrive}
+                            label="PVCs"
+                            value={stats.pvcs}
+                            color="bg-orange-600"
+                        />
+                        {isAdmin && (
+                            <StatCard
+                                icon={HardDrive}
+                                label="PVs"
+                                value={stats.pvs}
+                                color="bg-red-600"
+                            />
+                        )}
+                    </div>
                 </div>
             )}
 
             {/* Basic Resource Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard
-                    icon={Server}
-                    label="Nodes"
-                    value={stats.nodes}
-                    color="bg-blue-600"
-                />
                 <StatCard
                     icon={Layers}
                     label="Namespaces"
@@ -148,24 +196,6 @@ const ClusterOverview = () => {
                     value={stats.services}
                     color="bg-yellow-600"
                 />
-                <StatCard
-                    icon={Globe}
-                    label="Ingresses"
-                    value={stats.ingresses}
-                    color="bg-pink-600"
-                />
-                <StatCard
-                    icon={HardDrive}
-                    label="PVCs"
-                    value={stats.pvcs}
-                    color="bg-orange-600"
-                />
-                <StatCard
-                    icon={HardDrive}
-                    label="PVs"
-                    value={stats.pvs}
-                    color="bg-red-600"
-                />
             </div>
 
             {/* Node Metrics Table - Only if Prometheus is enabled */}
@@ -182,6 +212,7 @@ const ClusterOverview = () => {
                             <thead className="bg-gray-750">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Node</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">CPU Usage</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Memory Usage</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Disk Usage</th>
@@ -194,6 +225,15 @@ const ClusterOverview = () => {
                                 {nodeMetrics.map((node, idx) => (
                                     <tr key={idx} className="hover:bg-gray-750 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{node.name}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-2 py-1 text-xs rounded-full ${
+                                                node.role === 'control-plane'
+                                                    ? 'bg-indigo-900/50 text-indigo-300 border border-indigo-700'
+                                                    : 'bg-blue-900/50 text-blue-300 border border-blue-700'
+                                            }`}>
+                                                {node.role === 'control-plane' ? 'Control Plane' : 'Worker'}
+                                            </span>
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <ProgressBar value={node.cpuUsage} color="purple" />
                                         </td>

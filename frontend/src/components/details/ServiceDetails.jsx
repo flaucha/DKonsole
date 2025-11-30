@@ -130,7 +130,7 @@ const ServiceDetails = ({ details, onEditYAML, namespace, name }) => {
                         </div>
                     </div>
                     <div className="flex justify-end mt-6">
-                        <EditYamlButton onClick={onEditYAML} />
+                        <EditYamlButton onClick={onEditYAML} namespace={namespace} />
                     </div>
                 </>
             )}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,13 +57,45 @@ func NewK8sClusterStatsRepository(client kubernetes.Interface) *K8sClusterStatsR
 	return &K8sClusterStatsRepository{client: client}
 }
 
-// GetNodeCount returns the number of nodes
+// isControlPlaneNode checks if a node is a control plane/master node
+// Control plane nodes are identified by:
+// - Taints with key "node-role.kubernetes.io/control-plane" or "node-role.kubernetes.io/master"
+// - Labels with "node-role.kubernetes.io/control-plane" or "node-role.kubernetes.io/master"
+func isControlPlaneNode(node corev1.Node) bool {
+	// Check labels
+	if val, ok := node.Labels["node-role.kubernetes.io/control-plane"]; ok && val != "" {
+		return true
+	}
+	if val, ok := node.Labels["node-role.kubernetes.io/master"]; ok && val != "" {
+		return true
+	}
+
+	// Check taints
+	for _, taint := range node.Spec.Taints {
+		if taint.Key == "node-role.kubernetes.io/control-plane" || taint.Key == "node-role.kubernetes.io/master" {
+			return true
+		}
+	}
+
+	return false
+}
+
+// GetNodeCount returns the number of worker nodes (excluding control plane nodes)
 func (r *K8sClusterStatsRepository) GetNodeCount(ctx context.Context) (int, error) {
 	nodes, err := r.client.CoreV1().Nodes().List(ctx, metav1.ListOptions{Limit: 500})
 	if err != nil {
 		return 0, fmt.Errorf("failed to get node count: %w", err)
 	}
-	return len(nodes.Items), nil
+
+	// Filter out control plane nodes
+	workerNodeCount := 0
+	for _, node := range nodes.Items {
+		if !isControlPlaneNode(node) {
+			workerNodeCount++
+		}
+	}
+
+	return workerNodeCount, nil
 }
 
 // GetNamespaceCount returns the number of namespaces
@@ -132,6 +165,8 @@ func (r *K8sClusterStatsRepository) GetPVCount(ctx context.Context) (int, error)
 type DeploymentRepository interface {
 	GetScale(ctx context.Context, namespace, name string) (*autoscalingv1.Scale, error)
 	UpdateScale(ctx context.Context, namespace, name string, scale *autoscalingv1.Scale) (*autoscalingv1.Scale, error)
+	GetDeployment(ctx context.Context, namespace, name string) (*appsv1.Deployment, error)
+	UpdateDeployment(ctx context.Context, namespace string, deployment *appsv1.Deployment) (*appsv1.Deployment, error)
 }
 
 // K8sDeploymentRepository implements DeploymentRepository
@@ -162,4 +197,22 @@ func (r *K8sDeploymentRepository) UpdateScale(ctx context.Context, namespace, na
 		return nil, fmt.Errorf("failed to update deployment scale: %w", err)
 	}
 	return updatedScale, nil
+}
+
+// GetDeployment gets a deployment by name
+func (r *K8sDeploymentRepository) GetDeployment(ctx context.Context, namespace, name string) (*appsv1.Deployment, error) {
+	deployment, err := r.client.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get deployment: %w", err)
+	}
+	return deployment, nil
+}
+
+// UpdateDeployment updates a deployment
+func (r *K8sDeploymentRepository) UpdateDeployment(ctx context.Context, namespace string, deployment *appsv1.Deployment) (*appsv1.Deployment, error) {
+	updatedDeployment, err := r.client.AppsV1().Deployments(namespace).Update(ctx, deployment, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update deployment: %w", err)
+	}
+	return updatedDeployment, nil
 }

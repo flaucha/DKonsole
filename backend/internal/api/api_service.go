@@ -8,6 +8,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
+
+	"github.com/flaucha/DKonsole/backend/internal/permissions"
 )
 
 // APIService provides business logic for API resource operations
@@ -70,10 +72,23 @@ type ListAPIResourceObjectsResponse struct {
 }
 
 // ListAPIResourceObjects lists instances of a specific API resource
+// It filters resources based on user permissions before returning them
 func (s *APIService) ListAPIResourceObjects(ctx context.Context, req ListAPIResourceObjectsRequest) (*ListAPIResourceObjectsResponse, error) {
 	if s.resourceRepo == nil {
 		return nil, fmt.Errorf("resource repository not set")
 	}
+
+	// Validate namespace access if resource is namespaced
+	if req.Namespaced && req.Namespace != "" {
+		hasAccess, err := permissions.HasNamespaceAccess(ctx, req.Namespace)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check namespace access: %w", err)
+		}
+		if !hasAccess {
+			return nil, fmt.Errorf("access denied to namespace: %s", req.Namespace)
+		}
+	}
+
 	gvr := schema.GroupVersionResource{
 		Group:    req.Group,
 		Version:  req.Version,
@@ -85,9 +100,21 @@ func (s *APIService) ListAPIResourceObjects(ctx context.Context, req ListAPIReso
 	}
 	var objects []APIResourceObject
 	for _, item := range list.Items {
+		// Filter by namespace permissions
+		itemNamespace := item.GetNamespace()
+		if req.Namespaced && itemNamespace != "" {
+			hasAccess, err := permissions.HasNamespaceAccess(ctx, itemNamespace)
+			if err != nil {
+				continue // Skip if we can't check permissions
+			}
+			if !hasAccess {
+				continue // Skip resources in namespaces the user doesn't have access to
+			}
+		}
+
 		obj := APIResourceObject{
 			Name:      item.GetName(),
-			Namespace: item.GetNamespace(),
+			Namespace: itemNamespace,
 			Kind:      item.GetKind(),
 			Created:   item.GetCreationTimestamp().Format(time.RFC3339),
 		}
@@ -122,10 +149,23 @@ type GetResourceYAMLRequest struct {
 }
 
 // GetResourceYAML returns the YAML representation of a resource
+// It validates namespace permissions before retrieving.
 func (s *APIService) GetResourceYAML(ctx context.Context, req GetResourceYAMLRequest) (string, error) {
 	if s.resourceRepo == nil {
 		return "", fmt.Errorf("resource repository not set")
 	}
+
+	// Validate namespace access if resource is namespaced
+	if req.Namespaced && req.Namespace != "" {
+		hasAccess, err := permissions.HasNamespaceAccess(ctx, req.Namespace)
+		if err != nil {
+			return "", fmt.Errorf("failed to check namespace access: %w", err)
+		}
+		if !hasAccess {
+			return "", fmt.Errorf("access denied to namespace: %s", req.Namespace)
+		}
+	}
+
 	gvr := schema.GroupVersionResource{
 		Group:    req.Group,
 		Version:  req.Version,

@@ -7,6 +7,7 @@ import (
 
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
 	"github.com/flaucha/DKonsole/backend/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -54,11 +55,12 @@ func (s *Service) GetNamespaces(w http.ResponseWriter, r *http.Request) {
 	// Create service using factory (dependency injection)
 	namespaceService := s.serviceFactory.CreateNamespaceService(client)
 
-	// Create context with timeout
-	ctx, cancel := utils.CreateTimeoutContext()
+	// Create context from request (to access user permissions)
+	ctx, cancel := utils.CreateRequestContext(r)
 	defer cancel()
 
 	// Call service to get namespaces (business logic layer)
+	// The service will filter namespaces based on user permissions
 	namespaces, err := namespaceService.GetNamespaces(ctx)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get namespaces: %v", err))
@@ -117,8 +119,14 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call service to get resources (business logic layer)
+	// The service will filter resources based on permissions
 	resources, err := resourceListService.ListResources(ctx, req)
 	if err != nil {
+		// Check if it's a permission error
+		if err.Error() == fmt.Sprintf("access denied to namespace: %s", req.Namespace) {
+			utils.ErrorResponse(w, http.StatusForbidden, err.Error())
+			return
+		}
 		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to list resources: %v", err))
 		return
 	}
@@ -173,6 +181,18 @@ func (s *Service) ScaleResource(w http.ResponseWriter, r *http.Request) {
 	}
 	if namespace == "" {
 		namespace = "default"
+	}
+
+	// Validate namespace access
+	ctx := r.Context()
+	canEdit, err := permissions.CanPerformAction(ctx, namespace, "edit")
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
+		return
+	}
+	if !canEdit {
+		utils.ErrorResponse(w, http.StatusForbidden, fmt.Sprintf("Edit permission required for namespace: %s", namespace))
+		return
 	}
 
 	delta, err := strconv.Atoi(deltaStr)

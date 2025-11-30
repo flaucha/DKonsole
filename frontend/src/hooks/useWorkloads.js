@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { fetchWorkloads } from '../api/k8sApi';
 
 export const useWorkloads = (fetcher, namespace, kind, currentCluster) => {
@@ -7,9 +7,10 @@ export const useWorkloads = (fetcher, namespace, kind, currentCluster) => {
         queryKey: ['workloads', namespace, kind, currentCluster],
         queryFn: () => fetchWorkloads(fetcher, namespace, kind, currentCluster),
         enabled: isEnabled,
-        refetchInterval: isEnabled ? 5000 : false, // Poll every 5 seconds only when enabled
-        staleTime: 0, // Data is immediately stale, forcing fresh fetch on mount
-        refetchOnMount: true, // Always refetch when component mounts
-        refetchOnWindowFocus: false, // Don't refetch on window focus to avoid unnecessary requests
+        refetchInterval: isEnabled ? 2000 : false, // Poll every 2 seconds for snappier updates
+        staleTime: 1000, // Data is fresh for 1 second
+        placeholderData: keepPreviousData, // Keep previous data while fetching new data
+        refetchOnMount: true,
+        refetchOnWindowFocus: false,
     });
 };

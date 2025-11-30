@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/flaucha/DKonsole/backend/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/permissions"
 )
 
 // ResourceService provides business logic for Kubernetes resource operations.
@@ -40,7 +41,19 @@ type UpdateResourceRequest struct {
 // UpdateResource updates a Kubernetes resource from YAML content.
 // It parses the YAML, resolves the GroupVersionResource, and applies the changes using a strategic merge patch.
 // Returns an error if the YAML is invalid, the resource cannot be found, or the update fails.
+// It validates namespace permissions before updating.
 func (s *ResourceService) UpdateResource(ctx context.Context, req UpdateResourceRequest) error {
+	// Validate namespace access if resource is namespaced
+	if req.Namespace != "" {
+		// Check if user has edit permission
+		canEdit, err := permissions.CanPerformAction(ctx, req.Namespace, "edit")
+		if err != nil {
+			return fmt.Errorf("failed to check permissions: %w", err)
+		}
+		if !canEdit {
+			return fmt.Errorf("edit permission required for namespace: %s", req.Namespace)
+		}
+	}
 	// Parse YAML to JSON
 	jsonData, err := yaml.YAMLToJSON([]byte(req.YAMLContent))
 	if err != nil {
@@ -106,6 +119,7 @@ func (s *ResourceService) UpdateResource(ctx context.Context, req UpdateResource
 }
 
 // CreateResource creates a Kubernetes resource from YAML content.
+// It validates namespace permissions before creating.
 func (s *ResourceService) CreateResource(ctx context.Context, yamlContent string) (interface{}, error) {
 	// Parse YAML to JSON
 	jsonData, err := yaml.YAMLToJSON([]byte(yamlContent))
@@ -151,6 +165,7 @@ type DeleteResourceRequest struct {
 // By default, it uses a 30-second grace period and foreground deletion propagation.
 // If Force is true, it uses 0 grace period and background propagation.
 // Returns an error if the resource cannot be found or deletion fails.
+// It validates namespace permissions before deleting.
 func (s *ResourceService) DeleteResource(ctx context.Context, req DeleteResourceRequest) error {
 	normalizedKind := models.NormalizeKind(req.Kind)
 
@@ -161,6 +176,18 @@ func (s *ResourceService) DeleteResource(ctx context.Context, req DeleteResource
 
 	if meta.Namespaced && req.Namespace == "" {
 		return fmt.Errorf("namespace is required for namespaced resource deletion")
+	}
+
+	// Validate namespace access if resource is namespaced
+	if meta.Namespaced && req.Namespace != "" {
+		// Check if user has edit permission
+		canEdit, err := permissions.CanPerformAction(ctx, req.Namespace, "edit")
+		if err != nil {
+			return fmt.Errorf("failed to check permissions: %w", err)
+		}
+		if !canEdit {
+			return fmt.Errorf("edit permission required for namespace: %s", req.Namespace)
+		}
 	}
 
 	var grace int64 = 30

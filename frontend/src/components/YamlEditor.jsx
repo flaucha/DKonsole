@@ -32,7 +32,7 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
         authFetch(buildUrl())
             .then(async (res) => {
                 if (!res.ok) {
-                    const text = await res.text();
+                    const text = await parseErrorResponse(res);
                     throw new Error(text || 'Failed to load resource');
                 }
                 return res.text();
@@ -42,7 +42,7 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
                 setLoading(false);
             })
             .catch((err) => {
-                setError(err.message);
+                setError(parseError(err));
                 setLoading(false);
             });
     }, [resource, currentCluster]);
@@ -50,7 +50,7 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
     const handleSave = () => {
         setSaving(true);
         setError('');
-        
+
         // Use import endpoint which uses Server-Side Apply (equivalent to kubectl apply -f)
         const params = new URLSearchParams();
         if (currentCluster) params.append('cluster', currentCluster);
@@ -62,14 +62,14 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
         })
             .then(async (res) => {
                 if (!res.ok) {
-                    const text = await res.text();
+                    const text = await parseErrorResponse(res);
                     throw new Error(text || 'Failed to apply resource');
                 }
                 setSaving(false);
                 onSaved?.();
             })
             .catch((err) => {
-                setError(err.message);
+                setError(parseError(err));
                 setSaving(false);
             });
     };

@@ -2,6 +2,7 @@ package logo
 
 import (
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"github.com/flaucha/DKonsole/backend/internal/utils"
@@ -45,11 +46,22 @@ func (s *Service) UploadLogo(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	// Get logo type from form (defaults to "normal" if not provided)
+	logoType := r.FormValue("type")
+	if logoType == "" {
+		logoType = "normal"
+	}
+	if logoType != "normal" && logoType != "light" {
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid logo type. Must be 'normal' or 'light'")
+		return
+	}
+
 	// Prepare request
 	uploadReq := UploadLogoRequest{
 		Filename: handler.Filename,
 		Size:     handler.Size,
 		Content:  file,
+		LogoType: logoType,
 	}
 
 	// Call service to upload logo (business logic layer)
@@ -62,6 +74,7 @@ func (s *Service) UploadLogo(w http.ResponseWriter, r *http.Request) {
 	utils.LogDebug("Logo uploaded successfully", map[string]interface{}{
 		"filename": handler.Filename,
 		"size":     handler.Size,
+		"type":     logoType,
 		"mime":     handler.Header,
 	})
 
@@ -78,10 +91,34 @@ func (s *Service) UploadLogo(w http.ResponseWriter, r *http.Request) {
 func (s *Service) GetLogo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	// Get logo type from query parameter (defaults to "normal" if not provided)
+	logoType := r.URL.Query().Get("type")
+	if logoType == "" {
+		logoType = "normal"
+	}
+	if logoType != "normal" && logoType != "light" {
+		http.Error(w, "Invalid logo type", http.StatusBadRequest)
+		return
+	}
+
 	// Call service to get logo path (business logic layer)
-	logoPath, err := s.logoService.GetLogoPath(ctx)
+	logoPath, err := s.logoService.GetLogoPath(ctx, logoType)
 	if err != nil {
-		// Logo not found - return 404
+		// Logo not found - try to serve default logo from static directory
+		if logoType == "light" {
+			// Try to serve logo-light.svg from static directory
+			staticLogoPath := filepath.Join("./static", "logo-light.svg")
+			if _, err := filepath.Abs(staticLogoPath); err == nil {
+				if _, err := os.Stat(staticLogoPath); err == nil {
+					utils.LogDebug("Serving default light logo", map[string]interface{}{
+						"path": staticLogoPath,
+					})
+					http.ServeFile(w, r, staticLogoPath)
+					return
+				}
+			}
+		}
+		// Logo not found and no default available - return 404
 		// Frontend will handle this gracefully and use default logo
 		http.Error(w, "Logo not found", http.StatusNotFound)
 		return
@@ -89,6 +126,7 @@ func (s *Service) GetLogo(w http.ResponseWriter, r *http.Request) {
 
 	absPath, _ := filepath.Abs(logoPath)
 	utils.LogDebug("Serving logo", map[string]interface{}{
+		"type": logoType,
 		"path": absPath,
 	})
 	http.ServeFile(w, r, logoPath)

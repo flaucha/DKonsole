@@ -1,35 +1,76 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Lock, User } from 'lucide-react';
+import { Lock, User, Shield, Users } from 'lucide-react';
 import defaultLogo from '../assets/logo-full.svg';
+import logoLight from '../assets/logo-light.svg';
 
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [logoSrc, setLogoSrc] = useState(defaultLogo);
+    const [ldapEnabled, setLdapEnabled] = useState(false);
+    const [activeTab, setActiveTab] = useState('ldap'); // 'core' or 'ldap' - default to LDAP
     const { login } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
+        // Get current theme from localStorage
+        const currentTheme = localStorage.getItem('theme') || 'default';
+        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
+
+        // Determine default logo based on theme
+        // Use /logo-light.svg for light themes (served from static directory)
+        const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;
+        setLogoSrc(defaultLogoSrc);
+
         // Try to load custom logo from API (no auth required for logo endpoint)
         // Same logic as Layout.jsx to ensure consistency
         // Add timestamp to prevent browser caching
-        fetch(`/api/logo?t=${Date.now()}`)
+        // Use logo-light for light themes, logo normal for dark themes
+        const logoType = isLightTheme ? 'light' : 'normal';
+        fetch(`/api/logo?type=${logoType}&t=${Date.now()}`)
             .then(res => {
                 if (res.ok && res.status === 200) {
-                    // Add timestamp to prevent caching
-                    setLogoSrc(`/api/logo?t=${Date.now()}`);
+                    // Custom logo exists, use it
+                    setLogoSrc(`/api/logo?type=${logoType}&t=${Date.now()}`);
+                } else {
+                    // No custom logo, use theme-appropriate default
+                    setLogoSrc(defaultLogoSrc);
+                }
+            })
+            .catch(() => {
+                // On error, use theme-appropriate default
+                setLogoSrc(defaultLogoSrc);
+            });
+
+        // Check if LDAP is enabled
+        fetch('/api/ldap/status')
+            .then(res => {
+                if (res.ok) {
+                    return res.json();
+                }
+            })
+            .then(data => {
+                if (data && data.enabled) {
+                    setLdapEnabled(true);
+                    setActiveTab('ldap'); // Default to LDAP tab when enabled
+                } else {
+                    setActiveTab('core'); // Default to core if LDAP is not enabled
                 }
             })
             .catch(() => { });
     }, []);
 
     const handleLogoError = () => {
-        // If logo fails to load, fallback to default logo
-        if (logoSrc !== defaultLogo) {
-            setLogoSrc(defaultLogo);
+        // If logo fails to load, fallback to theme-appropriate default logo
+        const currentTheme = localStorage.getItem('theme') || 'default';
+        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
+        const fallbackLogo = isLightTheme ? '/logo-light.svg' : defaultLogo;
+
+        if (logoSrc !== fallbackLogo) {
+            setLogoSrc(fallbackLogo);
         }
     };
 
@@ -37,7 +78,9 @@ const Login = () => {
         e.preventDefault();
         setError('');
         try {
-            await login(username, password);
+            // Determine IDP based on active tab
+            const idp = activeTab === 'ldap' ? 'ldap' : 'core';
+            await login(username, password, idp);
             navigate('/');
         } catch (err) {
             setError('Invalid username or password');
@@ -62,6 +105,26 @@ const Login = () => {
                 {error && (
                     <div className="bg-red-900/20 border border-red-900 text-red-400 px-4 py-3 rounded mb-6 text-sm">
                         {error}
+                    </div>
+                )}
+
+                {/* Tabs for IDP selection when LDAP is enabled */}
+                {ldapEnabled && (
+                    <div className="flex space-x-1 border-b border-gray-700 mb-6">
+                        <button
+                            type="button"
+                            className={`flex-1 pb-2 px-4 flex items-center justify-center font-medium transition-colors ${activeTab === 'ldap' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                            onClick={() => setActiveTab('ldap')}
+                        >
+                            <Users size={18} className="mr-2" /> LDAP
+                        </button>
+                        <button
+                            type="button"
+                            className={`flex-1 pb-2 px-4 flex items-center justify-center font-medium transition-colors ${activeTab === 'core' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                            onClick={() => setActiveTab('core')}
+                        >
+                            <Shield size={18} className="mr-2" /> CORE
+                        </button>
                     </div>
                 )}
 

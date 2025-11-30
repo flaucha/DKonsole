@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { Layers, Box, Network, HardDrive, Tag, Minus, Plus } from 'lucide-react';
 import { DetailRow, EditYamlButton, SmartImage } from './CommonDetails';
 import AssociatedPods from './AssociatedPods';
+import { useAuth } from '../../context/AuthContext';
+import { canEdit, isAdmin } from '../../utils/permissions';
 
 const DeploymentDetails = ({ details, onScale, scaling, res, onEditYAML }) => {
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('details');
 
     return (
@@ -37,7 +40,7 @@ const DeploymentDetails = ({ details, onScale, scaling, res, onEditYAML }) => {
                         <div>
                             <div className="mb-2">
                                 <DetailRow label="Replicas" value={`${details.ready} / ${details.replicas}`} icon={Layers}>
-                                    {onScale && (
+                                    {onScale && (isAdmin(user) || canEdit(user, res?.namespace)) && (
                                         <div className="flex items-center space-x-1 ml-2">
                                             <button
                                                 onClick={() => onScale(-1)}
@@ -76,7 +79,7 @@ const DeploymentDetails = ({ details, onScale, scaling, res, onEditYAML }) => {
                         </div>
                     </div>
                     <div className="flex justify-end mt-4">
-                        <EditYamlButton onClick={onEditYAML} />
+                        <EditYamlButton onClick={onEditYAML} namespace={res?.namespace} />
                     </div>
                 </>
             )}

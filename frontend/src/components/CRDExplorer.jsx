@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Search, Package, RefreshCw, Globe, MapPin, FileText } from 'lucide-react';
+import { Search, Package, RefreshCw, Globe, MapPin, FileText, X } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -100,9 +100,18 @@ const CRDExplorer = ({ namespace }) => {
                         <input
                             value={filter}
                             onChange={(e) => setFilter(e.target.value)}
-                            className="w-full bg-gray-800 border border-gray-700 rounded-md pl-8 pr-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500"
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md pl-8 pr-8 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500"
                             placeholder="Search CRDs..."
                         />
+                        {filter && (
+                            <button
+                                onClick={() => setFilter('')}
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                                type="button"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
                     </div>
                     <div className="bg-gray-800 border border-gray-700 rounded-md flex overflow-hidden text-sm">
                         <button

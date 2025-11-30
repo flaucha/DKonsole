@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database, Gauge, Package, LogOut } from 'lucide-react';
+import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database, Gauge, Package, LogOut, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import defaultLogo from '../assets/logo-full.svg';
+import logoLight from '../assets/logo-light.svg';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -60,8 +61,59 @@ const SubMenu = ({ isOpen, children }) => (
 );
 
 const Layout = ({ children, headerContent }) => {
-    const { currentCluster } = useSettings();
-    const { logout, authFetch } = useAuth();
+    const { currentCluster, theme } = useSettings();
+    const { logout, authFetch, user } = useAuth();
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [checkingAdmin, setCheckingAdmin] = useState(true);
+    const [hasPermissions, setHasPermissions] = useState(false);
+
+    useEffect(() => {
+        // Check if user is admin (core admin or LDAP admin group member)
+        const checkAdmin = async () => {
+            try {
+                const res = await authFetch('/api/settings/prometheus/url');
+                if (res.ok || res.status === 404) {
+                    setIsAdmin(true);
+                    setHasPermissions(true);
+                } else if (res.status === 403) {
+                    setIsAdmin(false);
+                } else {
+                    setIsAdmin(false);
+                }
+            } catch (err) {
+                setIsAdmin(false);
+            } finally {
+                setCheckingAdmin(false);
+            }
+        };
+
+        // Check if user has permissions (admin or LDAP permissions)
+        const checkPermissions = () => {
+            if (!user) {
+                setHasPermissions(false);
+                return;
+            }
+            // Admin always has permissions
+            if (user.role === 'admin') {
+                setHasPermissions(true);
+                return;
+            }
+            // Check if user has LDAP permissions
+            if (user.permissions && Object.keys(user.permissions).length > 0) {
+                setHasPermissions(true);
+            } else {
+                setHasPermissions(false);
+            }
+        };
+
+        if (user) {
+            checkAdmin();
+            checkPermissions();
+        } else {
+            setCheckingAdmin(false);
+            setHasPermissions(false);
+        }
+    }, [authFetch, user]);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [expandedMenus, setExpandedMenus] = useState({
         workloads: true,
@@ -73,21 +125,42 @@ const Layout = ({ children, headerContent }) => {
     const location = useLocation();
 
     useEffect(() => {
+        // Get current theme from settings
+        const currentTheme = theme || localStorage.getItem('theme') || 'default';
+        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
+
+        // Determine default logo based on theme
+        // Use /logo-light.svg for light themes (served from static directory)
+        const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;
+        setLogoSrc(defaultLogoSrc);
+
         // Add timestamp to prevent browser caching
-        authFetch(`/api/logo?t=${Date.now()}`)
+        // Use logo-light for light themes, logo normal for dark themes
+        const logoType = isLightTheme ? 'light' : 'normal';
+        authFetch(`/api/logo?type=${logoType}&t=${Date.now()}`)
             .then(res => {
                 if (res.ok && res.status === 200) {
-                    // Add timestamp to prevent caching
-                    setLogoSrc(`/api/logo?t=${Date.now()}`);
+                    // Custom logo exists, use it
+                    setLogoSrc(`/api/logo?type=${logoType}&t=${Date.now()}`);
+                } else {
+                    // No custom logo, use theme-appropriate default
+                    setLogoSrc(defaultLogoSrc);
                 }
             })
-            .catch(() => { });
-    }, [authFetch]);
+            .catch(() => {
+                // On error, use theme-appropriate default
+                setLogoSrc(defaultLogoSrc);
+            });
+    }, [authFetch, theme]);
 
     const handleLogoError = () => {
-        // If logo fails to load, fallback to default logo
-        if (logoSrc !== defaultLogo) {
-            setLogoSrc(defaultLogo);
+        // If logo fails to load, fallback to theme-appropriate default logo
+        const currentTheme = theme || localStorage.getItem('theme') || 'default';
+        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
+        const fallbackLogo = isLightTheme ? '/logo-light.svg' : defaultLogo;
+
+        if (logoSrc !== fallbackLogo) {
+            setLogoSrc(fallbackLogo);
         }
     };
 
@@ -136,9 +209,14 @@ const Layout = ({ children, headerContent }) => {
                 <div className="flex items-center space-x-2">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
-                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
+                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-all duration-200 hover:scale-110"
+                        title={sidebarOpen ? "Ocultar menú" : "Mostrar menú"}
                     >
-                        <Menu size={24} />
+                        {sidebarOpen ? (
+                            <PanelLeftClose size={24} className="transition-transform duration-300" />
+                        ) : (
+                            <PanelLeftOpen size={24} className="transition-transform duration-300" />
+                        )}
                     </button>
                     <div className="flex items-center justify-center">
                         <img
@@ -150,132 +228,165 @@ const Layout = ({ children, headerContent }) => {
                     </div>
                 </div>
                 <div className="flex items-center">
-                    {headerContent}
+                    {!checkingAdmin && hasPermissions && headerContent}
                 </div>
             </header>
 
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden relative">
                 {/* Sidebar */}
                 <div
-                    className={`bg-black border-r border-gray-800 flex flex-col transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full opacity-0 overflow-hidden border-none'}`}
+                    className={`bg-black border-r border-gray-800 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                        sidebarOpen
+                            ? 'min-w-[200px] w-auto translate-x-0 opacity-100'
+                            : 'w-0 -translate-x-full opacity-0 pointer-events-none'
+                    }`}
+                    style={{
+                        transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+                        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
                 >
-                    <nav className="flex-1 px-2 space-y-1 mt-4 overflow-y-auto">
-                        <SidebarItem
-                            icon={LayoutDashboard}
-                            label="Overview"
-                            to="/dashboard/overview"
-                        />
+                    <nav className={`flex-1 px-2 pt-4 space-y-1 overflow-y-auto transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
+                        {/* Overview con botón de cerrar */}
+                        <div className="flex items-center justify-between px-4 py-2 mb-1">
+                            <NavLink
+                                to="/dashboard/overview"
+                                className={({ isActive }) =>
+                                    `flex items-center space-x-3 flex-1 px-4 py-2 cursor-pointer rounded-md transition-colors ${isActive ? 'bg-gray-800 text-white' : 'text-white hover:bg-gray-800'}`
+                                }
+                            >
+                                <LayoutDashboard size={20} />
+                                <span className="font-medium whitespace-nowrap">Overview</span>
+                            </NavLink>
+                            {sidebarOpen && (
+                                <button
+                                    onClick={() => setSidebarOpen(false)}
+                                    className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-all duration-200 hover:scale-110 hover:rotate-90 ml-2"
+                                    title="Ocultar menú"
+                                >
+                                    <X size={16} />
+                                </button>
+                            )}
+                        </div>
 
-                        {/* Workloads */}
-                        <SidebarItem
-                            icon={Box}
-                            label="Workloads"
-                            hasChildren
-                            expanded={expandedMenus.workloads}
-                            onClick={() => toggleMenu('workloads')}
-                        />
-                        <SubMenu isOpen={expandedMenus.workloads}>
-                            {['Deployments', 'Pods', 'ConfigMaps', 'Secrets', 'Jobs', 'CronJobs', 'StatefulSets', 'DaemonSets', 'HPA'].map(item => (
-                                <SubItem
-                                    key={item}
-                                    label={item}
-                                    to={getPath(item)}
+                        {/* Only show other menu items if user has permissions */}
+                        {!checkingAdmin && hasPermissions && (
+                            <>
+                                {/* Workloads */}
+                                <SidebarItem
+                                    icon={Box}
+                                    label="Workloads"
+                                    hasChildren
+                                    expanded={expandedMenus.workloads}
+                                    onClick={() => toggleMenu('workloads')}
                                 />
-                            ))}
-                        </SubMenu>
+                                <SubMenu isOpen={expandedMenus.workloads}>
+                                    {['Deployments', 'Pods', 'ConfigMaps', 'Secrets', 'Jobs', 'CronJobs', 'StatefulSets', 'DaemonSets', 'HPA'].map(item => (
+                                        <SubItem
+                                            key={item}
+                                            label={item}
+                                            to={getPath(item)}
+                                        />
+                                    ))}
+                                </SubMenu>
 
-                        {/* Networking */}
-                        <SidebarItem
-                            icon={Network}
-                            label="Networking"
-                            hasChildren
-                            expanded={expandedMenus.networking}
-                            onClick={() => toggleMenu('networking')}
-                        />
-                        <SubMenu isOpen={expandedMenus.networking}>
-                            {['Services', 'Ingresses', 'Network Policies'].map(item => (
-                                <SubItem
-                                    key={item}
-                                    label={item}
-                                    to={getPath(item)}
+                                {/* Networking */}
+                                <SidebarItem
+                                    icon={Network}
+                                    label="Networking"
+                                    hasChildren
+                                    expanded={expandedMenus.networking}
+                                    onClick={() => toggleMenu('networking')}
                                 />
-                            ))}
-                        </SubMenu>
+                                <SubMenu isOpen={expandedMenus.networking}>
+                                    {['Services', 'Ingresses', 'Network Policies'].map(item => (
+                                        <SubItem
+                                            key={item}
+                                            label={item}
+                                            to={getPath(item)}
+                                        />
+                                    ))}
+                                </SubMenu>
 
-                        {/* Storage */}
-                        <SidebarItem
-                            icon={HardDrive}
-                            label="Storage"
-                            hasChildren
-                            expanded={expandedMenus.storage}
-                            onClick={() => toggleMenu('storage')}
-                        />
-                        <SubMenu isOpen={expandedMenus.storage}>
-                            {['PVCs', 'PVs', 'Storage Classes'].map(item => (
-                                <SubItem
-                                    key={item}
-                                    label={item}
-                                    to={getPath(item)}
+                                {/* Storage */}
+                                <SidebarItem
+                                    icon={HardDrive}
+                                    label="Storage"
+                                    hasChildren
+                                    expanded={expandedMenus.storage}
+                                    onClick={() => toggleMenu('storage')}
                                 />
-                            ))}
-                        </SubMenu>
+                                <SubMenu isOpen={expandedMenus.storage}>
+                                    {['PVCs', ...(isAdmin ? ['PVs', 'Storage Classes'] : [])].map(item => (
+                                        <SubItem
+                                            key={item}
+                                            label={item}
+                                            to={getPath(item)}
+                                        />
+                                    ))}
+                                </SubMenu>
 
-                        {/* Access Control */}
-                        <SidebarItem
-                            icon={Shield}
-                            label="Access Control"
-                            hasChildren
-                            expanded={expandedMenus.accessControl}
-                            onClick={() => toggleMenu('accessControl')}
-                        />
-                        <SubMenu isOpen={expandedMenus.accessControl}>
-                            {['Service Accounts', 'Roles', 'Role Bindings', 'Cluster Roles', 'Cluster Role Bindings'].map(item => (
-                                <SubItem
-                                    key={item}
-                                    label={item}
-                                    to={getPath(item)}
+                                {/* Nodes - Only for admins */}
+                                {isAdmin && (
+                                    <SidebarItem
+                                        icon={Server}
+                                        label="Nodes"
+                                        to="/dashboard/workloads/Node"
+                                    />
+                                )}
+
+                                {/* Access Control - Only for admins */}
+                                {isAdmin && (
+                                    <>
+                                        <SidebarItem
+                                            icon={Shield}
+                                            label="Access Control"
+                                            hasChildren
+                                            expanded={expandedMenus.accessControl}
+                                            onClick={() => toggleMenu('accessControl')}
+                                        />
+                                        <SubMenu isOpen={expandedMenus.accessControl}>
+                                            {['Service Accounts', 'Roles', 'Role Bindings', 'Cluster Roles', 'Cluster Role Bindings'].map(item => (
+                                                <SubItem
+                                                    key={item}
+                                                    label={item}
+                                                    to={getPath(item)}
+                                                />
+                                            ))}
+                                        </SubMenu>
+                                    </>
+                                )}
+
+                                <SidebarItem
+                                    icon={Database}
+                                    label="Namespaces"
+                                    to="/dashboard/namespaces"
                                 />
-                            ))}
-                        </SubMenu>
 
-                        <SidebarItem
-                            icon={Server}
-                            label="Nodes"
-                            to={getPath('Nodes')}
-                        />
+                                <SidebarItem
+                                    icon={ListTree}
+                                    label="API Explorer"
+                                    to="/dashboard/api-explorer"
+                                />
 
-                        <SidebarItem
-                            icon={Database}
-                            label="Namespaces"
-                            to="/dashboard/namespaces"
-                        />
-
-                        <SidebarItem
-                            icon={Gauge}
-                            label="Resource Quotas"
-                            to="/dashboard/resource-quotas"
-                        />
-
-                        <SidebarItem
-                            icon={ListTree}
-                            label="API Explorer"
-                            to="/dashboard/api-explorer"
-                        />
-
-                        <SidebarItem
-                            icon={Package}
-                            label="Helm Charts"
-                            to="/dashboard/helm-charts"
-                        />
-
-                        <SidebarItem
-                            icon={Settings}
-                            label="Settings"
-                            to="/dashboard/settings"
-                        />
+                                <SidebarItem
+                                    icon={Package}
+                                    label="Helm Charts"
+                                    to="/dashboard/helm-charts"
+                                />
+                            </>
+                        )}
                     </nav>
 
                     <div className="mt-auto border-t border-gray-800">
+                        <NavLink
+                            to="/dashboard/settings"
+                            className={({ isActive }) =>
+                                `w-full flex items-center px-4 py-2 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors ${isActive ? 'bg-gray-800 text-white' : ''}`
+                            }
+                        >
+                            <Settings size={20} className="mr-3" />
+                            <span className="font-medium">Settings</span>
+                        </NavLink>
                         <button
                             onClick={logout}
                             className="w-full flex items-center px-4 py-2 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
@@ -284,7 +395,7 @@ const Layout = ({ children, headerContent }) => {
                             <span className="font-medium">Logout</span>
                         </button>
                         <div className="px-4 py-2 border-t border-gray-800 whitespace-nowrap overflow-hidden">
-                            <div className="text-xs text-gray-500">Cluster: <span className="text-gray-300 font-medium">{currentCluster}</span></div>
+                            <div className="text-xs text-gray-500">User: <span className="text-gray-300 font-medium">{user?.username || 'Unknown'}</span></div>
                         </div>
                     </div>
                 </div>
