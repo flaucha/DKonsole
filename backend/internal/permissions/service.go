@@ -112,8 +112,9 @@ func GetPermissionLevel(ctx context.Context, namespace string) (string, error) {
 		return "edit", nil
 	}
 
-	// If permissions is nil or empty, user has no access (not admin)
-	if claims.Permissions == nil || len(claims.Permissions) == 0 {
+	// If permissions is empty, user has no access (not admin)
+	// Note: len() for nil maps is defined as zero, so we can omit the nil check
+	if len(claims.Permissions) == 0 {
 		return "", fmt.Errorf("no access to namespace: %s", namespace)
 	}
 
@@ -167,8 +168,9 @@ func FilterAllowedNamespaces(ctx context.Context, namespaces []string) ([]string
 		return namespaces, nil
 	}
 
-	// If permissions is nil or empty, user has no access (not admin)
-	if claims.Permissions == nil || len(claims.Permissions) == 0 {
+	// If permissions is empty, user has no access (not admin)
+	// Note: len() for nil maps is defined as zero, so we can omit the nil check
+	if len(claims.Permissions) == 0 {
 		return []string{}, nil
 	}
 
@@ -196,8 +198,9 @@ func GetAllowedNamespaces(ctx context.Context) ([]string, error) {
 		return []string{}, nil // Empty list means "all namespaces"
 	}
 
-	// If permissions is nil or empty, user has no access (not admin)
-	if claims.Permissions == nil || len(claims.Permissions) == 0 {
+	// If permissions is empty, user has no access (not admin)
+	// Note: len() for nil maps is defined as zero, so we can omit the nil check
+	if len(claims.Permissions) == 0 {
 		return []string{}, nil // Empty list means no access
 	}
 
@@ -253,8 +256,9 @@ func FilterResources(ctx context.Context, resources []models.Resource) ([]models
 		return resources, nil
 	}
 
-	// If permissions is nil or empty, user has no access (not admin)
-	if claims.Permissions == nil || len(claims.Permissions) == 0 {
+	// If permissions is empty, user has no access (not admin)
+	// Note: len() for nil maps is defined as zero, so we can omit the nil check
+	if len(claims.Permissions) == 0 {
 		return []models.Resource{}, nil
 	}
 
