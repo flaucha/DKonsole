@@ -579,24 +579,25 @@ const WorkloadList = ({ namespace, kind }) => {
                 </div>
             </div>
 
-            {/* Table Header */}
+            {/* Table Header - Organized from right to left, Name always on the left */}
             <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-800 bg-gray-900/50 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <div className={`${kind === 'Deployment' ? 'col-span-3' : 'col-span-4'} cursor-pointer hover:text-gray-300 flex items-center justify-center`} onClick={() => handleSort('name')}>
+                {/* Name column - always on the left with more space for long names */}
+                <div className="col-span-4 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('name')}>
                     Name {renderSortIndicator('name')}
                 </div>
+                {/* Status column */}
                 <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('status')}>
                     Status {renderSortIndicator('status')}
                 </div>
-                {kind === 'Pod' && (
-                    <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('ready')}>
-                        Ready {renderSortIndicator('ready')}
-                    </div>
-                )}
-                <div className={`${kind === 'Pod' ? 'col-span-1' : kind === 'Deployment' ? 'col-span-1' : 'col-span-3'} cursor-pointer hover:text-gray-300 flex items-center justify-center`} onClick={() => handleSort('created')}>
-                    Age {renderSortIndicator('created')}
-                </div>
+                {/* Pod-specific columns - organized from right to left */}
                 {kind === 'Pod' && (
                     <>
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('ready')}>
+                            Ready {renderSortIndicator('ready')}
+                        </div>
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                            Age {renderSortIndicator('created')}
+                        </div>
                         <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('restarts')}>
                             Restarts {renderSortIndicator('restarts')}
                         </div>
@@ -606,23 +607,41 @@ const WorkloadList = ({ namespace, kind }) => {
                         <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('memory')}>
                             Mem {renderSortIndicator('memory')}
                         </div>
+                        <div className="col-span-1"></div>
                     </>
                 )}
+                {/* Deployment-specific columns */}
+                {kind === 'Deployment' && (
+                    <>
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                            Age {renderSortIndicator('created')}
+                        </div>
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('tag')}>
+                            Tag {renderSortIndicator('tag')}
+                        </div>
+                        <div className="col-span-4"></div>
+                    </>
+                )}
+                {/* PersistentVolumeClaim-specific columns */}
                 {kind === 'PersistentVolumeClaim' && (
-                    <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('size')}>
-                        Size {renderSortIndicator('size')}
-                    </div>
+                    <>
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('size')}>
+                            Size {renderSortIndicator('size')}
+                        </div>
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                            Age {renderSortIndicator('created')}
+                        </div>
+                        <div className="col-span-4"></div>
+                    </>
                 )}
-                {kind === 'Deployment' && (
-                    <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('tag')}>
-                        Tag {renderSortIndicator('tag')}
-                    </div>
-                )}
+                {/* Other resource types */}
                 {kind !== 'Deployment' && kind !== 'Pod' && kind !== 'PersistentVolumeClaim' && (
-                    <div className="col-span-1"></div>
-                )}
-                {kind === 'Deployment' && (
-                    <div className="col-span-4"></div>
+                    <>
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                            Age {renderSortIndicator('created')}
+                        </div>
+                        <div className="col-span-5"></div>
+                    </>
                 )}
             </div>
 
@@ -636,34 +655,35 @@ const WorkloadList = ({ namespace, kind }) => {
                                 onClick={() => toggleExpand(res.uid)}
                                 className={`grid grid-cols-12 gap-4 px-6 py-4 cursor-pointer transition-colors duration-200 items-center ${getExpandableRowRowClasses(isExpanded)}`}
                             >
-                                <div className={`${kind === 'Deployment' ? 'col-span-3' : 'col-span-4'} flex items-center font-medium text-sm text-gray-200`}>
+                                {/* Name column - always on the left with better handling for long names */}
+                                <div className="col-span-4 flex items-center font-medium text-sm text-gray-200 min-w-0">
                                     <ChevronDown
                                         size={16}
-                                        className={`mr-2 text-gray-500 transition-transform duration-200 ${isExpanded ? 'transform rotate-180' : ''}`}
+                                        className={`mr-2 text-gray-500 transition-transform duration-200 flex-shrink-0 ${isExpanded ? 'transform rotate-180' : ''}`}
                                     />
-                                    <Icon size={16} className="mr-3 text-gray-500" />
-                                    <span className="truncate" title={res.name}>{res.name}</span>
+                                    <Icon size={16} className="mr-3 text-gray-500 flex-shrink-0" />
+                                    <span
+                                        className="truncate block min-w-0"
+                                        title={res.name}
+                                    >
+                                        {res.name}
+                                    </span>
                                 </div>
+                                {/* Status column */}
                                 <div className="col-span-2 flex items-center justify-center">
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(res.status)}`}>
                                         {res.status}
                                     </span>
                                 </div>
-                                {kind === 'Pod' && (
-                                    <div className="col-span-1 text-sm text-gray-400 text-center">
-                                        {res.details?.ready || '-'}
-                                    </div>
-                                )}
-                                <div className={`${kind === 'Pod' ? 'col-span-1' : kind === 'Deployment' ? 'col-span-1' : 'col-span-3'} text-sm text-gray-400 text-center`}>
-                                    {formatDateTime(res.created)}
-                                </div>
-                                {kind === 'Deployment' && (
-                                    <div className="col-span-1 text-sm text-gray-400 text-center">
-                                        {res.details?.imageTag || '-'}
-                                    </div>
-                                )}
+                                {/* Pod-specific columns - organized from right to left */}
                                 {kind === 'Pod' && (
                                     <>
+                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                            {res.details?.ready || '-'}
+                                        </div>
+                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                            {formatDateTime(res.created)}
+                                        </div>
                                         <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {res.details?.restarts || 0}
                                         </div>
@@ -675,16 +695,38 @@ const WorkloadList = ({ namespace, kind }) => {
                                         </div>
                                     </>
                                 )}
-                                {kind === 'PersistentVolumeClaim' && (
-                                    <div className="col-span-1 text-sm text-gray-400 text-center">
-                                        {res.details?.capacity || res.details?.requested || '-'}
-                                    </div>
-                                )}
-                                {kind !== 'Pod' && kind !== 'PersistentVolumeClaim' && kind !== 'Deployment' && (
-                                    <div className="col-span-1"></div>
-                                )}
+                                {/* Deployment-specific columns */}
                                 {kind === 'Deployment' && (
-                                    <div className="col-span-4"></div>
+                                    <>
+                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                            {formatDateTime(res.created)}
+                                        </div>
+                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                            {res.details?.imageTag || '-'}
+                                        </div>
+                                        <div className="col-span-4"></div>
+                                    </>
+                                )}
+                                {/* PersistentVolumeClaim-specific columns */}
+                                {kind === 'PersistentVolumeClaim' && (
+                                    <>
+                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                            {res.details?.capacity || res.details?.requested || '-'}
+                                        </div>
+                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                            {formatDateTime(res.created)}
+                                        </div>
+                                        <div className="col-span-4"></div>
+                                    </>
+                                )}
+                                {/* Other resource types */}
+                                {kind !== 'Deployment' && kind !== 'Pod' && kind !== 'PersistentVolumeClaim' && (
+                                    <>
+                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                            {formatDateTime(res.created)}
+                                        </div>
+                                        <div className="col-span-5"></div>
+                                    </>
                                 )}
                                 <div className={`${kind === 'Pod' ? 'col-span-1' : kind === 'PersistentVolumeClaim' ? 'col-span-2' : kind === 'Deployment' ? 'col-span-1' : 'col-span-2'} flex justify-end items-center space-x-2 pr-2`} onClick={(e) => e.stopPropagation()}>
                                     {kind === 'CronJob' && (
