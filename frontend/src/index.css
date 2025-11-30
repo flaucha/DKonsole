@@ -292,10 +292,10 @@ body {
   color: rgb(var(--color-gray-100)) !important;
 }
 
-/* Ensure Monaco Editor children are excluded */
-[data-theme="light"] .text-white .monaco-editor,
-[data-theme="light"] .text-white .monaco-editor * {
-  color: revert !important;
+/* Exclude Monaco Editor completely from color overrides - let it use its native vs-dark theme */
+[data-theme="light"] .monaco-editor,
+[data-theme="light"] .monaco-editor * {
+  color: revert-layer !important;
 }
 
 [data-theme="light"] .bg-black,
@@ -323,10 +323,10 @@ body {
   color: rgb(var(--color-gray-100)) !important;
 }
 
-/* Ensure Monaco Editor children are excluded */
-[data-theme="cream"] .text-white .monaco-editor,
-[data-theme="cream"] .text-white .monaco-editor * {
-  color: revert !important;
+/* Exclude Monaco Editor completely from color overrides - let it use its native vs-dark theme */
+[data-theme="cream"] .monaco-editor,
+[data-theme="cream"] .monaco-editor * {
+  color: revert-layer !important;
 }
 
 [data-theme="cream"] .bg-black,
