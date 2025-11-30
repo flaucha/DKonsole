@@ -46,6 +46,23 @@ if [ "$SKIP_TESTS" = false ]; then
         command -v "$1" >/dev/null 2>&1
     }
 
+    # Check if Docker is available (needed for frontend tests)
+    DOCKER_AVAILABLE=true
+    if ! command_exists docker; then
+        DOCKER_AVAILABLE=false
+    else
+        # Test if Docker daemon is running
+        if ! docker info > /dev/null 2>&1; then
+            DOCKER_AVAILABLE=false
+        fi
+    fi
+
+    if [ "$DOCKER_AVAILABLE" = false ]; then
+        echo "⚠️  Docker not available - frontend tests will be skipped"
+        echo "   Install/start Docker to run frontend tests: https://docs.docker.com/get-docker/"
+        echo ""
+    fi
+
     # Backend Tests
     echo "📋 Testing Backend..."
     cd backend
@@ -91,51 +108,55 @@ if [ "$SKIP_TESTS" = false ]; then
 
     cd ..
 
-    # Frontend Tests
+    # Frontend Tests (using Docker)
     echo ""
-    echo "📋 Testing Frontend..."
+    echo "📋 Testing Frontend (using Docker)..."
 
-    # Check Node.js version
-    NODE_VERSION=$(node --version 2>/dev/null | sed 's/v//' | cut -d. -f1)
-    if [ -z "$NODE_VERSION" ] || [ "$NODE_VERSION" -lt 18 ]; then
-        echo "  ⚠️  Node.js version is too old (current: $(node --version 2>/dev/null || echo 'unknown'))"
-        echo "  ⚠️  Frontend tests require Node.js 18+ (CI uses Node.js 20)"
-        echo "  ⚠️  Skipping frontend tests due to incompatible Node.js version"
-        echo "  💡 To test frontend locally, upgrade Node.js or use nvm: nvm install 20 && nvm use 20"
-        echo "  ✅ Frontend tests skipped (will run in CI with Node.js 20)"
+    if [ "$DOCKER_AVAILABLE" = false ]; then
+        echo "  ⚠️  Docker not available, skipping frontend tests"
+        echo "  ✅ Frontend tests skipped (will run in CI)"
     else
-        cd frontend
+        echo "  🐳 Using Docker image: node:20-alpine (same as CI)"
 
-        # Install dependencies if node_modules doesn't exist
-        if [ ! -d "node_modules" ]; then
-            echo "  📥 Installing dependencies..."
-            npm install || { echo "❌ Failed to install dependencies"; exit 1; }
+        # Pull the image if not available
+        echo "  📥 Checking/pulling Docker image node:20-alpine..."
+        if ! docker image inspect node:20-alpine > /dev/null 2>&1; then
+            echo "  📥 Pulling Docker image (this may take a minute)..."
+            docker pull node:20-alpine || {
+                echo "  ❌ Failed to pull Docker image node:20-alpine"
+                echo "  💡 Check your internet connection and Docker daemon"
+                exit 1
+            }
         else
-            echo "  ✅ Dependencies already installed"
+            echo "  ✅ Docker image already available"
         fi
 
-        # Run npm audit (warning only, don't fail)
-        echo "  🔒 Running npm audit..."
-        if npm audit --audit-level=moderate 2>/dev/null; then
-            echo "  ✅ npm audit passed"
-        else
-            echo "  ⚠️  npm audit found vulnerabilities (check with: npm audit)"
-        fi
+        # Get absolute path for volume mount
+        FRONTEND_DIR="$(cd frontend && pwd)"
 
-        # Run linter (warning only, don't fail)
-        echo "  🔍 Running linter..."
-        if npm run lint 2>/dev/null; then
-            echo "  ✅ Linter passed"
-        else
-            echo "  ⚠️  Linter found issues (check with: npm run lint)"
-        fi
-
-        # Run tests with coverage
-        echo "  🧪 Running tests with coverage..."
-        npm run test -- --run --coverage || { echo "❌ Frontend tests failed"; exit 1; }
+        # Run tests in Docker container
+        echo "  🔧 Installing dependencies and running tests in Docker..."
+        docker run --rm \
+            -v "${FRONTEND_DIR}:/app" \
+            -w /app \
+            node:20-alpine \
+            sh -c "
+                echo '📥 Installing dependencies...' &&
+                npm install &&
+                echo '' &&
+                echo '🔒 Running npm audit...' &&
+                npm audit --audit-level=moderate 2>&1 || echo '⚠️  npm audit found vulnerabilities (non-blocking)' &&
+                echo '' &&
+                echo '🔍 Running linter...' &&
+                npm run lint 2>&1 || echo '⚠️  Linter found issues (non-blocking)' &&
+                echo '' &&
+                echo '🧪 Running tests with coverage...' &&
+                npm run test -- --run --coverage
+            " || {
+            echo "  ❌ Frontend tests failed in Docker"
+            exit 1
+        }
         echo "  ✅ All frontend tests passed"
-
-        cd ..
     fi
 
     # Security Scan with Trivy (optional, warnings only)
