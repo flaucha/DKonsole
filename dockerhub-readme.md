@@ -95,7 +95,7 @@ Default Helm values:
 ## Tags
 
 - `latest`: Points to the most recent stable release
-- Version tags: `1.3.4`, `1.3.3`, `1.3.2`, etc.
+- Version tags: `1.3.5`, `1.3.4`, `1.3.3`, etc.
 
 See [Docker Hub tags](https://hub.docker.com/r/dkonsole/dkonsole/tags) for all available versions.
 

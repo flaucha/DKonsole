@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.5] - 2025-11-30
+
+### 🔧 Changed
+
+- **Table Layout Reorganization**: Reorganized all table columns from right to left for better visual organization
+  - Name column always positioned on the left with more space (col-span-4)
+  - All other columns arranged from right to left based on resource type
+  - Improved column spacing and distribution across all resource types
+- **Name Column Improvements**: Enhanced Name column handling for long resource names
+  - Better truncation and overflow handling with `min-w-0` and `truncate` classes
+  - Added tooltip to show full name on hover
+  - Added 0.5cm left padding to Name column header for better alignment
+  - Icons and chevron properly handled with `flex-shrink-0` to prevent compression
+- **Actions Column Fix**: Fixed action buttons wrapping to second line in all resource tables
+  - Adjusted column spans for Actions based on number of buttons (1 or 2 columns)
+  - Added `flex-nowrap`, `shrink-0`, and `min-w-0` to prevent button wrapping
+  - Reduced spacing between buttons (`space-x-1`) for more compact layout
+  - Actions properly aligned to the right in all resource types (Pods, Deployments, CronJobs, PVCs, etc.)
+  - All table rows now maintain single-line layout without wrapping
+
+### 🎨 UI/UX Improvements
+
+- **Consistent Column Alignment**: All column texts remain centered except Name column (left-aligned)
+- **Better Space Utilization**: Optimized column distribution to use full 12-column grid effectively
+- **Visual Consistency**: Improved spacing and alignment across all resource table types
+
 ## [1.3.4] - 2025-11-30
 
 ### ✨ Added

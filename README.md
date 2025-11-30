@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.3.4-green.svg)
+![Version](https://img.shields.io/badge/version-1.3.5-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.3.4
+git checkout v1.3.5
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -153,18 +153,36 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.3.4"
+  tag: "1.3.5"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.3.4`
+- **Unified**: `dkonsole/dkonsole:1.3.5`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.3.5 (2025-11-30)
+**🔧 Table Layout Improvements & Actions Fix**
+
+This release reorganizes table columns and fixes action buttons wrapping issues.
+
+- **Table Layout Reorganization**: Reorganized all table columns from right to left for better visual organization
+  - Name column always positioned on the left with more space
+  - All other columns arranged from right to left based on resource type
+  - Improved column spacing and distribution across all resource types
+- **Name Column Improvements**: Enhanced Name column handling for long resource names
+  - Better truncation and overflow handling
+  - Added tooltip to show full name on hover
+  - Added 0.5cm left padding to Name column header for better alignment
+- **Actions Column Fix**: Fixed action buttons wrapping to second line in all resource tables
+  - Adjusted column spans for Actions based on number of buttons
+  - Actions properly aligned to the right in all resource types
+  - All table rows now maintain single-line layout without wrapping
 
 ### v1.3.4 (2025-11-30)
 **✨ Table Enhancements & UI Improvements**
@@ -199,15 +217,6 @@ This release fixes LDAP admin permissions and migrates logo storage to ConfigMap
   - Logos are now stored in ConfigMap `dkonsole-logo` in base64 format
   - Simplified deployment by removing PVC requirement
 - **Settings Access**: Added Settings access within Admin Area section
-
-### v1.3.2 (2025-11-30)
-**🔧 Security Workflow Fix**
-
-This release temporarily disables SARIF uploads due to permission issues.
-
-- **Security Workflow**: Temporarily disabled SARIF uploads due to permission issues
-  - Trivy scans still run but results are not uploaded to GitHub Security
-  - Will be re-enabled once permissions are properly configured
 
 ### v1.2.8 (2025-11-29)
 **✨ Settings Management & Metrics Fixes**
