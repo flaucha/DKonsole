@@ -20,7 +20,7 @@ This entire project, from backend to frontend and infrastructure code, was gener
 - 💻 **Terminal Access**: Execute commands directly in pod containers
 - ✏️ **YAML Editor**: Edit resources with a built-in YAML editor
 - 🔐 **Secure Authentication**: Argon2 password hashing and JWT-based sessions
-
+- 📱 **LDAP Integration**: LDAP Integration for user authentication
 
 ## 🚀 Quick Start
 
