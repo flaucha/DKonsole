@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for app/src/hooks/useClusterOverview.js</title>
+    <title>Code coverage report for app/src/config/monacoTheme.js</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../../prettify.css" />
     <link rel="stylesheet" href="../../../base.css" />
@@ -19,13 +19,13 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../../index.html">All files</a> / <a href="index.html">app/src/hooks</a> useClusterOverview.js</h1>
+        <h1><a href="../../../index.html">All files</a> / <a href="index.html">app/src/config</a> monacoTheme.js</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/28</span>
+                <span class='fraction'>0/23</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/28</span>
+                <span class='fraction'>0/23</span>
             </div>
         
             
@@ -86,20 +86,7 @@
 <a name='L21'></a><a href='#L21'>21</a>
 <a name='L22'></a><a href='#L22'>22</a>
 <a name='L23'></a><a href='#L23'>23</a>
-<a name='L24'></a><a href='#L24'>24</a>
-<a name='L25'></a><a href='#L25'>25</a>
-<a name='L26'></a><a href='#L26'>26</a>
-<a name='L27'></a><a href='#L27'>27</a>
-<a name='L28'></a><a href='#L28'>28</a>
-<a name='L29'></a><a href='#L29'>29</a>
-<a name='L30'></a><a href='#L30'>30</a>
-<a name='L31'></a><a href='#L31'>31</a>
-<a name='L32'></a><a href='#L32'>32</a>
-<a name='L33'></a><a href='#L33'>33</a>
-<a name='L34'></a><a href='#L34'>34</a>
-<a name='L35'></a><a href='#L35'>35</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L24'></a><a href='#L24'>24</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -107,16 +94,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -124,46 +101,36 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { useQuery, keepPreviousData } from '@tanstack/react-query';</span></span></span>
-import { fetchClusterOverview, fetchPrometheusStatus, fetchClusterMetrics } from '../api/k8sApi';
-&nbsp;
-<span class="cstat-no" title="statement not covered" >export const useClusterOverview = (fetcher, currentCluster) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    const overviewQuery = useQuery({</span>
-<span class="cstat-no" title="statement not covered" >        queryKey: ['clusterOverview'],</span>
-<span class="cstat-no" title="statement not covered" >        queryFn: () =&gt; fetchClusterOverview(fetcher),</span>
-<span class="cstat-no" title="statement not covered" >        refetchInterval: 10000, // Reduced to 10 seconds</span>
-<span class="cstat-no" title="statement not covered" >        placeholderData: keepPreviousData,</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >export const defineMonacoTheme = (monaco) =&gt; {<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+<span class="cstat-no" title="statement not covered" >    monaco.editor.defineTheme('dkonsole-dark', {</span>
+<span class="cstat-no" title="statement not covered" >        base: 'vs-dark',</span>
+<span class="cstat-no" title="statement not covered" >        inherit: true,</span>
+<span class="cstat-no" title="statement not covered" >        rules: [</span>
+<span class="cstat-no" title="statement not covered" >            { token: '', background: '1f2937' }, // gray-800</span>
+<span class="cstat-no" title="statement not covered" >            { token: 'comment', foreground: '6b7280' }, // gray-500</span>
+<span class="cstat-no" title="statement not covered" >            { token: 'keyword', foreground: '60a5fa' }, // blue-400</span>
+<span class="cstat-no" title="statement not covered" >            { token: 'string', foreground: '34d399' }, // green-400</span>
+<span class="cstat-no" title="statement not covered" >            { token: 'number', foreground: 'f87171' }, // red-400</span>
+<span class="cstat-no" title="statement not covered" >            { token: 'type', foreground: 'a78bfa' }, // purple-400</span>
+<span class="cstat-no" title="statement not covered" >        ],</span>
+<span class="cstat-no" title="statement not covered" >        colors: {</span>
+<span class="cstat-no" title="statement not covered" >            'editor.background': '#1f2937', // gray-800</span>
+<span class="cstat-no" title="statement not covered" >            'editor.foreground': '#e5e7eb', // gray-200</span>
+<span class="cstat-no" title="statement not covered" >            'editor.lineHighlightBackground': '#374151', // gray-700</span>
+<span class="cstat-no" title="statement not covered" >            'editorCursor.foreground': '#60a5fa', // blue-400</span>
+<span class="cstat-no" title="statement not covered" >            'editorWhitespace.foreground': '#4b5563', // gray-600</span>
+<span class="cstat-no" title="statement not covered" >            'editorIndentGuide.background': '#374151', // gray-700</span>
+<span class="cstat-no" title="statement not covered" >            'editorIndentGuide.activeBackground': '#6b7280', // gray-500</span>
+<span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >    });</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    const prometheusStatusQuery = useQuery({</span>
-<span class="cstat-no" title="statement not covered" >        queryKey: ['prometheusStatus', currentCluster],</span>
-<span class="cstat-no" title="statement not covered" >        queryFn: () =&gt; fetchPrometheusStatus(fetcher, currentCluster),</span>
-<span class="cstat-no" title="statement not covered" >        enabled: !!currentCluster,</span>
-<span class="cstat-no" title="statement not covered" >        placeholderData: keepPreviousData,</span>
-<span class="cstat-no" title="statement not covered" >    });</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    const prometheusEnabled = prometheusStatusQuery.data?.enabled || false;</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    const metricsQuery = useQuery({</span>
-<span class="cstat-no" title="statement not covered" >        queryKey: ['clusterMetrics', currentCluster],</span>
-<span class="cstat-no" title="statement not covered" >        queryFn: () =&gt; fetchClusterMetrics(fetcher, currentCluster),</span>
-<span class="cstat-no" title="statement not covered" >        enabled: !!currentCluster &amp;&amp; prometheusEnabled,</span>
-<span class="cstat-no" title="statement not covered" >        refetchInterval: 5000, // Reduced to 5 seconds for metrics</span>
-<span class="cstat-no" title="statement not covered" >        placeholderData: keepPreviousData,</span>
-<span class="cstat-no" title="statement not covered" >    });</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    return {</span>
-<span class="cstat-no" title="statement not covered" >        overview: overviewQuery,</span>
-<span class="cstat-no" title="statement not covered" >        prometheusStatus: prometheusStatusQuery,</span>
-<span class="cstat-no" title="statement not covered" >        metrics: metricsQuery,</span>
-<span class="cstat-no" title="statement not covered" >    };</span>
 <span class="cstat-no" title="statement not covered" >};</span>
 &nbsp;</pre></td></tr></table></pre>
 

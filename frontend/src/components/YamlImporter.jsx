@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, X, Loader2, AlertTriangle } from 'lucide-react';
 import Editor from '@monaco-editor/react';
+import { defineMonacoTheme } from '../config/monacoTheme';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { parseErrorResponse, parseError } from '../utils/errorParser';
@@ -12,6 +13,10 @@ const YamlImporter = ({ onClose }) => {
     const [importing, setImporting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    const handleEditorWillMount = (monaco) => {
+        defineMonacoTheme(monaco);
+    };
 
     const handleImport = () => {
         setImporting(true);
@@ -84,11 +89,12 @@ const YamlImporter = ({ onClose }) => {
                     </div>
                 )}
 
-                <div className="flex-1 flex flex-col relative">
+                <div className="flex-1 flex flex-col relative monaco-editor-container">
                     <Editor
                         height="100%"
                         defaultLanguage="yaml"
-                        theme="vs-dark"
+                        theme="dkonsole-dark"
+                        beforeMount={handleEditorWillMount}
                         value={content}
                         onChange={(value) => setContent(value)}
                         options={{

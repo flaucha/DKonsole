@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Search, Package, RefreshCw, Globe, MapPin, FileText, X } from 'lucide-react';
 import Editor from '@monaco-editor/react';
+import { defineMonacoTheme } from '../config/monacoTheme';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { getStatusBadgeClass } from '../utils/statusBadge';
@@ -17,6 +18,10 @@ const CRDExplorer = ({ namespace }) => {
     const [loadingResources, setLoadingResources] = useState(false);
     const [scopeFilter, setScopeFilter] = useState('all'); // namespaced | cluster | all
     const [yamlView, setYamlView] = useState(null); // {name, namespace, content}
+
+    const handleEditorWillMount = (monaco) => {
+        defineMonacoTheme(monaco);
+    };
 
     const fetchCRDs = () => {
         setLoadingCRDs(true);
@@ -245,11 +250,12 @@ const CRDExplorer = ({ namespace }) => {
                                 Close
                             </button>
                         </div>
-                        <div className="flex-1 relative">
+                        <div className="flex-1 relative monaco-editor-container">
                             <Editor
                                 height="100%"
                                 defaultLanguage="yaml"
-                                theme="vs-dark"
+                                theme="dkonsole-dark"
+                                beforeMount={handleEditorWillMount}
                                 value={yamlView.content}
                                 options={{
                                     readOnly: true,

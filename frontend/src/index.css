@@ -294,13 +294,10 @@ body {
 
 /* Exclude Monaco Editor completely from color overrides - let it use its native vs-dark theme */
 /* Monaco Editor applies colors via inline styles and classes, so we need to unset our overrides */
-[data-theme="light"] .monaco-editor,
-[data-theme="light"] .monaco-editor * {
-  color: unset !important;
-}
+/* We now handle this by using specific selectors that exclude .monaco-editor-container */
 
-[data-theme="light"] .bg-black,
-[data-theme="light"] .bg-black * {
+[data-theme="light"] .bg-black:not(.monaco-editor-container *),
+[data-theme="light"] .bg-black *:not(.monaco-editor-container *) {
   background-color: rgb(var(--color-gray-900)) !important;
 }
 
@@ -316,23 +313,20 @@ body {
   color: rgb(var(--color-gray-100)) !important;
 }
 
-[data-theme="cream"] .text-white {
+[data-theme="cream"] .text-white:not(.monaco-editor-container *) {
   color: rgb(var(--color-gray-100)) !important;
 }
 
-[data-theme="cream"] .text-white * {
+[data-theme="cream"] .text-white *:not(.monaco-editor-container *) {
   color: rgb(var(--color-gray-100)) !important;
 }
 
 /* Exclude Monaco Editor completely from color overrides - let it use its native vs-dark theme */
 /* Monaco Editor applies colors via inline styles and classes, so we need to unset our overrides */
-[data-theme="cream"] .monaco-editor,
-[data-theme="cream"] .monaco-editor * {
-  color: unset !important;
-}
+/* We now handle this by using specific selectors that exclude .monaco-editor-container */
 
-[data-theme="cream"] .bg-black,
-[data-theme="cream"] .bg-black * {
+[data-theme="cream"] .bg-black:not(.monaco-editor-container *),
+[data-theme="cream"] .bg-black *:not(.monaco-editor-container *) {
   background-color: rgb(var(--color-gray-900)) !important;
 }
 
@@ -443,5 +437,3 @@ body {
 .bg-gray-900 * {
   scrollbar-color: rgba(55, 65, 81, 0.8) rgba(17, 24, 39, 0.8);
 }
-
-/* Monaco Editor CSS has been removed - Monaco uses its native vs-dark theme */

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Package, RefreshCw, Clock, Tag, MoreVertical, Trash2, ArrowUp, X, Info, Download, ChevronDown, Search } from 'lucide-react';
 import Editor from '@monaco-editor/react';
+import { defineMonacoTheme } from '../config/monacoTheme';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
@@ -39,6 +40,10 @@ const HelmChartManager = ({ namespace }) => {
         valuesYaml: ''
     });
     const [installing, setInstalling] = useState(false);
+
+    const handleEditorWillMount = (monaco) => {
+        defineMonacoTheme(monaco);
+    };
 
     const { data: releases = [], isLoading: loading, refetch } = useHelmReleases(authFetch, currentCluster);
 
@@ -625,11 +630,12 @@ const HelmChartManager = ({ namespace }) => {
                                     <label className="block text-sm font-medium text-gray-300 mb-2">
                                         Values Override (YAML) <span className="text-gray-500 text-xs">(optional)</span>
                                     </label>
-                                    <div className="border border-gray-700 rounded-md overflow-hidden" style={{ height: '300px' }}>
+                                    <div className="border border-gray-700 rounded-md overflow-hidden monaco-editor-container" style={{ height: '300px' }}>
                                         <Editor
                                             height="100%"
                                             defaultLanguage="yaml"
-                                            theme="vs-dark"
+                                            theme="dkonsole-dark"
+                                            beforeMount={handleEditorWillMount}
                                             value={upgradeForm.valuesYaml}
                                             onChange={(value) => setUpgradeForm({ ...upgradeForm, valuesYaml: value || '' })}
                                             options={{

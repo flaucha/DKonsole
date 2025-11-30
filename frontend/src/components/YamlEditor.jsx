@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Save, AlertTriangle, Loader2, FileText, Copy } from 'lucide-react';
 import Editor from '@monaco-editor/react';
+import { defineMonacoTheme } from '../config/monacoTheme';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -13,6 +14,10 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [copying, setCopying] = useState(false);
+
+    const handleEditorWillMount = (monaco) => {
+        defineMonacoTheme(monaco);
+    };
 
     const buildUrl = () => {
         const params = new URLSearchParams({ kind, name });
@@ -138,7 +143,7 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
                     </div>
                 )}
 
-                <div className="flex-1 flex flex-col relative">
+                <div className="flex-1 flex flex-col relative monaco-editor-container">
                     {loading ? (
                         <div className="flex-1 flex items-center justify-center text-gray-400">
                             <Loader2 size={20} className="animate-spin mr-2" />
@@ -148,7 +153,8 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
                         <Editor
                             height="100%"
                             defaultLanguage="yaml"
-                            theme="vs-dark"
+                            theme="dkonsole-dark"
+                            beforeMount={handleEditorWillMount}
                             value={content}
                             onChange={(value) => setContent(value)}
                             options={{
