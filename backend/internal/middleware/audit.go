@@ -7,6 +7,10 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
+// userContextKeyStr is the context key for user information.
+// This must match auth.userContextKey to avoid import cycle.
+const userContextKeyStr = "user"
+
 // AuditMiddleware logs request details with improved information
 func AuditMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -27,8 +31,7 @@ func AuditMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		// Extract user if available (set by AuthMiddleware or handler)
 		user := "anonymous"
 		// Use the same context key as auth package (must match auth.userContextKey = "user")
-		//nolint:goconst // This string must match auth.userContextKey to avoid import cycle
-		userVal := r.Context().Value("user")
+		userVal := r.Context().Value(userContextKeyStr)
 		if userVal != nil {
 			// Try different claim types for compatibility
 			if claims, ok := userVal.(map[string]interface{}); ok {

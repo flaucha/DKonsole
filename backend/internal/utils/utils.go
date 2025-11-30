@@ -152,6 +152,10 @@ func GetClientIP(r *http.Request) string {
 	return ip
 }
 
+// userContextKeyStr is the context key for user information.
+// This must match auth.userContextKey to avoid import cycle.
+const userContextKeyStr = "user"
+
 // AuditLogLegacy logs detailed audit information for critical actions
 // This is a convenience function that builds an AuditLogEntry from parameters
 //
@@ -163,8 +167,7 @@ func AuditLogLegacy(r *http.Request, action, resourceKind, resourceName, namespa
 	// Try to get user from context - this will need to be adapted based on how Claims is structured
 	// For now, we'll use a simple approach
 	// Use the same context key as auth package (must match auth.userContextKey = "user")
-	//nolint:goconst // This string must match auth.userContextKey to avoid import cycle
-	if userVal := r.Context().Value("user"); userVal != nil {
+	if userVal := r.Context().Value(userContextKeyStr); userVal != nil {
 		// This will need to be updated when we move auth to its own package
 		if claims, ok := userVal.(interface{ Username() string }); ok {
 			user = claims.Username()
