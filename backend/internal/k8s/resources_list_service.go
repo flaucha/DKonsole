@@ -193,7 +193,7 @@ func (s *ResourceListService) listDeployments(ctx context.Context, client kubern
 			image := images[0]
 			// Check if image has SHA256 digest (format: image@sha256:hash)
 			if idx := strings.Index(image, "@sha256:"); idx != -1 {
-				imageTag = image[idx+8 : idx+16] + "..." // Show first 8 chars of SHA
+				imageTag = image[idx+8:idx+16] + "..." // Show first 8 chars of SHA
 			} else if idx := strings.LastIndex(image, ":"); idx != -1 {
 				imageTag = image[idx+1:]
 			} else {
