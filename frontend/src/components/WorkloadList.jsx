@@ -274,6 +274,41 @@ const WorkloadList = ({ namespace, kind }) => {
         return sortDirection === 'asc' ? '↑' : '↓';
     };
 
+    // Helper function to check if a node is a master/control-plane node
+    const isMasterNode = (res) => {
+        if (res.kind !== 'Node') return false;
+
+        // Check details for labels or taints that indicate control plane
+        if (res.details) {
+            // Check labels if available
+            if (res.details.labels) {
+                const labels = res.details.labels;
+                if ((labels['node-role.kubernetes.io/control-plane'] &&
+                     labels['node-role.kubernetes.io/control-plane'] !== '' &&
+                     labels['node-role.kubernetes.io/control-plane'] !== 'false') ||
+                    (labels['node-role.kubernetes.io/master'] &&
+                     labels['node-role.kubernetes.io/master'] !== '' &&
+                     labels['node-role.kubernetes.io/master'] !== 'false')) {
+                    return true;
+                }
+            }
+
+            // Check taints if available
+            if (res.details.taints && Array.isArray(res.details.taints)) {
+                for (const taint of res.details.taints) {
+                    const taintKey = taint.key || (typeof taint === 'string' ? taint : null);
+                    if (taintKey && (
+                        taintKey === 'node-role.kubernetes.io/control-plane' ||
+                        taintKey === 'node-role.kubernetes.io/master')) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    };
+
     const handleDelete = async (res, force = false) => {
         const params = new URLSearchParams({ kind: res.kind, name: res.name });
         if (res.namespace) params.append('namespace', res.namespace);
@@ -698,27 +733,38 @@ const WorkloadList = ({ namespace, kind }) => {
                                         {menuOpen === res.uid && (
                                             <div className="absolute right-0 mt-1 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
                                                 <div className="flex flex-col">
-                                                    {/* Only show delete for pods if user has edit permission or is admin */}
-                                                    {(isAdmin(user) || canEdit(user, res.namespace)) ? (
+                                                    {/* Special handling for nodes */}
+                                                    {res.kind === 'Node' && isMasterNode(res) ? (
+                                                        <div className="px-4 py-2 text-xs text-red-400">
+                                                            Not Allowed
+                                                        </div>
+                                                    ) : (isAdmin(user) || canEdit(user, res.namespace)) ? (
                                                         <>
                                                             <button
                                                                 onClick={() => {
-                                                                    setConfirmAction({ res, force: false });
+                                                                    // For nodes, show confirmation dialog
+                                                                    if (res.kind === 'Node') {
+                                                                        setConfirmAction({ res, force: false });
+                                                                    } else {
+                                                                        setConfirmAction({ res, force: false });
+                                                                    }
                                                                     setMenuOpen(null);
                                                                 }}
                                                                 className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
                                                             >
                                                                 Delete
                                                             </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setConfirmAction({ res, force: true });
-                                                                    setMenuOpen(null);
-                                                                }}
-                                                                className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"
-                                                            >
-                                                                Force Delete
-                                                            </button>
+                                                            {res.kind !== 'Node' && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setConfirmAction({ res, force: true });
+                                                                        setMenuOpen(null);
+                                                                    }}
+                                                                    className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"
+                                                                >
+                                                                    Force Delete
+                                                                </button>
+                                                            )}
                                                         </>
                                                     ) : (
                                                         <div className="px-4 py-2 text-xs text-gray-500">
@@ -782,6 +828,11 @@ const WorkloadList = ({ namespace, kind }) => {
                         </h3>
                         <p className="text-sm text-gray-300 mb-4">
                             {confirmAction.force ? 'Force delete' : 'Delete'} {confirmAction.res.kind} "{confirmAction.res.name}"?
+                            {confirmAction.res.kind === 'Node' && (
+                                <span className="block mt-2 text-xs text-yellow-400">
+                                    ⚠️ Warning: Deleting a node will remove it from the cluster. This action cannot be undone.
+                                </span>
+                            )}
                             {confirmAction.force && (
                                 <span className="block mt-2 text-xs text-red-400">
                                     Warning: Force delete will immediately terminate the resource without graceful shutdown.

@@ -43,25 +43,72 @@ const SubItem = ({ label, to }) => (
     <NavLink
         to={to}
         className={({ isActive }) =>
-            `block pl-12 pr-4 py-1.5 cursor-pointer text-sm transition-colors whitespace-nowrap ${isActive ? 'text-white font-medium' : 'text-white hover:text-gray-300'}`
+            `block pl-12 pr-4 py-1.5 cursor-pointer text-xs transition-colors whitespace-nowrap ${isActive ? 'text-white font-medium' : 'text-gray-400 hover:text-gray-300'}`
         }
+        style={{ fontSize: '0.75rem' }}
     >
+        <span className="text-gray-500 text-[10px] mr-1.5">└</span>
         {label}
     </NavLink>
 );
 
-const SubMenu = ({ isOpen, children }) => (
-    <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}
-    >
-        <div className="space-y-1 mb-2">
-            {children}
+const SubMenu = ({ isOpen, children, animationStyle = 'slide' }) => {
+    const getAnimationClasses = () => {
+        switch (animationStyle) {
+            case 'slide':
+                return isOpen
+                    ? 'max-h-[500px] opacity-100 translate-y-0'
+                    : 'max-h-0 opacity-0 -translate-y-2';
+            case 'fade':
+                return isOpen
+                    ? 'max-h-[500px] opacity-100'
+                    : 'max-h-0 opacity-0';
+            case 'scale':
+                return isOpen
+                    ? 'max-h-[500px] opacity-100 scale-100'
+                    : 'max-h-0 opacity-0 scale-95';
+            case 'rotate':
+                return isOpen
+                    ? 'max-h-[500px] opacity-100 rotate-0'
+                    : 'max-h-0 opacity-0 rotate-[-2deg]';
+            default:
+                return isOpen
+                    ? 'max-h-[500px] opacity-100 translate-y-0'
+                    : 'max-h-0 opacity-0 -translate-y-2';
+        }
+    };
+
+    const getTransitionClasses = () => {
+        switch (animationStyle) {
+            case 'slide':
+                return 'transition-all duration-300 ease-out';
+            case 'fade':
+                return 'transition-all duration-250 ease-in-out';
+            case 'scale':
+                return 'transition-all duration-300 ease-out transform-gpu';
+            case 'rotate':
+                return 'transition-all duration-300 ease-out transform-gpu origin-top-left';
+            default:
+                return 'transition-all duration-300 ease-out';
+        }
+    };
+
+    return (
+        <div
+            className={`overflow-hidden ${getTransitionClasses()} ${getAnimationClasses()}`}
+            style={{
+                transformOrigin: animationStyle === 'scale' ? 'top' : animationStyle === 'rotate' ? 'top left' : 'top'
+            }}
+        >
+            <div className="space-y-1 mb-2">
+                {children}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const Layout = ({ children, headerContent }) => {
-    const { currentCluster, theme } = useSettings();
+    const { currentCluster, theme, menuAnimation } = useSettings();
     const { logout, authFetch, user } = useAuth();
     const [isAdmin, setIsAdmin] = useState(false);
     const [checkingAdmin, setCheckingAdmin] = useState(true);
@@ -279,7 +326,7 @@ const Layout = ({ children, headerContent }) => {
                                     expanded={expandedMenus.workloads}
                                     onClick={() => toggleMenu('workloads')}
                                 />
-                                <SubMenu isOpen={expandedMenus.workloads}>
+                                <SubMenu isOpen={expandedMenus.workloads} animationStyle={menuAnimation}>
                                     {['Deployments', 'Pods', 'ConfigMaps', 'Secrets', 'Jobs', 'CronJobs', 'StatefulSets', 'DaemonSets', 'HPA'].map(item => (
                                         <SubItem
                                             key={item}
@@ -297,7 +344,7 @@ const Layout = ({ children, headerContent }) => {
                                     expanded={expandedMenus.networking}
                                     onClick={() => toggleMenu('networking')}
                                 />
-                                <SubMenu isOpen={expandedMenus.networking}>
+                                <SubMenu isOpen={expandedMenus.networking} animationStyle={menuAnimation}>
                                     {['Services', 'Ingresses', 'Network Policies'].map(item => (
                                         <SubItem
                                             key={item}
@@ -315,7 +362,7 @@ const Layout = ({ children, headerContent }) => {
                                     expanded={expandedMenus.storage}
                                     onClick={() => toggleMenu('storage')}
                                 />
-                                <SubMenu isOpen={expandedMenus.storage}>
+                                <SubMenu isOpen={expandedMenus.storage} animationStyle={menuAnimation}>
                                     {['PVCs', ...(isAdmin ? ['PVs', 'Storage Classes'] : [])].map(item => (
                                         <SubItem
                                             key={item}
@@ -324,15 +371,6 @@ const Layout = ({ children, headerContent }) => {
                                         />
                                     ))}
                                 </SubMenu>
-
-                                {/* Nodes - Only for admins */}
-                                {isAdmin && (
-                                    <SidebarItem
-                                        icon={Server}
-                                        label="Nodes"
-                                        to="/dashboard/workloads/Node"
-                                    />
-                                )}
 
                                 {/* Access Control - Only for admins */}
                                 {isAdmin && (
@@ -344,7 +382,7 @@ const Layout = ({ children, headerContent }) => {
                                             expanded={expandedMenus.accessControl}
                                             onClick={() => toggleMenu('accessControl')}
                                         />
-                                        <SubMenu isOpen={expandedMenus.accessControl}>
+                                        <SubMenu isOpen={expandedMenus.accessControl} animationStyle={menuAnimation}>
                                             {['Service Accounts', 'Roles', 'Role Bindings', 'Cluster Roles', 'Cluster Role Bindings'].map(item => (
                                                 <SubItem
                                                     key={item}
@@ -354,6 +392,15 @@ const Layout = ({ children, headerContent }) => {
                                             ))}
                                         </SubMenu>
                                     </>
+                                )}
+
+                                {/* Nodes - Only for admins */}
+                                {isAdmin && (
+                                    <SidebarItem
+                                        icon={Server}
+                                        label="Nodes"
+                                        to="/dashboard/workloads/Node"
+                                    />
                                 )}
 
                                 <SidebarItem

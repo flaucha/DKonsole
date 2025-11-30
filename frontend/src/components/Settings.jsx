@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Server, Palette, Type, Plus, Check, AlertCircle, Trash2, Settings as SettingsIcon, Info, Github, Mail, Coffee, Code, Lock, Save, Users, Key } from 'lucide-react';
+import { Server, Palette, Type, Plus, Check, AlertCircle, Trash2, Settings as SettingsIcon, Info, Github, Mail, Coffee, Code, Lock, Save, Users, Key, Menu } from 'lucide-react';
 import { parseErrorResponse, parseError } from '../utils/errorParser';
 
 const Settings = () => {
@@ -11,7 +11,8 @@ const Settings = () => {
         theme, setTheme,
         font, setFont,
         fontSize, setFontSize,
-        borderRadius, setBorderRadius
+        borderRadius, setBorderRadius,
+        menuAnimation, setMenuAnimation
     } = useSettings();
     const { authFetch, user } = useAuth();
     const [activeTab, setActiveTab] = useState('clusters');
@@ -299,6 +300,41 @@ const Settings = () => {
                             <p className="mt-4 text-xs text-gray-500 flex items-center">
                                 <AlertCircle size={12} className="mr-1" /> Fonts are loaded dynamically from Google Fonts.
                             </p>
+                        </div>
+
+                        {/* Menu Animation Style */}
+                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
+                            <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
+                                <Menu size={20} className="mr-2 text-blue-400" /> Menu Animation Style
+                            </h2>
+                            <p className="text-sm text-gray-400 mb-4">
+                                Choose the animation style for sidebar submenus when they open and close.
+                            </p>
+                            <div className="grid grid-cols-2 gap-3">
+                                {[
+                                    { id: 'slide', name: 'Slide', desc: 'Slides down smoothly' },
+                                    { id: 'fade', name: 'Fade', desc: 'Fades in/out' },
+                                    { id: 'scale', name: 'Scale', desc: 'Scales from top' },
+                                    { id: 'rotate', name: 'Rotate', desc: 'Rotates slightly' }
+                                ].map(anim => (
+                                    <button
+                                        key={anim.id}
+                                        onClick={() => setMenuAnimation(anim.id)}
+                                        className={`p-4 rounded-lg border transition-all ${
+                                            menuAnimation === anim.id
+                                                ? 'border-blue-500 bg-blue-900/20 shadow-md'
+                                                : 'border-gray-700 bg-gray-750 hover:bg-gray-700 hover:border-gray-600'
+                                        }`}
+                                    >
+                                        <div className={`font-medium text-left ${menuAnimation === anim.id ? 'text-white' : 'text-gray-300'}`}>
+                                            {anim.name}
+                                        </div>
+                                        <div className="text-xs text-gray-500 mt-1 text-left">
+                                            {anim.desc}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                         {/* Custom Logo */}

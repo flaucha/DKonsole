@@ -14,6 +14,7 @@ export const SettingsProvider = ({ children }) => {
     const [font, setFont] = useState(localStorage.getItem('font') || 'Inter');
     const [fontSize, setFontSize] = useState(localStorage.getItem('fontSize') || 'normal');
     const [borderRadius, setBorderRadius] = useState(localStorage.getItem('borderRadius') || 'md');
+    const [menuAnimation, setMenuAnimation] = useState(localStorage.getItem('menuAnimation') || 'slide');
     const [itemsPerPage, setItemsPerPage] = useState(() => {
         const saved = localStorage.getItem('itemsPerPage');
         return saved ? parseInt(saved, 10) : 500;
@@ -42,6 +43,10 @@ export const SettingsProvider = ({ children }) => {
         document.documentElement.setAttribute('data-border-radius', borderRadius);
         localStorage.setItem('borderRadius', borderRadius);
     }, [borderRadius]);
+
+    useEffect(() => {
+        localStorage.setItem('menuAnimation', menuAnimation);
+    }, [menuAnimation]);
 
     useEffect(() => {
         localStorage.setItem('itemsPerPage', itemsPerPage.toString());
@@ -73,6 +78,8 @@ export const SettingsProvider = ({ children }) => {
             setFontSize,
             borderRadius,
             setBorderRadius,
+            menuAnimation,
+            setMenuAnimation,
             itemsPerPage,
             setItemsPerPage
         }}>
