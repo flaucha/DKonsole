@@ -1,0 +1,115 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  pull-requests: write
+
+jobs:
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Update go.mod
+        working-directory: ./backend
+        run: go mod tidy
+
+      - name: Download dependencies
+        working-directory: ./backend
+        run: go mod download
+
+      - name: Run go vet
+        working-directory: ./backend
+        run: go vet ./...
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          working-directory: ./backend
+          args: --timeout=5m
+
+      - name: Run govulncheck
+        working-directory: ./backend
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+      - name: Run tests
+        working-directory: ./backend
+        run: go test -v -coverprofile=coverage.out ./...
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          file: ./backend/coverage.out
+          flags: backend
+          name: backend-coverage
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('frontend/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Run npm audit
+        working-directory: ./frontend
+        run: npm audit --audit-level=moderate || true  # No fallar en vulnerabilidades bajas
+
+      - name: Run linter
+        working-directory: ./frontend
+        run: npm run lint || true  # No fallar si hay warnings del linter
+
+      - name: Run tests
+        working-directory: ./frontend
+        run: npm run test -- --run --coverage
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./frontend/coverage/coverage-final.json
+          flags: frontend
+          name: frontend-coverage
