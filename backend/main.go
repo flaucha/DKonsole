@@ -433,6 +433,15 @@ func main() {
 		mux.HandleFunc("/favicon.ico", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, filepath.Join(staticDir, "favicon.ico"))
 		}))
+		mux.HandleFunc("/favicon.svg", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			faviconPath := filepath.Join(staticDir, "favicon.svg")
+			if _, err := os.Stat(faviconPath); err != nil {
+				http.NotFound(w, r)
+				return
+			}
+			w.Header().Set("Content-Type", "image/svg+xml")
+			http.ServeFile(w, r, faviconPath)
+		}))
 		mux.HandleFunc("/logo-full-dark.svg", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
 			logoPath := filepath.Join(staticDir, "logo-full-dark.svg")
 			if _, err := os.Stat(logoPath); err != nil {
