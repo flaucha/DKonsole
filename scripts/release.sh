@@ -60,21 +60,7 @@ if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
 fi
 
 echo "🏷️  Creating new tag v${VERSION}..."
-git tag -a "v${VERSION}" -m "Release v${VERSION}
-
-Major Refactoring & Code Cleanup:
-- Extracted resource detail components into modular structure
-- Removed obsolete components (DeploymentTable, PodTable)
-- Cleaned up legacy code and unused functions
-- Removed duplicate files (AcercaDe.jsx)
-- Cleaned up ingress and certificate example files
-- Improved code organization and maintainability
-- Removed unused imports and functions
-- Backend refactoring: removed GetResources_OLD function (~760 lines)
-- Frontend refactoring: componentized all resource details
-
-Docker Image:
-- dkonsole/dkonsole:${VERSION}"
+git tag -a "v${VERSION}" -m "Release v${VERSION}"
 
 echo "✅ Git tag created"
 
