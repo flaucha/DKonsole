@@ -254,6 +254,10 @@ const WorkloadList = ({ namespace, kind }) => {
                     if (kind !== 'Pod') return 0;
                     return item.details?.restarts || 0;
                 }
+                case 'tag': {
+                    if (kind !== 'Deployment') return '';
+                    return item.details?.imageTag || '';
+                }
                 default:
                     return '';
             }
@@ -577,39 +581,49 @@ const WorkloadList = ({ namespace, kind }) => {
 
             {/* Table Header */}
             <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-800 bg-gray-900/50 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <div className="col-span-4 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('name')}>
+                <div className={`${kind === 'Deployment' ? 'col-span-3' : 'col-span-4'} cursor-pointer hover:text-gray-300 flex items-center justify-center`} onClick={() => handleSort('name')}>
                     Name {renderSortIndicator('name')}
                 </div>
-                <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('status')}>
+                <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('status')}>
                     Status {renderSortIndicator('status')}
                 </div>
                 {kind === 'Pod' && (
-                    <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('ready')}>
+                    <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('ready')}>
                         Ready {renderSortIndicator('ready')}
                     </div>
                 )}
-                <div className={`${kind === 'Pod' ? 'col-span-1' : 'col-span-3'} cursor-pointer hover:text-gray-300 flex items-center`} onClick={() => handleSort('created')}>
+                <div className={`${kind === 'Pod' ? 'col-span-1' : kind === 'Deployment' ? 'col-span-1' : 'col-span-3'} cursor-pointer hover:text-gray-300 flex items-center justify-center`} onClick={() => handleSort('created')}>
                     Age {renderSortIndicator('created')}
                 </div>
                 {kind === 'Pod' && (
                     <>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('restarts')}>
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('restarts')}>
                             Restarts {renderSortIndicator('restarts')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('cpu')}>
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('cpu')}>
                             CPU {renderSortIndicator('cpu')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('memory')}>
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('memory')}>
                             Mem {renderSortIndicator('memory')}
                         </div>
                     </>
                 )}
                 {kind === 'PersistentVolumeClaim' && (
-                    <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('size')}>
+                    <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('size')}>
                         Size {renderSortIndicator('size')}
                     </div>
                 )}
-                <div className="col-span-1"></div>
+                {kind === 'Deployment' && (
+                    <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('tag')}>
+                        Tag {renderSortIndicator('tag')}
+                    </div>
+                )}
+                {kind !== 'Deployment' && kind !== 'Pod' && kind !== 'PersistentVolumeClaim' && (
+                    <div className="col-span-1"></div>
+                )}
+                {kind === 'Deployment' && (
+                    <div className="col-span-4"></div>
+                )}
             </div>
 
             {/* Table Body */}
@@ -622,7 +636,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                 onClick={() => toggleExpand(res.uid)}
                                 className={`grid grid-cols-12 gap-4 px-6 py-4 cursor-pointer transition-colors duration-200 items-center ${getExpandableRowRowClasses(isExpanded)}`}
                             >
-                                <div className="col-span-4 flex items-center font-medium text-sm text-gray-200">
+                                <div className={`${kind === 'Deployment' ? 'col-span-3' : 'col-span-4'} flex items-center font-medium text-sm text-gray-200`}>
                                     <ChevronDown
                                         size={16}
                                         className={`mr-2 text-gray-500 transition-transform duration-200 ${isExpanded ? 'transform rotate-180' : ''}`}
@@ -630,41 +644,49 @@ const WorkloadList = ({ namespace, kind }) => {
                                     <Icon size={16} className="mr-3 text-gray-500" />
                                     <span className="truncate" title={res.name}>{res.name}</span>
                                 </div>
-                                <div className="col-span-2">
+                                <div className="col-span-2 flex items-center justify-center">
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(res.status)}`}>
                                         {res.status}
                                     </span>
                                 </div>
                                 {kind === 'Pod' && (
-                                    <div className="col-span-1 text-sm text-gray-400">
+                                    <div className="col-span-1 text-sm text-gray-400 text-center">
                                         {res.details?.ready || '-'}
                                     </div>
                                 )}
-                                <div className={`${kind === 'Pod' ? 'col-span-1' : 'col-span-3'} text-sm text-gray-400`}>
+                                <div className={`${kind === 'Pod' ? 'col-span-1' : kind === 'Deployment' ? 'col-span-1' : 'col-span-3'} text-sm text-gray-400 text-center`}>
                                     {formatDateTime(res.created)}
                                 </div>
+                                {kind === 'Deployment' && (
+                                    <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        {res.details?.imageTag || '-'}
+                                    </div>
+                                )}
                                 {kind === 'Pod' && (
                                     <>
-                                        <div className="col-span-1 text-sm text-gray-400">
+                                        <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {res.details?.restarts || 0}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400">
+                                        <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {res.details?.metrics?.cpu || '-'}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400">
+                                        <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {res.details?.metrics?.memory || '-'}
                                         </div>
                                     </>
                                 )}
                                 {kind === 'PersistentVolumeClaim' && (
-                                    <div className="col-span-1 text-sm text-gray-400">
+                                    <div className="col-span-1 text-sm text-gray-400 text-center">
                                         {res.details?.capacity || res.details?.requested || '-'}
                                     </div>
                                 )}
-                                {kind !== 'Pod' && kind !== 'PersistentVolumeClaim' && (
+                                {kind !== 'Pod' && kind !== 'PersistentVolumeClaim' && kind !== 'Deployment' && (
                                     <div className="col-span-1"></div>
                                 )}
-                                <div className={`${kind === 'Pod' ? 'col-span-1' : kind === 'PersistentVolumeClaim' ? 'col-span-2' : 'col-span-2'} flex justify-end items-center space-x-2 pr-2`} onClick={(e) => e.stopPropagation()}>
+                                {kind === 'Deployment' && (
+                                    <div className="col-span-4"></div>
+                                )}
+                                <div className={`${kind === 'Pod' ? 'col-span-1' : kind === 'PersistentVolumeClaim' ? 'col-span-2' : kind === 'Deployment' ? 'col-span-1' : 'col-span-2'} flex justify-end items-center space-x-2 pr-2`} onClick={(e) => e.stopPropagation()}>
                                     {kind === 'CronJob' && (
                                         <button
                                             onClick={(e) => {

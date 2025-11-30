@@ -79,9 +79,11 @@ type DeploymentDetails struct {
 	Replicas  int32             `json:"replicas"`
 	Ready     int32             `json:"ready"`
 	Images    []string          `json:"images"`
+	ImageTag  string            `json:"imageTag,omitempty"`
 	Ports     []int32           `json:"ports"`
 	PVCs      []string          `json:"pvcs"`
 	PodLabels map[string]string `json:"podLabels"`
+	Labels    map[string]string `json:"labels,omitempty"`
 }
 
 // PodMetric representa métricas de CPU y memoria de un Pod

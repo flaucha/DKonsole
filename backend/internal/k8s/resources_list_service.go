@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -186,13 +187,29 @@ func (s *ResourceListService) listDeployments(ctx context.Context, client kubern
 			replicas = *i.Spec.Replicas
 		}
 
+		// Extract tag from first image (format: registry/repo/image:tag or image:tag)
+		var imageTag string
+		if len(images) > 0 && images[0] != "" {
+			image := images[0]
+			// Check if image has SHA256 digest (format: image@sha256:hash)
+			if idx := strings.Index(image, "@sha256:"); idx != -1 {
+				imageTag = image[idx+8 : idx+16] + "..." // Show first 8 chars of SHA
+			} else if idx := strings.LastIndex(image, ":"); idx != -1 {
+				imageTag = image[idx+1:]
+			} else {
+				imageTag = "latest"
+			}
+		}
+
 		details := models.DeploymentDetails{
 			Replicas:  replicas,
 			Ready:     i.Status.ReadyReplicas,
 			Images:    images,
+			ImageTag:  imageTag,
 			Ports:     ports,
 			PVCs:      pvcs,
 			PodLabels: i.Spec.Selector.MatchLabels,
+			Labels:    i.Labels,
 		}
 
 		resources = append(resources, models.Resource{
