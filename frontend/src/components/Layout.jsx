@@ -5,6 +5,7 @@ import defaultLogo from '../assets/logo-full.svg';
 import logoLight from '../assets/logo-light.svg';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import UserMenu from './UserMenu';
 
 const SidebarItem = ({ icon: Icon, label, to, onClick, hasChildren, expanded }) => {
     if (hasChildren) {
@@ -316,8 +317,9 @@ const Layout = ({ children, headerContent }) => {
                         />
                     </div>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center space-x-2">
                     {!checkingAdmin && hasPermissions && headerContent}
+                    {!checkingAdmin && user && <UserMenu />}
                 </div>
             </header>
 

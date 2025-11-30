@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Activity, Check, X, Layers, AlertTriangle, Clock, Pause, Network, Box } from 'lucide-react';
-import { DetailRow } from './CommonDetails';
+import { DetailRow, EditYamlButton } from './CommonDetails';
 import AssociatedPods from './AssociatedPods';
 
 const TabButton = ({ active, label, onClick }) => (
@@ -56,6 +56,9 @@ export const CronJobDetails = ({ details, onEditYAML }) => (
             <DetailRow label="Concurrency" value={details.concurrency} icon={Layers} />
             <DetailRow label="Start Deadline" value={details.startingDeadline} icon={Clock} />
             <DetailRow label="Last Schedule" value={details.lastSchedule} icon={Clock} />
+        </div>
+        <div className="flex justify-end mt-4">
+            <EditYamlButton onClick={onEditYAML} />
         </div>
     </div>
 );
@@ -129,6 +132,9 @@ export const HPADetails = ({ details, onEditYAML }) => (
             <DetailRow label="Desired" value={details.desired} icon={Activity} />
             <DetailRow label="Metrics" value={details.metrics ? details.metrics.map((m) => m.type).join(', ') : ''} icon={Activity} />
             <DetailRow label="Last Scale" value={details.lastScaleTime} icon={Clock} />
+        </div>
+        <div className="flex justify-end mt-4">
+            <EditYamlButton onClick={onEditYAML} />
         </div>
     </div>
 );

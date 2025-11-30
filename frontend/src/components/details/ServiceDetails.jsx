@@ -63,7 +63,9 @@ const ServiceDetails = ({ details, onEditYAML, namespace, name }) => {
                                 {name && namespace && (
                                     <div className="flex items-center justify-between bg-gray-800/50 px-4 py-3 rounded-md border border-gray-700/50 hover:bg-gray-800/70 transition-colors">
                                         <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">DNS</span>
-                                        <SmartDNS dns={`${name}.${namespace}.svc.cluster.local`} />
+                                        <div className="flex-1 flex justify-end">
+                                            <SmartDNS dns={`${name}.${namespace}.svc.cluster.local`} />
+                                        </div>
                                     </div>
                                 )}
                                 <div className="flex items-center justify-between bg-gray-800/50 px-4 py-3 rounded-md border border-gray-700/50 hover:bg-gray-800/70 transition-colors">

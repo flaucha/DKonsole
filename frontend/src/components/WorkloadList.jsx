@@ -780,9 +780,12 @@ const WorkloadList = ({ namespace, kind }) => {
                                 {isExpanded && (
                                     <div className="px-6 py-4 bg-gray-900/30 border-t border-gray-800">
                                         <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden relative">
-                                            <div className="absolute top-4 right-4 z-10">
-                                                <EditYamlButton onClick={() => setEditingResource(res)} namespace={res.namespace} />
-                                            </div>
+                                            {/* Show Edit YAML button only for resources that don't have it in their detail component */}
+                                            {res.kind !== 'Deployment' && res.kind !== 'Pod' && res.kind !== 'ClusterRole' && res.kind !== 'ClusterRoleBinding' && (
+                                                <div className="absolute top-4 right-4 z-10">
+                                                    <EditYamlButton onClick={() => setEditingResource(res)} namespace={res.namespace} />
+                                                </div>
+                                            )}
                                             {renderDetails(res)}
                                         </div>
                                     </div>

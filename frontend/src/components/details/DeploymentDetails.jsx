@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Layers, Box, Network, HardDrive, Tag, Minus, Plus } from 'lucide-react';
-import { DetailRow, SmartImage } from './CommonDetails';
+import { DetailRow, SmartImage, EditYamlButton } from './CommonDetails';
 import AssociatedPods from './AssociatedPods';
 import { useAuth } from '../../context/AuthContext';
 import { canEdit, isAdmin } from '../../utils/permissions';
@@ -77,6 +77,9 @@ const DeploymentDetails = ({ details, onScale, scaling, res, onEditYAML }) => {
                                 icon={Tag}
                             />
                         </div>
+                    </div>
+                    <div className="flex justify-end mt-4">
+                        <EditYamlButton onClick={onEditYAML} namespace={res?.namespace} />
                     </div>
                 </>
             )}

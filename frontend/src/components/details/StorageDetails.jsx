@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tag, Layers, HardDrive, FileText } from 'lucide-react';
-import { DetailRow } from './CommonDetails';
+import { DetailRow, EditYamlButton } from './CommonDetails';
 
 const StorageDetails = ({ details, onEditYAML }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">
@@ -21,6 +21,9 @@ const StorageDetails = ({ details, onEditYAML }) => (
                     icon={FileText}
                 />
             )}
+        </div>
+        <div className="flex justify-end mt-4">
+            <EditYamlButton onClick={onEditYAML} />
         </div>
     </div>
 );

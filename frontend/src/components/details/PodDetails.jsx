@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Server, Network, Activity, Box, HardDrive, Clock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { DetailRow } from './CommonDetails';
+import { DetailRow, EditYamlButton } from './CommonDetails';
 import LogViewerInline from './LogViewerInline';
 import TerminalViewerInline from './TerminalViewerInline';
 import PodMetrics from '../PodMetrics';
@@ -103,6 +103,9 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                                 {metrics.cpu && <DetailRow label="CPU" value={metrics.cpu} icon={Activity} />}
                                 {metrics.memory && <DetailRow label="Memory" value={metrics.memory} icon={HardDrive} />}
                             </div>
+                        </div>
+                        <div className="flex justify-end mt-4">
+                            <EditYamlButton onClick={onEditYAML} namespace={pod?.namespace} />
                         </div>
                     </div>
                 ) : activeTab === 'logs' ? (

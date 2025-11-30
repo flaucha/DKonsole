@@ -80,7 +80,6 @@ const Dashboard = () => {
                                     Import YAML
                                 </button>
                             )}
-                            <UserMenu />
                         </div>
                     )
                 }
