@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.3.3-green.svg)
+![Version](https://img.shields.io/badge/version-1.3.4-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.3.3
+git checkout v1.3.4
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -153,18 +153,36 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.3.3"
+  tag: "1.3.4"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.3.3`
+- **Unified**: `dkonsole/dkonsole:1.3.4`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.3.4 (2025-11-30)
+**✨ Table Enhancements & UI Improvements**
+
+This release adds Ready column for Pods, Tag column for Deployments, and improves table alignment.
+
+- **Pod Ready Column**: Added Ready column to Pods table showing container ready status in X/Y format (like kubectl)
+  - Displays ready containers count over total containers (e.g., "2/3")
+  - Column positioned between Status and Age columns
+  - Sortable by ready ratio
+- **Deployment Tag Column**: Added Tag column to Deployments table
+  - Shows image tag extracted from container image
+  - Handles SHA256 digests by showing first 8 characters
+  - Falls back to "latest" if no tag specified
+- **Table Alignment**: Centered all column texts in all resource tables
+  - Consistent visual presentation across all resource types
+  - Improved readability and professional appearance
+- **Unit Tests**: Added comprehensive unit tests for new table columns
 
 ### v1.3.3 (2025-11-30)
 **🐛 LDAP Admin Permissions & Logo Storage Migration**
@@ -190,31 +208,6 @@ This release temporarily disables SARIF uploads due to permission issues.
 - **Security Workflow**: Temporarily disabled SARIF uploads due to permission issues
   - Trivy scans still run but results are not uploaded to GitHub Security
   - Will be re-enabled once permissions are properly configured
-
-### v1.3.1 (2025-11-30)
-**🔧 Monaco Editor Theme Consistency & UI Improvements**
-
-This release fixes Monaco Editor theme consistency and improves menu organization.
-
-- **Monaco Editor Theme**: Fixed font colors in light and cream themes to match dark theme
-  - Monaco Editor now uses consistent `vs-dark` theme across all application themes
-  - Improved code readability in all theme modes
-- **Admin Area Submenu**: New "Admin Area" submenu with police siren icon
-  - Groups "Nodes", "Namespaces", "API Explorer", and "Helm Charts" under admin-only submenu
-  - Only accessible to administrators
-- **Sidebar Menu**: Fixed sidebar menu expansion behavior
-  - Only one menu item can be expanded at a time
-  - Opening a new menu automatically closes the previously open one
-- **User Menu**: Centralized user actions in header with username display (CORE/LDAP)
-  - Shows deployment strategy information (RollingUpdate/Recreate)
-  - Displays replica count, ready pods, and strategy parameters
-  - Provides detailed behavior explanation based on strategy and replica count
-- **Search Field Clear Button**: Added "X" button to all search/filter fields for quick clearing
-- **Light Mode Logo Support**: Separate logo upload for light themes with automatic fallback
-- **LDAP Configuration**: Consolidated all LDAP configuration into a single `ldap-config` Secret
-- **Settings Scroll**: Improved scroll behavior - only content area scrolls, tabs remain fixed
-- **Overview Enhancements**: Separate display for Worker Nodes and Control Planes with role indicators
-- **Permission System**: Refined permission system with clearer hierarchy (view < edit < admin)
 
 ### v1.2.8 (2025-11-29)
 **✨ Settings Management & Metrics Fixes**

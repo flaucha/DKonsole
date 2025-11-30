@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.4] - 2025-11-30
+
+### ✨ Added
+
+- **Pod Ready Column**: Added Ready column to Pods table showing container ready status in X/Y format (like kubectl)
+  - Displays ready containers count over total containers (e.g., "2/3")
+  - Column positioned between Status and Age columns
+  - Sortable by ready ratio
+  - Backend extracts ready count from container statuses
+- **Deployment Tag Column**: Added Tag column to Deployments table
+  - Shows image tag extracted from container image (e.g., "v1.3.4", "latest")
+  - Handles SHA256 digests by showing first 8 characters
+  - Falls back to "latest" if no tag specified
+  - Column positioned after Age column
+  - Sortable by tag value
+
+### 🔧 Changed
+
+- **Table Alignment**: Centered all column texts in all resource tables
+  - All column headers and cell contents now use center alignment
+  - Consistent visual presentation across all resource types
+  - Improved readability and professional appearance
+
+### 🧪 Testing
+
+- **Unit Tests**: Added comprehensive unit tests for new table columns
+  - Tests for Ready column visibility and content display
+  - Tests for Tag column extraction and display
+  - Tests for sorting functionality
+  - Tests for edge cases (missing values, invalid formats)
+
 ## [1.3.3] - 2025-11-30
 
 ### 🐛 Fixed
