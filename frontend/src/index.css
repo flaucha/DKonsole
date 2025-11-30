@@ -290,9 +290,39 @@ body {
 }
 
 /* Exclude Monaco Editor from text color overrides - Monaco uses its own vs-dark theme colors */
+/* Using higher specificity to override the .text-white * rule */
 [data-theme="light"] .monaco-editor,
-[data-theme="light"] .monaco-editor * {
-  color: unset !important;
+[data-theme="light"] .monaco-editor *,
+[data-theme="light"] .text-white .monaco-editor,
+[data-theme="light"] .text-white .monaco-editor *,
+[data-theme="light"] .monaco-editor .view-lines,
+[data-theme="light"] .monaco-editor .view-line,
+[data-theme="light"] .monaco-editor .view-line span,
+[data-theme="light"] .monaco-editor .mtk1,
+[data-theme="light"] .monaco-editor .mtk2,
+[data-theme="light"] .monaco-editor .mtk3,
+[data-theme="light"] .monaco-editor .mtk4,
+[data-theme="light"] .monaco-editor .mtk5,
+[data-theme="light"] .monaco-editor .mtk6,
+[data-theme="light"] .monaco-editor .mtk7,
+[data-theme="light"] .monaco-editor .mtk8,
+[data-theme="light"] .monaco-editor .mtk9,
+[data-theme="light"] .monaco-editor .mtk10,
+[data-theme="light"] .monaco-editor .mtk11,
+[data-theme="light"] .monaco-editor .mtk12,
+[data-theme="light"] .monaco-editor .mtk13,
+[data-theme="light"] .monaco-editor .mtk14,
+[data-theme="light"] .monaco-editor .mtk15,
+[data-theme="light"] .monaco-editor .mtk16,
+[data-theme="light"] .monaco-editor .mtk17,
+[data-theme="light"] .monaco-editor .mtk18,
+[data-theme="light"] .monaco-editor .mtk19,
+[data-theme="light"] .monaco-editor .mtk20,
+[data-theme="light"] .monaco-editor .mtk21,
+[data-theme="light"] .monaco-editor .mtk22,
+[data-theme="light"] .monaco-editor .mtk23,
+[data-theme="light"] .monaco-editor .mtk24 {
+  color: revert !important;
 }
 
 [data-theme="light"] .bg-black,
@@ -318,9 +348,39 @@ body {
 }
 
 /* Exclude Monaco Editor from text color overrides - Monaco uses its own vs-dark theme colors */
+/* Using higher specificity to override the .text-white * rule */
 [data-theme="cream"] .monaco-editor,
-[data-theme="cream"] .monaco-editor * {
-  color: unset !important;
+[data-theme="cream"] .monaco-editor *,
+[data-theme="cream"] .text-white .monaco-editor,
+[data-theme="cream"] .text-white .monaco-editor *,
+[data-theme="cream"] .monaco-editor .view-lines,
+[data-theme="cream"] .monaco-editor .view-line,
+[data-theme="cream"] .monaco-editor .view-line span,
+[data-theme="cream"] .monaco-editor .mtk1,
+[data-theme="cream"] .monaco-editor .mtk2,
+[data-theme="cream"] .monaco-editor .mtk3,
+[data-theme="cream"] .monaco-editor .mtk4,
+[data-theme="cream"] .monaco-editor .mtk5,
+[data-theme="cream"] .monaco-editor .mtk6,
+[data-theme="cream"] .monaco-editor .mtk7,
+[data-theme="cream"] .monaco-editor .mtk8,
+[data-theme="cream"] .monaco-editor .mtk9,
+[data-theme="cream"] .monaco-editor .mtk10,
+[data-theme="cream"] .monaco-editor .mtk11,
+[data-theme="cream"] .monaco-editor .mtk12,
+[data-theme="cream"] .monaco-editor .mtk13,
+[data-theme="cream"] .monaco-editor .mtk14,
+[data-theme="cream"] .monaco-editor .mtk15,
+[data-theme="cream"] .monaco-editor .mtk16,
+[data-theme="cream"] .monaco-editor .mtk17,
+[data-theme="cream"] .monaco-editor .mtk18,
+[data-theme="cream"] .monaco-editor .mtk19,
+[data-theme="cream"] .monaco-editor .mtk20,
+[data-theme="cream"] .monaco-editor .mtk21,
+[data-theme="cream"] .monaco-editor .mtk22,
+[data-theme="cream"] .monaco-editor .mtk23,
+[data-theme="cream"] .monaco-editor .mtk24 {
+  color: revert !important;
 }
 
 [data-theme="cream"] .bg-black,
