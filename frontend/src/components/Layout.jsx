@@ -11,13 +11,13 @@ const SidebarItem = ({ icon: Icon, label, to, onClick, hasChildren, expanded }) 
         return (
             <div
                 onClick={onClick}
-                className={`flex items-center justify-between px-4 py-2 cursor-pointer rounded-md transition-colors text-white hover:bg-gray-800`}
+                className={`flex items-center justify-between px-4 py-2 cursor-pointer rounded-md transition-all duration-200 text-gray-100 hover:bg-gray-800 hover:text-gray-100 border border-transparent hover:border-gray-700 ${expanded ? 'bg-gray-800/50 border-gray-700' : ''}`}
             >
                 <div className="flex items-center space-x-3">
-                    <Icon size={20} />
+                    <Icon size={20} className="text-gray-300 group-hover:text-blue-400" />
                     <span className="font-medium whitespace-nowrap">{label}</span>
                 </div>
-                <div className={`transition-transform duration-200 ${expanded ? 'rotate-0' : '-rotate-90'}`}>
+                <div className={`transition-transform duration-200 text-gray-400 ${expanded ? 'rotate-0 text-blue-400' : '-rotate-90'}`}>
                     <ChevronDown size={16} />
                 </div>
             </div>
@@ -28,13 +28,19 @@ const SidebarItem = ({ icon: Icon, label, to, onClick, hasChildren, expanded }) 
         <NavLink
             to={to}
             className={({ isActive }) =>
-                `flex items-center justify-between px-4 py-2 cursor-pointer rounded-md transition-colors ${isActive ? 'bg-gray-800 text-white' : 'text-white hover:bg-gray-800'}`
+                `flex items-center justify-between px-4 py-2 cursor-pointer rounded-md transition-all duration-200 border border-transparent ${
+                    isActive
+                        ? 'bg-gray-800 text-gray-100 border-l-4 border-l-blue-500 shadow-md'
+                        : 'text-gray-300 hover:bg-gray-800 hover:text-gray-100 hover:border-gray-700'
+                }`
             }
         >
-            <div className="flex items-center space-x-3">
-                <Icon size={20} />
-                <span className="font-medium whitespace-nowrap">{label}</span>
-            </div>
+            {({ isActive }) => (
+                <div className="flex items-center space-x-3">
+                    <Icon size={20} className={isActive ? 'text-blue-400' : 'text-gray-400'} />
+                    <span className="font-medium whitespace-nowrap">{label}</span>
+                </div>
+            )}
         </NavLink>
     );
 };
@@ -43,12 +49,20 @@ const SubItem = ({ label, to }) => (
     <NavLink
         to={to}
         className={({ isActive }) =>
-            `block pl-12 pr-4 py-1.5 cursor-pointer text-xs transition-colors whitespace-nowrap ${isActive ? 'text-white font-medium' : 'text-gray-400 hover:text-gray-300'}`
+            `block pl-12 pr-4 py-1.5 cursor-pointer text-xs transition-all duration-200 whitespace-nowrap rounded-md border border-transparent ${
+                isActive
+                    ? 'text-gray-100 font-semibold bg-gray-800/60 border-l-4 border-l-blue-500 shadow-sm'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/40 hover:border-gray-700'
+            }`
         }
         style={{ fontSize: '0.75rem' }}
     >
-        <span className="text-gray-500 text-[10px] mr-1.5">└</span>
-        {label}
+        {({ isActive }) => (
+            <>
+                <span className={`text-[10px] mr-1.5 ${isActive ? 'text-blue-400' : 'text-gray-500'}`}>└</span>
+                {label}
+            </>
+        )}
     </NavLink>
 );
 
@@ -252,11 +266,11 @@ const Layout = ({ children, headerContent }) => {
     return (
         <div className="flex flex-col h-screen bg-gray-900">
             {/* Header */}
-            <header className="h-16 bg-black border-b border-gray-800 flex items-center justify-between px-4 shrink-0 z-20">
+            <header className="h-16 bg-gray-900 border-b border-gray-700 flex items-center justify-between px-4 shrink-0 z-20 shadow-lg">
                 <div className="flex items-center space-x-2">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
-                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-all duration-200 hover:scale-110"
+                        className="p-2 text-gray-400 hover:text-gray-100 hover:bg-gray-800 rounded-md transition-all duration-200 hover:scale-110 border border-transparent hover:border-gray-600"
                         title={sidebarOpen ? "Ocultar menú" : "Mostrar menú"}
                     >
                         {sidebarOpen ? (
@@ -282,7 +296,7 @@ const Layout = ({ children, headerContent }) => {
             <div className="flex flex-1 overflow-hidden relative">
                 {/* Sidebar */}
                 <div
-                    className={`bg-black border-r border-gray-800 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                    className={`bg-gray-900 border-r border-gray-700 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xl ${
                         sidebarOpen
                             ? 'min-w-[200px] w-auto translate-x-0 opacity-100'
                             : 'w-0 -translate-x-full opacity-0 pointer-events-none'
@@ -298,16 +312,24 @@ const Layout = ({ children, headerContent }) => {
                             <NavLink
                                 to="/dashboard/overview"
                                 className={({ isActive }) =>
-                                    `flex items-center space-x-3 flex-1 px-4 py-2 cursor-pointer rounded-md transition-colors ${isActive ? 'bg-gray-800 text-white' : 'text-white hover:bg-gray-800'}`
+                                    `flex items-center space-x-3 flex-1 px-4 py-2 cursor-pointer rounded-md transition-all duration-200 border border-transparent ${
+                                        isActive
+                                            ? 'bg-gray-800 text-gray-100 border-l-4 border-l-blue-500 shadow-md'
+                                            : 'text-gray-300 hover:bg-gray-800 hover:text-gray-100 hover:border-gray-700'
+                                    }`
                                 }
                             >
-                                <LayoutDashboard size={20} />
-                                <span className="font-medium whitespace-nowrap">Overview</span>
+                                {({ isActive }) => (
+                                    <>
+                                        <LayoutDashboard size={20} className={isActive ? 'text-blue-400' : 'text-gray-400'} />
+                                        <span className="font-medium whitespace-nowrap">Overview</span>
+                                    </>
+                                )}
                             </NavLink>
                             {sidebarOpen && (
                                 <button
                                     onClick={() => setSidebarOpen(false)}
-                                    className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-all duration-200 hover:scale-110 hover:rotate-90 ml-2"
+                                    className="p-1.5 text-gray-400 hover:text-gray-100 hover:bg-gray-800 rounded-md transition-all duration-200 hover:scale-110 hover:rotate-90 ml-2 border border-transparent hover:border-gray-600"
                                     title="Ocultar menú"
                                 >
                                     <X size={16} />
@@ -424,11 +446,15 @@ const Layout = ({ children, headerContent }) => {
                         )}
                     </nav>
 
-                    <div className="mt-auto border-t border-gray-800">
+                    <div className="mt-auto border-t border-gray-700 bg-gray-800/30">
                         <NavLink
                             to="/dashboard/settings"
                             className={({ isActive }) =>
-                                `w-full flex items-center px-4 py-2 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors ${isActive ? 'bg-gray-800 text-white' : ''}`
+                                `w-full flex items-center px-4 py-2 transition-all duration-200 border border-transparent ${
+                                    isActive
+                                        ? 'bg-gray-800 text-gray-100 border-l-4 border-l-blue-500 shadow-md'
+                                        : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800 hover:border-gray-700'
+                                }`
                             }
                         >
                             <Settings size={20} className="mr-3" />
@@ -436,12 +462,12 @@ const Layout = ({ children, headerContent }) => {
                         </NavLink>
                         <button
                             onClick={logout}
-                            className="w-full flex items-center px-4 py-2 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+                            className="w-full flex items-center px-4 py-2 text-gray-400 hover:text-gray-100 hover:bg-gray-800 transition-all duration-200 border border-transparent hover:border-gray-700"
                         >
                             <LogOut size={20} className="mr-3" />
                             <span className="font-medium">Logout</span>
                         </button>
-                        <div className="px-4 py-2 border-t border-gray-800 whitespace-nowrap overflow-hidden">
+                        <div className="px-4 py-2 border-t border-gray-700 whitespace-nowrap overflow-hidden">
                             <div className="text-xs text-gray-500">User: <span className="text-gray-300 font-medium">{user?.username || 'Unknown'}</span></div>
                         </div>
                     </div>
