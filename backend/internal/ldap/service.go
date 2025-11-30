@@ -734,8 +734,9 @@ func (s *Service) ValidateUserGroup(ctx context.Context, username string) error 
 }
 
 // GetUserPermissions retrieves the permissions for a user based on their LDAP groups
+// If the user belongs to an admin group, returns empty permissions (admin has full access)
 func (s *Service) GetUserPermissions(ctx context.Context, username string) (map[string]string, error) {
-	// Get user groups
+	// Get user groups first
 	groups, err := s.GetUserGroups(ctx, username)
 	if err != nil {
 		utils.LogWarn("Failed to get user groups for permissions", map[string]interface{}{
@@ -749,6 +750,24 @@ func (s *Service) GetUserPermissions(ctx context.Context, username string) (map[
 		"username": username,
 		"groups":   groups,
 	})
+
+	// Check if user belongs to admin groups (admins have full access, no namespace-specific permissions needed)
+	config, err := s.repo.GetConfig(ctx)
+	if err == nil && config != nil && config.Enabled && len(config.AdminGroups) > 0 {
+		// Check if user belongs to any admin group
+		for _, adminGroup := range config.AdminGroups {
+			for _, userGroup := range groups {
+				if userGroup == adminGroup {
+					utils.LogInfo("GetUserPermissions: user is admin group member, returning empty permissions", map[string]interface{}{
+						"username":    username,
+						"admin_group": adminGroup,
+					})
+					// Admin has full access, return empty permissions
+					return make(map[string]string), nil
+				}
+			}
+		}
+	}
 
 	// Get groups configuration
 	groupsConfig, err := s.repo.GetGroups(ctx)
