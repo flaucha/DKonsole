@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Tag } from 'lucide-react';
-import { SmartDNS } from './CommonDetails';
+import { SmartDNS, EditYamlButton } from './CommonDetails';
 import AssociatedPods from './AssociatedPods';
 
 const ServiceDetails = ({ details, onEditYAML, namespace, name }) => {
@@ -130,6 +130,9 @@ const ServiceDetails = ({ details, onEditYAML, namespace, name }) => {
                                 );
                             })}
                         </div>
+                    </div>
+                    <div className="flex justify-end mt-4">
+                        <EditYamlButton onClick={onEditYAML} namespace={namespace} />
                     </div>
                 </>
             )}

@@ -782,9 +782,10 @@ const WorkloadList = ({ namespace, kind }) => {
                                         <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden relative">
                                             {/* Show Edit YAML button only for resources that don't have it in their detail component */}
                                             {res.kind !== 'Deployment' && res.kind !== 'Pod' && res.kind !== 'ClusterRole' && res.kind !== 'ClusterRoleBinding' &&
+                                             res.kind !== 'Role' && res.kind !== 'RoleBinding' &&
                                              res.kind !== 'CronJob' && res.kind !== 'StatefulSet' && res.kind !== 'DaemonSet' && res.kind !== 'HPA' &&
                                              res.kind !== 'Job' && res.kind !== 'PersistentVolumeClaim' && res.kind !== 'PersistentVolume' && res.kind !== 'StorageClass' &&
-                                             res.kind !== 'ConfigMap' && res.kind !== 'Secret' && res.kind !== 'NetworkPolicy' && (
+                                             res.kind !== 'ConfigMap' && res.kind !== 'Secret' && res.kind !== 'NetworkPolicy' && res.kind !== 'Service' && res.kind !== 'Ingress' && (
                                                 <div className="absolute top-4 right-4 z-10">
                                                     <EditYamlButton onClick={() => setEditingResource(res)} namespace={res.namespace} />
                                                 </div>

@@ -44,12 +44,11 @@ export const RoleDetails = ({ details, onEditYAML }) => {
     const rules = details.rules || [];
 
     return (
-        <div className="p-4 bg-gray-900/50 rounded-md mt-2 relative">
-            <div className="absolute top-4 right-4 z-10">
+        <div className="p-4 bg-gray-900/50 rounded-md mt-2">
+            <div className="flex items-center justify-between mb-4">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Policy Rules</h4>
                 <EditYamlButton onClick={onEditYAML} />
             </div>
-            <div className="pr-32">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Policy Rules</h4>
             <div className="overflow-x-auto">
                 <table className="min-w-full text-xs text-left">
                     <thead>
@@ -76,7 +75,6 @@ export const RoleDetails = ({ details, onEditYAML }) => {
                     </tbody>
                 </table>
             </div>
-            </div>
         </div>
     );
 };
@@ -86,11 +84,11 @@ export const BindingDetails = ({ details, onEditYAML }) => {
     const roleRef = details.roleRef || {};
 
     return (
-        <div className="p-4 bg-gray-900/50 rounded-md mt-2 space-y-4 relative">
-            <div className="absolute top-4 right-4 z-10">
+        <div className="p-4 bg-gray-900/50 rounded-md mt-2 space-y-4">
+            <div className="flex items-center justify-between mb-4">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Details</h4>
                 <EditYamlButton onClick={onEditYAML} />
             </div>
-            <div className="pr-32">
             <div>
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Role Reference</h4>
                 <div className="flex items-center space-x-2 text-sm text-gray-300">
@@ -121,7 +119,6 @@ export const BindingDetails = ({ details, onEditYAML }) => {
                         </tbody>
                     </table>
                 </div>
-            </div>
             </div>
         </div>
     );
