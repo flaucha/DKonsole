@@ -25,10 +25,10 @@ func validateLDAPUsername(username string) error {
 	// Blacklist dangerous characters for LDAP injection
 	// These are already escaped by ldap.EscapeFilter(), but we validate anyway
 	dangerousChars := []string{
-		"*",   // Wildcard
-		"(",   // Filter start
-		")",   // Filter end
-		"\\",  // Escape character
+		"*",    // Wildcard
+		"(",    // Filter start
+		")",    // Filter end
+		"\\",   // Escape character
 		"\x00", // Null byte
 	}
 

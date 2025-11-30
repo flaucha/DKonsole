@@ -450,8 +450,8 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password strin
 		bindDN = username
 	} else {
 		// Search for user first to get the full DN
-		// SANITIZAR username con ldap.EscapeFilter()
-		escapedUsername := ldap.EscapeFilter(username)
+		// SANITIZAR username con sanitizeLDAPFilter()
+		escapedUsername := sanitizeLDAPFilter(username)
 		userSearchFilter := fmt.Sprintf("(%s=%s)", config.UserDN, escapedUsername)
 		if config.UserFilter != "" {
 			userSearchFilter = fmt.Sprintf("(&(%s=%s)%s)", config.UserDN, escapedUsername, config.UserFilter)
@@ -652,7 +652,7 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 	// Fallback: Search for groups with member or uniqueMember attribute
 	// Try both groupOfNames (member) and groupOfUniqueNames (uniqueMember)
 	// Sanitizar userDN antes de usarlo en el filtro
-	escapedUserDN := ldap.EscapeFilter(userDN)
+	escapedUserDN := sanitizeLDAPFilter(userDN)
 	searchFilter := fmt.Sprintf("(|(member=%s)(uniqueMember=%s))", escapedUserDN, escapedUserDN)
 	if config.UserFilter != "" {
 		searchFilter = fmt.Sprintf("(&(|(member=%s)(uniqueMember=%s))%s)", escapedUserDN, escapedUserDN, config.UserFilter)
