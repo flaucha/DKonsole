@@ -443,7 +443,7 @@ const WorkloadList = ({ namespace, kind }) => {
             case 'Secret': return <SecretDetails details={res.details} onEditYAML={onEditYAML} resource={res} onDataSaved={onDataSaved} />;
             case 'NetworkPolicy': return <NetworkPolicyDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'PersistentVolumeClaim':
-            case 'PersistentVolume': return <StorageDetails details={res.details} onEditYAML={onEditYAML} />;
+            case 'PersistentVolume': return <StorageDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
             case 'StorageClass': return <StorageClassDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'Job': return <JobDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
             case 'CronJob': return <CronJobDetails details={res.details} onEditYAML={onEditYAML} />;
@@ -783,7 +783,8 @@ const WorkloadList = ({ namespace, kind }) => {
                                             {/* Show Edit YAML button only for resources that don't have it in their detail component */}
                                             {res.kind !== 'Deployment' && res.kind !== 'Pod' && res.kind !== 'ClusterRole' && res.kind !== 'ClusterRoleBinding' &&
                                              res.kind !== 'CronJob' && res.kind !== 'StatefulSet' && res.kind !== 'DaemonSet' && res.kind !== 'HPA' &&
-                                             res.kind !== 'Job' && res.kind !== 'PersistentVolumeClaim' && res.kind !== 'PersistentVolume' && res.kind !== 'StorageClass' && (
+                                             res.kind !== 'Job' && res.kind !== 'PersistentVolumeClaim' && res.kind !== 'PersistentVolume' && res.kind !== 'StorageClass' &&
+                                             res.kind !== 'ConfigMap' && res.kind !== 'Secret' && (
                                                 <div className="absolute top-4 right-4 z-10">
                                                     <EditYamlButton onClick={() => setEditingResource(res)} namespace={res.namespace} />
                                                 </div>

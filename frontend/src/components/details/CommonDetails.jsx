@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, FileText } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { canEdit } from '../../utils/permissions';
+import { canEdit, isAdmin } from '../../utils/permissions';
 
 export const SmartImage = ({ image }) => {
     const [copied, setCopied] = useState(false);
@@ -141,8 +141,10 @@ export const DataSection = ({ data, isSecret = false }) => {
 
 export const EditYamlButton = ({ onClick, namespace }) => {
     const { user } = useAuth();
-    // Only show if user has edit permission or is admin
-    if (!canEdit(user, namespace)) {
+    // Show if user is admin (for cluster-level resources) or has edit permission for namespace
+    if (!namespace && isAdmin(user)) {
+        // Cluster-level resource, show if admin
+    } else if (!canEdit(user, namespace)) {
         return null;
     }
     return (
