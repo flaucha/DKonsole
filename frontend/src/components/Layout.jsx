@@ -59,14 +59,14 @@ const SubItem = ({ label, to }) => (
     >
         {({ isActive }) => (
             <>
-                <span className={`text-[10px] mr-1.5 ${isActive ? 'text-blue-400' : 'text-gray-500'}`}>└</span>
+                <span className={`mr-2 ${isActive ? 'text-blue-400' : 'text-gray-500'}`}>•</span>
                 {label}
             </>
         )}
     </NavLink>
 );
 
-const SubMenu = ({ isOpen, children, animationStyle = 'slide' }) => {
+const SubMenu = ({ isOpen, children, animationStyle = 'slide', animationSpeed = 'medium' }) => {
     const getAnimationClasses = () => {
         switch (animationStyle) {
             case 'slide':
@@ -92,18 +92,31 @@ const SubMenu = ({ isOpen, children, animationStyle = 'slide' }) => {
         }
     };
 
+    const getSpeedDuration = () => {
+        switch (animationSpeed) {
+            case 'slow':
+                return 'duration-500';
+            case 'fast':
+                return 'duration-150';
+            case 'medium':
+            default:
+                return 'duration-300';
+        }
+    };
+
     const getTransitionClasses = () => {
+        const speedClass = getSpeedDuration();
         switch (animationStyle) {
             case 'slide':
-                return 'transition-all duration-300 ease-out';
+                return `transition-all ${speedClass} ease-out`;
             case 'fade':
-                return 'transition-all duration-250 ease-in-out';
+                return `transition-all ${speedClass === 'duration-500' ? 'duration-400' : speedClass === 'duration-150' ? 'duration-200' : 'duration-250'} ease-in-out`;
             case 'scale':
-                return 'transition-all duration-300 ease-out transform-gpu';
+                return `transition-all ${speedClass} ease-out transform-gpu`;
             case 'rotate':
-                return 'transition-all duration-300 ease-out transform-gpu origin-top-left';
+                return `transition-all ${speedClass} ease-out transform-gpu origin-top-left`;
             default:
-                return 'transition-all duration-300 ease-out';
+                return `transition-all ${speedClass} ease-out`;
         }
     };
 
@@ -122,7 +135,7 @@ const SubMenu = ({ isOpen, children, animationStyle = 'slide' }) => {
 };
 
 const Layout = ({ children, headerContent }) => {
-    const { currentCluster, theme, menuAnimation } = useSettings();
+    const { currentCluster, theme, menuAnimation, menuAnimationSpeed } = useSettings();
     const { logout, authFetch, user } = useAuth();
     const [isAdmin, setIsAdmin] = useState(false);
     const [checkingAdmin, setCheckingAdmin] = useState(true);
@@ -348,7 +361,7 @@ const Layout = ({ children, headerContent }) => {
                                     expanded={expandedMenus.workloads}
                                     onClick={() => toggleMenu('workloads')}
                                 />
-                                <SubMenu isOpen={expandedMenus.workloads} animationStyle={menuAnimation}>
+                                <SubMenu isOpen={expandedMenus.workloads} animationStyle={menuAnimation} animationSpeed={menuAnimationSpeed}>
                                     {['Deployments', 'Pods', 'ConfigMaps', 'Secrets', 'Jobs', 'CronJobs', 'StatefulSets', 'DaemonSets', 'HPA'].map(item => (
                                         <SubItem
                                             key={item}
@@ -366,7 +379,7 @@ const Layout = ({ children, headerContent }) => {
                                     expanded={expandedMenus.networking}
                                     onClick={() => toggleMenu('networking')}
                                 />
-                                <SubMenu isOpen={expandedMenus.networking} animationStyle={menuAnimation}>
+                                <SubMenu isOpen={expandedMenus.networking} animationStyle={menuAnimation} animationSpeed={menuAnimationSpeed}>
                                     {['Services', 'Ingresses', 'Network Policies'].map(item => (
                                         <SubItem
                                             key={item}
@@ -384,7 +397,7 @@ const Layout = ({ children, headerContent }) => {
                                     expanded={expandedMenus.storage}
                                     onClick={() => toggleMenu('storage')}
                                 />
-                                <SubMenu isOpen={expandedMenus.storage} animationStyle={menuAnimation}>
+                                <SubMenu isOpen={expandedMenus.storage} animationStyle={menuAnimation} animationSpeed={menuAnimationSpeed}>
                                     {['PVCs', ...(isAdmin ? ['PVs', 'Storage Classes'] : [])].map(item => (
                                         <SubItem
                                             key={item}
@@ -404,7 +417,7 @@ const Layout = ({ children, headerContent }) => {
                                             expanded={expandedMenus.accessControl}
                                             onClick={() => toggleMenu('accessControl')}
                                         />
-                                        <SubMenu isOpen={expandedMenus.accessControl} animationStyle={menuAnimation}>
+                                        <SubMenu isOpen={expandedMenus.accessControl} animationStyle={menuAnimation} animationSpeed={menuAnimationSpeed}>
                                             {['Service Accounts', 'Roles', 'Role Bindings', 'Cluster Roles', 'Cluster Role Bindings'].map(item => (
                                                 <SubItem
                                                     key={item}

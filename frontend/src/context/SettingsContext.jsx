@@ -15,6 +15,7 @@ export const SettingsProvider = ({ children }) => {
     const [fontSize, setFontSize] = useState(localStorage.getItem('fontSize') || 'normal');
     const [borderRadius, setBorderRadius] = useState(localStorage.getItem('borderRadius') || 'md');
     const [menuAnimation, setMenuAnimation] = useState(localStorage.getItem('menuAnimation') || 'slide');
+    const [menuAnimationSpeed, setMenuAnimationSpeed] = useState(localStorage.getItem('menuAnimationSpeed') || 'medium');
     const [itemsPerPage, setItemsPerPage] = useState(() => {
         const saved = localStorage.getItem('itemsPerPage');
         return saved ? parseInt(saved, 10) : 500;
@@ -49,6 +50,10 @@ export const SettingsProvider = ({ children }) => {
     }, [menuAnimation]);
 
     useEffect(() => {
+        localStorage.setItem('menuAnimationSpeed', menuAnimationSpeed);
+    }, [menuAnimationSpeed]);
+
+    useEffect(() => {
         localStorage.setItem('itemsPerPage', itemsPerPage.toString());
     }, [itemsPerPage]);
 
@@ -80,6 +85,8 @@ export const SettingsProvider = ({ children }) => {
             setBorderRadius,
             menuAnimation,
             setMenuAnimation,
+            menuAnimationSpeed,
+            setMenuAnimationSpeed,
             itemsPerPage,
             setItemsPerPage
         }}>

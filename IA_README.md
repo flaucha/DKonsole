@@ -10,26 +10,26 @@ To start any task, always instruct the AI to read the guidelines first:
 
 This ensures the AI loads the correct context, architecture, and constraints.
 
-## 🗣️ Common Commands
+## ⚡ Fast Track (Slash Commands)
 
-Here are the standard commands you can use (defined in `docs/COMMANDS.md`):
+Use these commands for rapid interaction (defined in `docs/COMMANDS.md`):
 
 ### 1. Analysis & Audits
-- **"Analyze the repo"**: Performs a full code quality and security audit.
-- **"Check this file"**: Analyzes a specific file for issues.
-- **"Do a security audit"**: Checks for OWASP vulnerabilities.
+- **`/audit`**: Full project analysis.
+- **`/audit [file]`**: Analyze a specific file.
 
 ### 2. Development
-- **"Add Feature: [Name]"**: Starts the workflow to add a new feature (Backend + Frontend).
-  - *Example*: "Add Feature: Dark Mode toggle"
-- **"Refactor: [Target]"**: Cleans up code or improves structure.
-  - *Example*: "Refactor: The auth service to be cleaner"
-- **"Fix Bug: [Description]"**: Investigates and fixes a bug.
-  - *Example*: "Fix Bug: Login fails with 500 error"
+- **`/feat [Name]`**: Add a new feature.
+  - *Example*: `/feat Dark Mode`
+- **`/refactor [Target]`**: Clean up code.
+  - *Example*: `/refactor auth service`
+- **`/fix [Bug]`**: Fix a bug.
+  - *Example*: `/fix Login 500 error`
 
-### 3. Release
-- **"Release version X.Y.Z"**: Automates the release process (Version bump, Changelog, Tags).
-  - *Example*: "Release version 1.2.0"
+### 3. Release & Verify
+- **`/release [Version]`**: Trigger release workflow.
+  - *Example*: `/release 1.2.0`
+- **`/check`**: Run sanity checks (Lint + Test).
 
 ## 🛠️ Verification
 

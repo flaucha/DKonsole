@@ -1,66 +1,53 @@
-# Command Framework
+# Command Framework (Slash Commands)
 
-This document defines the "Language" for interacting with the AI agent.
-The AI must recognize these patterns and execute the corresponding workflows.
+This document defines the efficient "Slash Command" system for interacting with the AI.
+Use these commands for rapid and precise interaction.
 
-## 1. "Analyze Project" / "Analyze [File/Component]"
+## 1. Core Commands
 
-**Trigger**: "Analyze the repo", "Check this file", "Do a security audit".
+### `/audit`
+**Description**: Performs a comprehensive analysis of the project or a specific component.
+**Usage**:
+- `/audit`: Analyze the entire repository.
+- `/audit [file/path]`: Analyze a specific file or directory.
+**Workflow**: Follows `docs/ANALYSIS_GUIDELINES.md`.
 
+### `/feat [name]`
+**Description**: Initiates the workflow to add a new feature.
+**Usage**:
+- `/feat Dark Mode`: Plans and implements "Dark Mode".
 **Workflow**:
-1.  Read `docs/ANALYSIS_GUIDELINES.md`.
-2.  Perform the analysis (Code Quality, Security, SWOT).
-3.  Calculate the Score.
-4.  Generate a report (Markdown).
+1.  Plan (Create `implementation_plan.md`).
+2.  Execute (Backend + Frontend).
+3.  Verify (Tests).
 
-## 2. "Add Feature: [Name]"
+### `/fix [description]`
+**Description**: Investigates and fixes a bug.
+**Usage**:
+- `/fix Login 500 error`: Fixes the login issue.
+**Workflow**: Reproduce -> Analyze -> Fix -> Verify.
 
-**Trigger**: "I need a new button that does X", "Add support for NetworkPolicies".
+### `/refactor [target]`
+**Description**: Refactors code to improve quality without changing behavior.
+**Usage**:
+- `/refactor auth service`: Refactors the auth module.
+**Workflow**: Analyze -> Plan -> Refactor -> Verify.
 
-**Workflow**:
-1.  **Plan**:
-    - Read `docs/CODING_GUIDELINES.md` (New Feature Checklist).
-    - Create `implementation_plan.md`.
-    - Identify necessary changes:
-        - Backend: Model -> Repository -> Service -> Factory -> Handler.
-        - Frontend: Component -> Service -> Route.
-2.  **Execute**:
-    - Implement Backend (TDD preferred).
-    - Implement Frontend.
-    - Update `CHANGELOG.md`.
-3.  **Verify**:
-    - Run tests.
-    - Verify against `SECURITY_GUIDELINES.md`.
+### `/release [version]`
+**Description**: Automates the release process.
+**Usage**:
+- `/release 1.2.0`: Releases version 1.2.0.
+**Workflow**: Strictly follows `docs/RELEASE.md`.
 
-## 3. "Refactor: [Target]"
-
-**Trigger**: "Clean up this code", "Refactor the auth module".
-
-**Workflow**:
-1.  **Analyze**: Identify the "smell" or issue.
-2.  **Plan**: Propose the refactoring in `implementation_plan.md`.
-3.  **Execute**: Apply changes while maintaining behavior (Green-Refactor).
-4.  **Verify**: Ensure tests pass.
-
-## 4. "Release Version [X.Y.Z]"
-
-**Trigger**: "Release version 1.2.0", "Prepare a release".
-
-**Workflow**:
-1.  **Strictly** follow `docs/RELEASE.md`.
-2.  Update `VERSION`, `CHANGELOG.md`, `README.md`, Helm Charts.
-3.  Commit and Tag.
-
-## 5. "Fix Bug: [Description]"
-
-**Trigger**: "Fix the login error", "The pod list is empty".
-
-**Workflow**:
-1.  **Reproduce**: Create a test case that fails.
-2.  **Analyze**: Find the root cause.
-3.  **Fix**: Apply the fix.
-4.  **Verify**: Ensure the test passes.
+### `/check`
+**Description**: Runs the project sanity check.
+**Usage**:
+- `/check`: Runs `./scripts/ai-check.sh`.
 
 ---
-**Note to AI**: When you receive a command, explicitly state which workflow you are triggering:
-> "I recognize this as a **'Add Feature'** command. I will proceed with the standard workflow..."
+
+## 2. Legacy Commands (Natural Language)
+The AI still understands natural language, but maps it to the above commands:
+- "Analyze the project" -> `/audit`
+- "Add a new button" -> `/feat`
+- "Fix the bug" -> `/fix`

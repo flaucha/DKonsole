@@ -24,17 +24,18 @@ The framework is composed of the following documents. You must be familiar with 
 ## 3. Workflow & Interaction
 
 When the user gives you a command, map it to the **Command Framework** defined in `docs/COMMANDS.md`.
+**Prioritize "Slash Commands"** (e.g., `/feat`, `/fix`) for efficiency.
 
 ### Example Interactions:
 
-- **User**: "Analyze the project."
-  - **Action**: Follow `docs/ANALYSIS_GUIDELINES.md`. Generate a report with SWOT and Score.
+- **User**: `/audit` (or "Analyze the project")
+  - **Action**: Follow `docs/ANALYSIS_GUIDELINES.md`.
 
-- **User**: "Add feature: [Description]."
-  - **Action**: Follow the "New Feature" workflow in `CODING_GUIDELINES.md` and `docs/COMMANDS.md`.
+- **User**: `/feat [Description]` (or "Add feature...")
+  - **Action**: Follow the "New Feature" workflow in `docs/CODING_GUIDELINES.md`.
 
-- **User**: "Release version X.Y.Z."
-  - **Action**: Strictly follow `RELEASE.md`.
+- **User**: `/release [Version]`
+  - **Action**: Strictly follow `docs/RELEASE.md`.
 
 ## 4. Quality Assurance
 

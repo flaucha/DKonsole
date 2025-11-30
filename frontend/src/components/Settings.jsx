@@ -12,7 +12,8 @@ const Settings = () => {
         font, setFont,
         fontSize, setFontSize,
         borderRadius, setBorderRadius,
-        menuAnimation, setMenuAnimation
+        menuAnimation, setMenuAnimation,
+        menuAnimationSpeed, setMenuAnimationSpeed
     } = useSettings();
     const { authFetch, user } = useAuth();
     const [activeTab, setActiveTab] = useState('clusters');
@@ -56,6 +57,7 @@ const Settings = () => {
         setFont('Inter');
         setFontSize('normal');
         setBorderRadius('md');
+        setMenuAnimationSpeed('medium');
     };
 
     const themes = [
@@ -310,7 +312,7 @@ const Settings = () => {
                             <p className="text-sm text-gray-400 mb-4">
                                 Choose the animation style for sidebar submenus when they open and close.
                             </p>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 gap-3 mb-6">
                                 {[
                                     { id: 'slide', name: 'Slide', desc: 'Slides down smoothly' },
                                     { id: 'fade', name: 'Fade', desc: 'Fades in/out' },
@@ -334,6 +336,31 @@ const Settings = () => {
                                         </div>
                                     </button>
                                 ))}
+                            </div>
+
+                            {/* Menu Animation Speed */}
+                            <div className="border-t border-gray-700 pt-4">
+                                <label className="block text-sm font-medium text-gray-400 mb-3">Animation Speed</label>
+                                <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
+                                    {[
+                                        { id: 'slow', name: 'Lento', desc: '500ms' },
+                                        { id: 'medium', name: 'Medio', desc: '300ms' },
+                                        { id: 'fast', name: 'Rápido', desc: '150ms' }
+                                    ].map(speed => (
+                                        <button
+                                            key={speed.id}
+                                            onClick={() => setMenuAnimationSpeed(speed.id)}
+                                            className={`flex-1 py-2 text-sm rounded-md transition-all ${
+                                                menuAnimationSpeed === speed.id
+                                                    ? 'bg-gray-700 text-white shadow'
+                                                    : 'text-gray-400 hover:text-gray-200'
+                                            }`}
+                                        >
+                                            <div className="font-medium">{speed.name}</div>
+                                            <div className="text-xs opacity-75">{speed.desc}</div>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
