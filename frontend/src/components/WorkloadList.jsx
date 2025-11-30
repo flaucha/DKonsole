@@ -620,7 +620,6 @@ const WorkloadList = ({ namespace, kind }) => {
                             Tag {renderSortIndicator('tag')}
                         </div>
                         <div className="col-span-2"></div>
-                        <div className="col-span-2"></div>
                     </>
                 )}
                 {/* PersistentVolumeClaim-specific columns */}
@@ -632,7 +631,7 @@ const WorkloadList = ({ namespace, kind }) => {
                         <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-4"></div>
+                        <div className="col-span-3"></div>
                     </>
                 )}
                 {/* Other resource types */}
@@ -641,7 +640,7 @@ const WorkloadList = ({ namespace, kind }) => {
                         <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-5"></div>
+                        <div className={`${kind === 'CronJob' ? 'col-span-3' : 'col-span-4'}`}></div>
                     </>
                 )}
             </div>
@@ -717,7 +716,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                         <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-4"></div>
+                                        <div className="col-span-3"></div>
                                     </>
                                 )}
                                 {/* Other resource types */}
@@ -726,10 +725,10 @@ const WorkloadList = ({ namespace, kind }) => {
                                         <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-5"></div>
+                                        <div className={`${kind === 'CronJob' ? 'col-span-3' : 'col-span-4'}`}></div>
                                     </>
                                 )}
-                                <div className={`${kind === 'Pod' ? 'col-span-1' : kind === 'PersistentVolumeClaim' ? 'col-span-2' : kind === 'Deployment' ? 'col-span-2' : 'col-span-2'} flex justify-end items-center space-x-1 pr-2 flex-nowrap shrink-0`} onClick={(e) => e.stopPropagation()}>
+                                <div className={`${kind === 'Pod' ? 'col-span-1' : kind === 'PersistentVolumeClaim' ? 'col-span-1' : kind === 'Deployment' ? 'col-span-2' : kind === 'CronJob' ? 'col-span-2' : 'col-span-1'} flex justify-end items-center space-x-1 pr-2 flex-nowrap shrink-0 min-w-0`} onClick={(e) => e.stopPropagation()}>
                                     {kind === 'CronJob' && (
                                         <button
                                             onClick={(e) => {

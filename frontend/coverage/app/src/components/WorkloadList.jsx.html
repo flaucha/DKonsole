@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">35.51% </span>
+                <span class="strong">35.44% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>326/918</span>
+                <span class='fraction'>325/917</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">35.51% </span>
+                <span class="strong">35.44% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>326/918</span>
+                <span class='fraction'>325/917</span>
             </div>
         
             
@@ -1172,8 +1172,7 @@
 <a name='L1107'></a><a href='#L1107'>1107</a>
 <a name='L1108'></a><a href='#L1108'>1108</a>
 <a name='L1109'></a><a href='#L1109'>1109</a>
-<a name='L1110'></a><a href='#L1110'>1110</a>
-<a name='L1111'></a><a href='#L1111'>1111</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L1110'></a><a href='#L1110'>1110</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1787,7 +1786,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">18x</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -2905,7 +2903,6 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
                             Tag {renderSortIndicator('tag')}
                         &lt;/div&gt;
                         &lt;div className="col-span-2"&gt;&lt;/div&gt;
-                        &lt;div className="col-span-2"&gt;&lt;/div&gt;
                     &lt;/&gt;
                 )}
                 {/* PersistentVolumeClaim-specific columns */}
@@ -2917,7 +2914,7 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
 <span class="cstat-no" title="statement not covered" >                        &lt;div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={<span class="fstat-no" title="function not covered" >() =&gt; handleSort('created')}&gt;</span></span>
 <span class="cstat-no" title="statement not covered" >                            Age {renderSortIndicator('created')}</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;div className="col-span-4"&gt;&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;div className="col-span-3"&gt;&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/&gt;</span>
                 )}
                 {/* Other resource types */}
@@ -2926,7 +2923,7 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
 <span class="cstat-no" title="statement not covered" >                        &lt;div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={<span class="fstat-no" title="function not covered" >() =&gt; handleSort('created')}&gt;</span></span>
 <span class="cstat-no" title="statement not covered" >                            Age {renderSortIndicator('created')}</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;div className="col-span-5"&gt;&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;div className={`${kind === 'CronJob' ? 'col-span-3' : 'col-span-4'}`}&gt;&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/&gt;</span>
                 )}
             &lt;/div&gt;
@@ -3002,7 +2999,7 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
 <span class="cstat-no" title="statement not covered" >                                        &lt;div className="col-span-1 text-sm text-gray-400 text-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                            {formatDateTime(res.created)}</span>
 <span class="cstat-no" title="statement not covered" >                                        &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                                        &lt;div className="col-span-4"&gt;&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                                        &lt;div className="col-span-3"&gt;&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                    &lt;/&gt;</span>
                                 )}
                                 {/* Other resource types */}
@@ -3011,10 +3008,10 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
 <span class="cstat-no" title="statement not covered" >                                        &lt;div className="col-span-1 text-sm text-gray-400 text-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                            {formatDateTime(res.created)}</span>
 <span class="cstat-no" title="statement not covered" >                                        &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                                        &lt;div className="col-span-5"&gt;&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                                        &lt;div className={`${kind === 'CronJob' ? 'col-span-3' : 'col-span-4'}`}&gt;&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                    &lt;/&gt;</span>
                                 )}
-                                &lt;div className={`${kind === 'Pod' ? 'col-span-1' : kind === <span class="branch-0 cbranch-no" title="branch not covered" >'PersistentVolumeClaim' ? 'col-span-2' : k</span>ind === 'Deployment' ? <span class="branch-0 cbranch-no" title="branch not covered" >'col-span-2' : 'col-span-2'}</span> flex justify-end items-center space-x-1 pr-2 flex-nowrap shrink-0`} onClick={<span class="fstat-no" title="function not covered" >(e) =&gt; e.stopPropagation()}&gt;</span>
+                                &lt;div className={`${kind === 'Pod' ? 'col-span-1' : kind === <span class="branch-0 cbranch-no" title="branch not covered" >'PersistentVolumeClaim' ? 'col-span-1' : k</span>ind === 'Deployment' ? <span class="branch-0 cbranch-no" title="branch not covered" >'col-span-2' : kind === 'CronJob' ? 'col-span-2' : 'col-span-1'}</span> flex justify-end items-center space-x-1 pr-2 flex-nowrap shrink-0 min-w-0`} onClick={<span class="fstat-no" title="function not covered" >(e) =&gt; e.stopPropagation()}&gt;</span>
                                     {kind === <span class="branch-0 cbranch-no" title="branch not covered" >'CronJob' &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                                        &lt;button</span>
 <span class="cstat-no" title="statement not covered" >                                            onClick={<span class="fstat-no" title="function not covered" >(e) =&gt; {</span></span>
@@ -3400,7 +3397,7 @@ export default WorkloadList;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-30T23:11:05.214Z
+                at 2025-11-30T23:20:27.072Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
