@@ -204,7 +204,7 @@ jobs:
           echo "🏷️  Docker image tags: $TAGS"
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
