@@ -5,6 +5,19 @@ All notable changes to DKonsole will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+- **CRITICAL**: Fixed LDAP injection vulnerability in user authentication and group search
+  - Added input sanitization using `ldap.EscapeFilter()` for all user-controlled LDAP filters
+  - Implemented username validation to reject dangerous characters
+  - Added DN format validation for direct DN authentication
+  - Addresses OWASP A03:2021 (Injection)
+- Added comprehensive unit tests for LDAP validation functions
+
+### Changed
+- LDAP search filters now properly escape user input to prevent injection attacks
+
 ## [1.3.0] - 2025-11-29
 
 ### ✨ Added

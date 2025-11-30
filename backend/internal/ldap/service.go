@@ -381,6 +381,16 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password strin
 	utils.LogInfo("AuthenticateUser called", map[string]interface{}{
 		"username": username,
 	})
+
+	// Validar input antes de usar
+	if err := validateLDAPUsername(username); err != nil {
+		utils.LogWarn("Invalid username format", map[string]interface{}{
+			"username": username,
+			"error":    err.Error(),
+		})
+		return fmt.Errorf("invalid username format: %w", err)
+	}
+
 	config, err := s.repo.GetConfig(ctx)
 	if err != nil {
 		utils.LogWarn("Failed to get LDAP config", map[string]interface{}{
@@ -433,14 +443,24 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password strin
 	// Determine user DN: if username contains "=", it's already a DN, otherwise search for it
 	var bindDN string
 	if strings.Contains(username, "=") {
-		// Username is already a full DN
+		// Username is already a full DN - validar que sea DN válido
+		if !isValidLDAPDN(username) {
+			return fmt.Errorf("invalid LDAP DN format")
+		}
 		bindDN = username
 	} else {
 		// Search for user first to get the full DN
-		userSearchFilter := fmt.Sprintf("(%s=%s)", config.UserDN, username)
+		// SANITIZAR username con ldap.EscapeFilter()
+		escapedUsername := ldap.EscapeFilter(username)
+		userSearchFilter := fmt.Sprintf("(%s=%s)", config.UserDN, escapedUsername)
 		if config.UserFilter != "" {
-			userSearchFilter = fmt.Sprintf("(&(%s=%s)%s)", config.UserDN, username, config.UserFilter)
+			userSearchFilter = fmt.Sprintf("(&(%s=%s)%s)", config.UserDN, escapedUsername, config.UserFilter)
 		}
+
+		utils.LogInfo("LDAP search filter (sanitized)", map[string]interface{}{
+			"filter": userSearchFilter,
+		})
+
 		userSearchRequest := ldap.NewSearchRequest(
 			config.BaseDN,
 			ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
@@ -451,7 +471,7 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password strin
 		userSr, err := conn.Search(userSearchRequest)
 		if err != nil || len(userSr.Entries) == 0 {
 			// Fallback: construct DN from username, userDN attribute, and baseDN
-			bindDN = fmt.Sprintf("%s=%s,%s", config.UserDN, username, config.BaseDN)
+			bindDN = fmt.Sprintf("%s=%s,%s", config.UserDN, escapedUsername, config.BaseDN)
 		} else {
 			// Use the found DN
 			bindDN = userSr.Entries[0].DN
@@ -631,9 +651,11 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 
 	// Fallback: Search for groups with member or uniqueMember attribute
 	// Try both groupOfNames (member) and groupOfUniqueNames (uniqueMember)
-	searchFilter := fmt.Sprintf("(|(member=%s)(uniqueMember=%s))", userDN, userDN)
+	// Sanitizar userDN antes de usarlo en el filtro
+	escapedUserDN := ldap.EscapeFilter(userDN)
+	searchFilter := fmt.Sprintf("(|(member=%s)(uniqueMember=%s))", escapedUserDN, escapedUserDN)
 	if config.UserFilter != "" {
-		searchFilter = fmt.Sprintf("(&(|(member=%s)(uniqueMember=%s))%s)", userDN, userDN, config.UserFilter)
+		searchFilter = fmt.Sprintf("(&(|(member=%s)(uniqueMember=%s))%s)", escapedUserDN, escapedUserDN, config.UserFilter)
 	}
 
 	utils.LogInfo("Trying fallback search for groups", map[string]interface{}{

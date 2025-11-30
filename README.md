@@ -109,7 +109,45 @@ prometheusUrl: "http://prometheus-server.monitoring.svc.cluster.local:9090"
 
 **Note:** If `prometheusUrl` is not configured, the Metrics tab will not be displayed.
 
-### 4. Docker Image (Optional)
+### 4. Security
+
+#### Dependency Scanning
+
+Este proyecto utiliza escaneo automatizado de vulnerabilidades:
+
+- **Trivy**: Escaneo de contenedores y filesystems
+- **govulncheck**: Análisis específico de Go
+- **npm audit**: Vulnerabilidades de Node.js
+
+##### Ejecutar manualmente
+
+```bash
+# Backend (Go)
+cd backend
+govulncheck ./...
+
+# Frontend (npm)
+cd frontend
+npm audit --audit-level=high
+
+# Container
+docker build -t dkonsole:test .
+trivy image dkonsole:test
+```
+
+##### CI/CD
+
+El workflow `.github/workflows/security.yml` ejecuta automáticamente:
+- ✅ Escaneo en cada push/PR
+- ✅ Escaneo diario programado (2 AM)
+- ✅ Generación de SBOM en main
+- ✅ Resultados en GitHub Security tab
+
+#### Reportar Vulnerabilidades
+
+Si encuentras una vulnerabilidad de seguridad, por favor reporta a: security@example.com
+
+### 5. Docker Image (Optional)
 By default, it uses the official image. You can change tag or repository if needed.
 
 ```yaml
