@@ -284,9 +284,18 @@ body {
   color: rgb(var(--color-gray-100)) !important;
 }
 
-[data-theme="light"] .text-white,
-[data-theme="light"] .text-white *:not(.monaco-editor):not(.monaco-editor *) {
+[data-theme="light"] .text-white {
   color: rgb(var(--color-gray-100)) !important;
+}
+
+[data-theme="light"] .text-white *:not(.monaco-editor) {
+  color: rgb(var(--color-gray-100)) !important;
+}
+
+/* Ensure Monaco Editor children are excluded */
+[data-theme="light"] .text-white .monaco-editor,
+[data-theme="light"] .text-white .monaco-editor * {
+  color: revert !important;
 }
 
 [data-theme="light"] .bg-black,
@@ -306,9 +315,18 @@ body {
   color: rgb(var(--color-gray-100)) !important;
 }
 
-[data-theme="cream"] .text-white,
-[data-theme="cream"] .text-white *:not(.monaco-editor):not(.monaco-editor *) {
+[data-theme="cream"] .text-white {
   color: rgb(var(--color-gray-100)) !important;
+}
+
+[data-theme="cream"] .text-white *:not(.monaco-editor) {
+  color: rgb(var(--color-gray-100)) !important;
+}
+
+/* Ensure Monaco Editor children are excluded */
+[data-theme="cream"] .text-white .monaco-editor,
+[data-theme="cream"] .text-white .monaco-editor * {
+  color: revert !important;
 }
 
 [data-theme="cream"] .bg-black,
