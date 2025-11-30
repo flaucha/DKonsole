@@ -40,12 +40,13 @@ jobs:
           format: 'sarif'
           output: 'trivy-backend-results.sarif'
 
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-backend-results.sarif'
-          category: 'trivy-backend'
+      # Deshabilitado temporalmente - problemas de permisos
+      # - name: Upload Trivy results to GitHub Security
+      #   uses: github/codeql-action/upload-sarif@v3
+      #   if: always()
+      #   with:
+      #     sarif_file: 'trivy-backend-results.sarif'
+      #     category: 'trivy-backend'
 
       # Frontend - npm audit
       - name: Setup Node.js
@@ -73,12 +74,13 @@ jobs:
           format: 'sarif'
           output: 'trivy-frontend-results.sarif'
 
-      - name: Upload Frontend Trivy results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-frontend-results.sarif'
-          category: 'trivy-frontend'
+      # Deshabilitado temporalmente - problemas de permisos
+      # - name: Upload Frontend Trivy results
+      #   uses: github/codeql-action/upload-sarif@v3
+      #   if: always()
+      #   with:
+      #     sarif_file: 'trivy-frontend-results.sarif'
+      #     category: 'trivy-frontend'
 
   container-scan:
     name: Container Image Scan
@@ -100,12 +102,13 @@ jobs:
           output: 'trivy-container-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      - name: Upload Container scan results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-container-results.sarif'
-          category: 'trivy-container'
+      # Deshabilitado temporalmente - problemas de permisos
+      # - name: Upload Container scan results
+      #   uses: github/codeql-action/upload-sarif@v3
+      #   if: always()
+      #   with:
+      #     sarif_file: 'trivy-container-results.sarif'
+      #     category: 'trivy-container'
 
   sbom-generation:
     name: Generate SBOM
