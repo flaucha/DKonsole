@@ -625,7 +625,7 @@ const HelmChartManager = ({ namespace }) => {
                                     <label className="block text-sm font-medium text-gray-300 mb-2">
                                         Values Override (YAML) <span className="text-gray-500 text-xs">(optional)</span>
                                     </label>
-                                    <div className="border border-gray-700 rounded-md overflow-hidden" style={{ height: '300px' }}>
+                                    <div className="!border-gray-700 border rounded-md overflow-hidden !bg-[#1e1e1e]" style={{ height: '300px' }}>
                                         <Editor
                                             height="100%"
                                             defaultLanguage="yaml"
@@ -642,6 +642,7 @@ const HelmChartManager = ({ namespace }) => {
                                                 tabSize: 2,
                                                 insertSpaces: true,
                                             }}
+                                            className="!bg-[#1e1e1e]"
                                         />
                                     </div>
                                     <p className="text-xs text-gray-500 mt-1.5">
@@ -805,7 +806,7 @@ const HelmChartManager = ({ namespace }) => {
                                     <label className="block text-sm font-medium text-gray-300 mb-2">
                                         Values Override (YAML) <span className="text-gray-500 text-xs">(optional)</span>
                                     </label>
-                                    <div className="border border-gray-700 rounded-md overflow-hidden" style={{ height: '300px' }}>
+                                    <div className="!border-gray-700 border rounded-md overflow-hidden !bg-[#1e1e1e]" style={{ height: '300px' }}>
                                         <Editor
                                             height="100%"
                                             defaultLanguage="yaml"
@@ -822,6 +823,7 @@ const HelmChartManager = ({ namespace }) => {
                                                 tabSize: 2,
                                                 insertSpaces: true,
                                             }}
+                                            className="!bg-[#1e1e1e]"
                                         />
                                     </div>
                                     <p className="text-xs text-gray-500 mt-1.5">

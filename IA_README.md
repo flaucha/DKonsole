@@ -15,16 +15,18 @@ This ensures the AI loads the correct context, architecture, and constraints.
 Use these commands for rapid interaction (defined in `docs/COMMANDS.md`):
 
 ### 1. Analysis & Audits
-- **`/audit`**: Full project analysis.
+- **`/audit`**: Full project analysis. Generates a report in the root.
 - **`/audit [file]`**: Analyze a specific file.
 
 ### 2. Development
 - **`/feat [Name]`**: Add a new feature.
   - *Example*: `/feat Dark Mode`
-- **`/refactor [Target]`**: Clean up code.
-  - *Example*: `/refactor auth service`
 - **`/fix [Bug]`**: Fix a bug.
   - *Example*: `/fix Login 500 error`
+- **`/fix point [X] [file]`**: Fix a specific point from an analysis report.
+  - *Example*: `/fix point 3 AUDIT_REPORT.md`
+- **`/refactor [Target]`**: Clean up code.
+  - *Example*: `/refactor auth service`
 
 ### 3. Release & Verify
 - **`/release [Version]`**: Trigger release workflow.

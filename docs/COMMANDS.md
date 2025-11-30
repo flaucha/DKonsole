@@ -6,11 +6,13 @@ Use these commands for rapid and precise interaction.
 ## 1. Core Commands
 
 ### `/audit`
-**Description**: Performs a comprehensive analysis of the project or a specific component.
+**Description**: Performs a comprehensive analysis and **generates a report in the root directory**.
 **Usage**:
-- `/audit`: Analyze the entire repository.
-- `/audit [file/path]`: Analyze a specific file or directory.
-**Workflow**: Follows `docs/ANALYSIS_GUIDELINES.md`.
+- `/audit`: Analyze the entire repository. Generates `AUDIT_REPORT.md` (or similar) in the root.
+- `/audit [file/path]`: Analyze a specific file.
+**Workflow**:
+1.  Follow `docs/ANALYSIS_GUIDELINES.md`.
+2.  Save the report as `[NAME]_ANALYSIS.md` in the project root.
 
 ### `/feat [name]`
 **Description**: Initiates the workflow to add a new feature.
@@ -21,11 +23,16 @@ Use these commands for rapid and precise interaction.
 2.  Execute (Backend + Frontend).
 3.  Verify (Tests).
 
-### `/fix [description]`
-**Description**: Investigates and fixes a bug.
+### `/fix [target]`
+**Description**: Investigates and fixes a bug or an audit point.
 **Usage**:
-- `/fix Login 500 error`: Fixes the login issue.
-**Workflow**: Reproduce -> Analyze -> Fix -> Verify.
+- `/fix point [X] [analysis_file.md]`: Fixes specific point X from an analysis file.
+- `/fix [description]`: Fixes a bug described by the user.
+**Workflow**:
+1.  **Analyze**: Understand the issue (or read the analysis point).
+2.  **Plan**: Create/Update `implementation_plan.md`.
+3.  **Execute**: Apply the fix following `docs/CODING_GUIDELINES.md`.
+4.  **Verify**: Ensure tests pass.
 
 ### `/refactor [target]`
 **Description**: Refactors code to improve quality without changing behavior.

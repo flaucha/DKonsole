@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/72</span>
+                <span class='fraction'>0/78</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/72</span>
+                <span class='fraction'>0/78</span>
             </div>
         
             
@@ -152,7 +152,14 @@
 <a name='L87'></a><a href='#L87'>87</a>
 <a name='L88'></a><a href='#L88'>88</a>
 <a name='L89'></a><a href='#L89'>89</a>
-<a name='L90'></a><a href='#L90'>90</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -173,17 +180,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -201,12 +199,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -217,8 +209,30 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -258,6 +272,7 @@ import { logger } from '../utils/logger';
 <span class="cstat-no" title="statement not covered" >    const [fontSize, setFontSize] = useState(localStorage.getItem('fontSize') || 'normal');</span>
 <span class="cstat-no" title="statement not covered" >    const [borderRadius, setBorderRadius] = useState(localStorage.getItem('borderRadius') || 'md');</span>
 <span class="cstat-no" title="statement not covered" >    const [menuAnimation, setMenuAnimation] = useState(localStorage.getItem('menuAnimation') || 'slide');</span>
+<span class="cstat-no" title="statement not covered" >    const [menuAnimationSpeed, setMenuAnimationSpeed] = useState(localStorage.getItem('menuAnimationSpeed') || 'medium');</span>
 <span class="cstat-no" title="statement not covered" >    const [itemsPerPage, setItemsPerPage] = useState(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        const saved = localStorage.getItem('itemsPerPage');</span>
 <span class="cstat-no" title="statement not covered" >        return saved ? parseInt(saved, 10) : 500;</span>
@@ -292,6 +307,10 @@ import { logger } from '../utils/logger';
 <span class="cstat-no" title="statement not covered" >    }, [menuAnimation]);</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    useEffect(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        localStorage.setItem('menuAnimationSpeed', menuAnimationSpeed);</span>
+<span class="cstat-no" title="statement not covered" >    }, [menuAnimationSpeed]);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    useEffect(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        localStorage.setItem('itemsPerPage', itemsPerPage.toString());</span>
 <span class="cstat-no" title="statement not covered" >    }, [itemsPerPage]);</span>
 &nbsp;
@@ -323,6 +342,8 @@ import { logger } from '../utils/logger';
 <span class="cstat-no" title="statement not covered" >            setBorderRadius,</span>
 <span class="cstat-no" title="statement not covered" >            menuAnimation,</span>
 <span class="cstat-no" title="statement not covered" >            setMenuAnimation,</span>
+<span class="cstat-no" title="statement not covered" >            menuAnimationSpeed,</span>
+<span class="cstat-no" title="statement not covered" >            setMenuAnimationSpeed,</span>
 <span class="cstat-no" title="statement not covered" >            itemsPerPage,</span>
 <span class="cstat-no" title="statement not covered" >            setItemsPerPage</span>
 <span class="cstat-no" title="statement not covered" >        }}&gt;</span>
@@ -337,7 +358,7 @@ import { logger } from '../utils/logger';
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-30T11:09:34.246Z
+                at 2025-11-30T12:13:08.340Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

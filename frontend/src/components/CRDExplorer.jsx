@@ -232,8 +232,8 @@ const CRDExplorer = ({ namespace }) => {
             </div>
             {yamlView && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="bg-gray-900 w-full max-w-4xl h-[80vh] rounded-lg border border-gray-700 flex flex-col shadow-2xl overflow-hidden">
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800">
+                    <div className="!bg-gray-900 w-full max-w-4xl h-[80vh] rounded-lg !border-gray-700 border flex flex-col shadow-2xl overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-3 !border-gray-700 border-b !bg-gray-800">
                             <div className="flex items-center space-x-2">
                                 <FileText size={16} className="text-gray-400" />
                                 <span className="font-mono text-sm text-gray-200">{yamlView.name}</span>
@@ -259,6 +259,7 @@ const CRDExplorer = ({ namespace }) => {
                                     fontSize: 12,
                                     automaticLayout: true,
                                 }}
+                                className="!bg-[#1e1e1e]"
                             />
                         </div>
                     </div>

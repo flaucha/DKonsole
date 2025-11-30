@@ -41,8 +41,8 @@ const YamlImporter = ({ onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-900 w-full max-w-4xl h-[80vh] rounded-lg border border-gray-700 flex flex-col shadow-2xl overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800">
+            <div className="!bg-gray-900 w-full max-w-4xl h-[80vh] rounded-lg !border-gray-700 border flex flex-col shadow-2xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 !border-gray-700 border-b !bg-gray-800">
                     <div className="flex items-center space-x-2">
                         <Upload size={18} className="text-gray-400" />
                         <span className="text-sm font-semibold text-white">Import YAML</span>
@@ -97,8 +97,9 @@ const YamlImporter = ({ onClose }) => {
                             fontSize: 14,
                             automaticLayout: true,
                         }}
+                        className="!bg-[#1e1e1e]"
                     />
-                    <div className="p-4 border-t border-gray-800 flex justify-end bg-gray-900">
+                    <div className="p-4 !border-gray-800 border-t !bg-gray-900 flex justify-end">
                         <button
                             onClick={handleImport}
                             disabled={importing || !content.trim()}
