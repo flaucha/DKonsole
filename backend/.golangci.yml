@@ -93,6 +93,7 @@ issues:
   exclude:
     - "Error return value.*is not checked"
     - "string `.*` has .* occurrences, make it a constant"
+    - "string `user` has .* occurrences, but such constant `userContextKey` already exists.*"
     - "cyclomatic complexity .* of func.*is high"
     - "hugeParam:.*is heavy"
     - "rangeValCopy:.*consider pointers"
