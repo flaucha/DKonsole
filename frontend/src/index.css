@@ -293,10 +293,10 @@ body {
 }
 
 /* Exclude Monaco Editor completely from color overrides - let it use its native vs-dark theme */
-/* Using higher specificity to override the .text-white * rule */
-[data-theme="light"] .monaco-editor *,
-[data-theme="light"] .text-white .monaco-editor * {
-  color: inherit !important;
+/* Monaco Editor applies colors via inline styles and classes, so we need to unset our overrides */
+[data-theme="light"] .monaco-editor,
+[data-theme="light"] .monaco-editor * {
+  color: unset !important;
 }
 
 [data-theme="light"] .bg-black,
@@ -325,10 +325,10 @@ body {
 }
 
 /* Exclude Monaco Editor completely from color overrides - let it use its native vs-dark theme */
-/* Using higher specificity to override the .text-white * rule */
-[data-theme="cream"] .monaco-editor *,
-[data-theme="cream"] .text-white .monaco-editor * {
-  color: inherit !important;
+/* Monaco Editor applies colors via inline styles and classes, so we need to unset our overrides */
+[data-theme="cream"] .monaco-editor,
+[data-theme="cream"] .monaco-editor * {
+  color: unset !important;
 }
 
 [data-theme="cream"] .bg-black,
