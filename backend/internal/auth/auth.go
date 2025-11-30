@@ -350,6 +350,7 @@ func (s *Service) MeHandler(w http.ResponseWriter, r *http.Request) {
 	utils.LogInfo("MeHandler: returning user info", map[string]interface{}{
 		"username":    claims.Username,
 		"role":        claims.Role,
+		"idp":         claims.IDP,
 		"permissions": response["permissions"],
 	})
 

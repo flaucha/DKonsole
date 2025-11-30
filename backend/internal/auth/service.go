@@ -252,6 +252,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 	utils.LogInfo("Login: creating JWT with permissions", map[string]interface{}{
 		"username":    req.Username,
 		"role":        role,
+		"idp":         idp,
 		"permissions": permissions,
 	})
 

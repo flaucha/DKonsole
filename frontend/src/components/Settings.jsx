@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Server, Palette, Type, Plus, Check, AlertCircle, Trash2, Settings as SettingsIcon, Info, Github, Mail, Coffee, Code, Lock, Save, Users, Key, Menu } from 'lucide-react';
 import { parseErrorResponse, parseError } from '../utils/errorParser';
-import { isLDAPAdmin } from '../utils/permissions';
+import { isLDAPAdmin, isCoreAdmin } from '../utils/permissions';
 
 const Settings = () => {
     const {
@@ -185,7 +185,7 @@ const Settings = () => {
                             </div>
 
                             {/* Password Change Settings - Only for CORE admin, not LDAP admin or regular users */}
-                            {user && user.role === 'admin' && !isLDAPAdmin(user) && (
+                            {user && isCoreAdmin(user) && (
                                 <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
                                     <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
                                         <SettingsIcon size={20} className="mr-2 text-red-400" /> Change Password

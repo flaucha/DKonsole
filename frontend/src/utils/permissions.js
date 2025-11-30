@@ -29,7 +29,9 @@ export const isLDAPAdmin = (user) => {
  */
 export const isCoreAdmin = (user) => {
     if (!user) return false;
-    return user.role === 'admin' && (user.idp === 'core' || !user.idp);
+    // Only return true if explicitly core admin (idp === 'core')
+    // If idp is undefined, we can't be sure, so return false for safety
+    return user.role === 'admin' && user.idp === 'core';
 };
 
 /**
