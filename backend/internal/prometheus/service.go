@@ -413,13 +413,13 @@ func (s *Service) calculateClusterStats(nodes []NodeMetric, controlPlaneCount in
 
 	if len(workerNodes) == 0 {
 		return &ClusterStats{
-			TotalNodes:       0,
+			TotalNodes:        0,
 			ControlPlaneNodes: controlPlaneCount,
-			AvgCPUUsage:      0.0,
-			AvgMemoryUsage:   0.0,
-			NetworkTraffic:   0.0,
-			CPUTrend:         0.0,
-			MemoryTrend:      0.0,
+			AvgCPUUsage:       0.0,
+			AvgMemoryUsage:    0.0,
+			NetworkTraffic:    0.0,
+			CPUTrend:          0.0,
+			MemoryTrend:       0.0,
 		}
 	}
 
@@ -446,12 +446,12 @@ func (s *Service) calculateClusterStats(nodes []NodeMetric, controlPlaneCount in
 	memoryTrend := 0.0
 
 	return &ClusterStats{
-		TotalNodes:       workerNodeCount,
+		TotalNodes:        workerNodeCount,
 		ControlPlaneNodes: controlPlaneCount,
-		AvgCPUUsage:      avgCPU,
-		AvgMemoryUsage:   avgMem,
-		NetworkTraffic:   networkTraffic,
-		CPUTrend:         cpuTrend,
-		MemoryTrend:      memoryTrend,
+		AvgCPUUsage:       avgCPU,
+		AvgMemoryUsage:    avgMem,
+		NetworkTraffic:    networkTraffic,
+		CPUTrend:          cpuTrend,
+		MemoryTrend:       memoryTrend,
 	}
 }

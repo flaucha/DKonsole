@@ -95,7 +95,7 @@ func buildBindDN(username string, config *models.LDAPConfig) string {
 }
 
 // searchUserDN searches for a user's DN in LDAP
-func searchUserDN(ctx context.Context, repo LDAPClientRepository, config *models.LDAPConfig, username string) (string, error) {
+func searchUserDN(ctx context.Context, repo LDAPClientRepository, config *models.LDAPConfig, username string) string {
 	// Search for user first to get the full DN
 	userSearchFilter := fmt.Sprintf("(%s=%s)", config.UserDN, username)
 	if config.UserFilter != "" {
@@ -105,9 +105,9 @@ func searchUserDN(ctx context.Context, repo LDAPClientRepository, config *models
 	entries, err := repo.Search(ctx, config.BaseDN, ldap.ScopeWholeSubtree, userSearchFilter, []string{"dn"})
 	if err != nil || len(entries) == 0 {
 		// Fallback: construct DN from username, userDN attribute, and baseDN
-		return buildBindDN(username, config), nil
+		return buildBindDN(username, config)
 	}
 
 	// Use the found DN
-	return entries[0].DN, nil
+	return entries[0].DN
 }

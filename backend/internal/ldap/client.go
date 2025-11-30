@@ -15,17 +15,17 @@ import (
 
 // LDAPClient manages LDAP connections with pooling and TLS support
 type LDAPClient struct {
-	config     *models.LDAPConfig
-	pool       *connectionPool
-	mu         sync.RWMutex
-	tlsConfig  *tls.Config
+	config    *models.LDAPConfig
+	pool      *connectionPool
+	mu        sync.RWMutex
+	tlsConfig *tls.Config
 }
 
 // connectionPool manages a pool of LDAP connections
 type connectionPool struct {
-	url        string
-	tlsConfig  *tls.Config
-	timeout    time.Duration
+	url         string
+	tlsConfig   *tls.Config
+	timeout     time.Duration
 	connections chan *ldap.Conn
 	maxSize     int
 	mu          sync.Mutex
@@ -44,10 +44,7 @@ func NewLDAPClient(config *models.LDAPConfig) (*LDAPClient, error) {
 	}
 
 	// Create connection pool
-	pool, err := newConnectionPool(config.URL, tlsConfig, 10*time.Second, 5)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create connection pool: %w", err)
-	}
+	pool := newConnectionPool(config.URL, tlsConfig, 10*time.Second, 5)
 
 	return &LDAPClient{
 		config:    config,
@@ -99,13 +96,13 @@ func extractServerName(url string) string {
 }
 
 // newConnectionPool creates a new connection pool
-func newConnectionPool(url string, tlsConfig *tls.Config, timeout time.Duration, maxSize int) (*connectionPool, error) {
+func newConnectionPool(url string, tlsConfig *tls.Config, timeout time.Duration, maxSize int) *connectionPool {
 	pool := &connectionPool{
-		url:        url,
-		tlsConfig:  tlsConfig,
-		timeout:    timeout,
+		url:         url,
+		tlsConfig:   tlsConfig,
+		timeout:     timeout,
 		connections: make(chan *ldap.Conn, maxSize),
-		maxSize:    maxSize,
+		maxSize:     maxSize,
 	}
 
 	// Pre-populate pool with a few connections
@@ -121,7 +118,7 @@ func newConnectionPool(url string, tlsConfig *tls.Config, timeout time.Duration,
 		pool.connections <- conn
 	}
 
-	return pool, nil
+	return pool
 }
 
 // createConnection creates a new LDAP connection
@@ -229,10 +226,7 @@ func (c *LDAPClient) UpdateConfig(config *models.LDAPConfig) error {
 	c.tlsConfig = tlsConfig
 
 	// Create new pool
-	pool, err := newConnectionPool(config.URL, tlsConfig, 10*time.Second, 5)
-	if err != nil {
-		return fmt.Errorf("failed to recreate connection pool: %w", err)
-	}
+	pool := newConnectionPool(config.URL, tlsConfig, 10*time.Second, 5)
 	c.pool = pool
 
 	return nil

@@ -6,7 +6,7 @@ import (
 
 // ServiceFactory creates and configures LDAP services
 type ServiceFactory struct {
-	k8sClient kubernetes.Interface
+	k8sClient  kubernetes.Interface
 	secretName string
 }
 

@@ -344,8 +344,8 @@ func (s *Service) MeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.LogInfo("MeHandler: returning user info", map[string]interface{}{
-		"username":   claims.Username,
-		"role":       claims.Role,
+		"username":    claims.Username,
+		"role":        claims.Role,
 		"permissions": response["permissions"],
 	})
 
@@ -391,8 +391,8 @@ func (s *Service) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		// Log claims for debugging
 		utils.LogInfo("AuthMiddleware: extracted claims from JWT", map[string]interface{}{
-			"username":   claims.Username,
-			"role":       claims.Role,
+			"username":    claims.Username,
+			"role":        claims.Role,
 			"permissions": claims.Permissions,
 		})
 

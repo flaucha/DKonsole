@@ -96,11 +96,11 @@ func (s *Service) getClient(ctx context.Context) (*LDAPClient, error) {
 
 // TestConnectionRequest represents a request to test LDAP connection
 type TestConnectionRequest struct {
-	URL        string `json:"url"`
-	BaseDN     string `json:"baseDN"`
-	UserDN     string `json:"userDN"`
-	Username   string `json:"username"`
-	Password   string `json:"password"`
+	URL      string `json:"url"`
+	BaseDN   string `json:"baseDN"`
+	UserDN   string `json:"userDN"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 // UpdateConfigRequest represents a request to update LDAP configuration
@@ -123,9 +123,9 @@ type UpdateCredentialsRequest struct {
 func (s *Service) TestConnection(ctx context.Context, req TestConnectionRequest) error {
 	// Create a temporary config for testing
 	testConfig := &models.LDAPConfig{
-		URL:               req.URL,
-		BaseDN:            req.BaseDN,
-		UserDN:            req.UserDN,
+		URL:                req.URL,
+		BaseDN:             req.BaseDN,
+		UserDN:             req.UserDN,
 		InsecureSkipVerify: false, // Default to secure for testing
 	}
 
@@ -532,19 +532,11 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 		})
 	} else {
 		// Search for user first to get the full DN
-		userDN, err = searchUserDN(ctx, repo, config, username)
-		if err != nil {
-			utils.LogWarn("Failed to search for user DN, using constructed DN", map[string]interface{}{
-				"username": username,
-				"error":    err.Error(),
-			})
-			userDN = buildBindDN(username, config)
-		} else {
-			utils.LogInfo("Found user DN", map[string]interface{}{
-				"username": username,
-				"userDN":   userDN,
-			})
-		}
+		userDN = searchUserDN(ctx, repo, config, username)
+		utils.LogInfo("Found user DN", map[string]interface{}{
+			"username": username,
+			"userDN":   userDN,
+		})
 	}
 
 	utils.LogInfo("Searching for user groups", map[string]interface{}{
@@ -580,23 +572,23 @@ func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string,
 			attrNames = append(attrNames, attr.Name)
 		}
 		utils.LogInfo("User entry attributes", map[string]interface{}{
-			"username":     username,
-			"userDN":       userDN,
-			"attributes":   attrNames,
+			"username":   username,
+			"userDN":     userDN,
+			"attributes": attrNames,
 		})
 
 		// Extract groups from memberOf attribute
 		memberOf := entry.GetAttributeValues("memberOf")
 		utils.LogInfo("Found memberOf attributes", map[string]interface{}{
-			"username":     username,
-			"userDN":       userDN,
-			"memberOf":     memberOf,
+			"username":       username,
+			"userDN":         userDN,
+			"memberOf":       memberOf,
 			"memberOf_count": len(memberOf),
 		})
 		if len(memberOf) == 0 {
 			utils.LogWarn("User has no memberOf attributes", map[string]interface{}{
-				"username": username,
-				"userDN":   userDN,
+				"username":             username,
+				"userDN":               userDN,
 				"available_attributes": attrNames,
 			})
 		}
@@ -701,7 +693,7 @@ func (s *Service) ValidateUserGroup(ctx context.Context, username string) error 
 	}
 
 	utils.LogInfo("Required group is configured", map[string]interface{}{
-		"username":      username,
+		"username":       username,
 		"required_group": config.RequiredGroup,
 	})
 
@@ -716,8 +708,8 @@ func (s *Service) ValidateUserGroup(ctx context.Context, username string) error 
 	}
 
 	utils.LogInfo("Validating user group membership", map[string]interface{}{
-		"username":      username,
-		"user_groups":  groups,
+		"username":       username,
+		"user_groups":    groups,
 		"required_group": config.RequiredGroup,
 	})
 
@@ -725,7 +717,7 @@ func (s *Service) ValidateUserGroup(ctx context.Context, username string) error 
 	for _, group := range groups {
 		if group == config.RequiredGroup {
 			utils.LogInfo("User belongs to required group", map[string]interface{}{
-				"username":      username,
+				"username":       username,
 				"required_group": config.RequiredGroup,
 			})
 			return nil
@@ -816,9 +808,9 @@ func (s *Service) GetUserPermissions(ctx context.Context, username string) (map[
 	}
 
 	utils.LogInfo("GetUserPermissions: permissions calculated", map[string]interface{}{
-		"username":      username,
+		"username":       username,
 		"matched_groups": matchedGroups,
-		"permissions":   permissions,
+		"permissions":    permissions,
 	})
 
 	return permissions, nil

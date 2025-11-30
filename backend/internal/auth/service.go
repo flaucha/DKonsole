@@ -23,9 +23,9 @@ type LDAPAuthenticator interface {
 // AuthService provides business logic for authentication operations.
 // It handles user authentication, password verification, and JWT token generation.
 type AuthService struct {
-	userRepo      UserRepository
-	jwtSecret     []byte
-	ldapAuth      LDAPAuthenticator // Optional LDAP authenticator
+	userRepo  UserRepository
+	jwtSecret []byte
+	ldapAuth  LDAPAuthenticator // Optional LDAP authenticator
 }
 
 // NewAuthService creates a new AuthService with the provided user repository and JWT secret.
@@ -122,7 +122,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 			permissions = make(map[string]string)
 		} else {
 			utils.LogInfo("User permissions retrieved successfully", map[string]interface{}{
-				"username":   req.Username,
+				"username":    req.Username,
 				"permissions": permissions,
 			})
 		}
@@ -168,7 +168,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 						permissions = make(map[string]string)
 					} else {
 						utils.LogInfo("User permissions retrieved successfully", map[string]interface{}{
-							"username":   req.Username,
+							"username":    req.Username,
 							"permissions": permissions,
 						})
 					}
@@ -187,8 +187,8 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 
 	// Log permissions before creating JWT
 	utils.LogInfo("Login: creating JWT with permissions", map[string]interface{}{
-		"username":   req.Username,
-		"role":       role,
+		"username":    req.Username,
+		"role":        role,
 		"permissions": permissions,
 	})
 
@@ -211,8 +211,8 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 
 	// Log token creation success
 	utils.LogInfo("Login: JWT token created successfully", map[string]interface{}{
-		"username":   req.Username,
-		"role":       role,
+		"username":    req.Username,
+		"role":        role,
 		"permissions": permissions,
 	})
 
@@ -243,8 +243,8 @@ func (s *AuthService) GetCurrentUser(ctx context.Context) (*models.Claims, error
 		permissions = claims.Permissions
 
 		utils.LogInfo("GetCurrentUser: extracted from AuthClaims", map[string]interface{}{
-			"username":   username,
-			"role":       role,
+			"username":    username,
+			"role":        role,
 			"permissions": permissions,
 		})
 	} else if claims, ok := userVal.(map[string]interface{}); ok {
@@ -267,8 +267,8 @@ func (s *AuthService) GetCurrentUser(ctx context.Context) (*models.Claims, error
 	}
 
 	utils.LogInfo("GetCurrentUser: returning claims", map[string]interface{}{
-		"username":   claims.Username,
-		"role":       claims.Role,
+		"username":    claims.Username,
+		"role":        claims.Role,
 		"permissions": claims.Permissions,
 	})
 

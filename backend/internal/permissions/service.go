@@ -276,7 +276,7 @@ func IsAdmin(ctx context.Context, ldapAdminChecker LDAPAdminChecker) (bool, erro
 					for _, userGroup := range userGroups {
 						if userGroup == adminGroup {
 							utils.LogInfo("User is LDAP admin group member", map[string]interface{}{
-								"username":   claims.Username,
+								"username":    claims.Username,
 								"admin_group": adminGroup,
 							})
 							return true, nil

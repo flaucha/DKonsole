@@ -44,6 +44,7 @@ func NewRepository(client kubernetes.Interface, secretName string) *K8sRepositor
 	}
 
 	// Use "ldap-config" as the secret name for all LDAP configuration
+	// #nosec G101 -- This is a secret name, not a credential
 	ldapSecretName := "ldap-config"
 
 	return &K8sRepository{
@@ -242,8 +243,8 @@ func (r *K8sRepository) UpdateGroups(ctx context.Context, groups *models.LDAPGro
 	}
 
 	utils.LogInfo("Updated LDAP groups in Secret", map[string]interface{}{
-		"secret_name": r.secretName,
-		"namespace":   r.namespace,
+		"secret_name":  r.secretName,
+		"namespace":    r.namespace,
 		"groups_count": len(groups.Groups),
 	})
 
