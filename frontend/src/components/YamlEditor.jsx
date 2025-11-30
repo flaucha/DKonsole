@@ -148,7 +148,7 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
                         <Editor
                             height="100%"
                             defaultLanguage="yaml"
-                            theme="vs-dark"
+                            theme="atom-dark"
                             value={content}
                             onChange={(value) => setContent(value)}
                             options={{
@@ -157,7 +157,7 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
                                 fontSize: 14,
                                 automaticLayout: true,
                             }}
-                            className="!bg-[#1e1e1e]"
+                            className="!bg-[#272b34]"
                         />
                     )}
                 </div>

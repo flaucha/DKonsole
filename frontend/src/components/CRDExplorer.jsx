@@ -250,7 +250,7 @@ const CRDExplorer = ({ namespace }) => {
                             <Editor
                                 height="100%"
                                 defaultLanguage="yaml"
-                                theme="vs-dark"
+                                theme="atom-dark"
                                 value={yamlView.content}
                                 options={{
                                     readOnly: true,
@@ -259,7 +259,7 @@ const CRDExplorer = ({ namespace }) => {
                                     fontSize: 12,
                                     automaticLayout: true,
                                 }}
-                                className="!bg-[#1e1e1e]"
+                                className="!bg-[#272b34]"
                             />
                         </div>
                     </div>

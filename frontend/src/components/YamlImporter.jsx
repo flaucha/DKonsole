@@ -88,7 +88,7 @@ const YamlImporter = ({ onClose }) => {
                     <Editor
                         height="100%"
                         defaultLanguage="yaml"
-                        theme="vs-dark"
+                        theme="atom-dark"
                         value={content}
                         onChange={(value) => setContent(value)}
                         options={{
@@ -97,7 +97,7 @@ const YamlImporter = ({ onClose }) => {
                             fontSize: 14,
                             automaticLayout: true,
                         }}
-                        className="!bg-[#1e1e1e]"
+                        className="!bg-[#272b34]"
                     />
                     <div className="p-4 !border-gray-800 border-t !bg-gray-900 flex justify-end">
                         <button

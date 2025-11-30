@@ -625,11 +625,11 @@ const HelmChartManager = ({ namespace }) => {
                                     <label className="block text-sm font-medium text-gray-300 mb-2">
                                         Values Override (YAML) <span className="text-gray-500 text-xs">(optional)</span>
                                     </label>
-                                    <div className="!border-gray-700 border rounded-md overflow-hidden !bg-[#1e1e1e]" style={{ height: '300px' }}>
+                                    <div className="!border-gray-700 border rounded-md overflow-hidden !bg-[#272b34]" style={{ height: '300px' }}>
                                         <Editor
                                             height="100%"
                                             defaultLanguage="yaml"
-                                            theme="vs-dark"
+                                            theme="atom-dark"
                                             value={upgradeForm.valuesYaml}
                                             onChange={(value) => setUpgradeForm({ ...upgradeForm, valuesYaml: value || '' })}
                                             options={{
@@ -642,7 +642,7 @@ const HelmChartManager = ({ namespace }) => {
                                                 tabSize: 2,
                                                 insertSpaces: true,
                                             }}
-                                            className="!bg-[#1e1e1e]"
+                                            className="!bg-[#272b34]"
                                         />
                                     </div>
                                     <p className="text-xs text-gray-500 mt-1.5">
@@ -806,11 +806,11 @@ const HelmChartManager = ({ namespace }) => {
                                     <label className="block text-sm font-medium text-gray-300 mb-2">
                                         Values Override (YAML) <span className="text-gray-500 text-xs">(optional)</span>
                                     </label>
-                                    <div className="!border-gray-700 border rounded-md overflow-hidden !bg-[#1e1e1e]" style={{ height: '300px' }}>
+                                    <div className="!border-gray-700 border rounded-md overflow-hidden !bg-[#272b34]" style={{ height: '300px' }}>
                                         <Editor
                                             height="100%"
                                             defaultLanguage="yaml"
-                                            theme="vs-dark"
+                                            theme="atom-dark"
                                             value={installForm.valuesYaml}
                                             onChange={(value) => setInstallForm({ ...installForm, valuesYaml: value || '' })}
                                             options={{
@@ -823,7 +823,7 @@ const HelmChartManager = ({ namespace }) => {
                                                 tabSize: 2,
                                                 insertSpaces: true,
                                             }}
-                                            className="!bg-[#1e1e1e]"
+                                            className="!bg-[#272b34]"
                                         />
                                     </div>
                                     <p className="text-xs text-gray-500 mt-1.5">
