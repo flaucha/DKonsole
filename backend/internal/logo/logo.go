@@ -119,9 +119,9 @@ func (s *Service) GetLogo(w http.ResponseWriter, r *http.Request) {
 		// Logo not found - try to serve default logo from static directory
 		var staticLogoPath string
 		if logoType == "light" {
-			staticLogoPath = filepath.Join("static", "logo-light.svg")
+			staticLogoPath = filepath.Join("static", "logo-full-light.svg")
 		} else {
-			staticLogoPath = filepath.Join("static", "logo.svg")
+			staticLogoPath = filepath.Join("static", "logo-full-dark.svg")
 		}
 
 		if absPath, err := filepath.Abs(staticLogoPath); err == nil {

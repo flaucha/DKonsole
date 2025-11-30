@@ -17,7 +17,7 @@
     <line x1="-22" y1="8" x2="0" y2="24" stroke="#FFFFFF" stroke-width="1.6"/>
   </g>
 
-  <!-- Wordmark DKonsole en negro -->
+  <!-- Wordmark DKonsole en blanco, 1 punto más grande y más cerca del logo -->
   <g transform="translate(120 60)">
     <text
       x="0"
@@ -33,4 +33,3 @@
     </text>
   </g>
 </svg>
-

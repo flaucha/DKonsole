@@ -433,8 +433,8 @@ func main() {
 		mux.HandleFunc("/favicon.ico", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, filepath.Join(staticDir, "favicon.ico"))
 		}))
-		mux.HandleFunc("/logo.svg", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			logoPath := filepath.Join(staticDir, "logo.svg")
+		mux.HandleFunc("/logo-full-dark.svg", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			logoPath := filepath.Join(staticDir, "logo-full-dark.svg")
 			if _, err := os.Stat(logoPath); err != nil {
 				http.NotFound(w, r)
 				return
@@ -442,8 +442,8 @@ func main() {
 			w.Header().Set("Content-Type", "image/svg+xml")
 			http.ServeFile(w, r, logoPath)
 		}))
-		mux.HandleFunc("/logo-light.svg", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			logoPath := filepath.Join(staticDir, "logo-light.svg")
+		mux.HandleFunc("/logo-full-light.svg", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			logoPath := filepath.Join(staticDir, "logo-full-light.svg")
 			if _, err := os.Stat(logoPath); err != nil {
 				http.NotFound(w, r)
 				return
@@ -465,7 +465,7 @@ func main() {
 				return
 			}
 			// Don't serve index.html for specific static files (handled by specific handlers)
-			if r.URL.Path == "/favicon.ico" || r.URL.Path == "/logo.svg" || r.URL.Path == "/robots.txt" {
+			if r.URL.Path == "/favicon.ico" || r.URL.Path == "/favicon.svg" || r.URL.Path == "/logo-full-dark.svg" || r.URL.Path == "/logo-full-light.svg" || r.URL.Path == "/robots.txt" {
 				http.NotFound(w, r)
 				return
 			}

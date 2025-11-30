@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, Shield, Users } from 'lucide-react';
-import defaultLogo from '../assets/logo-full.svg';
-import logoLight from '../assets/logo-light.svg';
+import logoFullDark from '../assets/logo-full-dark.svg';
+import logoFullLight from '../assets/logo-full-light.svg';
 
 const Login = () => {
     const [username, setUsername] = useState('');
@@ -17,7 +17,7 @@ const Login = () => {
     // Get current theme and determine default logo immediately
     const currentTheme = localStorage.getItem('theme') || 'default';
     const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
-    const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;
+    const defaultLogoSrc = isLightTheme ? logoFullLight : logoFullDark;
     const [logoSrc, setLogoSrc] = useState(defaultLogoSrc); // Show default logo immediately
 
     useEffect(() => {
@@ -59,7 +59,7 @@ const Login = () => {
         // If logo fails to load, fallback to theme-appropriate default logo
         const currentTheme = localStorage.getItem('theme') || 'default';
         const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
-        const fallbackLogo = isLightTheme ? '/logo-light.svg' : defaultLogo;
+        const fallbackLogo = isLightTheme ? logoFullLight : logoFullDark;
 
         if (logoSrc !== fallbackLogo) {
             setLogoSrc(fallbackLogo);

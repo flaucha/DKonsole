@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database, Gauge, Package, LogOut, PanelLeftClose, PanelLeftOpen, X, Siren } from 'lucide-react';
-import defaultLogo from '../assets/logo-full.svg';
-import logoLight from '../assets/logo-light.svg';
+import logoFullDark from '../assets/logo-full-dark.svg';
+import logoFullLight from '../assets/logo-full-light.svg';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import UserMenu from './UserMenu';
@@ -202,7 +202,7 @@ const Layout = ({ children, headerContent }) => {
     // Get current theme and determine default logo immediately
     const currentTheme = theme || localStorage.getItem('theme') || 'default';
     const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
-    const defaultLogoSrc = isLightTheme ? '/logo-light.svg' : defaultLogo;
+    const defaultLogoSrc = isLightTheme ? logoFullLight : logoFullDark;
 
     const [logoSrc, setLogoSrc] = useState(defaultLogoSrc); // Show default logo immediately
 
@@ -229,7 +229,7 @@ const Layout = ({ children, headerContent }) => {
         // If logo fails to load, fallback to theme-appropriate default logo
         const currentTheme = theme || localStorage.getItem('theme') || 'default';
         const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
-        const fallbackLogo = isLightTheme ? '/logo-light.svg' : defaultLogo;
+        const fallbackLogo = isLightTheme ? logoFullLight : logoFullDark;
 
         if (logoSrc !== fallbackLogo) {
             setLogoSrc(fallbackLogo);
