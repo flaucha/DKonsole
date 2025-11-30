@@ -22,10 +22,11 @@ func (m *mockLogoValidator) ValidateFile(filename string, size int64, content io
 
 // mockLogoStorage is a mock implementation of LogoStorage
 type mockLogoStorage struct {
-	ensureDataDirFunc func(ctx context.Context) error
-	saveFunc          func(ctx context.Context, logoType string, ext string, content io.Reader) error
-	getFunc           func(ctx context.Context, logoType string, ext string) (string, error)
-	removeAllFunc     func(ctx context.Context, logoType string) error
+	ensureDataDirFunc    func(ctx context.Context) error
+	saveFunc             func(ctx context.Context, logoType string, ext string, content io.Reader) error
+	getFunc              func(ctx context.Context, logoType string, ext string) (string, error)
+	getLogoContentFunc   func(ctx context.Context, logoType string, ext string) ([]byte, error)
+	removeAllFunc        func(ctx context.Context, logoType string) error
 }
 
 func (m *mockLogoStorage) EnsureDataDir(ctx context.Context) error {
@@ -47,6 +48,13 @@ func (m *mockLogoStorage) Get(ctx context.Context, logoType string, ext string) 
 		return m.getFunc(ctx, logoType, ext)
 	}
 	return "", nil
+}
+
+func (m *mockLogoStorage) GetLogoContent(ctx context.Context, logoType string, ext string) ([]byte, error) {
+	if m.getLogoContentFunc != nil {
+		return m.getLogoContentFunc(ctx, logoType, ext)
+	}
+	return nil, io.EOF // Default: logo not found
 }
 
 func (m *mockLogoStorage) RemoveAll(ctx context.Context, logoType string) error {
