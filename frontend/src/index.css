@@ -289,6 +289,12 @@ body {
   color: rgb(var(--color-gray-100)) !important;
 }
 
+/* Exclude Monaco Editor from text color overrides - Monaco uses its own vs-dark theme colors */
+[data-theme="light"] .monaco-editor,
+[data-theme="light"] .monaco-editor * {
+  color: unset !important;
+}
+
 [data-theme="light"] .bg-black,
 [data-theme="light"] .bg-black * {
   background-color: rgb(var(--color-gray-900)) !important;
@@ -309,6 +315,12 @@ body {
 [data-theme="cream"] .text-white,
 [data-theme="cream"] .text-white * {
   color: rgb(var(--color-gray-100)) !important;
+}
+
+/* Exclude Monaco Editor from text color overrides - Monaco uses its own vs-dark theme colors */
+[data-theme="cream"] .monaco-editor,
+[data-theme="cream"] .monaco-editor * {
+  color: unset !important;
 }
 
 [data-theme="cream"] .bg-black,
