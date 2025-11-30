@@ -780,12 +780,12 @@ func (s *Service) GetUserPermissions(ctx context.Context, username string) (map[
 		for _, adminGroup := range config.AdminGroups {
 			for _, userGroup := range groups {
 				if userGroup == adminGroup {
-					utils.LogInfo("GetUserPermissions: user is admin group member, returning empty permissions", map[string]interface{}{
+					utils.LogInfo("GetUserPermissions: user is admin group member, returning nil permissions", map[string]interface{}{
 						"username":    username,
 						"admin_group": adminGroup,
 					})
-					// Admin has full access, return empty permissions
-					return make(map[string]string), nil
+					// Admin has full access, return nil (not empty map) to indicate admin status
+					return nil, nil
 				}
 			}
 		}
