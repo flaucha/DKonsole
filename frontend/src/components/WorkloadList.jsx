@@ -582,7 +582,7 @@ const WorkloadList = ({ namespace, kind }) => {
             {/* Table Header - Organized from right to left, Name always on the left */}
             <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-800 bg-gray-900/50 text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {/* Name column - always on the left with more space for long names */}
-                <div className="col-span-4 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('name')}>
+                <div className="col-span-4 cursor-pointer hover:text-gray-300 flex items-center pl-[0.5cm]" onClick={() => handleSort('name')}>
                     Name {renderSortIndicator('name')}
                 </div>
                 {/* Status column */}
@@ -619,7 +619,8 @@ const WorkloadList = ({ namespace, kind }) => {
                         <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('tag')}>
                             Tag {renderSortIndicator('tag')}
                         </div>
-                        <div className="col-span-4"></div>
+                        <div className="col-span-2"></div>
+                        <div className="col-span-2"></div>
                     </>
                 )}
                 {/* PersistentVolumeClaim-specific columns */}
@@ -704,7 +705,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                         <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {res.details?.imageTag || '-'}
                                         </div>
-                                        <div className="col-span-4"></div>
+                                        <div className="col-span-2"></div>
                                     </>
                                 )}
                                 {/* PersistentVolumeClaim-specific columns */}
@@ -728,7 +729,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                         <div className="col-span-5"></div>
                                     </>
                                 )}
-                                <div className={`${kind === 'Pod' ? 'col-span-1' : kind === 'PersistentVolumeClaim' ? 'col-span-2' : kind === 'Deployment' ? 'col-span-1' : 'col-span-2'} flex justify-end items-center space-x-2 pr-2`} onClick={(e) => e.stopPropagation()}>
+                                <div className={`${kind === 'Pod' ? 'col-span-1' : kind === 'PersistentVolumeClaim' ? 'col-span-2' : kind === 'Deployment' ? 'col-span-2' : 'col-span-2'} flex justify-end items-center space-x-1 pr-2 flex-nowrap shrink-0`} onClick={(e) => e.stopPropagation()}>
                                     {kind === 'CronJob' && (
                                         <button
                                             onClick={(e) => {

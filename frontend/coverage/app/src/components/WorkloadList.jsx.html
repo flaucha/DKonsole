@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">35.44% </span>
+                <span class="strong">35.51% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>325/917</span>
+                <span class='fraction'>326/918</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">35.44% </span>
+                <span class="strong">35.51% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>325/917</span>
+                <span class='fraction'>326/918</span>
             </div>
         
             
@@ -1172,7 +1172,8 @@
 <a name='L1107'></a><a href='#L1107'>1107</a>
 <a name='L1108'></a><a href='#L1108'>1108</a>
 <a name='L1109'></a><a href='#L1109'>1109</a>
-<a name='L1110'></a><a href='#L1110'>1110</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L1110'></a><a href='#L1110'>1110</a>
+<a name='L1111'></a><a href='#L1111'>1111</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1786,6 +1787,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -2865,7 +2867,7 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
             {/* Table Header - Organized from right to left, Name always on the left */}
             &lt;div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-800 bg-gray-900/50 text-xs font-medium text-gray-500 uppercase tracking-wider"&gt;
                 {/* Name column - always on the left with more space for long names */}
-                &lt;div className="col-span-4 cursor-pointer hover:text-gray-300 flex items-center" onClick={<span class="fstat-no" title="function not covered" >() =&gt; handleSort('name')}&gt;</span>
+                &lt;div className="col-span-4 cursor-pointer hover:text-gray-300 flex items-center pl-[0.5cm]" onClick={<span class="fstat-no" title="function not covered" >() =&gt; handleSort('name')}&gt;</span>
                     Name {renderSortIndicator('name')}
                 &lt;/div&gt;
                 {/* Status column */}
@@ -2902,7 +2904,8 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
                         &lt;div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={<span class="fstat-no" title="function not covered" >() =&gt; handleSort('tag')}&gt;</span>
                             Tag {renderSortIndicator('tag')}
                         &lt;/div&gt;
-                        &lt;div className="col-span-4"&gt;&lt;/div&gt;
+                        &lt;div className="col-span-2"&gt;&lt;/div&gt;
+                        &lt;div className="col-span-2"&gt;&lt;/div&gt;
                     &lt;/&gt;
                 )}
                 {/* PersistentVolumeClaim-specific columns */}
@@ -2945,8 +2948,8 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
                                         className={`mr-2 text-gray-500 transition-transform duration-200 flex-shrink-0 ${<span class="branch-0 cbranch-no" title="branch not covered" >isExpanded ? 'transform rotate-180' : '</span>'}`}
                                     /&gt;
                                     &lt;Icon size={16} className="mr-3 text-gray-500 flex-shrink-0" /&gt;
-                                    &lt;span 
-                                        className="truncate block min-w-0" 
+                                    &lt;span
+                                        className="truncate block min-w-0"
                                         title={res.name}
                                     &gt;
                                         {res.name}
@@ -2987,7 +2990,7 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
                                         &lt;div className="col-span-1 text-sm text-gray-400 text-center"&gt;
                                             {res.details?.imageTag || '-'}
                                         &lt;/div&gt;
-                                        &lt;div className="col-span-4"&gt;&lt;/div&gt;
+                                        &lt;div className="col-span-2"&gt;&lt;/div&gt;
                                     &lt;/&gt;
                                 )}
                                 {/* PersistentVolumeClaim-specific columns */}
@@ -3011,7 +3014,7 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
 <span class="cstat-no" title="statement not covered" >                                        &lt;div className="col-span-5"&gt;&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                    &lt;/&gt;</span>
                                 )}
-                                &lt;div className={`${kind === 'Pod' ? 'col-span-1' : kind === <span class="branch-0 cbranch-no" title="branch not covered" >'PersistentVolumeClaim' ? 'col-span-2' : k</span>ind === 'Deployment' ? <span class="branch-0 cbranch-no" title="branch not covered" >'col-span-1' : 'col-span-2'}</span> flex justify-end items-center space-x-2 pr-2`} onClick={<span class="fstat-no" title="function not covered" >(e) =&gt; e.stopPropagation()}&gt;</span>
+                                &lt;div className={`${kind === 'Pod' ? 'col-span-1' : kind === <span class="branch-0 cbranch-no" title="branch not covered" >'PersistentVolumeClaim' ? 'col-span-2' : k</span>ind === 'Deployment' ? <span class="branch-0 cbranch-no" title="branch not covered" >'col-span-2' : 'col-span-2'}</span> flex justify-end items-center space-x-1 pr-2 flex-nowrap shrink-0`} onClick={<span class="fstat-no" title="function not covered" >(e) =&gt; e.stopPropagation()}&gt;</span>
                                     {kind === <span class="branch-0 cbranch-no" title="branch not covered" >'CronJob' &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                                        &lt;button</span>
 <span class="cstat-no" title="statement not covered" >                                            onClick={<span class="fstat-no" title="function not covered" >(e) =&gt; {</span></span>
@@ -3397,7 +3400,7 @@ export default WorkloadList;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-30T23:03:09.897Z
+                at 2025-11-30T23:11:05.214Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
