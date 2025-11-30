@@ -161,7 +161,7 @@ const ClusterOverview = () => {
                             value={stats.pvcs}
                             color="bg-orange-600"
                         />
-                        {isAdmin && (
+                        {isAdminUser && (
                             <StatCard
                                 icon={HardDrive}
                                 label="PVs"

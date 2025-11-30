@@ -117,17 +117,21 @@ func (s *Service) GetLogo(w http.ResponseWriter, r *http.Request) {
 	content, contentType, err := s.logoService.GetLogoContent(ctx, logoType)
 	if err != nil {
 		// Logo not found - try to serve default logo from static directory
+		var staticLogoPath string
 		if logoType == "light" {
-			// Try to serve logo-light.svg from static directory
-			staticLogoPath := filepath.Join("static", "logo-light.svg")
-			if _, err := filepath.Abs(staticLogoPath); err == nil {
-				if _, err := os.Stat(staticLogoPath); err == nil {
-					utils.LogDebug("Serving default light logo", map[string]interface{}{
-						"path": staticLogoPath,
-					})
-					http.ServeFile(w, r, staticLogoPath)
-					return
-				}
+			staticLogoPath = filepath.Join("static", "logo-light.svg")
+		} else {
+			staticLogoPath = filepath.Join("static", "logo.svg")
+		}
+
+		if absPath, err := filepath.Abs(staticLogoPath); err == nil {
+			if _, err := os.Stat(staticLogoPath); err == nil {
+				utils.LogDebug("Serving default logo", map[string]interface{}{
+					"path": absPath,
+					"type": logoType,
+				})
+				http.ServeFile(w, r, staticLogoPath)
+				return
 			}
 		}
 		// Logo not found and no default available - return 404
