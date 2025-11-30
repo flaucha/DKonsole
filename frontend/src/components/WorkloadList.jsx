@@ -784,7 +784,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                             {res.kind !== 'Deployment' && res.kind !== 'Pod' && res.kind !== 'ClusterRole' && res.kind !== 'ClusterRoleBinding' &&
                                              res.kind !== 'CronJob' && res.kind !== 'StatefulSet' && res.kind !== 'DaemonSet' && res.kind !== 'HPA' &&
                                              res.kind !== 'Job' && res.kind !== 'PersistentVolumeClaim' && res.kind !== 'PersistentVolume' && res.kind !== 'StorageClass' &&
-                                             res.kind !== 'ConfigMap' && res.kind !== 'Secret' && (
+                                             res.kind !== 'ConfigMap' && res.kind !== 'Secret' && res.kind !== 'NetworkPolicy' && (
                                                 <div className="absolute top-4 right-4 z-10">
                                                     <EditYamlButton onClick={() => setEditingResource(res)} namespace={res.namespace} />
                                                 </div>
