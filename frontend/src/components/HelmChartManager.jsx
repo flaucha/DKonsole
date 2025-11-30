@@ -1,28 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Package, RefreshCw, Clock, Tag, MoreVertical, Trash2, ArrowUp, X, Info, Download, ChevronDown, Search } from 'lucide-react';
-import Editor, { useMonaco } from '@monaco-editor/react';
+import Editor from '@monaco-editor/react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
 import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 import { useHelmReleases } from '../hooks/useHelmReleases';
 import { parseErrorResponse, parseError } from '../utils/errorParser';
-import { defineAtomDarkTheme } from '../utils/monacoTheme';
 
 const HelmChartManager = ({ namespace }) => {
     const { currentCluster } = useSettings();
     const { authFetch, user } = useAuth();
-    const monaco = useMonaco();
 
     // Check if user is admin (core admin has role='admin', LDAP admin groups have no permissions but are admins)
     const isAdmin = user && user.role === 'admin';
-
-    // Define custom theme when Monaco is loaded
-    useEffect(() => {
-        if (monaco) {
-            defineAtomDarkTheme(monaco);
-        }
-    }, [monaco]);
     const [expandedId, setExpandedId] = useState(null);
     const [sortField, setSortField] = useState('name');
     const [sortDirection, setSortDirection] = useState('asc');
@@ -634,11 +625,11 @@ const HelmChartManager = ({ namespace }) => {
                                     <label className="block text-sm font-medium text-gray-300 mb-2">
                                         Values Override (YAML) <span className="text-gray-500 text-xs">(optional)</span>
                                     </label>
-                                    <div className="!border-gray-700 border rounded-md overflow-hidden !bg-[#272b34]" style={{ height: '300px' }}>
+                                    <div className="border border-gray-700 rounded-md overflow-hidden" style={{ height: '300px' }}>
                                         <Editor
                                             height="100%"
                                             defaultLanguage="yaml"
-                                            theme="atom-dark-custom"
+                                            theme="vs-dark"
                                             value={upgradeForm.valuesYaml}
                                             onChange={(value) => setUpgradeForm({ ...upgradeForm, valuesYaml: value || '' })}
                                             options={{
@@ -651,7 +642,6 @@ const HelmChartManager = ({ namespace }) => {
                                                 tabSize: 2,
                                                 insertSpaces: true,
                                             }}
-                                            className="!bg-[#272b34]"
                                         />
                                     </div>
                                     <p className="text-xs text-gray-500 mt-1.5">
@@ -815,11 +805,11 @@ const HelmChartManager = ({ namespace }) => {
                                     <label className="block text-sm font-medium text-gray-300 mb-2">
                                         Values Override (YAML) <span className="text-gray-500 text-xs">(optional)</span>
                                     </label>
-                                    <div className="!border-gray-700 border rounded-md overflow-hidden !bg-[#272b34]" style={{ height: '300px' }}>
+                                    <div className="border border-gray-700 rounded-md overflow-hidden" style={{ height: '300px' }}>
                                         <Editor
                                             height="100%"
                                             defaultLanguage="yaml"
-                                            theme="atom-dark-custom"
+                                            theme="vs-dark"
                                             value={installForm.valuesYaml}
                                             onChange={(value) => setInstallForm({ ...installForm, valuesYaml: value || '' })}
                                             options={{
@@ -832,7 +822,6 @@ const HelmChartManager = ({ namespace }) => {
                                                 tabSize: 2,
                                                 insertSpaces: true,
                                             }}
-                                            className="!bg-[#272b34]"
                                         />
                                     </div>
                                     <p className="text-xs text-gray-500 mt-1.5">

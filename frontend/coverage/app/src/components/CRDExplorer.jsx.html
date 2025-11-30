@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/249</span>
+                <span class='fraction'>0/241</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/249</span>
+                <span class='fraction'>0/241</span>
             </div>
         
             
@@ -333,18 +333,7 @@
 <a name='L268'></a><a href='#L268'>268</a>
 <a name='L269'></a><a href='#L269'>269</a>
 <a name='L270'></a><a href='#L270'>270</a>
-<a name='L271'></a><a href='#L271'>271</a>
-<a name='L272'></a><a href='#L272'>272</a>
-<a name='L273'></a><a href='#L273'>273</a>
-<a name='L274'></a><a href='#L274'>274</a>
-<a name='L275'></a><a href='#L275'>275</a>
-<a name='L276'></a><a href='#L276'>276</a>
-<a name='L277'></a><a href='#L277'>277</a>
-<a name='L278'></a><a href='#L278'>278</a>
-<a name='L279'></a><a href='#L279'>279</a>
-<a name='L280'></a><a href='#L280'>280</a>
-<a name='L281'></a><a href='#L281'>281</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L271'></a><a href='#L271'>271</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -353,14 +342,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -597,7 +578,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -625,27 +605,18 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import React, { useEffect, useState, useMemo } from 'react';</span></span></span>
 <span class="cstat-no" title="statement not covered" >import { Search, Package, RefreshCw, Globe, MapPin, FileText, X } from 'lucide-react';</span>
-<span class="cstat-no" title="statement not covered" >import Editor, { useMonaco } from '@monaco-editor/react';</span>
+<span class="cstat-no" title="statement not covered" >import Editor from '@monaco-editor/react';</span>
 <span class="cstat-no" title="statement not covered" >import { useSettings } from '../context/SettingsContext';</span>
 <span class="cstat-no" title="statement not covered" >import { useAuth } from '../context/AuthContext';</span>
 <span class="cstat-no" title="statement not covered" >import { getStatusBadgeClass } from '../utils/statusBadge';</span>
 <span class="cstat-no" title="statement not covered" >import { formatDate } from '../utils/dateUtils';</span>
-<span class="cstat-no" title="statement not covered" >import { defineAtomDarkTheme } from '../utils/monacoTheme';</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const CRDExplorer = ({ namespace }) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const { currentCluster } = useSettings();</span>
 <span class="cstat-no" title="statement not covered" >    const { authFetch } = useAuth();</span>
-<span class="cstat-no" title="statement not covered" >    const monaco = useMonaco();</span>
 <span class="cstat-no" title="statement not covered" >    const [crds, setCrds] = useState([]);</span>
 <span class="cstat-no" title="statement not covered" >    const [filter, setFilter] = useState('');</span>
 <span class="cstat-no" title="statement not covered" >    const [selected, setSelected] = useState(null);</span>
-&nbsp;
-    // Define custom theme when Monaco is loaded
-<span class="cstat-no" title="statement not covered" >    useEffect(() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >        if (monaco) {</span>
-<span class="cstat-no" title="statement not covered" >            defineAtomDarkTheme(monaco);</span>
-<span class="cstat-no" title="statement not covered" >        }</span>
-<span class="cstat-no" title="statement not covered" >    }, [monaco]);</span>
 <span class="cstat-no" title="statement not covered" >    const [resources, setResources] = useState([]);</span>
 <span class="cstat-no" title="statement not covered" >    const [loadingCRDs, setLoadingCRDs] = useState(false);</span>
 <span class="cstat-no" title="statement not covered" >    const [loadingResources, setLoadingResources] = useState(false);</span>
@@ -865,8 +836,8 @@
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {yamlView &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;div className="!bg-gray-900 w-full max-w-4xl h-[80vh] rounded-lg !border-gray-700 border flex flex-col shadow-2xl overflow-hidden"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;div className="flex items-center justify-between px-4 py-3 !border-gray-700 border-b !bg-gray-800"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;div className="bg-gray-900 w-full max-w-4xl h-[80vh] rounded-lg border border-gray-700 flex flex-col shadow-2xl overflow-hidden"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                            &lt;div className="flex items-center space-x-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                &lt;FileText size={16} className="text-gray-400" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                &lt;span className="font-mono text-sm text-gray-200"&gt;{yamlView.name}&lt;/span&gt;</span>
@@ -883,7 +854,7 @@
 <span class="cstat-no" title="statement not covered" >                            &lt;Editor</span>
 <span class="cstat-no" title="statement not covered" >                                height="100%"</span>
 <span class="cstat-no" title="statement not covered" >                                defaultLanguage="yaml"</span>
-<span class="cstat-no" title="statement not covered" >                                theme="atom-dark-custom"</span>
+<span class="cstat-no" title="statement not covered" >                                theme="vs-dark"</span>
 <span class="cstat-no" title="statement not covered" >                                value={yamlView.content}</span>
 <span class="cstat-no" title="statement not covered" >                                options={{</span>
 <span class="cstat-no" title="statement not covered" >                                    readOnly: true,</span>
@@ -892,7 +863,6 @@
 <span class="cstat-no" title="statement not covered" >                                    fontSize: 12,</span>
 <span class="cstat-no" title="statement not covered" >                                    automaticLayout: true,</span>
 <span class="cstat-no" title="statement not covered" >                                }}</span>
-<span class="cstat-no" title="statement not covered" >                                className="!bg-[#272b34]"</span>
 <span class="cstat-no" title="statement not covered" >                            /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
@@ -910,7 +880,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-30T12:34:09.925Z
+                at 2025-11-30T12:43:26.687Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

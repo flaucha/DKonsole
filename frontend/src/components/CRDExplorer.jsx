@@ -1,26 +1,17 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Search, Package, RefreshCw, Globe, MapPin, FileText, X } from 'lucide-react';
-import Editor, { useMonaco } from '@monaco-editor/react';
+import Editor from '@monaco-editor/react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { getStatusBadgeClass } from '../utils/statusBadge';
 import { formatDate } from '../utils/dateUtils';
-import { defineAtomDarkTheme } from '../utils/monacoTheme';
 
 const CRDExplorer = ({ namespace }) => {
     const { currentCluster } = useSettings();
     const { authFetch } = useAuth();
-    const monaco = useMonaco();
     const [crds, setCrds] = useState([]);
     const [filter, setFilter] = useState('');
     const [selected, setSelected] = useState(null);
-
-    // Define custom theme when Monaco is loaded
-    useEffect(() => {
-        if (monaco) {
-            defineAtomDarkTheme(monaco);
-        }
-    }, [monaco]);
     const [resources, setResources] = useState([]);
     const [loadingCRDs, setLoadingCRDs] = useState(false);
     const [loadingResources, setLoadingResources] = useState(false);
@@ -240,8 +231,8 @@ const CRDExplorer = ({ namespace }) => {
             </div>
             {yamlView && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="!bg-gray-900 w-full max-w-4xl h-[80vh] rounded-lg !border-gray-700 border flex flex-col shadow-2xl overflow-hidden">
-                        <div className="flex items-center justify-between px-4 py-3 !border-gray-700 border-b !bg-gray-800">
+                    <div className="bg-gray-900 w-full max-w-4xl h-[80vh] rounded-lg border border-gray-700 flex flex-col shadow-2xl overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800">
                             <div className="flex items-center space-x-2">
                                 <FileText size={16} className="text-gray-400" />
                                 <span className="font-mono text-sm text-gray-200">{yamlView.name}</span>
@@ -258,7 +249,7 @@ const CRDExplorer = ({ namespace }) => {
                             <Editor
                                 height="100%"
                                 defaultLanguage="yaml"
-                                theme="atom-dark-custom"
+                                theme="vs-dark"
                                 value={yamlView.content}
                                 options={{
                                     readOnly: true,
@@ -267,7 +258,6 @@ const CRDExplorer = ({ namespace }) => {
                                     fontSize: 12,
                                     automaticLayout: true,
                                 }}
-                                className="!bg-[#272b34]"
                             />
                         </div>
                     </div>

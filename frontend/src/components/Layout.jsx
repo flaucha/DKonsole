@@ -190,7 +190,7 @@ const Layout = ({ children, headerContent }) => {
     }, [authFetch, user]);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [expandedMenus, setExpandedMenus] = useState({
-        workloads: true,
+        workloads: false,
         networking: false,
         storage: false,
         accessControl: false,
@@ -239,7 +239,20 @@ const Layout = ({ children, headerContent }) => {
     };
 
     const toggleMenu = (menu) => {
-        setExpandedMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
+        setExpandedMenus(prev => {
+            // If clicking the same menu, toggle it
+            if (prev[menu]) {
+                return { ...prev, [menu]: false };
+            }
+            // Otherwise, close all and open only the clicked one
+            return {
+                workloads: false,
+                networking: false,
+                storage: false,
+                accessControl: false,
+                [menu]: true
+            };
+        });
     };
 
     // Helper to map view names to paths

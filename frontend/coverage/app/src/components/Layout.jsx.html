@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/395</span>
+                <span class='fraction'>0/406</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/395</span>
+                <span class='fraction'>0/406</span>
             </div>
         
             
@@ -541,7 +541,20 @@
 <a name='L476'></a><a href='#L476'>476</a>
 <a name='L477'></a><a href='#L477'>477</a>
 <a name='L478'></a><a href='#L478'>478</a>
-<a name='L479'></a><a href='#L479'>479</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L479'></a><a href='#L479'>479</a>
+<a name='L480'></a><a href='#L480'>480</a>
+<a name='L481'></a><a href='#L481'>481</a>
+<a name='L482'></a><a href='#L482'>482</a>
+<a name='L483'></a><a href='#L483'>483</a>
+<a name='L484'></a><a href='#L484'>484</a>
+<a name='L485'></a><a href='#L485'>485</a>
+<a name='L486'></a><a href='#L486'>486</a>
+<a name='L487'></a><a href='#L487'>487</a>
+<a name='L488'></a><a href='#L488'>488</a>
+<a name='L489'></a><a href='#L489'>489</a>
+<a name='L490'></a><a href='#L490'>490</a>
+<a name='L491'></a><a href='#L491'>491</a>
+<a name='L492'></a><a href='#L492'>492</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -781,6 +794,19 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1211,7 +1237,7 @@
 <span class="cstat-no" title="statement not covered" >    }, [authFetch, user]);</span>
 <span class="cstat-no" title="statement not covered" >    const [sidebarOpen, setSidebarOpen] = useState(true);</span>
 <span class="cstat-no" title="statement not covered" >    const [expandedMenus, setExpandedMenus] = useState({</span>
-<span class="cstat-no" title="statement not covered" >        workloads: true,</span>
+<span class="cstat-no" title="statement not covered" >        workloads: false,</span>
 <span class="cstat-no" title="statement not covered" >        networking: false,</span>
 <span class="cstat-no" title="statement not covered" >        storage: false,</span>
 <span class="cstat-no" title="statement not covered" >        accessControl: false,</span>
@@ -1260,7 +1286,20 @@
 <span class="cstat-no" title="statement not covered" >    };</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    const toggleMenu = (menu) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >        setExpandedMenus(prev =&gt; ({ ...prev, [menu]: !prev[menu] }));</span>
+<span class="cstat-no" title="statement not covered" >        setExpandedMenus(prev =&gt; {</span>
+            // If clicking the same menu, toggle it
+<span class="cstat-no" title="statement not covered" >            if (prev[menu]) {</span>
+<span class="cstat-no" title="statement not covered" >                return { ...prev, [menu]: false };</span>
+<span class="cstat-no" title="statement not covered" >            }</span>
+            // Otherwise, close all and open only the clicked one
+<span class="cstat-no" title="statement not covered" >            return {</span>
+<span class="cstat-no" title="statement not covered" >                workloads: false,</span>
+<span class="cstat-no" title="statement not covered" >                networking: false,</span>
+<span class="cstat-no" title="statement not covered" >                storage: false,</span>
+<span class="cstat-no" title="statement not covered" >                accessControl: false,</span>
+<span class="cstat-no" title="statement not covered" >                [menu]: true</span>
+<span class="cstat-no" title="statement not covered" >            };</span>
+<span class="cstat-no" title="statement not covered" >        });</span>
 <span class="cstat-no" title="statement not covered" >    };</span>
 &nbsp;
     // Helper to map view names to paths
@@ -1504,7 +1543,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-30T12:34:09.925Z
+                at 2025-11-30T12:43:26.687Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

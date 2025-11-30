@@ -423,17 +423,3 @@ body {
 .bg-gray-900 * {
   scrollbar-color: rgba(55, 65, 81, 0.8) rgba(17, 24, 39, 0.8);
 }
-
-/* Monaco Editor: Force Atom Dark theme background regardless of app theme */
-/* This ensures Monaco Editor always uses Atom Dark theme colors */
-.monaco-editor,
-.monaco-editor .monaco-editor-background,
-.monaco-editor .margin,
-.monaco-editor .monaco-scrollable-element > .scrollbar {
-  background-color: #272b34 !important;
-}
-
-/* Ensure Monaco Editor container always has dark background */
-div[class*="monaco"] {
-  background-color: #272b34 !important;
-}

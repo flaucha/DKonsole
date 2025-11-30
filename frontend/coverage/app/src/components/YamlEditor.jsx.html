@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/153</span>
+                <span class='fraction'>0/145</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/153</span>
+                <span class='fraction'>0/145</span>
             </div>
         
             
@@ -231,18 +231,7 @@
 <a name='L166'></a><a href='#L166'>166</a>
 <a name='L167'></a><a href='#L167'>167</a>
 <a name='L168'></a><a href='#L168'>168</a>
-<a name='L169'></a><a href='#L169'>169</a>
-<a name='L170'></a><a href='#L170'>170</a>
-<a name='L171'></a><a href='#L171'>171</a>
-<a name='L172'></a><a href='#L172'>172</a>
-<a name='L173'></a><a href='#L173'>173</a>
-<a name='L174'></a><a href='#L174'>174</a>
-<a name='L175'></a><a href='#L175'>175</a>
-<a name='L176'></a><a href='#L176'>176</a>
-<a name='L177'></a><a href='#L177'>177</a>
-<a name='L178'></a><a href='#L178'>178</a>
-<a name='L179'></a><a href='#L179'>179</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L169'></a><a href='#L169'>169</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -252,14 +241,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -397,7 +378,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -421,28 +401,19 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import React, { useEffect, useState } from 'react';</span></span></span>
 <span class="cstat-no" title="statement not covered" >import { X, Save, AlertTriangle, Loader2, FileText, Copy } from 'lucide-react';</span>
-<span class="cstat-no" title="statement not covered" >import Editor, { useMonaco } from '@monaco-editor/react';</span>
+<span class="cstat-no" title="statement not covered" >import Editor from '@monaco-editor/react';</span>
 <span class="cstat-no" title="statement not covered" >import { useSettings } from '../context/SettingsContext';</span>
 <span class="cstat-no" title="statement not covered" >import { useAuth } from '../context/AuthContext';</span>
-<span class="cstat-no" title="statement not covered" >import { defineAtomDarkTheme } from '../utils/monacoTheme';</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const YamlEditor = ({ resource, onClose, onSaved }) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const { name, namespace, kind, group, version, resource: resourceName, namespaced } = resource || {};</span>
 <span class="cstat-no" title="statement not covered" >    const { currentCluster } = useSettings();</span>
 <span class="cstat-no" title="statement not covered" >    const { authFetch } = useAuth();</span>
-<span class="cstat-no" title="statement not covered" >    const monaco = useMonaco();</span>
 <span class="cstat-no" title="statement not covered" >    const [content, setContent] = useState('');</span>
 <span class="cstat-no" title="statement not covered" >    const [loading, setLoading] = useState(true);</span>
 <span class="cstat-no" title="statement not covered" >    const [saving, setSaving] = useState(false);</span>
 <span class="cstat-no" title="statement not covered" >    const [error, setError] = useState('');</span>
 <span class="cstat-no" title="statement not covered" >    const [copying, setCopying] = useState(false);</span>
-&nbsp;
-    // Define custom theme when Monaco is loaded
-<span class="cstat-no" title="statement not covered" >    useEffect(() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >        if (monaco) {</span>
-<span class="cstat-no" title="statement not covered" >            defineAtomDarkTheme(monaco);</span>
-<span class="cstat-no" title="statement not covered" >        }</span>
-<span class="cstat-no" title="statement not covered" >    }, [monaco]);</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    const buildUrl = () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        const params = new URLSearchParams({ kind, name });</span>
@@ -516,9 +487,9 @@
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    return (</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div className="!bg-gray-900 w-full max-w-5xl h-[85vh] rounded-lg !border-gray-700 border flex flex-col shadow-2xl overflow-hidden"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="bg-gray-900 w-full max-w-5xl h-[85vh] rounded-lg border border-gray-700 flex flex-col shadow-2xl overflow-hidden"&gt;</span>
                 {/* Header */}
-<span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-center justify-between px-4 py-3 !border-gray-700 border-b !bg-gray-800"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;div className="flex items-center space-x-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;FileText size={18} className="text-gray-400" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;span className="font-mono text-sm text-gray-200"&gt;{kind}&lt;/span&gt;</span>
@@ -578,7 +549,7 @@
 <span class="cstat-no" title="statement not covered" >                        &lt;Editor</span>
 <span class="cstat-no" title="statement not covered" >                            height="100%"</span>
 <span class="cstat-no" title="statement not covered" >                            defaultLanguage="yaml"</span>
-<span class="cstat-no" title="statement not covered" >                            theme="atom-dark-custom"</span>
+<span class="cstat-no" title="statement not covered" >                            theme="vs-dark"</span>
 <span class="cstat-no" title="statement not covered" >                            value={content}</span>
 <span class="cstat-no" title="statement not covered" >                            onChange={(value) =&gt; setContent(value)}</span>
 <span class="cstat-no" title="statement not covered" >                            options={{</span>
@@ -587,7 +558,6 @@
 <span class="cstat-no" title="statement not covered" >                                fontSize: 14,</span>
 <span class="cstat-no" title="statement not covered" >                                automaticLayout: true,</span>
 <span class="cstat-no" title="statement not covered" >                            }}</span>
-<span class="cstat-no" title="statement not covered" >                            className="!bg-[#272b34]"</span>
 <span class="cstat-no" title="statement not covered" >                        /&gt;</span>
                     )}
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
@@ -604,7 +574,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-30T12:34:09.925Z
+                at 2025-11-30T12:43:26.687Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
