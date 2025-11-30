@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.3.2-green.svg)
+![Version](https://img.shields.io/badge/version-1.3.3-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.3.2
+git checkout v1.3.3
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -153,18 +153,34 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.3.2"
+  tag: "1.3.3"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.3.2`
+- **Unified**: `dkonsole/dkonsole:1.3.3`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.3.3 (2025-11-30)
+**🐛 LDAP Admin Permissions & Logo Storage Migration**
+
+This release fixes LDAP admin permissions and migrates logo storage to ConfigMap.
+
+- **LDAP Admin Permissions**: Fixed LDAP admin users not being able to view cluster resources
+  - LDAP admins now correctly receive `role: "admin"` in JWT when they belong to admin groups
+  - LDAP admins can now view all resources (deployments, pods, etc.) and cluster overview
+- **Settings Password Change**: Fixed password change section showing for LDAP admin users
+  - Password change section now only visible for core admins
+  - LDAP admins can access Prometheus settings but not password change
+- **Logo Storage**: Migrated logo storage from PersistentVolumeClaim to Kubernetes ConfigMap
+  - Logos are now stored in ConfigMap `dkonsole-logo` in base64 format
+  - Simplified deployment by removing PVC requirement
+- **Settings Access**: Added Settings access within Admin Area section
 
 ### v1.3.2 (2025-11-30)
 **🔧 Security Workflow Fix**
@@ -190,13 +206,6 @@ This release fixes Monaco Editor theme consistency and improves menu organizatio
   - Only one menu item can be expanded at a time
   - Opening a new menu automatically closes the previously open one
 - **User Menu**: Centralized user actions in header with username display (CORE/LDAP)
-
-### v1.3.0 (2025-11-29)
-**✨ Deployment Rollout & UI Improvements**
-
-This release adds deployment rollout functionality, improves search UX, and enhances the permission system.
-
-- **Deployment Rollout**: Added rollout button for deployments with detailed confirmation dialog
   - Shows deployment strategy information (RollingUpdate/Recreate)
   - Displays replica count, ready pods, and strategy parameters
   - Provides detailed behavior explanation based on strategy and replica count

@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.3] - 2025-11-30
+
+### 🐛 Fixed
+
+- **LDAP Admin Permissions**: Fixed LDAP admin users not being able to view cluster resources
+  - LDAP admins now correctly receive `role: "admin"` in JWT when they belong to admin groups
+  - `GetUserPermissions` now returns `nil` (instead of empty map) for admin users to properly identify admin status
+  - LDAP admins can now view all resources (deployments, pods, etc.) and cluster overview
+- **Settings Password Change**: Fixed password change section showing for LDAP admin users
+  - Password change section now only visible for core admins (`idp === 'core'`)
+  - LDAP admins can access Prometheus settings but not password change
+- **Cluster Overview**: Fixed `isAdmin is not defined` error in cluster overview
+  - Now properly imports and uses `isAdmin` from permissions utility
+  - LDAP admins can now view cluster overview correctly
+
+### 🔧 Changed
+
+- **Logo Storage**: Migrated logo storage from PersistentVolumeClaim to Kubernetes ConfigMap
+  - Logos are now stored in ConfigMap `dkonsole-logo` in base64 format
+  - Simplified deployment by removing PVC requirement
+  - Logos loaded into memory for faster access
+  - Backward compatible with filesystem storage fallback
+
+### ✨ Added
+
+- **Settings Access**: Added Settings access within Admin Area section
+  - Settings accessible from sidebar Admin Area submenu
+  - Maintains existing functionality with improved navigation
+
 ## [1.3.2] - 2025-11-30
 
 ### 🔧 Changed
