@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Server, Network, Activity, Box, HardDrive, Clock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { DetailRow, EditYamlButton } from './CommonDetails';
+import { DetailRow } from './CommonDetails';
 import LogViewerInline from './LogViewerInline';
 import TerminalViewerInline from './TerminalViewerInline';
 import PodMetrics from '../PodMetrics';
@@ -90,9 +90,6 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
             <div className={`transition-all duration-300 ease-in-out flex-1 flex flex-col ${isFullHeightTab ? 'min-h-0' : ''}`}>
                 {activeTab === 'details' ? (
                     <div className="p-4 bg-gray-900/50 rounded-md animate-fadeIn">
-                        <div className="flex justify-end mb-2">
-                            <EditYamlButton onClick={onEditYAML} namespace={pod?.namespace} />
-                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                             <div>
                                 <DetailRow label="Node" value={details.node} icon={Server} />

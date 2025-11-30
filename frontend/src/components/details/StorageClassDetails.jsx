@@ -1,12 +1,9 @@
 import React from 'react';
 import { HardDrive, Activity, Network, Layers, Tag } from 'lucide-react';
-import { DetailRow, EditYamlButton } from './CommonDetails';
+import { DetailRow } from './CommonDetails';
 
 const StorageClassDetails = ({ details, onEditYAML }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">
-        <div className="flex justify-end mb-2">
-            <EditYamlButton onClick={onEditYAML} />
-        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <DetailRow label="Provisioner" value={details.provisioner} icon={HardDrive} />
             <DetailRow label="Reclaim Policy" value={details.reclaimPolicy} icon={Activity} />

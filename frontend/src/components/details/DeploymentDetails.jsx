@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Layers, Box, Network, HardDrive, Tag, Minus, Plus } from 'lucide-react';
-import { DetailRow, EditYamlButton, SmartImage } from './CommonDetails';
+import { DetailRow, SmartImage } from './CommonDetails';
 import AssociatedPods from './AssociatedPods';
 import { useAuth } from '../../context/AuthContext';
 import { canEdit, isAdmin } from '../../utils/permissions';
@@ -36,9 +36,6 @@ const DeploymentDetails = ({ details, onScale, scaling, res, onEditYAML }) => {
 
             {activeTab === 'details' && (
                 <>
-                    <div className="flex justify-end mb-2">
-                        <EditYamlButton onClick={onEditYAML} namespace={res?.namespace} />
-                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <div className="mb-2">

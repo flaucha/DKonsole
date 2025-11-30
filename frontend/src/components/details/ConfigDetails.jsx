@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Edit2 } from 'lucide-react';
-import { DataSection, EditYamlButton } from './CommonDetails';
+import { DataSection } from './CommonDetails';
 import { DataEditor } from './DataEditor';
 import { useAuth } from '../../context/AuthContext';
 import { canEdit, isAdmin } from '../../utils/permissions';
@@ -25,7 +25,6 @@ export const ConfigMapDetails = ({ details, onEditYAML, resource, onDataSaved })
                             <Edit2 size={14} className="mr-1.5" />
                             Edit in place
                         </button>
-                        <EditYamlButton onClick={onEditYAML} namespace={resource?.namespace} />
                     </div>
                 )}
             </div>
@@ -67,7 +66,6 @@ export const SecretDetails = ({ details, onEditYAML, resource, onDataSaved }) =>
                             <Edit2 size={14} className="mr-1.5" />
                             Edit in place
                         </button>
-                        <EditYamlButton onClick={onEditYAML} namespace={resource?.namespace} />
                     </div>
                 )}
             </div>

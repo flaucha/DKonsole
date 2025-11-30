@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Activity, Check, X, Layers, AlertTriangle, Clock, Pause, Network, Box } from 'lucide-react';
-import { DetailRow, EditYamlButton } from './CommonDetails';
+import { DetailRow } from './CommonDetails';
 import AssociatedPods from './AssociatedPods';
 
 const TabButton = ({ active, label, onClick }) => (
@@ -38,9 +38,6 @@ export const JobDetails = ({ details, onEditYAML, namespace }) => {
                         <DetailRow label="Completions" value={details.completions} icon={Layers} />
                         <DetailRow label="Backoff Limit" value={details.backoffLimit} icon={AlertTriangle} />
                     </div>
-                    <div className="flex justify-end mt-4">
-                        <EditYamlButton onClick={onEditYAML} namespace={namespace} />
-                    </div>
                 </>
             )}
 
@@ -59,9 +56,6 @@ export const CronJobDetails = ({ details, onEditYAML }) => (
             <DetailRow label="Concurrency" value={details.concurrency} icon={Layers} />
             <DetailRow label="Start Deadline" value={details.startingDeadline} icon={Clock} />
             <DetailRow label="Last Schedule" value={details.lastSchedule} icon={Clock} />
-        </div>
-        <div className="flex justify-end mt-4">
-            <EditYamlButton onClick={onEditYAML} />
         </div>
     </div>
 );
@@ -85,9 +79,6 @@ export const StatefulSetDetails = ({ details, onEditYAML, namespace }) => {
                         <DetailRow label="Service" value={details.serviceName} icon={Network} />
                         <DetailRow label="Pod Mgmt" value={details.podManagement} icon={Box} />
                         <DetailRow label="Update Strategy" value={details.updateStrategy?.type} icon={Layers} />
-                    </div>
-                    <div className="flex justify-end mt-4">
-                        <EditYamlButton onClick={onEditYAML} namespace={namespace} />
                     </div>
                 </>
             )}
@@ -119,9 +110,6 @@ export const DaemonSetDetails = ({ details, onEditYAML, namespace }) => {
                         <DetailRow label="Updated" value={details.updated} icon={Layers} />
                         <DetailRow label="Misscheduled" value={details.misscheduled} icon={AlertTriangle} />
                     </div>
-                    <div className="flex justify-end mt-4">
-                        <EditYamlButton onClick={onEditYAML} namespace={namespace} />
-                    </div>
                 </>
             )}
 
@@ -141,9 +129,6 @@ export const HPADetails = ({ details, onEditYAML }) => (
             <DetailRow label="Desired" value={details.desired} icon={Activity} />
             <DetailRow label="Metrics" value={details.metrics ? details.metrics.map((m) => m.type).join(', ') : ''} icon={Activity} />
             <DetailRow label="Last Scale" value={details.lastScaleTime} icon={Clock} />
-        </div>
-        <div className="flex justify-end mt-4">
-            <EditYamlButton onClick={onEditYAML} />
         </div>
     </div>
 );

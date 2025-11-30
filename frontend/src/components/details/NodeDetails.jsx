@@ -1,6 +1,6 @@
 import React from 'react';
 import { Server, HardDrive, Box, Activity, Network } from 'lucide-react';
-import { DetailRow, EditYamlButton } from './CommonDetails';
+import { DetailRow } from './CommonDetails';
 
 const NodeDetails = ({ details, onEditYAML }) => {
     const addresses = details.addresses || [];
@@ -10,9 +10,6 @@ const NodeDetails = ({ details, onEditYAML }) => {
 
     return (
         <div className="p-4 bg-gray-900/50 rounded-md mt-2 space-y-4">
-            <div className="flex justify-end mb-2">
-                <EditYamlButton onClick={onEditYAML} />
-            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">System Info</h4>

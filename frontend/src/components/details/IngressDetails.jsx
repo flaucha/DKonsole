@@ -1,7 +1,6 @@
 import React from 'react';
 import { Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { EditYamlButton } from './CommonDetails';
 
 const IngressDetails = ({ details, onEditYAML, namespace }) => {
     const rules = details.rules || [];
@@ -97,9 +96,6 @@ const IngressDetails = ({ details, onEditYAML, namespace }) => {
                     </div>
                 </div>
             )}
-            <div className="flex justify-end mt-4">
-                <EditYamlButton onClick={onEditYAML} namespace={namespace} />
-            </div>
         </div>
     );
 };

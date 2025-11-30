@@ -426,9 +426,6 @@ const WorkloadList = ({ namespace, kind }) => {
         if (!res.details) return (
             <div className="p-4 text-gray-500 italic">
                 No details available.
-                <div className="flex justify-end mt-4">
-                    <EditYamlButton onClick={onEditYAML} namespace={res.namespace} />
-                </div>
             </div>
         );
         switch (res.kind) {
@@ -782,7 +779,10 @@ const WorkloadList = ({ namespace, kind }) => {
                             <div className={`${getExpandableRowClasses(isExpanded, false)}`}>
                                 {isExpanded && (
                                     <div className="px-6 py-4 bg-gray-900/30 border-t border-gray-800">
-                                        <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden">
+                                        <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden relative">
+                                            <div className="absolute top-4 right-4 z-10">
+                                                <EditYamlButton onClick={() => setEditingResource(res)} namespace={res.namespace} />
+                                            </div>
                                             {renderDetails(res)}
                                         </div>
                                     </div>
