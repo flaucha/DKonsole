@@ -424,40 +424,4 @@ body {
   scrollbar-color: rgba(55, 65, 81, 0.8) rgba(17, 24, 39, 0.8);
 }
 
-/* Monaco Editor: Force dark theme (vs-dark) for ALL themes */
-/* This ensures Monaco Editor always uses the same dark style as the "default" theme */
-/* regardless of the application theme (light, cream, etc.) */
-.monaco-editor,
-.monaco-editor .monaco-editor-background,
-.monaco-editor .margin,
-.monaco-editor .monaco-scrollable-element > .scrollbar,
-.monaco-editor .view-lines,
-.monaco-editor .current-line,
-.monaco-editor .current-line-highlight {
-  background-color: #1e1e1e !important;
-}
-
-.monaco-editor .line-numbers {
-  color: #858585 !important;
-}
-
-.monaco-editor .view-lines .view-line {
-  color: #d4d4d4 !important;
-}
-
-/* Force dark background for Monaco Editor containers in light themes */
-[data-theme="light"] .monaco-editor,
-[data-theme="light"] .monaco-editor .monaco-editor-background,
-[data-theme="light"] .monaco-editor .margin,
-[data-theme="light"] .monaco-editor .view-lines,
-[data-theme="light"] .monaco-editor .current-line {
-  background-color: #1e1e1e !important;
-}
-
-[data-theme="cream"] .monaco-editor,
-[data-theme="cream"] .monaco-editor .monaco-editor-background,
-[data-theme="cream"] .monaco-editor .margin,
-[data-theme="cream"] .monaco-editor .view-lines,
-[data-theme="cream"] .monaco-editor .current-line {
-  background-color: #1e1e1e !important;
-}
+/* Monaco Editor CSS has been removed - Monaco uses its native vs-dark theme */
