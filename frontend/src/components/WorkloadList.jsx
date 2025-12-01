@@ -637,7 +637,7 @@ const WorkloadList = ({ namespace, kind }) => {
                         <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
                             Access Mode
                         </div>
                         <div className="col-span-2"></div>
@@ -649,10 +649,10 @@ const WorkloadList = ({ namespace, kind }) => {
                         <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
                             Schedule
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
                             Last Run
                         </div>
                         <div className="col-span-1"></div>
@@ -682,10 +682,10 @@ const WorkloadList = ({ namespace, kind }) => {
                         <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
                             IP
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
                             Ports
                         </div>
-                        <div className="col-span-2"></div>
+                        <div className="col-span-1"></div>
                     </>
                 )}
                 {/* Ingress-specific columns */}
@@ -721,7 +721,7 @@ const WorkloadList = ({ namespace, kind }) => {
                         <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
                             Access Mode
                         </div>
                         <div className="col-span-2"></div>
@@ -733,13 +733,13 @@ const WorkloadList = ({ namespace, kind }) => {
                         <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
                             Reclaim Policy
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
                             Provisioner
                         </div>
-                        <div className="col-span-2"></div>
+                        <div className="col-span-1"></div>
                     </>
                 )}
                 {/* Other resource types */}
@@ -842,7 +842,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                         <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 flex items-center justify-center">
+                                        <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {res.details?.accessModes ? res.details.accessModes.join(', ') : '-'}
                                         </div>
                                         <div className="col-span-2"></div>
@@ -887,10 +887,10 @@ const WorkloadList = ({ namespace, kind }) => {
                                         <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {res.details?.clusterIP || '-'}
                                         </div>
-                                        <div className="col-span-1 text-xs text-gray-400 text-center">
+                                        <div className="col-span-2 text-sm text-gray-400 text-center truncate" title={res.details?.ports && res.details.ports.length > 0 ? res.details.ports.join(', ') : '-'}>
                                             {res.details?.ports && res.details.ports.length > 0 ? res.details.ports.join(', ') : '-'}
                                         </div>
-                                        <div className="col-span-2"></div>
+                                        <div className="col-span-1"></div>
                                     </>
                                 )}
                                 {/* Ingress-specific columns */}
@@ -950,7 +950,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                         <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 flex items-center justify-center">
+                                        <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {res.details?.accessModes ? res.details.accessModes.join(', ') : '-'}
                                         </div>
                                         <div className="col-span-2"></div>
@@ -965,10 +965,10 @@ const WorkloadList = ({ namespace, kind }) => {
                                         <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {res.details?.reclaimPolicy || '-'}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="col-span-2 text-sm text-gray-400 text-center truncate" title={res.details?.provisioner || '-'}>
                                             {res.details?.provisioner || '-'}
                                         </div>
-                                        <div className="col-span-2"></div>
+                                        <div className="col-span-1"></div>
                                     </>
                                 )}
                                 {/* Other resource types */}
