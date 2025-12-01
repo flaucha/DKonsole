@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.3.6-green.svg)
+![Version](https://img.shields.io/badge/version-1.4.0-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built entirely with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -30,7 +30,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.3.6
+git checkout v1.4.0
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -151,18 +151,27 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.3.6"
+  tag: "1.4.0"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.3.6`
+- **Unified**: `dkonsole/dkonsole:1.4.0`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.4.0 (2025-12-01)
+**✨ Persistent column layouts & documentation refresh**
+
+This release keeps user-defined column order sticky and aligns all docs with the real deployment defaults.
+
+- **Column Layout Persistence**: Workload and Namespace tables now expose drag handles and remember per-user column order using cookies + localStorage.
+- **Namespace Defaults**: The dashboard shares a `DEFAULT_NAMESPACE` constant so selectors, quota dialogs, and other flows open the `dkonsole` namespace when no preference is stored.
+- **Docs & Helm Samples**: README, Helm values, and dockerhub docs all reference `dkonsole.lan`/`allowedOrigins` to match the deployed environment, alongside a refreshed `docs/iacf` AI automation pack.
 
 ### v1.3.6 (2025-11-30)
 **✨ Dynamic Column Distribution & Layout Improvements**
@@ -199,79 +208,6 @@ This release reorganizes table columns and fixes action buttons wrapping issues.
   - Adjusted column spans for Actions based on number of buttons
   - Actions properly aligned to the right in all resource types
   - All table rows now maintain single-line layout without wrapping
-
-### v1.3.4 (2025-11-30)
-**✨ Table Enhancements & UI Improvements**
-
-This release adds Ready column for Pods, Tag column for Deployments, and improves table alignment.
-
-- **Pod Ready Column**: Added Ready column to Pods table showing container ready status in X/Y format (like kubectl)
-  - Displays ready containers count over total containers (e.g., "2/3")
-  - Column positioned between Status and Age columns
-  - Sortable by ready ratio
-- **Deployment Tag Column**: Added Tag column to Deployments table
-  - Shows image tag extracted from container image
-  - Handles SHA256 digests by showing first 8 characters
-  - Falls back to "latest" if no tag specified
-- **Table Alignment**: Centered all column texts in all resource tables
-  - Consistent visual presentation across all resource types
-  - Improved readability and professional appearance
-- **Unit Tests**: Added comprehensive unit tests for new table columns
-
-### v1.3.3 (2025-11-30)
-**🐛 LDAP Admin Permissions & Logo Storage Migration**
-
-This release fixes LDAP admin permissions and migrates logo storage to ConfigMap.
-
-- **LDAP Admin Permissions**: Fixed LDAP admin users not being able to view cluster resources
-  - LDAP admins now correctly receive `role: "admin"` in JWT when they belong to admin groups
-  - LDAP admins can now view all resources (deployments, pods, etc.) and cluster overview
-- **Settings Password Change**: Fixed password change section showing for LDAP admin users
-  - Password change section now only visible for core admins
-  - LDAP admins can access Prometheus settings but not password change
-- **Logo Storage**: Migrated logo storage from PersistentVolumeClaim to Kubernetes ConfigMap
-  - Logos are now stored in ConfigMap `dkonsole-logo` in base64 format
-  - Simplified deployment by removing PVC requirement
-- **Settings Access**: Added Settings access within Admin Area section
-
-### v1.2.8 (2025-11-29)
-**✨ Settings Management & Metrics Fixes**
-
-This release adds settings management and fixes Prometheus metrics functionality.
-
-- **Settings Module**: New settings management system for application configuration
-  - Prometheus URL configuration via web interface
-  - Password change functionality with confirmation dialog
-  - Settings stored in Kubernetes ConfigMap for persistence
-  - Dynamic Prometheus service updates without restart
-- **Favicon Size**: Increased favicon size from 120x120 to 512x512 for better visibility
-- **Password Change UX**: Improved password change flow with confirmation popup
-  - Shows warning about automatic logout
-  - Requires explicit confirmation before changing password
-  - Automatic logout and redirect to login after password change
-- **Prometheus Metrics Fix**: Fixed metrics not working after URL update
-  - Added thread-safe URL updates with mutex protection
-  - Prometheus service now updates dynamically when URL changes
-  - ConfigMap is read at startup to load saved Prometheus URL
-
-### v1.2.7 (2025-11-28)
-**✨ Setup Mode & Auto-Reload**
-
-This release introduces a web-based setup mode for initial configuration and automatic service reload.
-
-- **Setup Mode**: Initial setup via web interface instead of Helm secrets
-  - Automatic detection when `dkonsole-auth` secret doesn't exist
-  - Web-based setup form for admin username, password, and JWT secret
-  - Auto-generation of JWT secret with manual override option
-  - Argon2 password hashing for secure credential storage
-- **Auto-Reload After Setup**: Service automatically reloads configuration after setup completion
-  - No pod restart required after initial setup
-  - Seamless transition from setup mode to normal operation
-- **Setup Status Check**: Frontend checks setup status on page load
-  - Shows "Setup Completed" message if setup already done
-  - Prevents duplicate setup attempts
-  - Automatic redirect to login after successful setup
-- **Security**: Passwords are now hashed using Argon2id with secure random salt generation
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 

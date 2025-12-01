@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-12-01
+
+### ✨ Added
+
+- **Column Layout Persistence**: Workload and Namespace tables now use a shared `useColumnOrder` hook with drag handles, persisting column order per user via cookies and localStorage with dedicated regression tests.
+- **AI Automation Docs**: Added the `docs/iacf` bundle with refreshed IA guidelines, coding standards, security notes, and testing directives for agents.
+
+### 🔧 Changed
+
+- **Namespace Defaults**: Introduced a `DEFAULT_NAMESPACE` constant so the dashboard, namespace selector, and quota dialogs consistently open the `dkonsole` namespace when no preference is saved.
+- **Docs & Helm Samples**: README and Helm sample values now point to the real `dkonsole.lan` ingress URL and set `allowedOrigins` accordingly, keeping instructions aligned with production deployments.
+
+### 🐛 Fixed
+
+- **Column Order Cookies**: Cookie parsing now trims/decodes stored values, preventing corrupted preferences on browsers that omit cookie spaces and ensuring saved column orders always load correctly.
+
 ## [1.3.6] - 2025-11-30
 
 ### ✨ Added
