@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Setup from './components/Setup';
 import { canEdit, isAdmin } from './utils/permissions';
+import { DEFAULT_NAMESPACE } from './config/constants';
 
 // Lazy load large components for code splitting
 const WorkloadList = lazy(() => import('./components/WorkloadList'));
@@ -48,7 +49,7 @@ const Dashboard = () => {
     // Load saved state from localStorage on mount
     const [selectedNamespace, setSelectedNamespace] = useState(() => {
         const saved = localStorage.getItem('dkonsole_selectedNamespace');
-        return saved || 'default';
+        return saved || DEFAULT_NAMESPACE;
     });
     const [showImporter, setShowImporter] = useState(false);
     const location = useLocation();

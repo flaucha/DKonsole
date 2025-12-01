@@ -13,21 +13,21 @@ ingress:
   #   nginx.ingress.kubernetes.io/ssl-redirect: "true"
   annotations: {}
   hosts:
-    - host: dkonsole.example.com
+    - host: dkonsole.lan
       paths:
         - path: /
           pathType: Prefix
   tls:
     - secretName: dkonsole-tls
       hosts:
-        - dkonsole.example.com
+        - dkonsole.lan
 
 # Allowed Origins for WebSocket (CORS)
-# Comma-separated list of allowed origins (e.g., "https://dkonsole.example.com,http://localhost:5173")
+# Comma-separated list of allowed origins (e.g., "https://dkonsole.lan,http://localhost:5173")
 # If empty, only same-origin requests are allowed.
 # IMPORTANT: For setup mode to work via ingress, include your ingress URL here
-# Example: "https://dkonsole.lan" or "https://dkonsole.example.com"
-allowedOrigins: ""
+# Example: "https://dkonsole.lan"
+allowedOrigins: "https://dkonsole.lan"
 
 # -----------------------------------------------------------------------------
 # 2. Docker Image Configuration

@@ -3,8 +3,10 @@ import { useEffect, useMemo, useState } from 'react';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365; // 1 year
 
 const getCookie = (name) => {
-    if (typeof document === 'undefined') return null;
-    const cookies = document.cookie ? document.cookie.split('; ') : [];
+    if (typeof document === 'undefined' || !name) return null;
+    const raw = document.cookie || '';
+    if (!raw) return null;
+    const cookies = raw.split(';').map((cookie) => cookie.trim()).filter(Boolean);
     for (const cookie of cookies) {
         const [key, ...valueParts] = cookie.split('=');
         if (key === name) {

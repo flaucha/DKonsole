@@ -33,7 +33,7 @@ ingress:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
   hosts:
-    - host: dkonsole.example.com
+    - host: dkonsole.lan
       paths:
         - path: /api
           pathType: Prefix
@@ -44,7 +44,7 @@ ingress:
   tls:
     - secretName: dkonsole-tls
       hosts:
-        - dkonsole.example.com
+        - dkonsole.lan
 
 resources:
   backend:

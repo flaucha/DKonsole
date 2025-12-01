@@ -8,6 +8,7 @@ import YamlEditor from './YamlEditor';
 import { calculatePercentage } from '../utils/resourceParser';
 import { useResourceQuotas } from '../hooks/useResourceQuotas';
 import { useNamespaces } from '../hooks/useNamespaces';
+import { DEFAULT_NAMESPACE } from '../config/constants';
 
 const ResourceQuotaManager = ({ namespace }) => {
     const { currentCluster } = useSettings();
@@ -315,7 +316,7 @@ const ResourceQuotaManager = ({ namespace }) => {
                                 <div className="py-1">
                                     <button
                                         onClick={() => {
-                                            const selectedNs = namespaceFilter !== 'all' ? namespaceFilter : (namespace && namespace !== 'all' ? namespace : (namespaces[0]?.name || 'default'));
+                                            const selectedNs = namespaceFilter !== 'all' ? namespaceFilter : (namespace && namespace !== 'all' ? namespace : (namespaces[0]?.name || DEFAULT_NAMESPACE));
                                             setEditingQuota({ namespace: selectedNs, name: '', kind: 'ResourceQuota', isNew: true });
                                             setActiveTab('quotas'); // Switch to quotas tab when creating a quota
                                             setCreateMenuOpen(false);
@@ -326,7 +327,7 @@ const ResourceQuotaManager = ({ namespace }) => {
                                     </button>
                                     <button
                                         onClick={() => {
-                                            const selectedNs = namespaceFilter !== 'all' ? namespaceFilter : (namespace && namespace !== 'all' ? namespace : (namespaces[0]?.name || 'default'));
+                                            const selectedNs = namespaceFilter !== 'all' ? namespaceFilter : (namespace && namespace !== 'all' ? namespace : (namespaces[0]?.name || DEFAULT_NAMESPACE));
                                             setEditingLimitRange({ namespace: selectedNs, name: '', kind: 'LimitRange', isNew: true });
                                             setActiveTab('limits'); // Switch to limits tab when creating a limit range
                                             setCreateMenuOpen(false);

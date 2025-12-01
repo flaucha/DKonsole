@@ -55,17 +55,17 @@ ingress:
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: dkonsole.example.com
+    - host: dkonsole.lan
       paths:
         - path: /
           pathType: Prefix
   tls:
     - secretName: dkonsole-tls
       hosts:
-        - dkonsole.example.com
+        - dkonsole.lan
 
 # Required for setup mode via ingress (CORS)
-allowedOrigins: "https://dkonsole.example.com"
+allowedOrigins: "https://dkonsole.lan"
 ```
 
 ### 2. Initial Setup (Web Interface)
