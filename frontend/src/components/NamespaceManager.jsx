@@ -1,13 +1,29 @@
-import React, { useState } from 'react';
-import { Database, RefreshCw, Tag, Clock, MoreVertical, FileText, ChevronDown, Search, X, Plus } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Database, RefreshCw, Tag, Clock, MoreVertical, FileText, ChevronDown, Search, X, Plus, GripVertical } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import YamlEditor from './YamlEditor';
 import { getStatusBadgeClass } from '../utils/statusBadge';
-import { formatDateTime } from '../utils/dateUtils';
-import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
+import { formatDateTime, formatDateParts } from '../utils/dateUtils';
+import { getExpandableRowClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 import { useNamespaces } from '../hooks/useNamespaces';
 import { isAdmin } from '../utils/permissions';
+import { useColumnOrder } from '../hooks/useColumnOrder';
+
+const DateStack = ({ value }) => {
+    const { date, time } = formatDateParts(value);
+    return (
+        <div className="flex flex-col items-center leading-tight text-sm text-gray-300">
+            <span>{date}</span>
+            <span className="text-xs text-gray-500">{time}</span>
+        </div>
+    );
+};
+
+const parseDateValue = (value) => {
+    const timestamp = new Date(value).getTime();
+    return Number.isFinite(timestamp) ? timestamp : 0;
+};
 
 const NamespaceManager = () => {
     const { currentCluster } = useSettings();
@@ -20,6 +36,7 @@ const NamespaceManager = () => {
     const [menuOpen, setMenuOpen] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
     const [editingYaml, setEditingYaml] = useState(null);
+    const [draggingColumn, setDraggingColumn] = useState(null);
 
     const { data: namespaces = [], isLoading: loading, refetch } = useNamespaces(authFetch, currentCluster);
 
@@ -48,29 +65,156 @@ const NamespaceManager = () => {
         return ns.name.toLowerCase().includes(filter.toLowerCase());
     });
 
-    const sortedNamespaces = [...filteredNamespaces].sort((a, b) => {
-        const dir = sortDirection === 'asc' ? 1 : -1;
-        const getVal = (item) => {
-            switch (sortField) {
-                case 'name':
-                    return item.name || '';
-                case 'status':
-                    return item.status || '';
-                case 'created':
-                    return new Date(item.created).getTime() || 0;
-                case 'labels':
-                    return item.labels ? Object.keys(item.labels).length : 0;
-                default:
-                    return '';
-            }
-        };
-        const va = getVal(a);
-        const vb = getVal(b);
-        if (typeof va === 'number' && typeof vb === 'number') {
-            return (va - vb) * dir;
+    const dataColumns = useMemo(() => ([
+        {
+            id: 'name',
+            label: 'Name',
+            width: 'minmax(220px, 2fr)',
+            sortValue: (item) => item.name || '',
+            align: 'left',
+            renderCell: (item, context = {}) => (
+                <div className="flex items-center font-medium text-sm text-gray-200">
+                    <ChevronDown
+                        size={16}
+                        className={`mr-2 text-gray-500 transition-transform duration-200 ${context.isExpanded ? 'transform rotate-180' : ''}`}
+                    />
+                    <Database size={16} className="mr-3 text-gray-500" />
+                    <span className="truncate" title={item.name}>{item.name}</span>
+                </div>
+            )
+        },
+        {
+            id: 'status',
+            label: 'Status',
+            width: 'minmax(140px, 1fr)',
+            sortValue: (item) => item.status || '',
+            align: 'center',
+            renderCell: (item) => (
+                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(item.status || 'Unknown')}`}>
+                    {item.status || 'Unknown'}
+                </span>
+            )
+        },
+        {
+            id: 'labels',
+            label: 'Labels',
+            width: 'minmax(120px, 0.9fr)',
+            sortValue: (item) => item.labels ? Object.keys(item.labels).length : 0,
+            align: 'center',
+            renderCell: (item) => (
+                <span className="text-sm text-gray-400">
+                    {item.labels ? Object.keys(item.labels).length : 0}
+                </span>
+            )
         }
-        return String(va).localeCompare(String(vb)) * dir;
-    });
+    ]), []);
+
+    const ageColumn = useMemo(() => ({
+        id: 'age',
+        label: 'Age',
+        width: 'minmax(160px, 1fr)',
+        sortValue: (item) => parseDateValue(item.created),
+        pinned: true,
+        align: 'center',
+        renderCell: (item) => <DateStack value={item.created} />
+    }), []);
+
+    const actionsColumn = {
+        id: 'actions',
+        label: '',
+        width: 'minmax(80px, auto)',
+        pinned: true,
+        isAction: true,
+        renderCell: (item) => (
+            <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+                <div className="relative">
+                    <button
+                        onClick={() => setMenuOpen(menuOpen === item.name ? null : item.name)}
+                        className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white transition-colors"
+                    >
+                        <MoreVertical size={16} />
+                    </button>
+                    {menuOpen === item.name && (
+                        <div className="absolute right-0 mt-1 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
+                            <div className="flex flex-col">
+                                {isAdmin(user) ? (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                setEditingYaml({ name: item.name, kind: 'Namespace', namespaced: false });
+                                                setMenuOpen(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                                        >
+                                            Edit YAML
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setConfirmAction({ namespace: item.name, force: false });
+                                                setMenuOpen(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                                        >
+                                            Delete
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setConfirmAction({ namespace: item.name, force: true });
+                                                setMenuOpen(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"
+                                        >
+                                            Force Delete
+                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="px-4 py-2 text-xs text-gray-500">
+                                        View only
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        )
+    };
+
+    const reorderableColumns = useMemo(
+        () => dataColumns.filter((col) => !col.pinned && !col.isAction),
+        [dataColumns]
+    );
+
+    const { orderedColumns, moveColumn } = useColumnOrder(reorderableColumns, 'namespace-columns');
+
+    const sortableColumns = useMemo(
+        () => [...dataColumns, ageColumn].filter((col) => typeof col.sortValue === 'function'),
+        [dataColumns, ageColumn]
+    );
+
+    const sortedNamespaces = useMemo(() => {
+        const dir = sortDirection === 'asc' ? 1 : -1;
+        const activeColumn = sortableColumns.find((col) => col.id === sortField) || sortableColumns[0];
+        if (!activeColumn) return filteredNamespaces;
+        return [...filteredNamespaces].sort((a, b) => {
+            const va = activeColumn.sortValue(a);
+            const vb = activeColumn.sortValue(b);
+            if (typeof va === 'number' && typeof vb === 'number') {
+                return (va - vb) * dir;
+            }
+            return String(va).localeCompare(String(vb)) * dir;
+        });
+    }, [filteredNamespaces, sortDirection, sortField, sortableColumns]);
+
+    const columns = useMemo(
+        () => [...orderedColumns, ageColumn, actionsColumn],
+        [orderedColumns, ageColumn, actionsColumn]
+    );
+
+    const gridTemplateColumns = useMemo(
+        () => columns.map((col) => col.width || 'minmax(120px, 1fr)').join(' '),
+        [columns]
+    );
 
 
     const handleDelete = async (namespace, force = false) => {
@@ -168,20 +312,50 @@ const NamespaceManager = () => {
             </div>
 
             {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-800 bg-gray-900/50 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <div className="col-span-4 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('name')}>
-                    Name {renderSortIndicator('name')}
-                </div>
-                <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('status')}>
-                    Status {renderSortIndicator('status')}
-                </div>
-                <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('labels')}>
-                    Labels {renderSortIndicator('labels')}
-                </div>
-                <div className="col-span-3 cursor-pointer hover:text-gray-300 flex items-center" onClick={() => handleSort('created')}>
-                    Age {renderSortIndicator('created')}
-                </div>
-                <div className="col-span-1"></div>
+            <div
+                className="grid gap-4 px-6 py-3 border-b border-gray-800 bg-gray-900/50 text-xs font-medium text-gray-500 uppercase tracking-wider"
+                style={{ gridTemplateColumns }}
+            >
+                {columns.map((column) => {
+                    const isSortable = typeof column.sortValue === 'function';
+                    const canDrag = !column.pinned && !column.isAction;
+                    return (
+                        <div
+                            key={column.id}
+                            className={`flex items-center ${column.align === 'left' ? 'justify-start' : 'justify-center'} ${column.id === 'name' ? 'pl-[0.5cm]' : ''} gap-2`}
+                            draggable={canDrag}
+                            onDragStart={() => {
+                                if (canDrag) setDraggingColumn(column.id);
+                            }}
+                            onDragOver={(e) => {
+                                if (canDrag && draggingColumn) {
+                                    e.preventDefault();
+                                }
+                            }}
+                            onDrop={(e) => {
+                                if (canDrag && draggingColumn && draggingColumn !== column.id) {
+                                    e.preventDefault();
+                                    moveColumn(draggingColumn, column.id);
+                                    setDraggingColumn(null);
+                                }
+                            }}
+                            onDragEnd={() => setDraggingColumn(null)}
+                        >
+                            {canDrag && <GripVertical size={12} className="text-gray-600" />}
+                            {isSortable ? (
+                                <button
+                                    type="button"
+                                    className="flex items-center gap-1 hover:text-gray-300"
+                                    onClick={() => handleSort(column.id)}
+                                >
+                                    {column.label} {renderSortIndicator(column.id)}
+                                </button>
+                            ) : (
+                                <span>{column.label}</span>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Table Body */}
@@ -192,78 +366,18 @@ const NamespaceManager = () => {
                         <div key={ns.name} className="border-b border-gray-800 last:border-0">
                             <div
                                 onClick={() => toggleExpand(ns.name)}
-                                className={`grid grid-cols-12 gap-4 px-6 py-4 cursor-pointer transition-colors duration-200 items-center ${getExpandableRowRowClasses(isExpanded)}`}
+                                className={`grid gap-4 px-6 py-4 cursor-pointer transition-colors duration-200 items-center ${getExpandableRowRowClasses(isExpanded)}`}
+                                style={{ gridTemplateColumns }}
                             >
-                                <div className="col-span-4 flex items-center font-medium text-sm text-gray-200">
-                                    <ChevronDown
-                                        size={16}
-                                        className={`mr-2 text-gray-500 transition-transform duration-200 ${isExpanded ? 'transform rotate-180' : ''}`}
-                                    />
-                                    <Database size={16} className="mr-3 text-gray-500" />
-                                    <span className="truncate" title={ns.name}>{ns.name}</span>
-                                </div>
-                                <div className="col-span-2">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(ns.status || 'Unknown')}`}>
-                                        {ns.status || 'Unknown'}
-                                    </span>
-                                </div>
-                                <div className="col-span-2 text-sm text-gray-400">
-                                    {ns.labels ? Object.keys(ns.labels).length : 0}
-                                </div>
-                                <div className="col-span-3 text-sm text-gray-400">
-                                    {formatDateTime(ns.created)}
-                                </div>
-                                <div className="col-span-1 flex justify-end" onClick={(e) => e.stopPropagation()}>
-                                    <div className="relative">
-                                        <button
-                                            onClick={() => setMenuOpen(menuOpen === ns.name ? null : ns.name)}
-                                            className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white transition-colors"
-                                        >
-                                            <MoreVertical size={16} />
-                                        </button>
-                                        {menuOpen === ns.name && (
-                                            <div className="absolute right-0 mt-1 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
-                                                <div className="flex flex-col">
-                                                    {isAdmin(user) ? (
-                                                        <>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setEditingYaml({ name: ns.name, kind: 'Namespace', namespaced: false });
-                                                                    setMenuOpen(null);
-                                                                }}
-                                                                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
-                                                            >
-                                                                Edit YAML
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setConfirmAction({ namespace: ns.name, force: false });
-                                                                    setMenuOpen(null);
-                                                                }}
-                                                                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
-                                                            >
-                                                                Delete
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setConfirmAction({ namespace: ns.name, force: true });
-                                                                    setMenuOpen(null);
-                                                                }}
-                                                                className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"
-                                                            >
-                                                                Force Delete
-                                                            </button>
-                                                        </>
-                                                    ) : (
-                                                        <div className="px-4 py-2 text-xs text-gray-500">
-                                                            View only
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
+                                {columns.map((column) => (
+                                    <div
+                                        key={`${ns.name}-${column.id}`}
+                                        className={`${column.align === 'left' ? 'justify-start text-left' : 'justify-center text-center'} flex items-center ${column.id === 'name' ? 'pl-[0.5cm]' : ''}`}
+                                        onClick={column.isAction ? (e) => e.stopPropagation() : undefined}
+                                    >
+                                        {column.renderCell(ns, { isExpanded })}
                                     </div>
-                                </div>
+                                ))}
                             </div>
 
                             {/* Expanded Details */}

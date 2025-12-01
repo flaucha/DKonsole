@@ -25,6 +25,33 @@ export const formatDateTime = (dateString) => {
 };
 
 /**
+ * Split a date into separate date and time strings for stacked rendering.
+ * Date: MM/DD/YYYY, Time: HH:MM:SS (en-US locale)
+ * @param {string|Date} dateString - ISO date string or Date object
+ * @returns {{date: string, time: string}} Object containing date and time strings
+ */
+export const formatDateParts = (dateString) => {
+    if (!dateString) return { date: 'Unknown', time: 'Unknown' };
+    try {
+        const parsed = new Date(dateString);
+        return {
+            date: parsed.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }),
+            time: parsed.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            })
+        };
+    } catch {
+        return { date: 'Unknown', time: 'Unknown' };
+    }
+};
+
+/**
  * Format a date string to a standard date-time format without seconds
  * Format: MM/DD/YYYY, HH:MM (en-US locale)
  * @param {string|Date} dateString - ISO date string or Date object

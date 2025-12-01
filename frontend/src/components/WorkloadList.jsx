@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     Box,
     FileText,
@@ -18,16 +18,18 @@ import {
     RefreshCw,
     MoreVertical,
     PlayCircle,
-    X
+    X,
+    GripVertical
 } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { useWorkloads } from '../hooks/useWorkloads';
-import { formatDateTime } from '../utils/dateUtils';
+import { formatDateParts } from '../utils/dateUtils';
 import { getExpandableRowClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 import { getStatusBadgeClass } from '../utils/statusBadge';
 import { canEdit, isAdmin } from '../utils/permissions';
+import { useColumnOrder } from '../hooks/useColumnOrder';
 
 // Import extracted detail components
 import NodeDetails from './details/NodeDetails';
@@ -89,6 +91,63 @@ const getIcon = (kind) => {
     }
 };
 
+const DateStack = ({ value }) => {
+    const { date, time } = formatDateParts(value);
+    return (
+        <div className="flex flex-col items-center leading-tight text-sm text-gray-300">
+            <span>{date}</span>
+            <span className="text-xs text-gray-500">{time}</span>
+        </div>
+    );
+};
+
+const parseDateValue = (value) => {
+    const timestamp = new Date(value).getTime();
+    return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+const parseCpuToMilli = (cpuStr) => {
+    if (!cpuStr) return 0;
+    const trimmed = cpuStr.trim();
+    if (trimmed.endsWith('m')) return parseFloat(trimmed.replace('m', '')) || 0;
+    const val = parseFloat(trimmed);
+    return Number.isFinite(val) ? val * 1000 : 0;
+};
+
+const parseMemoryToMi = (memStr) => {
+    if (!memStr) return 0;
+    const normalized = memStr.toUpperCase().trim();
+    const num = parseFloat(normalized);
+    if (!Number.isFinite(num)) return 0;
+    if (normalized.includes('TI') || normalized.includes('T')) return num * 1024 * 1024;
+    if (normalized.includes('GI') || normalized.includes('G')) return num * 1024;
+    if (normalized.includes('MI') || normalized.includes('M')) return num;
+    if (normalized.includes('KI') || normalized.includes('K')) return num / 1024;
+    return num;
+};
+
+const parseSizeToMi = (sizeStr) => {
+    if (!sizeStr) return 0;
+    const normalized = sizeStr.toUpperCase().trim();
+    if (!normalized || normalized === '—') return 0;
+    const num = parseFloat(normalized);
+    if (!Number.isFinite(num)) return 0;
+    if (normalized.includes('TI') || normalized.includes('T')) return num * 1024 * 1024;
+    if (normalized.includes('GI') || normalized.includes('G')) return num * 1024;
+    if (normalized.includes('MI') || normalized.includes('M')) return num;
+    if (normalized.includes('KI') || normalized.includes('K')) return num / 1024;
+    return num / (1024 * 1024);
+};
+
+const parseReadyRatio = (readyStr) => {
+    if (!readyStr) return 0;
+    const parts = readyStr.toString().split('/');
+    if (parts.length !== 2) return 0;
+    const ready = parseFloat(parts[0]) || 0;
+    const total = parseFloat(parts[1]) || 0;
+    return total > 0 ? ready / total : 0;
+};
+
 const WorkloadList = ({ namespace, kind }) => {
     const [expandedId, setExpandedId] = useState(null);
     const [sortField, setSortField] = useState('name');
@@ -107,6 +166,7 @@ const WorkloadList = ({ namespace, kind }) => {
     const [triggering, setTriggering] = useState(null);
     const [createdJob, setCreatedJob] = useState(null);
     const [rollingOut, setRollingOut] = useState(null);
+    const [draggingColumn, setDraggingColumn] = useState(null);
 
     // Early return if kind is not provided
     if (!kind) {
@@ -197,86 +257,6 @@ const WorkloadList = ({ namespace, kind }) => {
         if (!filter) return true;
         return r.name.toLowerCase().includes(filter.toLowerCase());
     });
-
-    const sortedResources = [...filteredResources].sort((a, b) => {
-        const dir = sortDirection === 'asc' ? 1 : -1;
-        const getVal = (item) => {
-            switch (sortField) {
-                case 'name':
-                    return item.name || '';
-                case 'kind':
-                    return item.kind || '';
-                case 'status':
-                    return item.status || '';
-                case 'created':
-                    return new Date(item.created).getTime() || 0;
-                case 'cpu': {
-                    if (kind !== 'Pod' || !item.details?.metrics?.cpu) return 0;
-                    const cpuStr = item.details.metrics.cpu.trim();
-                    if (cpuStr.endsWith('m')) return parseFloat(cpuStr.replace('m', '')) || 0;
-                    const val = parseFloat(cpuStr);
-                    return isNaN(val) ? 0 : val * 1000;
-                }
-                case 'memory': {
-                    if (kind !== 'Pod' || !item.details?.metrics?.memory) return 0;
-                    const memStr = item.details.metrics.memory.toUpperCase().trim();
-                    const num = parseFloat(memStr);
-                    if (isNaN(num)) return 0;
-                    if (memStr.includes('GI')) return num * 1024;
-                    if (memStr.includes('MI')) return num;
-                    if (memStr.includes('KI')) return num / 1024;
-                    return num;
-                }
-                case 'size': {
-                    if (kind !== 'PersistentVolumeClaim') return 0;
-                    const sizeStr = (item.details?.capacity || item.details?.requested || '').toUpperCase().trim();
-                    if (!sizeStr || sizeStr === '—') return 0;
-                    const num = parseFloat(sizeStr);
-                    if (isNaN(num)) return 0;
-                    if (sizeStr.includes('TI') || sizeStr.includes('T')) return num * 1024 * 1024;
-                    if (sizeStr.includes('GI') || sizeStr.includes('G')) return num * 1024;
-                    if (sizeStr.includes('MI') || sizeStr.includes('M')) return num;
-                    if (sizeStr.includes('KI') || sizeStr.includes('K')) return num / 1024;
-                    return num / (1024 * 1024);
-                }
-                case 'ready': {
-                    if (kind !== 'Pod' || !item.details?.ready) return 0;
-                    const readyStr = item.details.ready.toString();
-                    const parts = readyStr.split('/');
-                    if (parts.length === 2) {
-                        const ready = parseFloat(parts[0]) || 0;
-                        const total = parseFloat(parts[1]) || 0;
-                        return total > 0 ? (ready / total) : 0;
-                    }
-                    return 0;
-                }
-                case 'restarts': {
-                    if (kind !== 'Pod') return 0;
-                    return item.details?.restarts || 0;
-                }
-                case 'tag': {
-                    if (kind !== 'Deployment') return '';
-                    return item.details?.imageTag || '';
-                }
-                default:
-                    return '';
-            }
-        };
-        const va = getVal(a);
-        const vb = getVal(b);
-        if (typeof va === 'number' && typeof vb === 'number') {
-            return (va - vb) * dir;
-        }
-        return String(va).localeCompare(String(vb)) * dir;
-    });
-
-    // No display limit - show all resources
-    const limitedResources = sortedResources; // Alias for clarity in code readability
-
-    const renderSortIndicator = (field) => {
-        if (sortField !== field) return null;
-        return sortDirection === 'asc' ? '↑' : '↓';
-    };
 
     // Helper function to check if a node is a master/control-plane node
     const isMasterNode = (res) => {
@@ -459,44 +439,545 @@ const WorkloadList = ({ namespace, kind }) => {
     };
 
     const Icon = getIcon(kind);
+    const renderActionsCell = (res) => (
+        <div className="flex justify-end items-center space-x-1 pr-2 flex-nowrap shrink-0 min-w-0" onClick={(e) => e.stopPropagation()}>
+            {kind === 'CronJob' && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleTriggerCronJob(res);
+                    }}
+                    disabled={triggering === res.name}
+                    className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-green-400 transition-colors disabled:opacity-50"
+                    title="Trigger manual run"
+                >
+                    <PlayCircle size={16} />
+                </button>
+            )}
+            {kind === 'Deployment' && (isAdmin(user) || canEdit(user, res.namespace)) && (
+                <button
+                    onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                            const params = new URLSearchParams();
+                            if (currentCluster) params.append('cluster', currentCluster);
+                            const response = await authFetch(
+                                `/api/namespaces/${res.namespace}/Deployment/${res.name}?${params.toString()}`
+                            );
+                            if (response.ok) {
+                                const deploymentData = await response.json();
+                                let strategyInfo = null;
+                                if (deploymentData.raw && deploymentData.raw.spec) {
+                                    const spec = deploymentData.raw.spec;
+                                    const strategy = spec.strategy || {};
+                                    const strategyType = strategy.type || 'RollingUpdate';
 
-    // Generate dynamic grid template based on resource kind
-    const getGridTemplateColumns = () => {
+                                    if (strategyType === 'RollingUpdate') {
+                                        const rollingUpdate = strategy.rollingUpdate || {};
+                                        strategyInfo = {
+                                            type: 'RollingUpdate',
+                                            maxSurge: rollingUpdate.maxSurge || '25%',
+                                            maxUnavailable: rollingUpdate.maxUnavailable || '25%'
+                                        };
+                                    } else {
+                                        strategyInfo = {
+                                            type: 'Recreate'
+                                        };
+                                    }
+                                }
+                                setConfirmRollout({
+                                    ...res,
+                                    details: deploymentData.details || res.details,
+                                    strategy: strategyInfo
+                                });
+                            } else {
+                                setConfirmRollout(res);
+                            }
+                        } catch (err) {
+                            setConfirmRollout(res);
+                        }
+                    }}
+                    disabled={rollingOut === res.name}
+                    className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-green-400 transition-colors disabled:opacity-50"
+                    title="Rollout deployment"
+                >
+                    <RefreshCw size={16} className={rollingOut === res.name ? 'animate-spin' : ''} />
+                </button>
+            )}
+            <div className="relative">
+                <button
+                    onClick={() => setMenuOpen(menuOpen === res.uid ? null : res.uid)}
+                    className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white transition-colors"
+                >
+                    <MoreVertical size={16} />
+                </button>
+                {menuOpen === res.uid && (
+                    <div className="absolute right-0 mt-1 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
+                        <div className="flex flex-col">
+                            {res.kind === 'Node' && isMasterNode(res) ? (
+                                <div className="px-4 py-2 text-xs text-red-400">
+                                    Not Allowed
+                                </div>
+                            ) : (isAdmin(user) || canEdit(user, res.namespace)) ? (
+                                <>
+                                    <button
+                                        onClick={() => {
+                                            setConfirmAction({ res, force: false });
+                                            setMenuOpen(null);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                                    >
+                                        Delete
+                                    </button>
+                                    {res.kind !== 'Node' && (
+                                        <button
+                                            onClick={() => {
+                                                setConfirmAction({ res, force: true });
+                                                setMenuOpen(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"
+                                        >
+                                            Force Delete
+                                        </button>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="px-4 py-2 text-xs text-gray-500">
+                                    View only
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
+    const ageColumn = useMemo(() => ({
+        id: 'age',
+        label: 'Age',
+        width: 'minmax(150px, 1fr)',
+        sortValue: (item) => parseDateValue(item.created),
+        pinned: true,
+        align: 'center',
+        renderCell: (item) => <DateStack value={item.created} />
+    }), []);
+
+    const dataColumns = useMemo(() => {
+        const columns = [
+            {
+                id: 'name',
+                label: 'Name',
+                width: 'minmax(220px, 2.2fr)',
+                sortValue: (item) => item.name || '',
+                align: 'left',
+                renderCell: (item, context = {}) => (
+                    <div className="flex items-center font-medium text-sm text-gray-200 min-w-0">
+                        <ChevronDown
+                            size={16}
+                            className={`mr-2 text-gray-500 transition-transform duration-200 flex-shrink-0 ${context.isExpanded ? 'transform rotate-180' : ''}`}
+                        />
+                        <Icon size={16} className="mr-3 text-gray-500 flex-shrink-0" />
+                        <span
+                            className="truncate block min-w-0"
+                            title={item.name}
+                        >
+                            {item.name}
+                        </span>
+                    </div>
+                )
+            },
+            {
+                id: 'status',
+                label: 'Status',
+                width: 'minmax(120px, 0.9fr)',
+                sortValue: (item) => item.status || '',
+                align: 'center',
+                renderCell: (item) => (
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(item.status)}`}>
+                        {item.status}
+                    </span>
+                )
+            }
+        ];
+
         switch (kind) {
             case 'Pod':
-                // Name, Status, Ready, Age, Restarts, CPU, Mem, Actions
-                return 'minmax(200px, 1.8fr) minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(80px, 0.6fr) minmax(80px, 0.6fr) minmax(60px, auto)';
+                columns.push(
+                    {
+                        id: 'ready',
+                        label: 'Ready',
+                        width: 'minmax(90px, 0.8fr)',
+                        sortValue: (item) => parseReadyRatio(item.details?.ready),
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">{item.details?.ready || '-'}</span>
+                        )
+                    },
+                    {
+                        id: 'restarts',
+                        label: 'Restarts',
+                        width: 'minmax(90px, 0.8fr)',
+                        sortValue: (item) => item.details?.restarts || 0,
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">{item.details?.restarts || 0}</span>
+                        )
+                    },
+                    {
+                        id: 'cpu',
+                        label: 'CPU',
+                        width: 'minmax(90px, 0.8fr)',
+                        sortValue: (item) => parseCpuToMilli(item.details?.metrics?.cpu),
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">{item.details?.metrics?.cpu || '-'}</span>
+                        )
+                    },
+                    {
+                        id: 'memory',
+                        label: 'Mem',
+                        width: 'minmax(90px, 0.8fr)',
+                        sortValue: (item) => parseMemoryToMi(item.details?.metrics?.memory),
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">{item.details?.metrics?.memory || '-'}</span>
+                        )
+                    }
+                );
+                break;
             case 'Deployment':
-                // Name, Status, Age, Tag, Request, Limits, Actions
-                return 'minmax(200px, 1.8fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(60px, auto)';
+                columns.push(
+                    {
+                        id: 'tag',
+                        label: 'Tag',
+                        width: 'minmax(120px, 1fr)',
+                        sortValue: (item) => item.details?.imageTag || '',
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">{item.details?.imageTag || '-'}</span>
+                        )
+                    },
+                    {
+                        id: 'requests',
+                        label: 'Request',
+                        width: 'minmax(150px, 1.1fr)',
+                        align: 'center',
+                        renderCell: (item) => (
+                            <div className="text-xs text-gray-400 text-center">
+                                {item.details?.requestsCPU || item.details?.requestsMem ? (
+                                    <div className="flex flex-col">
+                                        {item.details?.requestsCPU && <span>cpu: {item.details.requestsCPU}</span>}
+                                        {item.details?.requestsMem && <span>mem: {item.details.requestsMem}</span>}
+                                        {!item.details?.requestsCPU && !item.details?.requestsMem && <span>-</span>}
+                                    </div>
+                                ) : '-'}
+                            </div>
+                        )
+                    },
+                    {
+                        id: 'limits',
+                        label: 'Limits',
+                        width: 'minmax(150px, 1.1fr)',
+                        align: 'center',
+                        renderCell: (item) => (
+                            <div className="text-xs text-gray-400 text-center">
+                                {item.details?.limitsCPU || item.details?.limitsMem ? (
+                                    <div className="flex flex-col">
+                                        {item.details?.limitsCPU && <span>cpu: {item.details.limitsCPU}</span>}
+                                        {item.details?.limitsMem && <span>mem: {item.details.limitsMem}</span>}
+                                        {!item.details?.limitsCPU && !item.details?.limitsMem && <span>-</span>}
+                                    </div>
+                                ) : '-'}
+                            </div>
+                        )
+                    }
+                );
+                break;
             case 'CronJob':
-                // Name, Status, Age, Schedule, Last Run, Actions
-                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(60px, auto)';
+                columns.push(
+                    {
+                        id: 'schedule',
+                        label: 'Schedule',
+                        width: 'minmax(150px, 1.1fr)',
+                        sortValue: (item) => item.details?.schedule || '',
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">{item.details?.schedule || '-'}</span>
+                        )
+                    },
+                    {
+                        id: 'lastRun',
+                        label: 'Last Run',
+                        width: 'minmax(170px, 1.2fr)',
+                        sortValue: (item) => parseDateValue(item.details?.lastSchedule),
+                        align: 'center',
+                        renderCell: (item) => (
+                            item.details?.lastSchedule ? <DateStack value={item.details.lastSchedule} /> : <span className="text-sm text-gray-400">-</span>
+                        )
+                    }
+                );
+                break;
             case 'Job':
-                // Name, Status, Age, Succeeded, Failed, Actions
-                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(90px, 0.7fr) minmax(90px, 0.7fr) minmax(60px, auto)';
+                columns.push(
+                    {
+                        id: 'succeeded',
+                        label: 'Succeeded',
+                        width: 'minmax(90px, 0.8fr)',
+                        sortValue: (item) => item.details?.succeeded ?? 0,
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">{item.details?.succeeded ?? '-'}</span>
+                        )
+                    },
+                    {
+                        id: 'failed',
+                        label: 'Failed',
+                        width: 'minmax(90px, 0.8fr)',
+                        sortValue: (item) => item.details?.failed ?? 0,
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">{item.details?.failed ?? '-'}</span>
+                        )
+                    }
+                );
+                break;
             case 'Service':
-                // Name, Status, Age, IP, Ports, Actions
-                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(150px, 1.2fr) minmax(60px, auto)';
+                columns.push(
+                    {
+                        id: 'ip',
+                        label: 'IP',
+                        width: 'minmax(150px, 1.1fr)',
+                        sortValue: (item) => item.details?.clusterIP || '',
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">{item.details?.clusterIP || '-'}</span>
+                        )
+                    },
+                    {
+                        id: 'ports',
+                        label: 'Ports',
+                        width: 'minmax(170px, 1.2fr)',
+                        sortValue: (item) => (item.details?.ports && item.details.ports.length > 0 ? item.details.ports.join(', ') : ''),
+                        align: 'center',
+                        renderCell: (item) => {
+                            const ports = item.details?.ports && item.details.ports.length > 0 ? item.details.ports.join(', ') : '-';
+                            return (
+                                <span className="text-sm text-gray-400 text-center truncate" title={ports}>
+                                    {ports}
+                                </span>
+                            );
+                        }
+                    }
+                );
+                break;
             case 'Ingress':
-                // Name, Status, Age, Host, Actions
-                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(200px, 2fr) minmax(60px, auto)';
+                columns.push(
+                    {
+                        id: 'host',
+                        label: 'Host',
+                        width: 'minmax(200px, 1.6fr)',
+                        sortValue: (item) => (item.details?.rules && item.details.rules.length > 0 ? item.details.rules[0].host || '*' : ''),
+                        align: 'center',
+                        renderCell: (item) => (
+                            <div className="text-sm text-gray-400 text-center">
+                                {item.details?.rules && item.details.rules.length > 0 ? (
+                                    item.details.rules.map((rule, idx) => {
+                                        const host = rule.host || '*';
+                                        const protocol = item.details?.tls && item.details.tls.some(t => t.hosts && t.hosts.includes(host)) ? 'https' : 'http';
+                                        const url = host !== '*' ? `${protocol}://${host}` : null;
+                                        return (
+                                            <span key={idx}>
+                                                {url ? (
+                                                    <a
+                                                        href={url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="text-blue-400 hover:text-blue-300 hover:underline"
+                                                    >
+                                                        {host}
+                                                    </a>
+                                                ) : (
+                                                    host
+                                                )}
+                                                {idx < item.details.rules.length - 1 && ', '}
+                                            </span>
+                                        );
+                                    })
+                                ) : '-'}
+                            </div>
+                        )
+                    }
+                );
+                break;
             case 'NetworkPolicy':
-                // Name, Status, Age, Tipo, Actions
-                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(60px, auto)';
+                columns.push(
+                    {
+                        id: 'type',
+                        label: 'Tipo',
+                        width: 'minmax(140px, 1fr)',
+                        sortValue: (item) => item.details?.policyTypes ? item.details.policyTypes.join('/') : '',
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">
+                                {item.details?.policyTypes ? item.details.policyTypes.join('/') : '-'}
+                            </span>
+                        )
+                    }
+                );
+                break;
             case 'PersistentVolumeClaim':
-                // Name, Status, Size, Age, Access Mode, Actions
-                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(60px, auto)';
+                columns.push(
+                    {
+                        id: 'size',
+                        label: 'Size',
+                        width: 'minmax(120px, 1fr)',
+                        sortValue: (item) => parseSizeToMi(item.details?.capacity || item.details?.requested),
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">
+                                {item.details?.capacity || item.details?.requested || '-'}
+                            </span>
+                        )
+                    },
+                    {
+                        id: 'accessModes',
+                        label: 'Access Mode',
+                        width: 'minmax(150px, 1.1fr)',
+                        sortValue: (item) => item.details?.accessModes ? item.details.accessModes.join(', ') : '',
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">
+                                {item.details?.accessModes ? item.details.accessModes.join(', ') : '-'}
+                            </span>
+                        )
+                    }
+                );
+                break;
             case 'PersistentVolume':
-                // Name, Status, Size, Age, Access Mode, Actions
-                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(60px, auto)';
+                columns.push(
+                    {
+                        id: 'size',
+                        label: 'Size',
+                        width: 'minmax(120px, 1fr)',
+                        sortValue: (item) => parseSizeToMi(item.details?.capacity),
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">{item.details?.capacity || '-'}</span>
+                        )
+                    },
+                    {
+                        id: 'accessModes',
+                        label: 'Access Mode',
+                        width: 'minmax(150px, 1.1fr)',
+                        sortValue: (item) => item.details?.accessModes ? item.details.accessModes.join(', ') : '',
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">
+                                {item.details?.accessModes ? item.details.accessModes.join(', ') : '-'}
+                            </span>
+                        )
+                    }
+                );
+                break;
             case 'StorageClass':
-                // Name, Status, Age, Reclaim Policy, Provisioner, Actions
-                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(180px, 1.5fr) minmax(60px, auto)';
+                columns.push(
+                    {
+                        id: 'reclaimPolicy',
+                        label: 'Reclaim Policy',
+                        width: 'minmax(170px, 1.2fr)',
+                        sortValue: (item) => item.details?.reclaimPolicy || '',
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center">
+                                {item.details?.reclaimPolicy || '-'}
+                            </span>
+                        )
+                    },
+                    {
+                        id: 'provisioner',
+                        label: 'Provisioner',
+                        width: 'minmax(180px, 1.4fr)',
+                        sortValue: (item) => item.details?.provisioner || '',
+                        align: 'center',
+                        renderCell: (item) => (
+                            <span className="text-sm text-gray-400 text-center truncate" title={item.details?.provisioner || '-'}>
+                                {item.details?.provisioner || '-'}
+                            </span>
+                        )
+                    }
+                );
+                break;
             default:
-                // Name, Status, Age, Actions
-                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(60px, auto)';
+                break;
         }
+
+        return columns;
+    }, [Icon, kind]);
+
+    const reorderableColumns = useMemo(
+        () => dataColumns.filter((col) => !col.pinned && !col.isAction),
+        [dataColumns]
+    );
+
+    const { orderedColumns: orderedDataColumns, moveColumn } = useColumnOrder(
+        reorderableColumns,
+        `dkonsole-columns-${kind}`
+    );
+
+    const actionsColumn = {
+        id: 'actions',
+        label: '',
+        width: 'minmax(80px, auto)',
+        pinned: true,
+        isAction: true,
+        renderCell: renderActionsCell
+    };
+
+    const sortableColumns = useMemo(
+        () => [...dataColumns, ageColumn].filter((col) => typeof col.sortValue === 'function'),
+        [dataColumns, ageColumn]
+    );
+
+    useEffect(() => {
+        if (sortableColumns.length === 0) return;
+        const validIds = new Set(sortableColumns.map((col) => col.id));
+        if (!validIds.has(sortField)) {
+            setSortField('name');
+            setSortDirection('asc');
+        }
+    }, [sortableColumns, sortField]);
+
+    const sortedResources = useMemo(() => {
+        const dir = sortDirection === 'asc' ? 1 : -1;
+        const activeColumn = sortableColumns.find((col) => col.id === sortField) || sortableColumns[0];
+        if (!activeColumn) return filteredResources;
+        return [...filteredResources].sort((a, b) => {
+            const va = activeColumn.sortValue(a);
+            const vb = activeColumn.sortValue(b);
+            if (typeof va === 'number' && typeof vb === 'number') {
+                return (va - vb) * dir;
+            }
+            return String(va).localeCompare(String(vb)) * dir;
+        });
+    }, [filteredResources, sortDirection, sortField, sortableColumns]);
+
+    const limitedResources = sortedResources;
+
+    const columns = useMemo(
+        () => [...orderedDataColumns, ageColumn, actionsColumn],
+        [orderedDataColumns, ageColumn, actionsColumn]
+    );
+
+    const gridTemplateColumns = useMemo(
+        () => columns.map((col) => col.width || 'minmax(120px, 1fr)').join(' '),
+        [columns]
+    );
+
+    const renderSortIndicator = (id) => {
+        if (sortField !== id) return null;
+        return sortDirection === 'asc' ? '↑' : '↓';
     };
 
     // Show loading state
@@ -618,169 +1099,51 @@ const WorkloadList = ({ namespace, kind }) => {
                 </div>
             </div>
 
-            {/* Table Header - Organized from right to left, Name always on the left */}
-            <div className="grid gap-4 px-6 py-3 border-b border-gray-800 bg-gray-900/50 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ gridTemplateColumns: getGridTemplateColumns() }}>
-                {/* Name column - always on the left with more space for long names */}
-                <div className="cursor-pointer hover:text-gray-300 flex items-center pl-[0.5cm]" onClick={() => handleSort('name')}>
-                    Name {renderSortIndicator('name')}
-                </div>
-                {/* Status column */}
-                <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('status')}>
-                    Status {renderSortIndicator('status')}
-                </div>
-                {/* Pod-specific columns - organized from right to left */}
-                {kind === 'Pod' && (
-                    <>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('ready')}>
-                            Ready {renderSortIndicator('ready')}
+            {/* Table Header */}
+            <div
+                className="grid gap-4 px-6 py-3 border-b border-gray-800 bg-gray-900/50 text-xs font-medium text-gray-500 uppercase tracking-wider"
+                style={{ gridTemplateColumns }}
+            >
+                {columns.map((column) => {
+                    const isSortable = typeof column.sortValue === 'function';
+                    const canDrag = !column.pinned && !column.isAction;
+                    return (
+                        <div
+                            key={column.id}
+                            className={`flex items-center ${column.align === 'left' ? 'justify-start' : 'justify-center'} ${column.id === 'name' ? 'pl-[0.5cm]' : ''} gap-2`}
+                            draggable={canDrag}
+                            onDragStart={() => {
+                                if (canDrag) setDraggingColumn(column.id);
+                            }}
+                            onDragOver={(e) => {
+                                if (canDrag && draggingColumn) {
+                                    e.preventDefault();
+                                }
+                            }}
+                            onDrop={(e) => {
+                                if (canDrag && draggingColumn && draggingColumn !== column.id) {
+                                    e.preventDefault();
+                                    moveColumn(draggingColumn, column.id);
+                                    setDraggingColumn(null);
+                                }
+                            }}
+                            onDragEnd={() => setDraggingColumn(null)}
+                        >
+                            {canDrag && <GripVertical size={12} className="text-gray-600" />}
+                            {isSortable ? (
+                                <button
+                                    type="button"
+                                    className="flex items-center gap-1 hover:text-gray-300"
+                                    onClick={() => handleSort(column.id)}
+                                >
+                                    {column.label} {renderSortIndicator(column.id)}
+                                </button>
+                            ) : (
+                                <span>{column.label}</span>
+                            )}
                         </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
-                            Age {renderSortIndicator('created')}
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('restarts')}>
-                            Restarts {renderSortIndicator('restarts')}
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('cpu')}>
-                            CPU {renderSortIndicator('cpu')}
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('memory')}>
-                            Mem {renderSortIndicator('memory')}
-                        </div>
-                    </>
-                )}
-                {/* Deployment-specific columns */}
-                {kind === 'Deployment' && (
-                    <>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
-                            Age {renderSortIndicator('created')}
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('tag')}>
-                            Tag {renderSortIndicator('tag')}
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
-                            Request
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
-                            Limits
-                        </div>
-                    </>
-                )}
-                {/* PersistentVolumeClaim-specific columns */}
-                {kind === 'PersistentVolumeClaim' && (
-                    <>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('size')}>
-                            Size {renderSortIndicator('size')}
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
-                            Age {renderSortIndicator('created')}
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
-                            Access Mode
-                        </div>
-                    </>
-                )}
-                {/* CronJob-specific columns */}
-                {kind === 'CronJob' && (
-                    <>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
-                            Age {renderSortIndicator('created')}
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
-                            Schedule
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
-                            Last Run
-                        </div>
-                    </>
-                )}
-                {/* Job-specific columns */}
-                {kind === 'Job' && (
-                    <>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
-                            Age {renderSortIndicator('created')}
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
-                            Succeeded
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
-                            Failed
-                        </div>
-                    </>
-                )}
-                {/* Service-specific columns */}
-                {kind === 'Service' && (
-                    <>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
-                            Age {renderSortIndicator('created')}
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
-                            IP
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
-                            Ports
-                        </div>
-                    </>
-                )}
-                {/* Ingress-specific columns */}
-                {kind === 'Ingress' && (
-                    <>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
-                            Age {renderSortIndicator('created')}
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
-                            Host
-                        </div>
-                    </>
-                )}
-                {/* NetworkPolicy-specific columns */}
-                {kind === 'NetworkPolicy' && (
-                    <>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
-                            Age {renderSortIndicator('created')}
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
-                            Tipo
-                        </div>
-                    </>
-                )}
-                {/* PersistentVolume-specific columns */}
-                {kind === 'PersistentVolume' && (
-                    <>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
-                            Size
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
-                            Age {renderSortIndicator('created')}
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
-                            Access Mode
-                        </div>
-                    </>
-                )}
-                {/* StorageClass-specific columns */}
-                {kind === 'StorageClass' && (
-                    <>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
-                            Age {renderSortIndicator('created')}
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
-                            Reclaim Policy
-                        </div>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
-                            Provisioner
-                        </div>
-                    </>
-                )}
-                {/* Other resource types */}
-                {kind !== 'Deployment' && kind !== 'Pod' && kind !== 'PersistentVolumeClaim' && kind !== 'CronJob' && kind !== 'Job' && kind !== 'Service' && kind !== 'Ingress' && kind !== 'NetworkPolicy' && kind !== 'PersistentVolume' && kind !== 'StorageClass' && (
-                    <>
-                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
-                            Age {renderSortIndicator('created')}
-                        </div>
-                    </>
-                )}
-                {/* Actions column - always last */}
-                <div className="flex justify-end items-center space-x-1 pr-2"></div>
+                    );
+                })}
             </div>
 
             {/* Table Body */}
@@ -792,334 +1155,17 @@ const WorkloadList = ({ namespace, kind }) => {
                             <div
                                 onClick={() => toggleExpand(res.uid)}
                                 className={`grid gap-4 px-6 py-1.5 cursor-pointer transition-colors duration-200 items-center ${getExpandableRowRowClasses(isExpanded)}`}
-                                style={{ gridTemplateColumns: getGridTemplateColumns() }}
+                                style={{ gridTemplateColumns }}
                             >
-                                {/* Name column - always on the left with better handling for long names */}
-                                <div className="flex items-center font-medium text-sm text-gray-200 min-w-0">
-                                    <ChevronDown
-                                        size={16}
-                                        className={`mr-2 text-gray-500 transition-transform duration-200 flex-shrink-0 ${isExpanded ? 'transform rotate-180' : ''}`}
-                                    />
-                                    <Icon size={16} className="mr-3 text-gray-500 flex-shrink-0" />
-                                    <span
-                                        className="truncate block min-w-0"
-                                        title={res.name}
+                                {columns.map((column) => (
+                                    <div
+                                        key={`${res.uid}-${column.id}`}
+                                        className={`${column.align === 'left' ? 'justify-start text-left' : 'justify-center text-center'} flex items-center ${column.id === 'name' ? 'pl-[0.5cm]' : ''}`}
+                                        onClick={column.isAction ? (e) => e.stopPropagation() : undefined}
                                     >
-                                        {res.name}
-                                    </span>
-                                </div>
-                                {/* Status column */}
-                                <div className="flex items-center justify-center">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(res.status)}`}>
-                                        {res.status}
-                                    </span>
-                                </div>
-                                {/* Pod-specific columns - organized from right to left */}
-                                {kind === 'Pod' && (
-                                    <>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.ready || '-'}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {formatDateTime(res.created)}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.restarts || 0}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.metrics?.cpu || '-'}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.metrics?.memory || '-'}
-                                        </div>
-                                    </>
-                                )}
-                                {/* Deployment-specific columns */}
-                                {kind === 'Deployment' && (
-                                    <>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {formatDateTime(res.created)}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.imageTag || '-'}
-                                        </div>
-                                        <div className="text-xs text-gray-400 text-center">
-                                            {res.details?.requestsCPU || res.details?.requestsMem ? (
-                                                <div className="flex flex-col">
-                                                    {res.details?.requestsCPU && <span>cpu: {res.details.requestsCPU}</span>}
-                                                    {res.details?.requestsMem && <span>mem: {res.details.requestsMem}</span>}
-                                                    {!res.details?.requestsCPU && !res.details?.requestsMem && <span>-</span>}
-                                                </div>
-                                            ) : '-'}
-                                        </div>
-                                        <div className="text-xs text-gray-400 text-center">
-                                            {res.details?.limitsCPU || res.details?.limitsMem ? (
-                                                <div className="flex flex-col">
-                                                    {res.details?.limitsCPU && <span>cpu: {res.details.limitsCPU}</span>}
-                                                    {res.details?.limitsMem && <span>mem: {res.details.limitsMem}</span>}
-                                                    {!res.details?.limitsCPU && !res.details?.limitsMem && <span>-</span>}
-                                                </div>
-                                            ) : '-'}
-                                        </div>
-                                    </>
-                                )}
-                                {/* PersistentVolumeClaim-specific columns */}
-                                {kind === 'PersistentVolumeClaim' && (
-                                    <>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.capacity || res.details?.requested || '-'}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {formatDateTime(res.created)}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.accessModes ? res.details.accessModes.join(', ') : '-'}
-                                        </div>
-                                    </>
-                                )}
-                                {/* CronJob-specific columns */}
-                                {kind === 'CronJob' && (
-                                    <>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {formatDateTime(res.created)}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.schedule || '-'}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.lastSchedule ? formatDateTime(res.details.lastSchedule) : '-'}
-                                        </div>
-                                    </>
-                                )}
-                                {/* Job-specific columns */}
-                                {kind === 'Job' && (
-                                    <>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {formatDateTime(res.created)}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.succeeded ?? '-'}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.failed ?? '-'}
-                                        </div>
-                                    </>
-                                )}
-                                {/* Service-specific columns */}
-                                {kind === 'Service' && (
-                                    <>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {formatDateTime(res.created)}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.clusterIP || '-'}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center truncate" title={res.details?.ports && res.details.ports.length > 0 ? res.details.ports.join(', ') : '-'}>
-                                            {res.details?.ports && res.details.ports.length > 0 ? res.details.ports.join(', ') : '-'}
-                                        </div>
-                                    </>
-                                )}
-                                {/* Ingress-specific columns */}
-                                {kind === 'Ingress' && (
-                                    <>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {formatDateTime(res.created)}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.rules && res.details.rules.length > 0 ? (
-                                                res.details.rules.map((rule, idx) => {
-                                                    const host = rule.host || '*';
-                                                    const protocol = res.details?.tls && res.details.tls.some(t => t.hosts && t.hosts.includes(host)) ? 'https' : 'http';
-                                                    const url = host !== '*' ? `${protocol}://${host}` : null;
-                                                    return (
-                                                        <span key={idx}>
-                                                            {url ? (
-                                                                <a
-                                                                    href={url}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                    className="text-blue-400 hover:text-blue-300 hover:underline"
-                                                                >
-                                                                    {host}
-                                                                </a>
-                                                            ) : (
-                                                                host
-                                                            )}
-                                                            {idx < res.details.rules.length - 1 && ', '}
-                                                        </span>
-                                                    );
-                                                })
-                                            ) : '-'}
-                                        </div>
-                                    </>
-                                )}
-                                {/* NetworkPolicy-specific columns */}
-                                {kind === 'NetworkPolicy' && (
-                                    <>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {formatDateTime(res.created)}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.policyTypes ? res.details.policyTypes.join('/') : '-'}
-                                        </div>
-                                    </>
-                                )}
-                                {/* PersistentVolume-specific columns */}
-                                {kind === 'PersistentVolume' && (
-                                    <>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.capacity || '-'}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {formatDateTime(res.created)}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.accessModes ? res.details.accessModes.join(', ') : '-'}
-                                        </div>
-                                    </>
-                                )}
-                                {/* StorageClass-specific columns */}
-                                {kind === 'StorageClass' && (
-                                    <>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {formatDateTime(res.created)}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {res.details?.reclaimPolicy || '-'}
-                                        </div>
-                                        <div className="text-sm text-gray-400 text-center truncate" title={res.details?.provisioner || '-'}>
-                                            {res.details?.provisioner || '-'}
-                                        </div>
-                                    </>
-                                )}
-                                {/* Other resource types */}
-                                {kind !== 'Deployment' && kind !== 'Pod' && kind !== 'PersistentVolumeClaim' && kind !== 'CronJob' && kind !== 'Job' && kind !== 'Service' && kind !== 'Ingress' && kind !== 'NetworkPolicy' && kind !== 'PersistentVolume' && kind !== 'StorageClass' && (
-                                    <>
-                                        <div className="text-sm text-gray-400 text-center">
-                                            {formatDateTime(res.created)}
-                                        </div>
-                                    </>
-                                )}
-                                <div className="flex justify-end items-center space-x-1 pr-2 flex-nowrap shrink-0 min-w-0" onClick={(e) => e.stopPropagation()}>
-                                    {kind === 'CronJob' && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleTriggerCronJob(res);
-                                            }}
-                                            disabled={triggering === res.name}
-                                            className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-green-400 transition-colors disabled:opacity-50"
-                                            title="Trigger manual run"
-                                        >
-                                            <PlayCircle size={16} />
-                                        </button>
-                                    )}
-                                    {kind === 'Deployment' && (isAdmin(user) || canEdit(user, res.namespace)) && (
-                                        <button
-                                            onClick={async (e) => {
-                                                e.stopPropagation();
-                                                // Fetch deployment details with strategy information
-                                                try {
-                                                    const params = new URLSearchParams();
-                                                    if (currentCluster) params.append('cluster', currentCluster);
-                                                    const response = await authFetch(
-                                                        `/api/namespaces/${res.namespace}/Deployment/${res.name}?${params.toString()}`
-                                                    );
-                                                    if (response.ok) {
-                                                        const deploymentData = await response.json();
-                                                        // Extract strategy information from raw deployment
-                                                        let strategyInfo = null;
-                                                        if (deploymentData.raw && deploymentData.raw.spec) {
-                                                            const spec = deploymentData.raw.spec;
-                                                            const strategy = spec.strategy || {};
-                                                            const strategyType = strategy.type || 'RollingUpdate';
-
-                                                            if (strategyType === 'RollingUpdate') {
-                                                                const rollingUpdate = strategy.rollingUpdate || {};
-                                                                strategyInfo = {
-                                                                    type: 'RollingUpdate',
-                                                                    maxSurge: rollingUpdate.maxSurge || '25%',
-                                                                    maxUnavailable: rollingUpdate.maxUnavailable || '25%'
-                                                                };
-                                                            } else {
-                                                                strategyInfo = {
-                                                                    type: 'Recreate'
-                                                                };
-                                                            }
-                                                        }
-                                                        setConfirmRollout({
-                                                            ...res,
-                                                            details: deploymentData.details || res.details,
-                                                            strategy: strategyInfo
-                                                        });
-                                                    } else {
-                                                        setConfirmRollout(res);
-                                                    }
-                                                } catch (err) {
-                                                    setConfirmRollout(res);
-                                                }
-                                            }}
-                                            disabled={rollingOut === res.name}
-                                            className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-green-400 transition-colors disabled:opacity-50"
-                                            title="Rollout deployment"
-                                        >
-                                            <RefreshCw size={16} className={rollingOut === res.name ? 'animate-spin' : ''} />
-                                        </button>
-                                    )}
-                                    <div className="relative">
-                                        <button
-                                            onClick={() => setMenuOpen(menuOpen === res.uid ? null : res.uid)}
-                                            className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white transition-colors"
-                                        >
-                                            <MoreVertical size={16} />
-                                        </button>
-                                        {menuOpen === res.uid && (
-                                            <div className="absolute right-0 mt-1 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
-                                                <div className="flex flex-col">
-                                                    {/* Special handling for nodes */}
-                                                    {res.kind === 'Node' && isMasterNode(res) ? (
-                                                        <div className="px-4 py-2 text-xs text-red-400">
-                                                            Not Allowed
-                                                        </div>
-                                                    ) : (isAdmin(user) || canEdit(user, res.namespace)) ? (
-                                                        <>
-                                                            <button
-                                                                onClick={() => {
-                                                                    // For nodes, show confirmation dialog
-                                                                    if (res.kind === 'Node') {
-                                                                        setConfirmAction({ res, force: false });
-                                                                    } else {
-                                                                        setConfirmAction({ res, force: false });
-                                                                    }
-                                                                    setMenuOpen(null);
-                                                                }}
-                                                                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
-                                                            >
-                                                                Delete
-                                                            </button>
-                                                            {res.kind !== 'Node' && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setConfirmAction({ res, force: true });
-                                                                        setMenuOpen(null);
-                                                                    }}
-                                                                    className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"
-                                                                >
-                                                                    Force Delete
-                                                                </button>
-                                                            )}
-                                                        </>
-                                                    ) : (
-                                                        <div className="px-4 py-2 text-xs text-gray-500">
-                                                            View only
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
+                                        {column.renderCell(res, { isExpanded })}
                                     </div>
-                                </div>
+                                ))}
                             </div>
 
                             {/* Expanded Details */}
