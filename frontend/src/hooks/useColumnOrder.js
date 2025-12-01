@@ -25,17 +25,17 @@ const setCookie = (name, value) => {
     console.debug(`[useColumnOrder] Saved cookie: ${name}`, value);
 };
 
-const storeOrder = (storageKeys, order) => {
+const storeOrder = (storageKeys, data) => {
     const keys = Array.isArray(storageKeys) ? storageKeys : [storageKeys];
     keys.filter(Boolean).forEach((key) => {
         try {
-            const serialized = JSON.stringify(order);
+            const serialized = JSON.stringify(data);
             setCookie(key, serialized);
             if (typeof window !== 'undefined') {
                 localStorage.setItem(key, serialized);
             }
         } catch (err) {
-            console.error(`[useColumnOrder] Failed to save order for key ${key}:`, err);
+            console.error(`[useColumnOrder] Failed to save data for key ${key}:`, err);
         }
     });
 };
@@ -49,7 +49,7 @@ const sanitizeOrder = (order, availableIds) => {
 
 const readStoredOrder = (storageKeys, fallback) => {
     const keys = Array.isArray(storageKeys) ? storageKeys : [storageKeys];
-    console.debug(`[useColumnOrder] Reading order from keys:`, keys);
+    console.debug(`[useColumnOrder] Reading data from keys:`, keys);
 
     for (const storageKey of keys) {
         if (!storageKey) continue;
@@ -57,10 +57,16 @@ const readStoredOrder = (storageKeys, fallback) => {
         const storedCookie = getCookie(storageKey);
         if (storedCookie) {
             try {
-                const parsedCookie = JSON.parse(storedCookie);
-                if (Array.isArray(parsedCookie)) {
-                    console.debug(`[useColumnOrder] Found order in cookie for key ${storageKey}:`, parsedCookie);
-                    return parsedCookie;
+                const parsed = JSON.parse(storedCookie);
+                // Backward compatibility: if array, it's just order
+                if (Array.isArray(parsed)) {
+                    console.debug(`[useColumnOrder] Found legacy order in cookie for key ${storageKey}:`, parsed);
+                    return { order: parsed, hidden: [] };
+                }
+                // New format: object with order and hidden
+                if (parsed && Array.isArray(parsed.order)) {
+                    console.debug(`[useColumnOrder] Found data in cookie for key ${storageKey}:`, parsed);
+                    return { order: parsed.order, hidden: parsed.hidden || [] };
                 }
             } catch (err) {
                 console.warn(`[useColumnOrder] Malformed cookie for key ${storageKey}:`, err);
@@ -73,8 +79,12 @@ const readStoredOrder = (storageKeys, fallback) => {
                 if (stored) {
                     const parsed = JSON.parse(stored);
                     if (Array.isArray(parsed)) {
-                        console.debug(`[useColumnOrder] Found order in localStorage for key ${storageKey}:`, parsed);
-                        return parsed;
+                        console.debug(`[useColumnOrder] Found legacy order in localStorage for key ${storageKey}:`, parsed);
+                        return { order: parsed, hidden: [] };
+                    }
+                    if (parsed && Array.isArray(parsed.order)) {
+                        console.debug(`[useColumnOrder] Found data in localStorage for key ${storageKey}:`, parsed);
+                        return { order: parsed.order, hidden: parsed.hidden || [] };
                     }
                 }
             } catch (err) {
@@ -82,8 +92,8 @@ const readStoredOrder = (storageKeys, fallback) => {
             }
         }
     }
-    console.debug(`[useColumnOrder] No stored order found, using fallback.`);
-    return fallback;
+    console.debug(`[useColumnOrder] No stored data found, using fallback.`);
+    return { order: fallback, hidden: [] };
 };
 
 export const useColumnOrder = (columns, storageKey, userId) => {
@@ -96,36 +106,50 @@ export const useColumnOrder = (columns, storageKey, userId) => {
     const keysToRead = useMemo(() => (userKey ? [userKey, baseKey] : [baseKey]), [userKey, baseKey]);
     const keysToWrite = useMemo(() => (userKey ? [userKey, baseKey] : [baseKey]), [userKey, baseKey]);
 
-    const [state, setState] = useState(() => ({
-        key: keysToRead.join(','),
-        order: readStoredOrder(keysToRead, availableIds)
-    }));
+    const [state, setState] = useState(() => {
+        const stored = readStoredOrder(keysToRead, availableIds);
+        return {
+            key: keysToRead.join(','),
+            order: stored.order,
+            hidden: stored.hidden
+        };
+    });
 
     // Derived state pattern: if keys change, update state immediately during render
-    // This prevents the "old order, new key" race condition in useEffect
     const currentKeyStr = keysToRead.join(',');
     if (state.key !== currentKeyStr) {
-        console.debug(`[useColumnOrder] Keys changed from ${state.key} to ${currentKeyStr}, reloading order synchronously.`);
-        const newOrder = readStoredOrder(keysToRead, availableIds);
+        console.debug(`[useColumnOrder] Keys changed from ${state.key} to ${currentKeyStr}, reloading data synchronously.`);
+        const newStored = readStoredOrder(keysToRead, availableIds);
         setState({
             key: currentKeyStr,
-            order: newOrder
+            order: newStored.order,
+            hidden: newStored.hidden
         });
     }
 
     const order = state.order;
+    const hidden = state.hidden;
+
     const setOrder = (newOrder) => {
         setState(prev => ({ ...prev, order: newOrder }));
     };
 
-    // Removed the useEffect that loaded order on key change, as it's now handled synchronously above.
+    const toggleVisibility = (columnId) => {
+        setState(prev => {
+            const isHidden = prev.hidden.includes(columnId);
+            const newHidden = isHidden
+                ? prev.hidden.filter(id => id !== columnId)
+                : [...prev.hidden, columnId];
+            return { ...prev, hidden: newHidden };
+        });
+    };
 
     useEffect(() => {
-        // Only save if the key in state matches the current key (double safety)
+        // Only save if the key in state matches the current key
         if (state.key === keysToWrite.join(',')) {
-            storeOrder(keysToWrite, order);
+            storeOrder(keysToWrite, { order, hidden });
         }
-    }, [order, keysToWrite, state.key]);
+    }, [order, hidden, keysToWrite, state.key]);
 
     useEffect(() => {
         const nextOrder = sanitizeOrder(order, availableIds);
@@ -144,7 +168,6 @@ export const useColumnOrder = (columns, storageKey, userId) => {
         updated.splice(sourceIndex, 1);
         updated.splice(targetIndex, 0, sourceId);
         setOrder(updated);
-        // We can save immediately here too, but the effect handles it.
     };
 
     const orderedColumns = useMemo(() => {
@@ -155,13 +178,20 @@ export const useColumnOrder = (columns, storageKey, userId) => {
         return [...columns].sort((a, b) => (orderIndex[a.id] ?? columns.length) - (orderIndex[b.id] ?? columns.length));
     }, [columns, order, availableIds]);
 
-    const resetOrder = () => setOrder(availableIds);
+    const visibleColumns = useMemo(() => {
+        return orderedColumns.filter(col => !hidden.includes(col.id));
+    }, [orderedColumns, hidden]);
+
+    const resetOrder = () => setState(prev => ({ ...prev, order: availableIds, hidden: [] }));
 
     return {
-        orderedColumns,
+        orderedColumns, // All columns, ordered
+        visibleColumns, // Only visible columns, ordered
         moveColumn,
         resetOrder,
-        order
+        order,
+        hidden,
+        toggleVisibility
     };
 };
 

@@ -69,6 +69,26 @@ describe('useColumnOrder cookie persistence', () => {
         expect(persisted).toBeTruthy();
         const [, encodedValue] = persisted.split('=');
         const storedOrder = decodeURIComponent(encodedValue);
-        expect(storedOrder).toEqual(JSON.stringify(['status', 'name', 'age']));
+        expect(storedOrder).toEqual(JSON.stringify({
+            order: ['status', 'name', 'age'],
+            hidden: []
+        }));
+    });
+
+    it('persists hidden columns to cookies', () => {
+        const { result } = renderHook(() => useColumnOrder(mockColumns, 'test-columns', 'alice'));
+
+        act(() => {
+            result.current.toggleVisibility('age');
+        });
+
+        const cookies = cookieMock.getRaw().split(';');
+        const persisted = cookies.find((entry) => entry.startsWith('test-columns-alice='));
+        expect(persisted).toBeTruthy();
+        const [, encodedValue] = persisted.split('=');
+        const storedData = JSON.parse(decodeURIComponent(encodedValue));
+
+        expect(storedData.hidden).toContain('age');
+        expect(storedData.order).toEqual(['name', 'status', 'age']); // Default order
     });
 });
