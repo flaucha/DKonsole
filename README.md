@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.3.5-green.svg)
+![Version](https://img.shields.io/badge/version-1.3.6-green.svg)
 
 <img width="1906" height="947" alt="image" src="https://github.com/user-attachments/assets/99030972-04db-4990-8faa-de41079b671c" />
 
@@ -32,7 +32,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.3.5
+git checkout v1.3.6
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -153,18 +153,36 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.3.5"
+  tag: "1.3.6"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.3.5`
+- **Unified**: `dkonsole/dkonsole:1.3.6`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.3.6 (2025-11-30)
+**✨ Dynamic Column Distribution & Layout Improvements**
+
+This release implements intelligent column sizing and improves table layout responsiveness.
+
+- **Dynamic Column Distribution**: Implemented intelligent column sizing that automatically adjusts based on available space
+  - Columns now distribute equitably with minimum space constraints
+  - Each column has a minimum width and shares remaining space proportionally
+  - Better space utilization across all table types
+- **Table Column System**: Migrated from fixed 12-column grid to dynamic CSS Grid with flexible sizing
+  - Name column maintains minimum width (200px) and grows with available space
+  - All columns use `minmax()` for responsive sizing with minimum constraints
+  - Improved column alignment and spacing across all resource types
+- **Row Height Optimization**: Made table rows thinner while maintaining readability
+  - Minimum height to accommodate 2 lines of AGE text
+  - Better vertical space utilization
+- **Fixes**: Fixed Provisioner column width, Ports display, Access Mode alignment, and prevented column title wrapping
 
 ### v1.3.5 (2025-11-30)
 **🔧 Table Layout Improvements & Actions Fix**

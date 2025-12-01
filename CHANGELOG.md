@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.6] - 2025-11-30
+
+### ✨ Added
+
+- **Dynamic Column Distribution**: Implemented intelligent column sizing that automatically adjusts based on available space
+  - Columns now distribute equitably with minimum space constraints
+  - Each column has a minimum width and shares remaining space proportionally
+  - Better space utilization across all table types
+
+### 🔧 Changed
+
+- **Table Column System**: Migrated from fixed 12-column grid to dynamic CSS Grid with flexible sizing
+  - Name column maintains minimum width (200px) and grows with available space
+  - All columns use `minmax()` for responsive sizing with minimum constraints
+  - Improved column alignment and spacing across all resource types
+- **Row Height Optimization**: Made table rows thinner while maintaining readability
+  - Minimum height to accommodate 2 lines of AGE text
+  - Better vertical space utilization
+
+### 🐛 Fixed
+
+- **Provisioner Column (StorageClass)**: Fixed column width to prevent truncation of long provisioner names
+- **Ports Column (Service)**: Improved column width for better display of multiple ports
+- **Access Mode Alignment**: Fixed data alignment with column headers in PVs and PVCs
+- **Column Title Wrapping**: Prevented column titles from wrapping to multiple lines
+
 ## [1.3.5] - 2025-11-30
 
 ### 🔧 Changed
