@@ -7,6 +7,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
@@ -170,10 +171,51 @@ func (s *ResourceListService) listDeployments(ctx context.Context, client kubern
 		var ports []int32
 		var pvcs []string
 
+		// Aggregate requests and limits from all containers
+		var totalRequestsCPU, totalRequestsMem, totalLimitsCPU, totalLimitsMem resource.Quantity
+		var hasRequestsCPU, hasRequestsMem, hasLimitsCPU, hasLimitsMem bool
 		for _, c := range i.Spec.Template.Spec.Containers {
 			images = append(images, c.Image)
 			for _, p := range c.Ports {
 				ports = append(ports, p.ContainerPort)
+			}
+
+			// Sum up requests and limits from all containers
+			if c.Resources.Requests != nil {
+				if cpu, ok := c.Resources.Requests[corev1.ResourceCPU]; ok {
+					if !hasRequestsCPU {
+						totalRequestsCPU = cpu.DeepCopy()
+						hasRequestsCPU = true
+					} else {
+						totalRequestsCPU.Add(cpu)
+					}
+				}
+				if mem, ok := c.Resources.Requests[corev1.ResourceMemory]; ok {
+					if !hasRequestsMem {
+						totalRequestsMem = mem.DeepCopy()
+						hasRequestsMem = true
+					} else {
+						totalRequestsMem.Add(mem)
+					}
+				}
+			}
+			if c.Resources.Limits != nil {
+				if cpu, ok := c.Resources.Limits[corev1.ResourceCPU]; ok {
+					if !hasLimitsCPU {
+						totalLimitsCPU = cpu.DeepCopy()
+						hasLimitsCPU = true
+					} else {
+						totalLimitsCPU.Add(cpu)
+					}
+				}
+				if mem, ok := c.Resources.Limits[corev1.ResourceMemory]; ok {
+					if !hasLimitsMem {
+						totalLimitsMem = mem.DeepCopy()
+						hasLimitsMem = true
+					} else {
+						totalLimitsMem.Add(mem)
+					}
+				}
 			}
 		}
 		for _, v := range i.Spec.Template.Spec.Volumes {
@@ -201,15 +243,34 @@ func (s *ResourceListService) listDeployments(ctx context.Context, client kubern
 			}
 		}
 
+		// Format requests and limits as strings
+		var requestsCPU, requestsMem, limitsCPU, limitsMem string
+		if hasRequestsCPU {
+			requestsCPU = totalRequestsCPU.String()
+		}
+		if hasRequestsMem {
+			requestsMem = totalRequestsMem.String()
+		}
+		if hasLimitsCPU {
+			limitsCPU = totalLimitsCPU.String()
+		}
+		if hasLimitsMem {
+			limitsMem = totalLimitsMem.String()
+		}
+
 		details := models.DeploymentDetails{
-			Replicas:  replicas,
-			Ready:     i.Status.ReadyReplicas,
-			Images:    images,
-			ImageTag:  imageTag,
-			Ports:     ports,
-			PVCs:      pvcs,
-			PodLabels: i.Spec.Selector.MatchLabels,
-			Labels:    i.Labels,
+			Replicas:    replicas,
+			Ready:       i.Status.ReadyReplicas,
+			Images:      images,
+			ImageTag:    imageTag,
+			Ports:       ports,
+			PVCs:        pvcs,
+			PodLabels:   i.Spec.Selector.MatchLabels,
+			Labels:      i.Labels,
+			RequestsCPU: requestsCPU,
+			RequestsMem: requestsMem,
+			LimitsCPU:   limitsCPU,
+			LimitsMem:   limitsMem,
 		}
 
 		resources = append(resources, models.Resource{
