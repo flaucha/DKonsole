@@ -1108,6 +1108,7 @@ const WorkloadList = ({ namespace, kind }) => {
                     const isSortable = typeof column.sortValue === 'function';
                     const canDrag = !column.pinned && !column.isAction;
                     const headerLabel = column.label ? column.label.toUpperCase() : '';
+                    const dataTestKey = column.label ? `${column.label.replace(/\s+/g, '').toLowerCase()}-header` : undefined;
                     return (
                         <div
                             key={column.id}
@@ -1136,11 +1137,12 @@ const WorkloadList = ({ namespace, kind }) => {
                                     type="button"
                                     className="flex items-center gap-1 hover:text-gray-300"
                                     onClick={() => handleSort(column.id)}
+                                    data-testid={dataTestKey}
                                 >
                                     {headerLabel} {renderSortIndicator(column.id)}
                                 </button>
                             ) : (
-                                <span>{headerLabel}</span>
+                                <span data-testid={dataTestKey}>{headerLabel}</span>
                             )}
                         </div>
                     );
