@@ -20,17 +20,19 @@ const setCookie = (name, value) => {
     document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; max-age=${COOKIE_MAX_AGE_SECONDS}; path=/; SameSite=Lax`;
 };
 
-const storeOrder = (storageKey, order) => {
-    if (!storageKey) return;
-    try {
-        const serialized = JSON.stringify(order);
-        setCookie(storageKey, serialized);
-        if (typeof window !== 'undefined') {
-            localStorage.setItem(storageKey, serialized);
+const storeOrder = (storageKeys, order) => {
+    const keys = Array.isArray(storageKeys) ? storageKeys : [storageKeys];
+    keys.filter(Boolean).forEach((key) => {
+        try {
+            const serialized = JSON.stringify(order);
+            setCookie(key, serialized);
+            if (typeof window !== 'undefined') {
+                localStorage.setItem(key, serialized);
+            }
+        } catch {
+            // Ignore serialization errors
         }
-    } catch {
-        // Ignore serialization errors
-    }
+    });
 };
 
 const sanitizeOrder = (order, availableIds) => {
@@ -40,48 +42,59 @@ const sanitizeOrder = (order, availableIds) => {
     return [...filtered, ...missing];
 };
 
-const readStoredOrder = (storageKey, fallback) => {
-    if (!storageKey) return fallback;
-    const storedCookie = getCookie(storageKey);
-    if (storedCookie) {
-        try {
-            const parsedCookie = JSON.parse(storedCookie);
-            if (Array.isArray(parsedCookie)) {
-                return parsedCookie;
+const readStoredOrder = (storageKeys, fallback) => {
+    const keys = Array.isArray(storageKeys) ? storageKeys : [storageKeys];
+    for (const storageKey of keys) {
+        if (!storageKey) continue;
+
+        const storedCookie = getCookie(storageKey);
+        if (storedCookie) {
+            try {
+                const parsedCookie = JSON.parse(storedCookie);
+                if (Array.isArray(parsedCookie)) {
+                    return parsedCookie;
+                }
+            } catch {
+                // Ignore malformed cookies
             }
-        } catch {
-            // Ignore malformed cookies
+        }
+
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem(storageKey);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed)) {
+                        return parsed;
+                    }
+                }
+            } catch {
+                // Ignore parse errors
+            }
         }
     }
-
-    if (typeof window === 'undefined') return fallback;
-
-    try {
-        const stored = localStorage.getItem(storageKey);
-        if (!stored) return fallback;
-        const parsed = JSON.parse(stored);
-        return Array.isArray(parsed) ? parsed : fallback;
-    } catch {
-        return fallback;
-    }
+    return fallback;
 };
 
 export const useColumnOrder = (columns, storageKey, userId) => {
     const availableIds = useMemo(() => columns.map((col) => col.id), [columns]);
-    const storageIdentifier = useMemo(() => {
+    const baseKey = useMemo(() => storageKey || null, [storageKey]);
+    const userKey = useMemo(() => {
         if (!storageKey) return null;
-        return userId ? `${storageKey}-${userId}` : storageKey;
+        return userId ? `${storageKey}-${userId}` : null;
     }, [storageKey, userId]);
-    const [order, setOrder] = useState(() => readStoredOrder(storageIdentifier, availableIds));
+    const keysToRead = useMemo(() => (userKey ? [userKey, baseKey] : [baseKey]), [userKey, baseKey]);
+    const keysToWrite = useMemo(() => (userKey ? [userKey, baseKey] : [baseKey]), [userKey, baseKey]);
+
+    const [order, setOrder] = useState(() => readStoredOrder(keysToRead, availableIds));
 
     useEffect(() => {
-        setOrder(readStoredOrder(storageIdentifier, availableIds));
-    }, [storageIdentifier, availableIds]);
+        setOrder(readStoredOrder(keysToRead, availableIds));
+    }, [keysToRead, availableIds]);
 
     useEffect(() => {
-        if (!storageIdentifier) return;
-        storeOrder(storageIdentifier, order);
-    }, [order, storageIdentifier]);
+        storeOrder(keysToWrite, order);
+    }, [order, keysToWrite]);
 
     useEffect(() => {
         const nextOrder = sanitizeOrder(order, availableIds);
@@ -99,9 +112,7 @@ export const useColumnOrder = (columns, storageKey, userId) => {
         updated.splice(sourceIndex, 1);
         updated.splice(targetIndex, 0, sourceId);
         setOrder(updated);
-        if (storageIdentifier) {
-            storeOrder(storageIdentifier, updated);
-        }
+        storeOrder(keysToWrite, updated);
     };
 
     const orderedColumns = useMemo(() => {
