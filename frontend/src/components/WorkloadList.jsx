@@ -1110,7 +1110,7 @@ const WorkloadList = ({ namespace, kind }) => {
                     return (
                         <div
                             key={column.id}
-                            className={`flex items-center ${column.align === 'left' ? 'justify-start' : 'justify-center'} ${column.id === 'name' ? 'pl-[0.5cm]' : ''} gap-2`}
+                            className={`flex items-center ${column.align === 'left' ? 'justify-start' : 'justify-center'} ${column.id === 'name' ? 'pl-[0.5cm]' : ''} gap-2 ${isSortable ? 'cursor-pointer' : ''}`}
                             draggable={canDrag}
                             onDragStart={() => {
                                 if (canDrag) setDraggingColumn(column.id);
