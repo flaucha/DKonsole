@@ -923,7 +923,8 @@ const WorkloadList = ({ namespace, kind }) => {
 
     const { orderedColumns: orderedDataColumns, moveColumn } = useColumnOrder(
         reorderableColumns,
-        `dkonsole-columns-${kind}`
+        `dkonsole-columns-${kind}`,
+        user?.username
     );
 
     const actionsColumn = {
@@ -1109,10 +1110,11 @@ const WorkloadList = ({ namespace, kind }) => {
                     const canDrag = !column.pinned && !column.isAction;
                     const headerLabel = column.label || '';
                     const dataTestKey = column.label ? `${column.label.replace(/\s+/g, '').toLowerCase()}-header` : undefined;
+                    const alignmentClass = column.align === 'left' ? 'justify-start text-left' : 'justify-center text-center';
                     return (
                         <div
                             key={column.id}
-                            className={`flex items-center ${column.align === 'left' ? 'justify-start text-left' : 'justify-center text-center'} ${column.id === 'name' ? 'pl-[0.5cm]' : ''} gap-2 ${isSortable ? 'cursor-pointer' : ''}`}
+                            className={`flex items-center ${alignmentClass} ${column.id === 'name' ? 'pl-[0.5cm]' : ''} gap-2 ${isSortable ? 'cursor-pointer' : ''}`}
                             draggable={canDrag}
                             onDragStart={() => {
                                 if (canDrag) setDraggingColumn(column.id);
@@ -1135,14 +1137,14 @@ const WorkloadList = ({ namespace, kind }) => {
                             {isSortable ? (
                                 <button
                                     type="button"
-                                    className="flex items-center gap-1 hover:text-gray-300 uppercase"
+                                    className={`flex items-center gap-1 hover:text-gray-300 uppercase ${alignmentClass}`}
                                     onClick={() => handleSort(column.id)}
                                     data-testid={dataTestKey}
                                 >
                                     {headerLabel} {renderSortIndicator(column.id)}
                                 </button>
                             ) : (
-                                <span data-testid={dataTestKey} className="uppercase">{headerLabel}</span>
+                                <span data-testid={dataTestKey} className={`${alignmentClass} uppercase`}>{headerLabel}</span>
                             )}
                         </div>
                     );

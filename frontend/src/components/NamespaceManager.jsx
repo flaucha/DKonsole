@@ -185,7 +185,7 @@ const NamespaceManager = () => {
         [dataColumns]
     );
 
-    const { orderedColumns, moveColumn } = useColumnOrder(reorderableColumns, 'namespace-columns');
+    const { orderedColumns, moveColumn } = useColumnOrder(reorderableColumns, 'namespace-columns', user?.username);
 
     const sortableColumns = useMemo(
         () => [...dataColumns, ageColumn].filter((col) => typeof col.sortValue === 'function'),
