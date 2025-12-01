@@ -460,6 +460,45 @@ const WorkloadList = ({ namespace, kind }) => {
 
     const Icon = getIcon(kind);
 
+    // Generate dynamic grid template based on resource kind
+    const getGridTemplateColumns = () => {
+        switch (kind) {
+            case 'Pod':
+                // Name, Status, Ready, Age, Restarts, CPU, Mem, Actions
+                return 'minmax(200px, 1.8fr) minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(80px, 0.6fr) minmax(80px, 0.6fr) minmax(60px, auto)';
+            case 'Deployment':
+                // Name, Status, Age, Tag, Request, Limits, Actions
+                return 'minmax(200px, 1.8fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(60px, auto)';
+            case 'CronJob':
+                // Name, Status, Age, Schedule, Last Run, Actions
+                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(60px, auto)';
+            case 'Job':
+                // Name, Status, Age, Succeeded, Failed, Actions
+                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(90px, 0.7fr) minmax(90px, 0.7fr) minmax(60px, auto)';
+            case 'Service':
+                // Name, Status, Age, IP, Ports, Actions
+                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(150px, 1.2fr) minmax(60px, auto)';
+            case 'Ingress':
+                // Name, Status, Age, Host, Actions
+                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(200px, 2fr) minmax(60px, auto)';
+            case 'NetworkPolicy':
+                // Name, Status, Age, Tipo, Actions
+                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(60px, auto)';
+            case 'PersistentVolumeClaim':
+                // Name, Status, Size, Age, Access Mode, Actions
+                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(60px, auto)';
+            case 'PersistentVolume':
+                // Name, Status, Size, Age, Access Mode, Actions
+                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(60px, auto)';
+            case 'StorageClass':
+                // Name, Status, Age, Reclaim Policy, Provisioner, Actions
+                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(180px, 1.5fr) minmax(60px, auto)';
+            default:
+                // Name, Status, Age, Actions
+                return 'minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(100px, 0.8fr) minmax(60px, auto)';
+        }
+    };
+
     // Show loading state
     if (loading && resources.length === 0) {
         return <div className="text-gray-400 animate-pulse p-6">Loading {kind}s...</div>;
@@ -580,177 +619,168 @@ const WorkloadList = ({ namespace, kind }) => {
             </div>
 
             {/* Table Header - Organized from right to left, Name always on the left */}
-            <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-800 bg-gray-900/50 text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <div className="grid gap-4 px-6 py-3 border-b border-gray-800 bg-gray-900/50 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ gridTemplateColumns: getGridTemplateColumns() }}>
                 {/* Name column - always on the left with more space for long names */}
-                <div className={`${kind === 'Deployment' ? 'col-span-3' : 'col-span-4'} cursor-pointer hover:text-gray-300 flex items-center pl-[0.5cm]`} onClick={() => handleSort('name')}>
+                <div className="cursor-pointer hover:text-gray-300 flex items-center pl-[0.5cm]" onClick={() => handleSort('name')}>
                     Name {renderSortIndicator('name')}
                 </div>
                 {/* Status column */}
-                <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('status')}>
+                <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('status')}>
                     Status {renderSortIndicator('status')}
                 </div>
                 {/* Pod-specific columns - organized from right to left */}
                 {kind === 'Pod' && (
                     <>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('ready')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('ready')}>
                             Ready {renderSortIndicator('ready')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('restarts')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('restarts')}>
                             Restarts {renderSortIndicator('restarts')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('cpu')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('cpu')}>
                             CPU {renderSortIndicator('cpu')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('memory')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('memory')}>
                             Mem {renderSortIndicator('memory')}
                         </div>
-                        <div className="col-span-1"></div>
                     </>
                 )}
                 {/* Deployment-specific columns */}
                 {kind === 'Deployment' && (
                     <>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('tag')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('tag')}>
                             Tag {renderSortIndicator('tag')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
                             Request
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
                             Limits
                         </div>
-                        <div className="col-span-1"></div>
                     </>
                 )}
                 {/* PersistentVolumeClaim-specific columns */}
                 {kind === 'PersistentVolumeClaim' && (
                     <>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('size')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('size')}>
                             Size {renderSortIndicator('size')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
                             Access Mode
                         </div>
-                        <div className="col-span-2"></div>
                     </>
                 )}
                 {/* CronJob-specific columns */}
                 {kind === 'CronJob' && (
                     <>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
                             Schedule
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
                             Last Run
                         </div>
-                        <div className="col-span-1"></div>
                     </>
                 )}
                 {/* Job-specific columns */}
                 {kind === 'Job' && (
                     <>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
                             Succeeded
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
                             Failed
                         </div>
-                        <div className="col-span-2"></div>
                     </>
                 )}
                 {/* Service-specific columns */}
                 {kind === 'Service' && (
                     <>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
                             IP
                         </div>
-                        <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
                             Ports
                         </div>
-                        <div className="col-span-1"></div>
                     </>
                 )}
                 {/* Ingress-specific columns */}
                 {kind === 'Ingress' && (
                     <>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
                             Host
                         </div>
-                        <div className="col-span-3"></div>
                     </>
                 )}
                 {/* NetworkPolicy-specific columns */}
                 {kind === 'NetworkPolicy' && (
                     <>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
                             Tipo
                         </div>
-                        <div className="col-span-3"></div>
                     </>
                 )}
                 {/* PersistentVolume-specific columns */}
                 {kind === 'PersistentVolume' && (
                     <>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center">
                             Size
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
                             Access Mode
                         </div>
-                        <div className="col-span-2"></div>
                     </>
                 )}
                 {/* StorageClass-specific columns */}
                 {kind === 'StorageClass' && (
                     <>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
                             Reclaim Policy
                         </div>
-                        <div className="col-span-2 cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center whitespace-nowrap">
                             Provisioner
                         </div>
-                        <div className="col-span-1"></div>
                     </>
                 )}
                 {/* Other resource types */}
                 {kind !== 'Deployment' && kind !== 'Pod' && kind !== 'PersistentVolumeClaim' && kind !== 'CronJob' && kind !== 'Job' && kind !== 'Service' && kind !== 'Ingress' && kind !== 'NetworkPolicy' && kind !== 'PersistentVolume' && kind !== 'StorageClass' && (
                     <>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                        <div className="cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
                             Age {renderSortIndicator('created')}
                         </div>
-                        <div className="col-span-4"></div>
                     </>
                 )}
+                {/* Actions column - always last */}
+                <div className="flex justify-end items-center space-x-1 pr-2"></div>
             </div>
 
             {/* Table Body */}
@@ -761,10 +791,11 @@ const WorkloadList = ({ namespace, kind }) => {
                         <div key={res.uid} className="border-b border-gray-800 last:border-0">
                             <div
                                 onClick={() => toggleExpand(res.uid)}
-                                className={`grid grid-cols-12 gap-4 px-6 py-1.5 cursor-pointer transition-colors duration-200 items-center ${getExpandableRowRowClasses(isExpanded)}`}
+                                className={`grid gap-4 px-6 py-1.5 cursor-pointer transition-colors duration-200 items-center ${getExpandableRowRowClasses(isExpanded)}`}
+                                style={{ gridTemplateColumns: getGridTemplateColumns() }}
                             >
                                 {/* Name column - always on the left with better handling for long names */}
-                                <div className={`${kind === 'Deployment' ? 'col-span-3' : 'col-span-4'} flex items-center font-medium text-sm text-gray-200 min-w-0`}>
+                                <div className="flex items-center font-medium text-sm text-gray-200 min-w-0">
                                     <ChevronDown
                                         size={16}
                                         className={`mr-2 text-gray-500 transition-transform duration-200 flex-shrink-0 ${isExpanded ? 'transform rotate-180' : ''}`}
@@ -778,7 +809,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                     </span>
                                 </div>
                                 {/* Status column */}
-                                <div className="col-span-2 flex items-center justify-center">
+                                <div className="flex items-center justify-center">
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(res.status)}`}>
                                         {res.status}
                                     </span>
@@ -786,19 +817,19 @@ const WorkloadList = ({ namespace, kind }) => {
                                 {/* Pod-specific columns - organized from right to left */}
                                 {kind === 'Pod' && (
                                     <>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.ready || '-'}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.restarts || 0}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.metrics?.cpu || '-'}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.metrics?.memory || '-'}
                                         </div>
                                     </>
@@ -806,13 +837,13 @@ const WorkloadList = ({ namespace, kind }) => {
                                 {/* Deployment-specific columns */}
                                 {kind === 'Deployment' && (
                                     <>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.imageTag || '-'}
                                         </div>
-                                        <div className="col-span-1 text-xs text-gray-400 text-center">
+                                        <div className="text-xs text-gray-400 text-center">
                                             {res.details?.requestsCPU || res.details?.requestsMem ? (
                                                 <div className="flex flex-col">
                                                     {res.details?.requestsCPU && <span>cpu: {res.details.requestsCPU}</span>}
@@ -821,7 +852,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                                 </div>
                                             ) : '-'}
                                         </div>
-                                        <div className="col-span-1 text-xs text-gray-400 text-center">
+                                        <div className="text-xs text-gray-400 text-center">
                                             {res.details?.limitsCPU || res.details?.limitsMem ? (
                                                 <div className="flex flex-col">
                                                     {res.details?.limitsCPU && <span>cpu: {res.details.limitsCPU}</span>}
@@ -830,76 +861,71 @@ const WorkloadList = ({ namespace, kind }) => {
                                                 </div>
                                             ) : '-'}
                                         </div>
-                                        <div className="col-span-1"></div>
                                     </>
                                 )}
                                 {/* PersistentVolumeClaim-specific columns */}
                                 {kind === 'PersistentVolumeClaim' && (
                                     <>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.capacity || res.details?.requested || '-'}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.accessModes ? res.details.accessModes.join(', ') : '-'}
                                         </div>
-                                        <div className="col-span-2"></div>
                                     </>
                                 )}
                                 {/* CronJob-specific columns */}
                                 {kind === 'CronJob' && (
                                     <>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.schedule || '-'}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.lastSchedule ? formatDateTime(res.details.lastSchedule) : '-'}
                                         </div>
-                                        <div className="col-span-1"></div>
                                     </>
                                 )}
                                 {/* Job-specific columns */}
                                 {kind === 'Job' && (
                                     <>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.succeeded ?? '-'}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.failed ?? '-'}
                                         </div>
-                                        <div className="col-span-2"></div>
                                     </>
                                 )}
                                 {/* Service-specific columns */}
                                 {kind === 'Service' && (
                                     <>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.clusterIP || '-'}
                                         </div>
-                                        <div className="col-span-2 text-sm text-gray-400 text-center truncate" title={res.details?.ports && res.details.ports.length > 0 ? res.details.ports.join(', ') : '-'}>
+                                        <div className="text-sm text-gray-400 text-center truncate" title={res.details?.ports && res.details.ports.length > 0 ? res.details.ports.join(', ') : '-'}>
                                             {res.details?.ports && res.details.ports.length > 0 ? res.details.ports.join(', ') : '-'}
                                         </div>
-                                        <div className="col-span-1"></div>
                                     </>
                                 )}
                                 {/* Ingress-specific columns */}
                                 {kind === 'Ingress' && (
                                     <>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.rules && res.details.rules.length > 0 ? (
                                                 res.details.rules.map((rule, idx) => {
                                                     const host = rule.host || '*';
@@ -926,61 +952,56 @@ const WorkloadList = ({ namespace, kind }) => {
                                                 })
                                             ) : '-'}
                                         </div>
-                                        <div className="col-span-3"></div>
                                     </>
                                 )}
                                 {/* NetworkPolicy-specific columns */}
                                 {kind === 'NetworkPolicy' && (
                                     <>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.policyTypes ? res.details.policyTypes.join('/') : '-'}
                                         </div>
-                                        <div className="col-span-3"></div>
                                     </>
                                 )}
                                 {/* PersistentVolume-specific columns */}
                                 {kind === 'PersistentVolume' && (
                                     <>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.capacity || '-'}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.accessModes ? res.details.accessModes.join(', ') : '-'}
                                         </div>
-                                        <div className="col-span-2"></div>
                                     </>
                                 )}
                                 {/* StorageClass-specific columns */}
                                 {kind === 'StorageClass' && (
                                     <>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {res.details?.reclaimPolicy || '-'}
                                         </div>
-                                        <div className="col-span-2 text-sm text-gray-400 text-center truncate" title={res.details?.provisioner || '-'}>
+                                        <div className="text-sm text-gray-400 text-center truncate" title={res.details?.provisioner || '-'}>
                                             {res.details?.provisioner || '-'}
                                         </div>
-                                        <div className="col-span-1"></div>
                                     </>
                                 )}
                                 {/* Other resource types */}
                                 {kind !== 'Deployment' && kind !== 'Pod' && kind !== 'PersistentVolumeClaim' && kind !== 'CronJob' && kind !== 'Job' && kind !== 'Service' && kind !== 'Ingress' && kind !== 'NetworkPolicy' && kind !== 'PersistentVolume' && kind !== 'StorageClass' && (
                                     <>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-4"></div>
                                     </>
                                 )}
-                                <div className={`${kind === 'Pod' ? 'col-span-1' : kind === 'PersistentVolumeClaim' ? 'col-span-1' : kind === 'Deployment' ? 'col-span-2' : kind === 'CronJob' ? 'col-span-2' : 'col-span-1'} flex justify-end items-center space-x-1 pr-2 flex-nowrap shrink-0 min-w-0`} onClick={(e) => e.stopPropagation()}>
+                                <div className="flex justify-end items-center space-x-1 pr-2 flex-nowrap shrink-0 min-w-0" onClick={(e) => e.stopPropagation()}>
                                     {kind === 'CronJob' && (
                                         <button
                                             onClick={(e) => {
