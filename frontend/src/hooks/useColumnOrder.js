@@ -99,6 +99,9 @@ export const useColumnOrder = (columns, storageKey, userId) => {
         updated.splice(sourceIndex, 1);
         updated.splice(targetIndex, 0, sourceId);
         setOrder(updated);
+        if (storageIdentifier) {
+            storeOrder(storageIdentifier, updated);
+        }
     };
 
     const orderedColumns = useMemo(() => {
