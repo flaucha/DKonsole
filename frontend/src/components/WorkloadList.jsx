@@ -715,11 +715,11 @@ const WorkloadList = ({ namespace, kind }) => {
                 {/* PersistentVolume-specific columns */}
                 {kind === 'PersistentVolume' && (
                     <>
-                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
-                            Age {renderSortIndicator('created')}
-                        </div>
                         <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
                             Size
+                        </div>
+                        <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center" onClick={() => handleSort('created')}>
+                            Age {renderSortIndicator('created')}
                         </div>
                         <div className="col-span-1 cursor-pointer hover:text-gray-300 flex items-center justify-center">
                             Access Mode
@@ -761,7 +761,7 @@ const WorkloadList = ({ namespace, kind }) => {
                         <div key={res.uid} className="border-b border-gray-800 last:border-0">
                             <div
                                 onClick={() => toggleExpand(res.uid)}
-                                className={`grid grid-cols-12 gap-4 px-6 py-3 cursor-pointer transition-colors duration-200 items-center ${getExpandableRowRowClasses(isExpanded)}`}
+                                className={`grid grid-cols-12 gap-4 px-6 py-1.5 cursor-pointer transition-colors duration-200 items-center ${getExpandableRowRowClasses(isExpanded)}`}
                             >
                                 {/* Name column - always on the left with better handling for long names */}
                                 <div className={`${kind === 'Deployment' ? 'col-span-3' : 'col-span-4'} flex items-center font-medium text-sm text-gray-200 min-w-0`}>
@@ -842,7 +842,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                         <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                        <div className="col-span-1 text-sm text-gray-400 flex items-center justify-center">
                                             {res.details?.accessModes ? res.details.accessModes.join(', ') : '-'}
                                         </div>
                                         <div className="col-span-2"></div>
@@ -899,8 +899,32 @@ const WorkloadList = ({ namespace, kind }) => {
                                         <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {formatDateTime(res.created)}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center truncate" title={res.details?.rules && res.details.rules.length > 0 ? res.details.rules.map(r => r.host || '*').join(', ') : '-'}>
-                                            {res.details?.rules && res.details.rules.length > 0 ? (res.details.rules[0]?.host || '*') : '-'}
+                                        <div className="col-span-1 text-sm text-gray-400 text-center">
+                                            {res.details?.rules && res.details.rules.length > 0 ? (
+                                                res.details.rules.map((rule, idx) => {
+                                                    const host = rule.host || '*';
+                                                    const protocol = res.details?.tls && res.details.tls.some(t => t.hosts && t.hosts.includes(host)) ? 'https' : 'http';
+                                                    const url = host !== '*' ? `${protocol}://${host}` : null;
+                                                    return (
+                                                        <span key={idx}>
+                                                            {url ? (
+                                                                <a
+                                                                    href={url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="text-blue-400 hover:text-blue-300 hover:underline"
+                                                                >
+                                                                    {host}
+                                                                </a>
+                                                            ) : (
+                                                                host
+                                                            )}
+                                                            {idx < res.details.rules.length - 1 && ', '}
+                                                        </span>
+                                                    );
+                                                })
+                                            ) : '-'}
                                         </div>
                                         <div className="col-span-3"></div>
                                     </>
@@ -921,12 +945,12 @@ const WorkloadList = ({ namespace, kind }) => {
                                 {kind === 'PersistentVolume' && (
                                     <>
                                         <div className="col-span-1 text-sm text-gray-400 text-center">
-                                            {formatDateTime(res.created)}
-                                        </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {res.details?.capacity || '-'}
                                         </div>
                                         <div className="col-span-1 text-sm text-gray-400 text-center">
+                                            {formatDateTime(res.created)}
+                                        </div>
+                                        <div className="col-span-1 text-sm text-gray-400 flex items-center justify-center">
                                             {res.details?.accessModes ? res.details.accessModes.join(', ') : '-'}
                                         </div>
                                         <div className="col-span-2"></div>
@@ -941,7 +965,7 @@ const WorkloadList = ({ namespace, kind }) => {
                                         <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {res.details?.reclaimPolicy || '-'}
                                         </div>
-                                        <div className="col-span-1 text-sm text-gray-400 text-center truncate" title={res.details?.provisioner || '-'}>
+                                        <div className="col-span-1 text-sm text-gray-400 text-center">
                                             {res.details?.provisioner || '-'}
                                         </div>
                                         <div className="col-span-2"></div>
