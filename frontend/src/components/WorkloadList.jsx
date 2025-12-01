@@ -1107,10 +1107,11 @@ const WorkloadList = ({ namespace, kind }) => {
                 {columns.map((column) => {
                     const isSortable = typeof column.sortValue === 'function';
                     const canDrag = !column.pinned && !column.isAction;
+                    const headerLabel = column.label ? column.label.toUpperCase() : '';
                     return (
                         <div
                             key={column.id}
-                            className={`flex items-center ${column.align === 'left' ? 'justify-start' : 'justify-center'} ${column.id === 'name' ? 'pl-[0.5cm]' : ''} gap-2 ${isSortable ? 'cursor-pointer' : ''}`}
+                            className={`flex items-center ${column.align === 'left' ? 'justify-start text-left' : 'justify-center text-center'} ${column.id === 'name' ? 'pl-[0.5cm]' : ''} gap-2 ${isSortable ? 'cursor-pointer' : ''}`}
                             draggable={canDrag}
                             onDragStart={() => {
                                 if (canDrag) setDraggingColumn(column.id);
@@ -1136,10 +1137,10 @@ const WorkloadList = ({ namespace, kind }) => {
                                     className="flex items-center gap-1 hover:text-gray-300"
                                     onClick={() => handleSort(column.id)}
                                 >
-                                    {column.label} {renderSortIndicator(column.id)}
+                                    {headerLabel} {renderSortIndicator(column.id)}
                                 </button>
                             ) : (
-                                <span>{column.label}</span>
+                                <span>{headerLabel}</span>
                             )}
                         </div>
                     );
