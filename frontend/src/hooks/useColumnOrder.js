@@ -96,19 +96,41 @@ export const useColumnOrder = (columns, storageKey, userId) => {
     const keysToRead = useMemo(() => (userKey ? [userKey, baseKey] : [baseKey]), [userKey, baseKey]);
     const keysToWrite = useMemo(() => (userKey ? [userKey, baseKey] : [baseKey]), [userKey, baseKey]);
 
-    const [order, setOrder] = useState(() => readStoredOrder(keysToRead, availableIds));
+    const [state, setState] = useState(() => ({
+        key: keysToRead.join(','),
+        order: readStoredOrder(keysToRead, availableIds)
+    }));
+
+    // Derived state pattern: if keys change, update state immediately during render
+    // This prevents the "old order, new key" race condition in useEffect
+    const currentKeyStr = keysToRead.join(',');
+    if (state.key !== currentKeyStr) {
+        console.debug(`[useColumnOrder] Keys changed from ${state.key} to ${currentKeyStr}, reloading order synchronously.`);
+        const newOrder = readStoredOrder(keysToRead, availableIds);
+        setState({
+            key: currentKeyStr,
+            order: newOrder
+        });
+    }
+
+    const order = state.order;
+    const setOrder = (newOrder) => {
+        setState(prev => ({ ...prev, order: newOrder }));
+    };
+
+    // Removed the useEffect that loaded order on key change, as it's now handled synchronously above.
 
     useEffect(() => {
-        setOrder(readStoredOrder(keysToRead, availableIds));
-    }, [keysToRead, availableIds]);
-
-    useEffect(() => {
-        storeOrder(keysToWrite, order);
-    }, [order, keysToWrite]);
+        // Only save if the key in state matches the current key (double safety)
+        if (state.key === keysToWrite.join(',')) {
+            storeOrder(keysToWrite, order);
+        }
+    }, [order, keysToWrite, state.key]);
 
     useEffect(() => {
         const nextOrder = sanitizeOrder(order, availableIds);
         if (nextOrder.join('|') !== order.join('|')) {
+            console.debug(`[useColumnOrder] Sanitizing order (columns changed).`);
             setOrder(nextOrder);
         }
     }, [order, availableIds]);
@@ -122,7 +144,7 @@ export const useColumnOrder = (columns, storageKey, userId) => {
         updated.splice(sourceIndex, 1);
         updated.splice(targetIndex, 0, sourceId);
         setOrder(updated);
-        storeOrder(keysToWrite, updated);
+        // We can save immediately here too, but the effect handles it.
     };
 
     const orderedColumns = useMemo(() => {

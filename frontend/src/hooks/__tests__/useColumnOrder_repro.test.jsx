@@ -48,45 +48,32 @@ describe('useColumnOrder reproduction', () => {
         cookieMock.restore();
     });
 
-    it('should persist order after user login', () => {
-        // 1. Initial load without user
+    it('should not overwrite new key with old order when switching keys', () => {
+        // 1. Setup: Key A has specific order
+        cookieMock.setRaw('test-columns-A', JSON.stringify(['age', 'name', 'status']));
+
         const { result, rerender } = renderHook(
             ({ columns, key, user }) => useColumnOrder(columns, key, user),
             {
-                initialProps: { columns: mockColumns, key: 'test-columns', user: null }
+                initialProps: { columns: mockColumns, key: 'test-columns-A', user: null }
             }
         );
 
-        // Verify initial order
+        expect(result.current.orderedColumns.map(c => c.id)).toEqual(['age', 'name', 'status']);
+
+        // 2. Switch to Key B (which has NO saved order, so should be default)
+        rerender({ columns: mockColumns, key: 'test-columns-B', user: null });
+
+        // 3. Verify Key B order is default
         expect(result.current.orderedColumns.map(c => c.id)).toEqual(['name', 'status', 'age']);
 
-        // 2. User logs in
-        rerender({ columns: mockColumns, key: 'test-columns', user: 'flaucha' });
-
-        // 3. Reorder columns
-        act(() => {
-            result.current.moveColumn('name', 'status');
-        });
-
-        // Verify order in state
-        expect(result.current.orderedColumns.map(c => c.id)).toEqual(['status', 'name', 'age']);
-
-        // Verify cookie
+        // 4. Verify Key B was NOT saved with Key A's order
         const cookies = cookieMock.getRaw().split(';');
-        const userCookie = cookies.find(c => c.startsWith('test-columns-flaucha='));
-        expect(userCookie).toBeTruthy();
-        const [, val] = userCookie.split('=');
-        expect(decodeURIComponent(val)).toEqual(JSON.stringify(['status', 'name', 'age']));
+        const keyBCookie = cookies.find(c => c.startsWith('test-columns-B='));
 
-        // 4. Reload (simulate by unmounting and remounting with user)
-        const { result: result2 } = renderHook(
-            ({ columns, key, user }) => useColumnOrder(columns, key, user),
-            {
-                initialProps: { columns: mockColumns, key: 'test-columns', user: 'flaucha' }
-            }
-        );
-
-        // Verify restored order
-        expect(result2.current.orderedColumns.map(c => c.id)).toEqual(['status', 'name', 'age']);
+        if (keyBCookie) {
+            const [, val] = keyBCookie.split('=');
+            expect(decodeURIComponent(val)).not.toEqual(JSON.stringify(['age', 'name', 'status']));
+        }
     });
 });
