@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">36.7% </span>
+                <span class="strong">36.85% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>443/1207</span>
+                <span class='fraction'>446/1210</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50.36% </span>
+                <span class="strong">51.42% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>69/137</span>
+                <span class='fraction'>72/140</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">36.7% </span>
+                <span class="strong">36.85% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>443/1207</span>
+                <span class='fraction'>446/1210</span>
             </div>
         
             
@@ -1491,7 +1491,10 @@
 <a name='L1426'></a><a href='#L1426'>1426</a>
 <a name='L1427'></a><a href='#L1427'>1427</a>
 <a name='L1428'></a><a href='#L1428'>1428</a>
-<a name='L1429'></a><a href='#L1429'>1429</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L1429'></a><a href='#L1429'>1429</a>
+<a name='L1430'></a><a href='#L1430'>1430</a>
+<a name='L1431'></a><a href='#L1431'>1431</a>
+<a name='L1432'></a><a href='#L1432'>1432</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2606,6 +2609,8 @@
 <span class="cline-any cline-yes">71x</span>
 <span class="cline-any cline-yes">71x</span>
 <span class="cline-any cline-yes">71x</span>
+<span class="cline-any cline-yes">71x</span>
+<span class="cline-any cline-yes">71x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">71x</span>
@@ -2624,6 +2629,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">71x</span>
 <span class="cline-any cline-yes">71x</span>
+<span class="cline-any cline-yes">60x</span>
 <span class="cline-any cline-yes">60x</span>
 <span class="cline-any cline-yes">60x</span>
 <span class="cline-any cline-yes">60x</span>
@@ -4028,10 +4034,12 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
                 {columns.map((column) =&gt; {
                     const isSortable = typeof column.sortValue === 'function';
                     const canDrag = !column.pinned &amp;&amp; !column.isAction;
+                    const headerLabel = column.label || '';
+                    const dataTestKey = column.label ? `${column.label.replace(/\s+/g, '').toLowerCase()}-header` : undefined;
                     return (
                         &lt;div
                             key={column.id}
-                            className={`flex items-center ${column.align === 'left' ? 'justify-start' : 'justify-center'} ${column.id === 'name' ? 'pl-[0.5cm]' : ''} gap-2 ${isSortable ? 'cursor-pointer' : ''}`}
+                            className={`flex items-center ${column.align === 'left' ? 'justify-start text-left' : 'justify-center text-center'} ${column.id === 'name' ? 'pl-[0.5cm]' : ''} gap-2 ${isSortable ? 'cursor-pointer' : ''} uppercase`}
                             draggable={canDrag}
                             onDragStart={<span class="fstat-no" title="function not covered" >() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >                                if (canDrag) setDraggingColumn(column.id);</span>
@@ -4056,11 +4064,12 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
                                     type="button"
                                     className="flex items-center gap-1 hover:text-gray-300"
                                     onClick={<span class="fstat-no" title="function not covered" >() =&gt; handleSort(column.id)}</span>
+                                    data-testid={dataTestKey}
                                 &gt;
-                                    {column.label} {renderSortIndicator(column.id)}
+                                    {headerLabel} {renderSortIndicator(column.id)}
                                 &lt;/button&gt;
                             ) : (
-                                &lt;span&gt;{column.label}&lt;/span&gt;
+                                &lt;span data-testid={dataTestKey}&gt;{headerLabel}&lt;/span&gt;
                             )}
                         &lt;/div&gt;
                     );
@@ -4354,7 +4363,7 @@ export default WorkloadList;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-01T15:42:00.589Z
+                at 2025-12-01T15:52:59.246Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
