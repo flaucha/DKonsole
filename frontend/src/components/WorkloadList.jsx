@@ -18,8 +18,7 @@ import {
     RefreshCw,
     MoreVertical,
     PlayCircle,
-    X,
-    GripVertical
+    X
 } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
@@ -268,11 +267,11 @@ const WorkloadList = ({ namespace, kind }) => {
             if (res.details.labels) {
                 const labels = res.details.labels;
                 if ((labels['node-role.kubernetes.io/control-plane'] &&
-                     labels['node-role.kubernetes.io/control-plane'] !== '' &&
-                     labels['node-role.kubernetes.io/control-plane'] !== 'false') ||
+                    labels['node-role.kubernetes.io/control-plane'] !== '' &&
+                    labels['node-role.kubernetes.io/control-plane'] !== 'false') ||
                     (labels['node-role.kubernetes.io/master'] &&
-                     labels['node-role.kubernetes.io/master'] !== '' &&
-                     labels['node-role.kubernetes.io/master'] !== 'false')) {
+                        labels['node-role.kubernetes.io/master'] !== '' &&
+                        labels['node-role.kubernetes.io/master'] !== 'false')) {
                     return true;
                 }
             }
@@ -558,7 +557,6 @@ const WorkloadList = ({ namespace, kind }) => {
         label: 'Age',
         width: 'minmax(150px, 1fr)',
         sortValue: (item) => parseDateValue(item.created),
-        pinned: true,
         align: 'center',
         renderCell: (item) => <DateStack value={item.created} />
     }), []);
@@ -1133,7 +1131,6 @@ const WorkloadList = ({ namespace, kind }) => {
                             }}
                             onDragEnd={() => setDraggingColumn(null)}
                         >
-                            {canDrag && <GripVertical size={12} className="text-gray-600" />}
                             {isSortable ? (
                                 <button
                                     type="button"
@@ -1180,14 +1177,14 @@ const WorkloadList = ({ namespace, kind }) => {
                                         <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden relative">
                                             {/* Show Edit YAML button only for resources that don't have it in their detail component */}
                                             {res.kind !== 'Deployment' && res.kind !== 'Pod' && res.kind !== 'ClusterRole' && res.kind !== 'ClusterRoleBinding' &&
-                                             res.kind !== 'Role' && res.kind !== 'RoleBinding' &&
-                                             res.kind !== 'CronJob' && res.kind !== 'StatefulSet' && res.kind !== 'DaemonSet' && res.kind !== 'HPA' &&
-                                             res.kind !== 'Job' && res.kind !== 'PersistentVolumeClaim' && res.kind !== 'PersistentVolume' && res.kind !== 'StorageClass' &&
-                                             res.kind !== 'ConfigMap' && res.kind !== 'Secret' && res.kind !== 'NetworkPolicy' && res.kind !== 'Service' && res.kind !== 'Ingress' && (
-                                                <div className="absolute top-4 right-4 z-10">
-                                                    <EditYamlButton onClick={() => setEditingResource(res)} namespace={res.namespace} />
-                                                </div>
-                                            )}
+                                                res.kind !== 'Role' && res.kind !== 'RoleBinding' &&
+                                                res.kind !== 'CronJob' && res.kind !== 'StatefulSet' && res.kind !== 'DaemonSet' && res.kind !== 'HPA' &&
+                                                res.kind !== 'Job' && res.kind !== 'PersistentVolumeClaim' && res.kind !== 'PersistentVolume' && res.kind !== 'StorageClass' &&
+                                                res.kind !== 'ConfigMap' && res.kind !== 'Secret' && res.kind !== 'NetworkPolicy' && res.kind !== 'Service' && res.kind !== 'Ingress' && (
+                                                    <div className="absolute top-4 right-4 z-10">
+                                                        <EditYamlButton onClick={() => setEditingResource(res)} namespace={res.namespace} />
+                                                    </div>
+                                                )}
                                             {renderDetails(res)}
                                         </div>
                                     </div>
@@ -1253,11 +1250,10 @@ const WorkloadList = ({ namespace, kind }) => {
                             </button>
                             <button
                                 onClick={() => handleDelete(confirmAction.res, confirmAction.force)}
-                                className={`px-4 py-2 rounded-md text-white transition-colors ${
-                                    confirmAction.force
-                                        ? 'bg-red-700 hover:bg-red-800'
-                                        : 'bg-orange-600 hover:bg-orange-700'
-                                }`}
+                                className={`px-4 py-2 rounded-md text-white transition-colors ${confirmAction.force
+                                    ? 'bg-red-700 hover:bg-red-800'
+                                    : 'bg-orange-600 hover:bg-orange-700'
+                                    }`}
                             >
                                 {confirmAction.force ? 'Force Delete' : 'Delete'}
                             </button>

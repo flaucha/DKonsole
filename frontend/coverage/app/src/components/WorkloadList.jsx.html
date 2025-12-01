@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">36.96% </span>
+                <span class="strong">36.88% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>448/1212</span>
+                <span class='fraction'>446/1209</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">51.42% </span>
+                <span class="strong">51.07% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>72/140</span>
+                <span class='fraction'>71/139</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">36.96% </span>
+                <span class="strong">36.88% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>448/1212</span>
+                <span class='fraction'>446/1209</span>
             </div>
         
             
@@ -1492,12 +1492,7 @@
 <a name='L1427'></a><a href='#L1427'>1427</a>
 <a name='L1428'></a><a href='#L1428'>1428</a>
 <a name='L1429'></a><a href='#L1429'>1429</a>
-<a name='L1430'></a><a href='#L1430'>1430</a>
-<a name='L1431'></a><a href='#L1431'>1431</a>
-<a name='L1432'></a><a href='#L1432'>1432</a>
-<a name='L1433'></a><a href='#L1433'>1433</a>
-<a name='L1434'></a><a href='#L1434'>1434</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L1430'></a><a href='#L1430'>1430</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2052,7 +2047,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">18x</span>
-<span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-yes">9x</span>
@@ -2631,7 +2625,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">71x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">71x</span>
 <span class="cline-any cline-yes">71x</span>
 <span class="cline-any cline-yes">60x</span>
 <span class="cline-any cline-yes">60x</span>
@@ -2748,7 +2741,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2949,8 +2941,7 @@ import {
     RefreshCw,
     MoreVertical,
     PlayCircle,
-    X,
-    GripVertical
+    X
 } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
@@ -3199,11 +3190,11 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
 <span class="cstat-no" title="statement not covered" >            if (res.details.labels) {</span>
 <span class="cstat-no" title="statement not covered" >                const labels = res.details.labels;</span>
 <span class="cstat-no" title="statement not covered" >                if ((labels['node-role.kubernetes.io/control-plane'] &amp;&amp;</span>
-<span class="cstat-no" title="statement not covered" >                     labels['node-role.kubernetes.io/control-plane'] !== '' &amp;&amp;</span>
-<span class="cstat-no" title="statement not covered" >                     labels['node-role.kubernetes.io/control-plane'] !== 'false') ||</span>
+<span class="cstat-no" title="statement not covered" >                    labels['node-role.kubernetes.io/control-plane'] !== '' &amp;&amp;</span>
+<span class="cstat-no" title="statement not covered" >                    labels['node-role.kubernetes.io/control-plane'] !== 'false') ||</span>
 <span class="cstat-no" title="statement not covered" >                    (labels['node-role.kubernetes.io/master'] &amp;&amp;</span>
-<span class="cstat-no" title="statement not covered" >                     labels['node-role.kubernetes.io/master'] !== '' &amp;&amp;</span>
-<span class="cstat-no" title="statement not covered" >                     labels['node-role.kubernetes.io/master'] !== 'false')) {</span>
+<span class="cstat-no" title="statement not covered" >                        labels['node-role.kubernetes.io/master'] !== '' &amp;&amp;</span>
+<span class="cstat-no" title="statement not covered" >                        labels['node-role.kubernetes.io/master'] !== 'false')) {</span>
 <span class="cstat-no" title="statement not covered" >                    return true;</span>
 <span class="cstat-no" title="statement not covered" >                }</span>
 <span class="cstat-no" title="statement not covered" >            }</span>
@@ -3489,7 +3480,6 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
         label: 'Age',
         width: 'minmax(150px, 1fr)',
         sortValue: <span class="fstat-no" title="function not covered" >(item) =&gt; parseDateValue(item.created),</span>
-        pinned: true,
         align: 'center',
         renderCell: (item) =&gt; &lt;DateStack value={item.created} /&gt;
     }), []);
@@ -4064,7 +4054,6 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
 <span class="cstat-no" title="statement not covered" >                            }}</span>
                             onDragEnd={<span class="fstat-no" title="function not covered" >() =&gt; setDraggingColumn(null)}</span>
                         &gt;
-                            {canDrag &amp;&amp; &lt;GripVertical size={12} className="text-gray-600" /&gt;}
                             {isSortable ? (
                                 &lt;button
                                     type="button"
@@ -4111,14 +4100,14 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
 <span class="cstat-no" title="statement not covered" >                                        &lt;div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden relative"&gt;</span>
                                             {/* Show Edit YAML button only for resources that don't have it in their detail component */}
 <span class="cstat-no" title="statement not covered" >                                            {res.kind !== 'Deployment' &amp;&amp; res.kind !== 'Pod' &amp;&amp; res.kind !== 'ClusterRole' &amp;&amp; res.kind !== 'ClusterRoleBinding' &amp;&amp;</span>
-<span class="cstat-no" title="statement not covered" >                                             res.kind !== 'Role' &amp;&amp; res.kind !== 'RoleBinding' &amp;&amp;</span>
-<span class="cstat-no" title="statement not covered" >                                             res.kind !== 'CronJob' &amp;&amp; res.kind !== 'StatefulSet' &amp;&amp; res.kind !== 'DaemonSet' &amp;&amp; res.kind !== 'HPA' &amp;&amp;</span>
-<span class="cstat-no" title="statement not covered" >                                             res.kind !== 'Job' &amp;&amp; res.kind !== 'PersistentVolumeClaim' &amp;&amp; res.kind !== 'PersistentVolume' &amp;&amp; res.kind !== 'StorageClass' &amp;&amp;</span>
-<span class="cstat-no" title="statement not covered" >                                             res.kind !== 'ConfigMap' &amp;&amp; res.kind !== 'Secret' &amp;&amp; res.kind !== 'NetworkPolicy' &amp;&amp; res.kind !== 'Service' &amp;&amp; res.kind !== 'Ingress' &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                                                &lt;div className="absolute top-4 right-4 z-10"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                                                    &lt;EditYamlButton onClick={<span class="fstat-no" title="function not covered" >() =&gt; setEditingResource(res)} n</span>amespace={res.namespace} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                                                &lt;/div&gt;</span>
-                                            )}
+<span class="cstat-no" title="statement not covered" >                                                res.kind !== 'Role' &amp;&amp; res.kind !== 'RoleBinding' &amp;&amp;</span>
+<span class="cstat-no" title="statement not covered" >                                                res.kind !== 'CronJob' &amp;&amp; res.kind !== 'StatefulSet' &amp;&amp; res.kind !== 'DaemonSet' &amp;&amp; res.kind !== 'HPA' &amp;&amp;</span>
+<span class="cstat-no" title="statement not covered" >                                                res.kind !== 'Job' &amp;&amp; res.kind !== 'PersistentVolumeClaim' &amp;&amp; res.kind !== 'PersistentVolume' &amp;&amp; res.kind !== 'StorageClass' &amp;&amp;</span>
+<span class="cstat-no" title="statement not covered" >                                                res.kind !== 'ConfigMap' &amp;&amp; res.kind !== 'Secret' &amp;&amp; res.kind !== 'NetworkPolicy' &amp;&amp; res.kind !== 'Service' &amp;&amp; res.kind !== 'Ingress' &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >                                                    &lt;div className="absolute top-4 right-4 z-10"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                                                        &lt;EditYamlButton onClick={<span class="fstat-no" title="function not covered" >() =&gt; setEditingResource(res)} n</span>amespace={res.namespace} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                                                    &lt;/div&gt;</span>
+                                                )}
 <span class="cstat-no" title="statement not covered" >                                            {renderDetails(res)}</span>
 <span class="cstat-no" title="statement not covered" >                                        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                                    &lt;/div&gt;</span>
@@ -4184,11 +4173,10 @@ const WorkloadList = ({ namespace, kind }) =&gt; {
 <span class="cstat-no" title="statement not covered" >                            &lt;/button&gt;</span>
 <span class="cstat-no" title="statement not covered" >                            &lt;button</span>
 <span class="cstat-no" title="statement not covered" >                                onClick={<span class="fstat-no" title="function not covered" >() =&gt; handleDelete(confirmAction.res, confirmAction.force)}</span></span>
-<span class="cstat-no" title="statement not covered" >                                className={`px-4 py-2 rounded-md text-white transition-colors ${</span>
-<span class="cstat-no" title="statement not covered" >                                    confirmAction.force</span>
-<span class="cstat-no" title="statement not covered" >                                        ? 'bg-red-700 hover:bg-red-800'</span>
-<span class="cstat-no" title="statement not covered" >                                        : 'bg-orange-600 hover:bg-orange-700'</span>
-<span class="cstat-no" title="statement not covered" >                                }`}</span>
+<span class="cstat-no" title="statement not covered" >                                className={`px-4 py-2 rounded-md text-white transition-colors ${confirmAction.force</span>
+<span class="cstat-no" title="statement not covered" >                                    ? 'bg-red-700 hover:bg-red-800'</span>
+<span class="cstat-no" title="statement not covered" >                                    : 'bg-orange-600 hover:bg-orange-700'</span>
+<span class="cstat-no" title="statement not covered" >                                    }`}</span>
                             &gt;
 <span class="cstat-no" title="statement not covered" >                                {confirmAction.force ? 'Force Delete' : 'Delete'}</span>
 <span class="cstat-no" title="statement not covered" >                            &lt;/button&gt;</span>
@@ -4369,7 +4357,7 @@ export default WorkloadList;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-01T21:07:04.180Z
+                at 2025-12-01T21:12:36.603Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
