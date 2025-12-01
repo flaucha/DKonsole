@@ -19,7 +19,10 @@ const getCookie = (name) => {
 const setCookie = (name, value) => {
     if (typeof document === 'undefined' || !name) return;
     const expires = new Date(Date.now() + COOKIE_MAX_AGE_SECONDS * 1000).toUTCString();
-    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; max-age=${COOKIE_MAX_AGE_SECONDS}; path=/; SameSite=Lax`;
+    // Removing SameSite=Lax to ensure compatibility with .lan domains and potentially non-secure contexts
+    // Modern browsers default to Lax, but explicit setting might be interfering if not on HTTPS
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; max-age=${COOKIE_MAX_AGE_SECONDS}; path=/`;
+    console.debug(`[useColumnOrder] Saved cookie: ${name}`, value);
 };
 
 const storeOrder = (storageKeys, order) => {
@@ -31,8 +34,8 @@ const storeOrder = (storageKeys, order) => {
             if (typeof window !== 'undefined') {
                 localStorage.setItem(key, serialized);
             }
-        } catch {
-            // Ignore serialization errors
+        } catch (err) {
+            console.error(`[useColumnOrder] Failed to save order for key ${key}:`, err);
         }
     });
 };
@@ -46,6 +49,8 @@ const sanitizeOrder = (order, availableIds) => {
 
 const readStoredOrder = (storageKeys, fallback) => {
     const keys = Array.isArray(storageKeys) ? storageKeys : [storageKeys];
+    console.debug(`[useColumnOrder] Reading order from keys:`, keys);
+
     for (const storageKey of keys) {
         if (!storageKey) continue;
 
@@ -54,10 +59,11 @@ const readStoredOrder = (storageKeys, fallback) => {
             try {
                 const parsedCookie = JSON.parse(storedCookie);
                 if (Array.isArray(parsedCookie)) {
+                    console.debug(`[useColumnOrder] Found order in cookie for key ${storageKey}:`, parsedCookie);
                     return parsedCookie;
                 }
-            } catch {
-                // Ignore malformed cookies
+            } catch (err) {
+                console.warn(`[useColumnOrder] Malformed cookie for key ${storageKey}:`, err);
             }
         }
 
@@ -67,14 +73,16 @@ const readStoredOrder = (storageKeys, fallback) => {
                 if (stored) {
                     const parsed = JSON.parse(stored);
                     if (Array.isArray(parsed)) {
+                        console.debug(`[useColumnOrder] Found order in localStorage for key ${storageKey}:`, parsed);
                         return parsed;
                     }
                 }
-            } catch {
-                // Ignore parse errors
+            } catch (err) {
+                console.warn(`[useColumnOrder] Malformed localStorage for key ${storageKey}:`, err);
             }
         }
     }
+    console.debug(`[useColumnOrder] No stored order found, using fallback.`);
     return fallback;
 };
 
