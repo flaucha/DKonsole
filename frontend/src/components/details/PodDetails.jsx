@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Server, Network, Activity, Box, HardDrive, Clock, Terminal } from 'lucide-react';
+import { Server, Network, Activity, Box, HardDrive, Clock, Terminal, Pin } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { DetailRow, EditYamlButton } from './CommonDetails';
 import LogViewerInline from './LogViewerInline';
@@ -159,22 +159,9 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                                     <Terminal size={14} className="text-gray-300" />
                                     <span>Terminal</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => {
-                                            if (pod && selectedContainer) {
-                                                addSession({
-                                                    namespace: pod.namespace,
-                                                    podName: pod.name,
-                                                    container: selectedContainer
-                                                });
-                                            }
-                                        }}
-                                        disabled={!pod || !selectedContainer}
-                                        className="px-3 py-1.5 rounded-md border text-xs transition-colors bg-blue-600 text-white border-blue-500 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        Pin al header
-                                    </button>
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <Pin size={14} />
+                                    <span>Usa el pin en el título para anclar</span>
                                 </div>
                             </div>
 
@@ -186,6 +173,15 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                                         pod={pod.name}
                                         container={selectedContainer}
                                         sessionLabel={`${pod.name} / ${selectedContainer}`}
+                                        onPinToggle={() => {
+                                            if (pod && selectedContainer) {
+                                                addSession({
+                                                    namespace: pod.namespace,
+                                                    podName: pod.name,
+                                                    container: selectedContainer
+                                                });
+                                            }
+                                        }}
                                     />
                                 ) : (
                                     <div className="h-full border border-dashed border-gray-700 rounded-lg flex items-center justify-center text-gray-500 text-sm">

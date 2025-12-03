@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Terminal, Pin, PinOff, X } from 'lucide-react';
+import { Terminal, Pin, PinOff, X, Minus } from 'lucide-react';
 import { Terminal as XTerminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
@@ -13,6 +13,7 @@ const TerminalViewerInline = ({
     pinned = false,
     onClose,
     sessionLabel,
+    onMinimize,
 }) => {
     const termContainerRef = useRef(null);
     const termRef = useRef(null);
@@ -179,6 +180,18 @@ const TerminalViewerInline = ({
                             title={pinned ? 'Unpin terminal' : 'Pin terminal'}
                         >
                             {pinned ? <PinOff size={15} /> : <Pin size={15} />}
+                        </button>
+                    )}
+                    {onMinimize && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onMinimize();
+                            }}
+                            className="p-1.5 rounded-md border border-gray-700 text-gray-400 hover:text-yellow-200 hover:border-yellow-700 hover:bg-yellow-900/30 transition-colors"
+                            title="Minimize terminal"
+                        >
+                            <Minus size={15} />
                         </button>
                     )}
                     {onClose && (

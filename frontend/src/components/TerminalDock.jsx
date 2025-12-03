@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { Terminal, PinOff, X, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { Terminal, PinOff, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import TerminalViewerInline from './details/TerminalViewerInline';
 import { useTerminalDock } from '../context/TerminalDockContext';
 
@@ -50,15 +50,10 @@ const TerminalDock = () => {
     const { sessions, activeId, setActiveId, removeSession } = useTerminalDock();
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
-    const [collapsed, setCollapsed] = useState(() => {
-        if (typeof localStorage === 'undefined') return false;
-        const saved = localStorage.getItem('dkonsole_dock_collapsed');
-        return saved === 'true';
-    });
     const scrollRef = useRef(null);
 
     const activeSession = useMemo(
-        () => sessions.find(s => s.id === activeId) || sessions[0],
+        () => sessions.find(s => s.id === activeId),
         [sessions, activeId]
     );
 
@@ -87,14 +82,6 @@ const TerminalDock = () => {
         };
     }, [sessions.length]);
 
-    useEffect(() => {
-        try {
-            localStorage.setItem('dkonsole_dock_collapsed', collapsed ? 'true' : 'false');
-        } catch {
-            // ignore storage errors
-        }
-    }, [collapsed]);
-
     if (!sessions.length) return null;
 
     const scroll = (direction) => {
@@ -106,63 +93,49 @@ const TerminalDock = () => {
 
     return (
         <>
-            {/* Dock bar inside header */}
-            <div className="bg-gray-900 border-t border-b border-gray-800 px-4 py-2">
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-400">
-                        <Terminal size={14} className="text-gray-300" />
-                        <span>Terminals fijados</span>
-                    </div>
-                    <button
-                        onClick={() => setCollapsed(!collapsed)}
-                        className="px-2 py-1 rounded-md border text-xs transition-colors bg-gray-800 border-gray-700 text-gray-300 hover:text-white hover:border-gray-500"
-                        title={collapsed ? 'Mostrar terminal' : 'Ocultar terminal'}
-                    >
-                        <span className="flex items-center gap-1">
-                            {collapsed ? <Eye size={14} /> : <EyeOff size={14} />}
-                            {collapsed ? 'Mostrar' : 'Ocultar'}
-                        </span>
-                    </button>
-                    <div className="relative flex-1 overflow-hidden">
-                        {canScrollLeft && (
-                            <button
-                                onClick={() => scroll('left')}
-                                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-gray-800 border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 shadow"
-                                title="Scroll left"
-                            >
-                                <ChevronLeft size={16} />
-                            </button>
-                        )}
-                        <div
-                            ref={scrollRef}
-                            className="flex gap-2 overflow-x-auto pb-1 px-6"
+            <div className="flex items-center gap-2 w-full min-w-0">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-400 shrink-0">
+                    <Terminal size={14} className="text-gray-300" />
+                    <span>Terminals fijados</span>
+                </div>
+                <div className="relative flex-1 min-w-0">
+                    {canScrollLeft && (
+                        <button
+                            onClick={() => scroll('left')}
+                            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-gray-800 border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 shadow"
+                            title="Scroll left"
                         >
-                            {sessions.map(session => (
-                                <SessionChip
-                                    key={session.id}
-                                    session={session}
-                                    isActive={activeSession?.id === session.id}
-                                    onSelect={() => setActiveId(session.id)}
-                                    onUnpin={() => removeSession(session.id)}
-                                    onClose={() => removeSession(session.id)}
-                                />
-                            ))}
-                        </div>
-                        {canScrollRight && (
-                            <button
-                                onClick={() => scroll('right')}
-                                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-gray-800 border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 shadow"
-                                title="Scroll right"
-                            >
-                                <ChevronRight size={16} />
-                            </button>
-                        )}
+                            <ChevronLeft size={16} />
+                        </button>
+                    )}
+                    <div
+                        ref={scrollRef}
+                        className="flex gap-2 overflow-x-auto pb-1 px-6"
+                    >
+                        {sessions.map(session => (
+                            <SessionChip
+                                key={session.id}
+                                session={session}
+                                isActive={activeSession?.id === session.id}
+                                onSelect={() => setActiveId(session.id)}
+                                onUnpin={() => removeSession(session.id)}
+                                onClose={() => removeSession(session.id)}
+                            />
+                        ))}
                     </div>
+                    {canScrollRight && (
+                        <button
+                            onClick={() => scroll('right')}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-gray-800 border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 shadow"
+                            title="Scroll right"
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* Active window floating so it survives view changes */}
-            {activeSession && !collapsed && (
+            {activeSession && (
                 <div className="fixed bottom-4 right-4 w-[760px] max-w-[95vw] h-[55vh] z-40">
                     {sessions.map(session => (
                         <TerminalViewerInline
@@ -173,6 +146,7 @@ const TerminalDock = () => {
                             isActive={activeSession.id === session.id}
                             onPinToggle={() => removeSession(session.id)}
                             onClose={() => removeSession(session.id)}
+                            onMinimize={() => setActiveId(null)}
                             pinned
                             sessionLabel={`${session.podName} / ${session.container}`}
                         />
