@@ -153,42 +153,29 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                             </div>
                         )}
 
-                        <div className="bg-gray-900/60 border border-gray-800 rounded-lg p-3 shadow-inner flex flex-col gap-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-400">
-                                    <Terminal size={14} className="text-gray-300" />
-                                    <span>Terminal</span>
+                        <div className="flex-1 min-h-0 relative">
+                            {pod && selectedContainer ? (
+                                <TerminalViewerInline
+                                    key={`${pod.namespace}-${pod.name}-${selectedContainer}`}
+                                    namespace={pod.namespace}
+                                    pod={pod.name}
+                                    container={selectedContainer}
+                                    sessionLabel={`${pod.name} / ${selectedContainer}`}
+                                    onPinToggle={() => {
+                                        if (pod && selectedContainer) {
+                                            addSession({
+                                                namespace: pod.namespace,
+                                                podName: pod.name,
+                                                container: selectedContainer
+                                            });
+                                        }
+                                    }}
+                                />
+                            ) : (
+                                <div className="h-full border border-dashed border-gray-700 rounded-lg flex items-center justify-center text-gray-500 text-sm">
+                                    Select a container to open a terminal session.
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-gray-500">
-                                    <Pin size={14} />
-                                    <span>Usa el pin en el título para anclar</span>
-                                </div>
-                            </div>
-
-                            <div className="flex-1 min-h-0 relative">
-                                {pod && selectedContainer ? (
-                                    <TerminalViewerInline
-                                        key={`${pod.namespace}-${pod.name}-${selectedContainer}`}
-                                        namespace={pod.namespace}
-                                        pod={pod.name}
-                                        container={selectedContainer}
-                                        sessionLabel={`${pod.name} / ${selectedContainer}`}
-                                        onPinToggle={() => {
-                                            if (pod && selectedContainer) {
-                                                addSession({
-                                                    namespace: pod.namespace,
-                                                    podName: pod.name,
-                                                    container: selectedContainer
-                                                });
-                                            }
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="h-full border border-dashed border-gray-700 rounded-lg flex items-center justify-center text-gray-500 text-sm">
-                                        Select a container to open a terminal session.
-                                    </div>
-                                )}
-                            </div>
+                            )}
                         </div>
                     </div>
                 ) : activeTab === 'metrics' ? (
