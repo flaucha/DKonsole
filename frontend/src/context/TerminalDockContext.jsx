@@ -43,13 +43,6 @@ export const TerminalDockProvider = ({ children }) => {
         }
     }, [sessions, activeId]);
 
-    // Ensure there is always an active session when sessions exist
-    useEffect(() => {
-        if (!activeId && sessions.length) {
-            setActiveId(sessions[0].id);
-        }
-    }, [sessions, activeId]);
-
     const addSession = (session) => {
         if (!session?.namespace || !session?.podName || !session?.container) return null;
         const existing = sessions.find(
