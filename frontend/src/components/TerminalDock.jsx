@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { Terminal, PinOff, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Terminal, PinOff, X, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react';
 import TerminalViewerInline from './details/TerminalViewerInline';
 import { useTerminalDock } from '../context/TerminalDockContext';
 
@@ -50,6 +50,11 @@ const TerminalDock = () => {
     const { sessions, activeId, setActiveId, removeSession } = useTerminalDock();
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
+    const [collapsed, setCollapsed] = useState(() => {
+        if (typeof localStorage === 'undefined') return false;
+        const saved = localStorage.getItem('dkonsole_dock_collapsed');
+        return saved === 'true';
+    });
     const scrollRef = useRef(null);
 
     const activeSession = useMemo(
@@ -82,6 +87,14 @@ const TerminalDock = () => {
         };
     }, [sessions.length]);
 
+    useEffect(() => {
+        try {
+            localStorage.setItem('dkonsole_dock_collapsed', collapsed ? 'true' : 'false');
+        } catch {
+            // ignore storage errors
+        }
+    }, [collapsed]);
+
     if (!sessions.length) return null;
 
     const scroll = (direction) => {
@@ -100,6 +113,16 @@ const TerminalDock = () => {
                         <Terminal size={14} className="text-gray-300" />
                         <span>Terminals fijados</span>
                     </div>
+                    <button
+                        onClick={() => setCollapsed(!collapsed)}
+                        className="px-2 py-1 rounded-md border text-xs transition-colors bg-gray-800 border-gray-700 text-gray-300 hover:text-white hover:border-gray-500"
+                        title={collapsed ? 'Mostrar terminal' : 'Ocultar terminal'}
+                    >
+                        <span className="flex items-center gap-1">
+                            {collapsed ? <Eye size={14} /> : <EyeOff size={14} />}
+                            {collapsed ? 'Mostrar' : 'Ocultar'}
+                        </span>
+                    </button>
                     <div className="relative flex-1 overflow-hidden">
                         {canScrollLeft && (
                             <button
@@ -139,7 +162,7 @@ const TerminalDock = () => {
             </div>
 
             {/* Active window floating so it survives view changes */}
-            {activeSession && (
+            {activeSession && !collapsed && (
                 <div className="fixed bottom-4 right-4 w-[760px] max-w-[95vw] h-[55vh] z-40">
                     {sessions.map(session => (
                         <TerminalViewerInline

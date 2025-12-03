@@ -1,6 +1,7 @@
 package pod
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -353,8 +354,8 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	// Execute the command with context for proper cancellation
-	ctx, cancel := utils.CreateRequestContext(r)
+	// Execute the command with a cancelable context (no fixed timeout to avoid dropping long sessions)
+	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 	err = executor.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdin:  stdinReader,
