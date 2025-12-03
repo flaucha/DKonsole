@@ -21,6 +21,7 @@ const TerminalViewerInline = ({
     const wsRef = useRef(null);
     const containerRef = useRef(null);
     const isActiveRef = useRef(isActive);
+    const keepAliveRef = useRef(null);
 
     // Initialize terminal once
     useEffect(() => {
@@ -89,6 +90,13 @@ const TerminalViewerInline = ({
         ws.binaryType = 'arraybuffer';
         wsRef.current = ws;
 
+        // Keep-alive pings to avoid idle disconnects
+        keepAliveRef.current = setInterval(() => {
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                wsRef.current.send('\u0000');
+            }
+        }, 20000);
+
         const decoder = new TextDecoder();
         const dataListener = term.onData((data) => {
             if (ws.readyState === WebSocket.OPEN) {
@@ -124,6 +132,10 @@ const TerminalViewerInline = ({
         };
 
         return () => {
+            if (keepAliveRef.current) {
+                clearInterval(keepAliveRef.current);
+                keepAliveRef.current = null;
+            }
             dataListener.dispose();
             if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
                 ws.close();

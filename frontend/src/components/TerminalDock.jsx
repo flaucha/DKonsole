@@ -135,24 +135,23 @@ const TerminalDock = () => {
                 </div>
             </div>
 
-            {activeSession && (
-                <div className="fixed bottom-4 right-4 w-[760px] max-w-[95vw] h-[55vh] z-40">
-                    {sessions.map(session => (
+            <div className="fixed bottom-4 right-4 w-[760px] max-w-[95vw] h-[55vh] z-40 pointer-events-none">
+                {sessions.map(session => (
+                    <div key={session.id} className="pointer-events-auto">
                         <TerminalViewerInline
-                            key={session.id}
                             namespace={session.namespace}
                             pod={session.podName}
                             container={session.container}
-                            isActive={activeSession.id === session.id}
+                            isActive={activeSession?.id === session.id}
                             onPinToggle={() => removeSession(session.id)}
                             onClose={() => removeSession(session.id)}
                             onMinimize={() => setActiveId(null)}
                             pinned
                             sessionLabel={`${session.podName} / ${session.container}`}
                         />
-                    ))}
-                </div>
-            )}
+                    </div>
+                ))}
+            </div>
         </>
     );
 };
