@@ -12,6 +12,7 @@ import Login from './components/Login';
 import Setup from './components/Setup';
 import { canEdit, isAdmin } from './utils/permissions';
 import { DEFAULT_NAMESPACE } from './config/constants';
+import { TerminalDockProvider } from './context/TerminalDockContext';
 
 // Lazy load large components for code splitting
 const WorkloadList = lazy(() => import('./components/WorkloadList'));
@@ -140,19 +141,21 @@ function App() {
     return (
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
-                <BrowserRouter>
-                    <Routes>
-                        <Route path="/setup" element={<Setup />} />
-                        <Route path="/login" element={<SetupOrLogin />} />
-                        <Route path="/dashboard/*" element={
-                            <ProtectedRoute>
-                                <Dashboard />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/" element={<Navigate to="/dashboard/overview" replace />} />
-                        <Route path="*" element={<Navigate to="/dashboard/overview" replace />} />
-                    </Routes>
-                </BrowserRouter>
+                <TerminalDockProvider>
+                    <BrowserRouter>
+                        <Routes>
+                            <Route path="/setup" element={<Setup />} />
+                            <Route path="/login" element={<SetupOrLogin />} />
+                            <Route path="/dashboard/*" element={
+                                <ProtectedRoute>
+                                    <Dashboard />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/" element={<Navigate to="/dashboard/overview" replace />} />
+                            <Route path="*" element={<Navigate to="/dashboard/overview" replace />} />
+                        </Routes>
+                    </BrowserRouter>
+                </TerminalDockProvider>
             </AuthProvider>
         </QueryClientProvider>
     );
