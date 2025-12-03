@@ -50,11 +50,10 @@ const TerminalDock = () => {
     const { sessions, activeId, setActiveId, removeSession } = useTerminalDock();
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
-    const [showWindow, setShowWindow] = useState(true);
     const scrollRef = useRef(null);
 
     const activeSession = useMemo(
-        () => sessions.find(s => s.id === activeId) || sessions[0],
+        () => sessions.find(s => s.id === activeId),
         [sessions, activeId]
     );
 
@@ -92,12 +91,6 @@ const TerminalDock = () => {
         el.scrollBy({ left: direction === 'left' ? -delta : delta, behavior: 'smooth' });
     };
 
-    useEffect(() => {
-        if (sessions.length === 0) {
-            setShowWindow(false);
-        }
-    }, [sessions.length]);
-
     return (
         <>
             <div className="flex items-center gap-2 w-full min-w-0">
@@ -125,7 +118,6 @@ const TerminalDock = () => {
                                 isActive={activeSession?.id === session.id}
                                 onSelect={() => {
                                     setActiveId(session.id);
-                                    setShowWindow(true);
                                 }}
                                 onUnpin={() => removeSession(session.id)}
                                 onClose={() => removeSession(session.id)}
@@ -144,25 +136,23 @@ const TerminalDock = () => {
                 </div>
             </div>
 
-            {showWindow && activeSession && (
-                <div className="fixed bottom-2 right-2 w-[900px] max-w-[98vw] h-[70vh] z-40 pointer-events-none flex items-end justify-end">
-                    {sessions.map(session => (
-                        <div key={session.id} className="pointer-events-auto w-full h-full flex items-end justify-end">
-                            <TerminalViewerInline
-                                namespace={session.namespace}
-                                pod={session.podName}
-                                container={session.container}
-                                isActive={activeSession?.id === session.id}
-                                onPinToggle={() => removeSession(session.id)}
-                                onClose={() => removeSession(session.id)}
-                                onMinimize={() => setShowWindow(false)}
-                                pinned
-                                sessionLabel={`${session.podName} / ${session.container}`}
-                            />
-                        </div>
-                    ))}
-                </div>
-            )}
+            <div className={`fixed bottom-2 right-2 w-[900px] max-w-[98vw] h-[70vh] z-40 pointer-events-none flex items-end justify-end ${activeSession ? '' : 'hidden'}`}>
+                {sessions.map(session => (
+                    <div key={session.id} className="pointer-events-auto w-full h-full flex items-end justify-end">
+                        <TerminalViewerInline
+                            namespace={session.namespace}
+                            pod={session.podName}
+                            container={session.container}
+                            isActive={activeId === session.id}
+                            onPinToggle={() => removeSession(session.id)}
+                            onClose={() => removeSession(session.id)}
+                            onMinimize={() => setActiveId(null)}
+                            pinned
+                            sessionLabel={`${session.podName} / ${session.container}`}
+                        />
+                    </div>
+                ))}
+            </div>
         </>
     );
 };
