@@ -291,8 +291,8 @@ const Layout = ({ children, headerContent }) => {
         <div className="flex flex-col h-screen bg-gray-900">
             {/* Header */}
             <header className="bg-gray-900 border-b border-gray-700 flex flex-col shrink-0 z-20 shadow-lg">
-                <div className="h-16 flex items-center justify-between px-4">
-                    <div className="flex items-center space-x-2">
+                <div className="h-16 flex items-center gap-4 px-4">
+                    <div className="flex items-center space-x-2 shrink-0">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
                             className="p-2 text-gray-400 hover:text-gray-100 hover:bg-gray-800 rounded-md transition-all duration-200 hover:scale-110 border border-transparent hover:border-gray-600"
@@ -313,12 +313,14 @@ const Layout = ({ children, headerContent }) => {
                             />
                         </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex-1 min-w-0">
+                        <TerminalDock />
+                    </div>
+                    <div className="flex items-center space-x-2 shrink-0">
                         {!checkingAdmin && hasPermissions && headerContent}
                         {!checkingAdmin && user && <UserMenu />}
                     </div>
                 </div>
-                <TerminalDock />
             </header>
 
             <div className="flex flex-1 overflow-hidden relative">
