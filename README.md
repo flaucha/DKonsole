@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.4.0-green.svg)
+![Version](https://img.shields.io/badge/version-1.4.1-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built entirely with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -30,7 +30,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.4.0
+git checkout v1.4.1
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -151,18 +151,28 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.4.0"
+  tag: "1.4.1"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.4.0`
+- **Unified**: `dkonsole/dkonsole:1.4.1`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.4.1 (2025-12-03)
+**🐛 Bug Fixes & UX Improvements**
+
+This release addresses critical bugs and enhances user experience with faster updates and improved navigation.
+
+- **Namespace Filter "All"**: Fixed bug where selecting "All" namespaces in Resource Quotas/Limit Ranges view showed no data
+- **Faster Refresh Rates**: Reduced refetch intervals from 10 seconds to 2 seconds for more responsive UI updates
+- **Quotas/Limits Menu**: Consolidated Resource Quotas and Limit Ranges into a single menu item under Admin Area
+- **Reorderable AGE Column**: Made the AGE column reorderable in workload lists
 
 ### v1.4.0 (2025-12-01)
 **✨ Persistent column layouts & documentation refresh**
@@ -190,24 +200,6 @@ This release implements intelligent column sizing and improves table layout resp
   - Minimum height to accommodate 2 lines of AGE text
   - Better vertical space utilization
 - **Fixes**: Fixed Provisioner column width, Ports display, Access Mode alignment, and prevented column title wrapping
-
-### v1.3.5 (2025-11-30)
-**🔧 Table Layout Improvements & Actions Fix**
-
-This release reorganizes table columns and fixes action buttons wrapping issues.
-
-- **Table Layout Reorganization**: Reorganized all table columns from right to left for better visual organization
-  - Name column always positioned on the left with more space
-  - All other columns arranged from right to left based on resource type
-  - Improved column spacing and distribution across all resource types
-- **Name Column Improvements**: Enhanced Name column handling for long resource names
-  - Better truncation and overflow handling
-  - Added tooltip to show full name on hover
-  - Added 0.5cm left padding to Name column header for better alignment
-- **Actions Column Fix**: Fixed action buttons wrapping to second line in all resource tables
-  - Adjusted column spans for Actions based on number of buttons
-  - Actions properly aligned to the right in all resource types
-  - All table rows now maintain single-line layout without wrapping
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2025-12-03
+
+### ✨ Added
+
+- **Quotas/Limits Menu Item**: Consolidated Resource Quotas and Limit Ranges into a single "Quotas / Limits" menu item under Admin Area for simplified navigation.
+
+### 🔧 Changed
+
+- **Faster Refresh Rates**: Reduced refetch intervals from 10 seconds to 2 seconds for Resource Quotas and Limit Ranges for more responsive UI updates.
+- **Reorderable AGE Column**: Made the AGE column reorderable in workload lists, matching the behavior of other columns.
+
+### 🐛 Fixed
+
+- **Namespace Filter "All"**: Fixed bug where selecting "All" namespaces in Resource Quotas/Limit Ranges view showed no data. The frontend now correctly sends `namespace=all` parameter to the backend.
+- **Test Compatibility**: Updated unit tests to match the corrected namespace filter behavior.
+
+
 ## [1.4.0] - 2025-12-01
 
 ### ✨ Added
