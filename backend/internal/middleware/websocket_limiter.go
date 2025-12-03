@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"net/http"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -33,11 +35,15 @@ func init() {
 }
 
 // getMaxWebSocketConnections returns the maximum WebSocket connections per IP from environment
-// Default: 5 connections per IP
+// Default: 20 connections per IP (configurable via MAX_WS_CONNECTIONS)
 func getMaxWebSocketConnections() int {
-	// Can be configured via environment variable in the future
-	// For now, use default of 5
-	return 5
+	maxStr := os.Getenv("MAX_WS_CONNECTIONS")
+	if maxStr != "" {
+		if val, err := strconv.Atoi(maxStr); err == nil && val > 0 {
+			return val
+		}
+	}
+	return 20
 }
 
 // cleanupConnections resets connection counts (called periodically)
