@@ -166,11 +166,6 @@ const TerminalViewerInline = ({
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800">
                 <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-1">
-                        <span className="w-2.5 h-2.5 rounded-full bg-red-500/70 shadow-sm" />
-                        <span className="w-2.5 h-2.5 rounded-full bg-yellow-400/70 shadow-sm" />
-                        <span className="w-2.5 h-2.5 rounded-full bg-green-500/70 shadow-sm" />
-                    </div>
                     <Terminal size={16} className="text-gray-300" />
                     <div className="flex flex-col leading-tight">
                         <span className="font-mono text-xs text-gray-100">{sessionLabel || pod}</span>
