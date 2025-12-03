@@ -5,13 +5,13 @@ export const useResourceQuotas = (fetcher, namespace, currentCluster) => {
     const quotasQuery = useQuery({
         queryKey: ['resourceQuotas', namespace, currentCluster],
         queryFn: () => fetchResources(fetcher, 'ResourceQuota', namespace, currentCluster),
-        refetchInterval: 10000,
+        refetchInterval: 2000,
     });
 
     const limitRangesQuery = useQuery({
         queryKey: ['limitRanges', namespace, currentCluster],
         queryFn: () => fetchResources(fetcher, 'LimitRange', namespace, currentCluster),
-        refetchInterval: 10000,
+        refetchInterval: 2000,
     });
 
     return {
