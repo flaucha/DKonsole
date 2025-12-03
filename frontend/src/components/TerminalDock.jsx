@@ -135,7 +135,7 @@ const TerminalDock = () => {
                 </div>
             </div>
 
-            <div className="fixed bottom-4 right-4 w-[760px] max-w-[95vw] h-[55vh] z-40 pointer-events-none">
+            <div className="fixed bottom-2 right-2 w-[760px] max-w-[95vw] h-[55vh] z-40 pointer-events-none">
                 {sessions.map(session => (
                     <div key={session.id} className="pointer-events-auto">
                         <TerminalViewerInline
