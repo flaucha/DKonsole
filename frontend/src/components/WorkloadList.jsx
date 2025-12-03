@@ -597,7 +597,8 @@ const WorkloadList = ({ namespace, kind }) => {
                         {item.status}
                     </span>
                 )
-            }
+            },
+            ageColumn
         ];
 
         switch (kind) {
@@ -913,7 +914,7 @@ const WorkloadList = ({ namespace, kind }) => {
         }
 
         return columns;
-    }, [Icon, kind]);
+    }, [Icon, kind, ageColumn]);
 
     const reorderableColumns = useMemo(
         () => dataColumns.filter((col) => !col.pinned && !col.isAction),
@@ -943,8 +944,8 @@ const WorkloadList = ({ namespace, kind }) => {
     };
 
     const sortableColumns = useMemo(
-        () => [...dataColumns, ageColumn].filter((col) => typeof col.sortValue === 'function'),
-        [dataColumns, ageColumn]
+        () => dataColumns.filter((col) => typeof col.sortValue === 'function'),
+        [dataColumns]
     );
 
     useEffect(() => {
@@ -974,12 +975,10 @@ const WorkloadList = ({ namespace, kind }) => {
 
     const columns = useMemo(
         () => {
-            // Filter age column if hidden
-            const showAge = !hidden.includes('age');
             const visibleCols = visibleDataColumns;
-            return [...visibleCols, ...(showAge ? [ageColumn] : []), actionsColumn];
+            return [...visibleCols, actionsColumn];
         },
-        [visibleDataColumns, ageColumn, actionsColumn, hidden]
+        [visibleDataColumns, actionsColumn]
     );
 
     const gridTemplateColumns = useMemo(

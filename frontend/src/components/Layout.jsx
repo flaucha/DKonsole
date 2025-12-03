@@ -29,10 +29,9 @@ const SidebarItem = ({ icon: Icon, label, to, onClick, hasChildren, expanded }) 
         <NavLink
             to={to}
             className={({ isActive }) =>
-                `flex items-center justify-between px-4 py-2 cursor-pointer rounded-md transition-all duration-200 border border-transparent ${
-                    isActive
-                        ? 'bg-gray-800 text-gray-100 border-l-4 border-l-blue-500 shadow-md'
-                        : 'text-gray-300 hover:bg-gray-800 hover:text-gray-100 hover:border-gray-700'
+                `flex items-center justify-between px-4 py-2 cursor-pointer rounded-md transition-all duration-200 border border-transparent ${isActive
+                    ? 'bg-gray-800 text-gray-100 border-l-4 border-l-blue-500 shadow-md'
+                    : 'text-gray-300 hover:bg-gray-800 hover:text-gray-100 hover:border-gray-700'
                 }`
             }
         >
@@ -50,10 +49,9 @@ const SubItem = ({ label, to }) => (
     <NavLink
         to={to}
         className={({ isActive }) =>
-            `block pl-12 pr-4 py-1.5 cursor-pointer text-xs transition-all duration-200 whitespace-nowrap rounded-md border border-transparent ${
-                isActive
-                    ? 'text-gray-100 font-semibold bg-gray-800/60 border-l-4 border-l-blue-500 shadow-sm'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/40 hover:border-gray-700'
+            `block pl-12 pr-4 py-1.5 cursor-pointer text-xs transition-all duration-200 whitespace-nowrap rounded-md border border-transparent ${isActive
+                ? 'text-gray-100 font-semibold bg-gray-800/60 border-l-4 border-l-blue-500 shadow-sm'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/40 hover:border-gray-700'
             }`
         }
         style={{ fontSize: '0.75rem' }}
@@ -322,11 +320,10 @@ const Layout = ({ children, headerContent }) => {
             <div className="flex flex-1 overflow-hidden relative">
                 {/* Sidebar */}
                 <div
-                    className={`bg-gray-900 border-r border-gray-700 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xl ${
-                        sidebarOpen
+                    className={`bg-gray-900 border-r border-gray-700 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xl ${sidebarOpen
                             ? 'min-w-[200px] w-auto translate-x-0 opacity-100'
                             : 'w-0 -translate-x-full opacity-0 pointer-events-none'
-                    }`}
+                        }`}
                     style={{
                         transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
                         transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -338,10 +335,9 @@ const Layout = ({ children, headerContent }) => {
                             <NavLink
                                 to="/dashboard/overview"
                                 className={({ isActive }) =>
-                                    `flex items-center space-x-3 flex-1 px-4 py-2 cursor-pointer rounded-md transition-all duration-200 border border-transparent ${
-                                        isActive
-                                            ? 'bg-gray-800 text-gray-100 border-l-4 border-l-blue-500 shadow-md'
-                                            : 'text-gray-300 hover:bg-gray-800 hover:text-gray-100 hover:border-gray-700'
+                                    `flex items-center space-x-3 flex-1 px-4 py-2 cursor-pointer rounded-md transition-all duration-200 border border-transparent ${isActive
+                                        ? 'bg-gray-800 text-gray-100 border-l-4 border-l-blue-500 shadow-md'
+                                        : 'text-gray-300 hover:bg-gray-800 hover:text-gray-100 hover:border-gray-700'
                                     }`
                                 }
                             >
@@ -460,6 +456,14 @@ const Layout = ({ children, headerContent }) => {
                                             <SubItem
                                                 label="Namespaces"
                                                 to="/dashboard/namespaces"
+                                            />
+                                            <SubItem
+                                                label="Resource Quotas"
+                                                to="/dashboard/resource-quotas?tab=quotas"
+                                            />
+                                            <SubItem
+                                                label="Limit Ranges"
+                                                to="/dashboard/resource-quotas?tab=limits"
                                             />
                                             <SubItem
                                                 label="API Explorer"

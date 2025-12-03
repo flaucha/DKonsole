@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Activity, RefreshCw, Tag, Plus, MoreVertical, FileText, Trash2, AlertCircle, Box, Globe, MapPin } from 'lucide-react';
+import { Activity, RefreshCw, Tag, Plus, MoreVertical, FileText, Trash2, AlertCircle, Box, Globe, MapPin, ChevronDown, ChevronRight } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import QuotaEditor from './QuotaEditor';
@@ -13,6 +14,9 @@ import { DEFAULT_NAMESPACE } from '../config/constants';
 const ResourceQuotaManager = ({ namespace }) => {
     const { currentCluster } = useSettings();
     const { authFetch } = useAuth();
+    const location = useLocation();
+    const navigate = useNavigate();
+
     const [activeTab, setActiveTab] = useState('quotas'); // 'quotas' or 'limits'
     const [editingQuota, setEditingQuota] = useState(null);
     const [editingLimitRange, setEditingLimitRange] = useState(null);
@@ -39,6 +43,22 @@ const ResourceQuotaManager = ({ namespace }) => {
             setNamespaceFilter(namespace);
         }
     }, [namespace]);
+
+    // Sync tab with URL
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const tab = params.get('tab');
+        if (tab === 'quotas' || tab === 'limits') {
+            setActiveTab(tab);
+        }
+    }, [location.search]);
+
+    const handleTabChange = (tab) => {
+        setActiveTab(tab);
+        const params = new URLSearchParams(location.search);
+        params.set('tab', tab);
+        navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+    };
 
     // Close create menu when clicking outside
     useEffect(() => {
@@ -103,18 +123,21 @@ const ResourceQuotaManager = ({ namespace }) => {
 
     const ProgressBar = ({ used, hard, label }) => {
         const percentage = calculatePercentage(used, hard);
+        let colorClass = 'bg-blue-500';
+        if (percentage > 90) colorClass = 'bg-red-500';
+        else if (percentage > 75) colorClass = 'bg-yellow-500';
 
         return (
-            <div className="mb-3">
-                <div className="flex justify-between text-xs mb-1">
+            <div className="mb-2 last:mb-0">
+                <div className="flex justify-between text-xs mb-0.5">
                     <span className="text-gray-400 font-medium">{label}</span>
                     <span className="text-gray-300">
                         {used} / {hard} <span className="ml-1 text-gray-500">({percentage}%)</span>
                     </span>
                 </div>
-                <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
                     <div
-                        className="h-2 rounded-full transition-all duration-500 bg-gray-500"
+                        className={`h-1.5 rounded-full transition-all duration-500 ${colorClass}`}
                         style={{ width: `${percentage}%` }}
                     ></div>
                 </div>
@@ -122,139 +145,163 @@ const ResourceQuotaManager = ({ namespace }) => {
         );
     };
 
-    const ResourceCard = ({ resource, type }) => {
-        const isQuota = type === 'quota';
-        const uniqueId = `${type}-${resource.namespace}-${resource.name}`;
+    const renderQuotaUsage = (resource) => {
+        if (!resource.details?.hard || Object.keys(resource.details.hard).length === 0) {
+            return <span className="text-gray-500 italic text-xs">No limits configured</span>;
+        }
+
+        const hard = resource.details.hard;
+        const used = resource.details.used || {};
+
+        // Prioritize CPU and Memory
+        const priorityKeys = ['requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory'];
+        const otherKeys = Object.keys(hard).filter(k => !priorityKeys.includes(k));
 
         return (
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-5 hover:border-gray-600 transition-colors group relative">
-                <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center space-x-3">
-                        <div className="p-2 rounded-lg bg-gray-700/50 text-gray-400">
-                            {isQuota ? <Activity size={20} /> : <Tag size={20} />}
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-white leading-tight">{resource.name}</h3>
-                            <div className="flex items-center text-xs text-gray-400 mt-1">
-                                <Box size={12} className="mr-1" />
-                                {resource.namespace}
-                                <span className="mx-2">•</span>
-                                <span>{getAge(resource.created)}</span>
-                            </div>
-                        </div>
+            <div className="space-y-2 max-w-md">
+                {priorityKeys.map(key => {
+                    if (hard[key]) {
+                        return (
+                            <ProgressBar
+                                key={key}
+                                label={key}
+                                used={used[key] || '0'}
+                                hard={hard[key]}
+                            />
+                        );
+                    }
+                    return null;
+                })}
+                {otherKeys.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                        {otherKeys.map(key => (
+                            <span key={key} className="bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded text-[10px] border border-gray-700">
+                                {key}: {used[key] || '0'}/{hard[key]}
+                            </span>
+                        ))}
                     </div>
-                    <div className="relative">
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setMenuOpen(menuOpen === uniqueId ? null : uniqueId);
-                            }}
-                            className="p-1.5 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white transition-colors"
-                        >
-                            <MoreVertical size={18} />
-                        </button>
+                )}
+            </div>
+        );
+    };
 
-                        {menuOpen === uniqueId && (
-                            <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-1 animate-in fade-in zoom-in-95 duration-100">
-                                <button
-                                    onClick={() => {
-                                        setEditingYaml({ ...resource, kind: isQuota ? 'ResourceQuota' : 'LimitRange' });
-                                        setMenuOpen(null);
-                                    }}
-                                    className="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-700 hover:text-white flex items-center"
-                                >
-                                    <FileText size={14} className="mr-2" /> Edit YAML
-                                </button>
-                                <div className="h-px bg-gray-700 my-1"></div>
-                                <button
-                                    onClick={() => {
-                                        setConfirmAction({ resource, kind: isQuota ? 'ResourceQuota' : 'LimitRange', force: false });
-                                        setMenuOpen(null);
-                                    }}
-                                    className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-900/20 flex items-center"
-                                >
-                                    <Trash2 size={14} className="mr-2" /> Delete
-                                </button>
-                            </div>
-                        )}
+    const renderLimitDetails = (resource) => {
+        if (!resource.details?.limits || resource.details.limits.length === 0) {
+            return <span className="text-gray-500 italic text-xs">No limits configured</span>;
+        }
+
+        return (
+            <div className="space-y-2">
+                {resource.details.limits.map((limit, idx) => (
+                    <div key={idx} className="bg-gray-800/50 rounded p-2 border border-gray-700/50 text-xs">
+                        <div className="font-bold text-gray-400 mb-1 uppercase tracking-wider">{limit.type || 'Container'}</div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                            {limit.max && Object.entries(limit.max).map(([k, v]) => (
+                                <div key={`max-${k}`} className="text-gray-400">
+                                    <span className="text-gray-500">Max {k}:</span> <span className="text-gray-200">{v}</span>
+                                </div>
+                            ))}
+                            {limit.min && Object.entries(limit.min).map(([k, v]) => (
+                                <div key={`min-${k}`} className="text-gray-400">
+                                    <span className="text-gray-500">Min {k}:</span> <span className="text-gray-200">{v}</span>
+                                </div>
+                            ))}
+                            {limit.defaultRequest && Object.entries(limit.defaultRequest).map(([k, v]) => (
+                                <div key={`dr-${k}`} className="text-gray-400 col-span-2">
+                                    <span className="text-gray-500">Default Req {k}:</span> <span className="text-gray-200">{v}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
+                ))}
+            </div>
+        );
+    };
+
+    const renderTable = (data, type) => {
+        const isQuota = type === 'quota';
+
+        if (data.length === 0) {
+            return (
+                <div className="flex flex-col items-center justify-center py-20 text-gray-500 bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
+                    {isQuota ? <Activity size={48} className="mb-4 opacity-20" /> : <Tag size={48} className="mb-4 opacity-20" />}
+                    <p className="text-lg">No {isQuota ? 'resource quotas' : 'limit ranges'} found</p>
+                    <p className="text-sm opacity-60">Create one to get started</p>
                 </div>
+            );
+        }
 
-                <div className="space-y-4">
-                    {isQuota ? (
-                        <>
-                            {resource.details?.hard && Object.keys(resource.details.hard).length > 0 ? (
-                                <div className="space-y-2">
-                                    {/* Prioritize CPU and Memory for visual bars */}
-                                    {['requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory'].map(key => {
-                                        if (resource.details.hard[key]) {
-                                            return (
-                                                <ProgressBar
-                                                    key={key}
-                                                    label={key}
-                                                    used={resource.details.used?.[key] || '0'}
-                                                    hard={resource.details.hard[key]}
-                                                />
-                                            );
-                                        }
-                                        return null;
-                                    })}
-
-                                    {/* Show other quotas as simple tags */}
-                                    <div className="flex flex-wrap gap-2 mt-3">
-                                        {Object.entries(resource.details.hard).filter(([key]) =>
-                                            !['requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory'].includes(key)
-                                        ).map(([key, value]) => (
-                                            <div key={key} className="bg-gray-700/50 rounded px-2 py-1 text-xs text-gray-300 border border-gray-700">
-                                                <span className="text-gray-500 mr-1">{key}:</span>
-                                                {resource.details.used?.[key] || '0'} / {value}
+        return (
+            <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="bg-gray-800/50 text-gray-400 text-xs uppercase tracking-wider border-b border-gray-700">
+                            <th className="px-6 py-3 font-medium">Name</th>
+                            <th className="px-6 py-3 font-medium">Namespace</th>
+                            <th className="px-6 py-3 font-medium w-24 text-center">Age</th>
+                            <th className="px-6 py-3 font-medium">{isQuota ? 'Usage / Limits' : 'Details'}</th>
+                            <th className="px-6 py-3 font-medium w-20 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800">
+                        {data.map((resource) => (
+                            <tr key={`${resource.namespace}-${resource.name}`} className="hover:bg-gray-800/30 transition-colors">
+                                <td className="px-6 py-4 align-top">
+                                    <div className="flex items-center">
+                                        {isQuota ? <Activity size={16} className="text-blue-400 mr-2" /> : <Tag size={16} className="text-green-400 mr-2" />}
+                                        <span className="font-medium text-gray-200">{resource.name}</span>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 align-top text-sm text-gray-300">
+                                    {resource.namespace}
+                                </td>
+                                <td className="px-6 py-4 align-top text-sm text-gray-400 text-center whitespace-nowrap">
+                                    {getAge(resource.created)}
+                                </td>
+                                <td className="px-6 py-4 align-top">
+                                    {isQuota ? renderQuotaUsage(resource) : renderLimitDetails(resource)}
+                                </td>
+                                <td className="px-6 py-4 align-top text-right">
+                                    <div className="relative inline-block text-left">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const uniqueId = `${type}-${resource.namespace}-${resource.name}`;
+                                                setMenuOpen(menuOpen === uniqueId ? null : uniqueId);
+                                            }}
+                                            className="p-1.5 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white transition-colors"
+                                        >
+                                            <MoreVertical size={16} />
+                                        </button>
+                                        {menuOpen === `${type}-${resource.namespace}-${resource.name}` && (
+                                            <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-1 animate-in fade-in zoom-in-95 duration-100">
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingYaml({ ...resource, kind: isQuota ? 'ResourceQuota' : 'LimitRange' });
+                                                        setMenuOpen(null);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-700 hover:text-white flex items-center"
+                                                >
+                                                    <FileText size={14} className="mr-2" /> Edit YAML
+                                                </button>
+                                                <div className="h-px bg-gray-700 my-1"></div>
+                                                <button
+                                                    onClick={() => {
+                                                        setConfirmAction({ resource, kind: isQuota ? 'ResourceQuota' : 'LimitRange', force: false });
+                                                        setMenuOpen(null);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-900/20 flex items-center"
+                                                >
+                                                    <Trash2 size={14} className="mr-2" /> Delete
+                                                </button>
                                             </div>
-                                        ))}
+                                        )}
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-6 text-gray-500 bg-gray-900/30 rounded-lg border border-gray-700/50 border-dashed">
-                                    <AlertCircle size={24} className="mb-2 opacity-50" />
-                                    <span className="text-sm">No limits configured</span>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <div className="space-y-3">
-                            {resource.details?.limits && resource.details.limits.length > 0 ? (
-                                resource.details.limits.map((limit, idx) => (
-                                    <div key={idx} className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50">
-                                        <div className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider flex items-center">
-                                            {limit.type || 'Container'}
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2 text-xs">
-                                            {limit.max && Object.entries(limit.max).map(([k, v]) => (
-                                                <div key={`max-${k}`} className="text-gray-400">
-                                                    <span className="text-gray-500">Max {k}:</span> <span className="text-gray-200">{v}</span>
-                                                </div>
-                                            ))}
-                                            {limit.min && Object.entries(limit.min).map(([k, v]) => (
-                                                <div key={`min-${k}`} className="text-gray-400">
-                                                    <span className="text-gray-500">Min {k}:</span> <span className="text-gray-200">{v}</span>
-                                                </div>
-                                            ))}
-                                            {limit.defaultRequest && Object.entries(limit.defaultRequest).map(([k, v]) => (
-                                                <div key={`dr-${k}`} className="text-gray-400 col-span-2">
-                                                    <span className="text-gray-500">Default Req {k}:</span> <span className="text-gray-200">{v}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-6 text-gray-500 bg-gray-900/30 rounded-lg border border-gray-700/50 border-dashed">
-                                    <AlertCircle size={24} className="mb-2 opacity-50" />
-                                    <span className="text-sm">No limits configured</span>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         );
     };
@@ -262,11 +309,13 @@ const ResourceQuotaManager = ({ namespace }) => {
     return (
         <div className="p-6">
             {/* Header Section */}
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                    <Activity className="text-blue-400" size={18} />
-                    <h1 className="text-xl font-semibold text-white">Resource Quotas</h1>
-                    {loading && <RefreshCw size={16} className="animate-spin text-gray-400" />}
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                    {activeTab === 'quotas' ? <Activity className="text-blue-400" size={24} /> : <Tag className="text-green-400" size={24} />}
+                    <h1 className="text-2xl font-semibold text-white">
+                        {activeTab === 'quotas' ? 'Resource Quotas' : 'Limit Ranges'}
+                    </h1>
+                    {loading && <RefreshCw size={18} className="animate-spin text-gray-400 ml-2" />}
                 </div>
                 <div className="flex items-center space-x-3">
                     <div className="bg-gray-800 border border-gray-700 rounded-md flex overflow-hidden text-sm shrink-0">
@@ -303,52 +352,31 @@ const ResourceQuotaManager = ({ namespace }) => {
                         <RefreshCw size={16} className={loading ? "animate-spin mr-2" : "mr-2"} />
                         Refresh
                     </button>
-                    <div className="relative" ref={createMenuRef}>
-                        <button
-                            onClick={() => setCreateMenuOpen(!createMenuOpen)}
-                            className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded-md border border-gray-700 text-sm transition-colors flex items-center"
-                        >
-                            <Plus size={16} className="mr-2" />
-                            Create New
-                        </button>
-                        {createMenuOpen && (
-                            <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
-                                <div className="py-1">
-                                    <button
-                                        onClick={() => {
-                                            const selectedNs = namespaceFilter !== 'all' ? namespaceFilter : (namespace && namespace !== 'all' ? namespace : (namespaces[0]?.name || DEFAULT_NAMESPACE));
-                                            setEditingQuota({ namespace: selectedNs, name: '', kind: 'ResourceQuota', isNew: true });
-                                            setActiveTab('quotas'); // Switch to quotas tab when creating a quota
-                                            setCreateMenuOpen(false);
-                                        }}
-                                        className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                                    >
-                                        Resource Quota
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            const selectedNs = namespaceFilter !== 'all' ? namespaceFilter : (namespace && namespace !== 'all' ? namespace : (namespaces[0]?.name || DEFAULT_NAMESPACE));
-                                            setEditingLimitRange({ namespace: selectedNs, name: '', kind: 'LimitRange', isNew: true });
-                                            setActiveTab('limits'); // Switch to limits tab when creating a limit range
-                                            setCreateMenuOpen(false);
-                                        }}
-                                        className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                                    >
-                                        Limit Range
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+
+                    {/* Direct Add Button based on active tab */}
+                    <button
+                        onClick={() => {
+                            const selectedNs = namespaceFilter !== 'all' ? namespaceFilter : (namespace && namespace !== 'all' ? namespace : (namespaces[0]?.name || DEFAULT_NAMESPACE));
+                            if (activeTab === 'quotas') {
+                                setEditingQuota({ namespace: selectedNs, name: '', kind: 'ResourceQuota', isNew: true });
+                            } else {
+                                setEditingLimitRange({ namespace: selectedNs, name: '', kind: 'LimitRange', isNew: true });
+                            }
+                        }}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md border border-blue-500 text-sm transition-colors flex items-center shadow-lg shadow-blue-900/20"
+                    >
+                        <Plus size={16} className="mr-2" />
+                        Add {activeTab === 'quotas' ? 'Quota' : 'Limit Range'}...
+                    </button>
                 </div>
             </div>
 
             {/* Tabs */}
             <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg w-fit mb-6 border border-gray-700/50">
                 <button
-                    onClick={() => setActiveTab('quotas')}
+                    onClick={() => handleTabChange('quotas')}
                     className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center ${activeTab === 'quotas'
-                        ? 'bg-gray-700 text-white'
+                        ? 'bg-gray-700 text-white shadow-sm'
                         : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
                         }`}
                 >
@@ -357,9 +385,9 @@ const ResourceQuotaManager = ({ namespace }) => {
                     <span className="ml-2 bg-black/20 px-2 py-0.5 rounded-full text-xs">{quotas.length}</span>
                 </button>
                 <button
-                    onClick={() => setActiveTab('limits')}
+                    onClick={() => handleTabChange('limits')}
                     className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center ${activeTab === 'limits'
-                        ? 'bg-gray-700 text-white'
+                        ? 'bg-gray-700 text-white shadow-sm'
                         : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
                         }`}
                 >
@@ -369,33 +397,9 @@ const ResourceQuotaManager = ({ namespace }) => {
                 </button>
             </div>
 
-            {/* Content Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {activeTab === 'quotas' ? (
-                    quotas.length > 0 ? (
-                        quotas.map(quota => (
-                            <ResourceCard key={`${quota.namespace}-${quota.name}`} resource={quota} type="quota" />
-                        ))
-                    ) : (
-                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
-                            <Activity size={48} className="mb-4 opacity-20" />
-                            <p className="text-lg">No resource quotas found</p>
-                            <p className="text-sm opacity-60">Create one to get started</p>
-                        </div>
-                    )
-                ) : (
-                    limitRanges.length > 0 ? (
-                        limitRanges.map(range => (
-                            <ResourceCard key={`${range.namespace}-${range.name}`} resource={range} type="limit" />
-                        ))
-                    ) : (
-                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
-                            <Tag size={48} className="mb-4 opacity-20" />
-                            <p className="text-lg">No limit ranges found</p>
-                            <p className="text-sm opacity-60">Create one to get started</p>
-                        </div>
-                    )
-                )}
+            {/* Content Table */}
+            <div className="animate-in fade-in duration-300">
+                {activeTab === 'quotas' ? renderTable(quotas, 'quota') : renderTable(limitRanges, 'limit')}
             </div>
 
             {/* Modals */}
@@ -409,7 +413,6 @@ const ResourceQuotaManager = ({ namespace }) => {
                     onClose={() => setEditingQuota(null)}
                     onSaved={() => {
                         setEditingQuota(null);
-                        setActiveTab('quotas'); // Ensure we're on the quotas tab
                         quotasQuery.refetch();
                     }}
                 />
@@ -421,7 +424,6 @@ const ResourceQuotaManager = ({ namespace }) => {
                     onClose={() => setEditingLimitRange(null)}
                     onSaved={() => {
                         setEditingLimitRange(null);
-                        setActiveTab('limits'); // Ensure we're on the limits tab
                         limitRangesQuery.refetch();
                     }}
                 />
