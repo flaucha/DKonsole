@@ -137,7 +137,7 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                         )}
                     </div>
                 ) : activeTab === 'terminal' ? (
-                    <div ref={terminalContainerRef} className="animate-fadeIn flex-1 flex flex-col min-h-0 space-y-3">
+                    <div ref={terminalContainerRef} className="animate-fadeIn flex-1 flex flex-col min-h-[500px] space-y-3">
                         {containers.length > 1 && (
                             <div className="mb-1 flex items-center space-x-2 flex-shrink-0">
                                 <label className="text-xs text-gray-400">Container:</label>
