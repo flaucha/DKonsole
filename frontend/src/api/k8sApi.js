@@ -45,7 +45,7 @@ export const fetchResource = async (fetcher, kind, name, namespace) => {
 export const fetchResources = async (fetcher, kind, namespace, cluster) => {
     const f = fetcher || fetch;
     const params = new URLSearchParams({ kind });
-    if (namespace && namespace !== 'all') params.append('namespace', namespace);
+    if (namespace) params.append('namespace', namespace);
     if (cluster) params.append('cluster', cluster);
 
     const response = await f(`/api/resources?${params.toString()}`);

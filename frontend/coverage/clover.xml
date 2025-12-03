@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1764791011351" clover="3.2.0">
-  <project timestamp="1764791011351" name="All files">
-    <metrics statements="10322" coveredstatements="1151" conditionals="437" coveredconditionals="288" methods="211" coveredmethods="53" elements="10970" coveredelements="1492" complexity="0" loc="10322" ncloc="10322" packages="9" files="62" classes="62"/>
+<coverage generated="1764792363064" clover="3.2.0">
+  <project timestamp="1764792363064" name="All files">
+    <metrics statements="10322" coveredstatements="1151" conditionals="436" coveredconditionals="287" methods="211" coveredmethods="53" elements="10969" coveredelements="1491" complexity="0" loc="10322" ncloc="10322" packages="9" files="62" classes="62"/>
     <package name="app">
       <metrics statements="49" coveredstatements="0" conditionals="2" coveredconditionals="0" methods="2" coveredmethods="0"/>
       <file name="postcss.config.js" path="/app/postcss.config.js">
@@ -215,9 +215,9 @@
       </file>
     </package>
     <package name="app.src.api">
-      <metrics statements="99" coveredstatements="97" conditionals="50" coveredconditionals="41" methods="9" coveredmethods="9"/>
+      <metrics statements="99" coveredstatements="97" conditionals="49" coveredconditionals="40" methods="9" coveredmethods="9"/>
       <file name="k8sApi.js" path="/app/src/api/k8sApi.js">
-        <metrics statements="99" coveredstatements="97" conditionals="50" coveredconditionals="41" methods="9" coveredmethods="9"/>
+        <metrics statements="99" coveredstatements="97" conditionals="49" coveredconditionals="40" methods="9" coveredmethods="9"/>
         <line num="1" count="1" type="cond" truecount="1" falsecount="0"/>
         <line num="2" count="7" type="cond" truecount="1" falsecount="0"/>
         <line num="3" count="2" type="stmt"/>
@@ -261,7 +261,7 @@
         <line num="45" count="1" type="cond" truecount="1" falsecount="0"/>
         <line num="46" count="4" type="cond" truecount="0" falsecount="1"/>
         <line num="47" count="4" type="stmt"/>
-        <line num="48" count="4" type="cond" truecount="1" falsecount="0"/>
+        <line num="48" count="4" type="stmt"/>
         <line num="49" count="4" type="cond" truecount="1" falsecount="0"/>
         <line num="51" count="4" type="stmt"/>
         <line num="52" count="4" type="cond" truecount="1" falsecount="0"/>

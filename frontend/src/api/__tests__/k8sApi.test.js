@@ -153,7 +153,7 @@ describe('k8sApi', () => {
 
       const result = await fetchResources(mockFetcher, 'Pod', 'all', null)
       expect(result).toEqual(mockData)
-      expect(mockFetcher).toHaveBeenCalledWith('/api/resources?kind=Pod')
+      expect(mockFetcher).toHaveBeenCalledWith('/api/resources?kind=Pod&namespace=all')
     })
 
     it('should include cluster parameter when provided', async () => {
