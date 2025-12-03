@@ -161,7 +161,7 @@ const TerminalViewerInline = ({
     return (
         <div
             ref={containerRef}
-            className={`${isActive ? 'flex' : 'hidden'} bg-gray-900 border border-gray-700 rounded-lg flex-col h-full overflow-hidden shadow-lg`}
+            className={`${isActive ? 'flex' : 'hidden'} bg-gray-900 border border-gray-700 rounded-lg flex-col h-full w-full overflow-hidden shadow-lg`}
         >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800">
