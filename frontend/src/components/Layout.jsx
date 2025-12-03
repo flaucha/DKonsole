@@ -321,8 +321,8 @@ const Layout = ({ children, headerContent }) => {
                 {/* Sidebar */}
                 <div
                     className={`bg-gray-900 border-r border-gray-700 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-xl ${sidebarOpen
-                            ? 'min-w-[200px] w-auto translate-x-0 opacity-100'
-                            : 'w-0 -translate-x-full opacity-0 pointer-events-none'
+                        ? 'min-w-[200px] w-auto translate-x-0 opacity-100'
+                        : 'w-0 -translate-x-full opacity-0 pointer-events-none'
                         }`}
                     style={{
                         transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
@@ -458,12 +458,8 @@ const Layout = ({ children, headerContent }) => {
                                                 to="/dashboard/namespaces"
                                             />
                                             <SubItem
-                                                label="Resource Quotas"
-                                                to="/dashboard/resource-quotas?tab=quotas"
-                                            />
-                                            <SubItem
-                                                label="Limit Ranges"
-                                                to="/dashboard/resource-quotas?tab=limits"
+                                                label="Quotas / Limits"
+                                                to="/dashboard/resource-quotas"
                                             />
                                             <SubItem
                                                 label="API Explorer"

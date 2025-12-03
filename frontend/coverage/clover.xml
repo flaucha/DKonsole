@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1764790560896" clover="3.2.0">
-  <project timestamp="1764790560896" name="All files">
-    <metrics statements="10326" coveredstatements="1151" conditionals="437" coveredconditionals="288" methods="211" coveredmethods="53" elements="10974" coveredelements="1492" complexity="0" loc="10326" ncloc="10326" packages="9" files="62" classes="62"/>
+<coverage generated="1764791011351" clover="3.2.0">
+  <project timestamp="1764791011351" name="All files">
+    <metrics statements="10322" coveredstatements="1151" conditionals="437" coveredconditionals="288" methods="211" coveredmethods="53" elements="10970" coveredelements="1492" complexity="0" loc="10322" ncloc="10322" packages="9" files="62" classes="62"/>
     <package name="app">
       <metrics statements="49" coveredstatements="0" conditionals="2" coveredconditionals="0" methods="2" coveredmethods="0"/>
       <file name="postcss.config.js" path="/app/postcss.config.js">
@@ -320,7 +320,7 @@
       </file>
     </package>
     <package name="app.src.components">
-      <metrics statements="7427" coveredstatements="478" conditionals="162" coveredconditionals="72" methods="118" coveredmethods="17"/>
+      <metrics statements="7423" coveredstatements="478" conditionals="162" coveredconditionals="72" methods="118" coveredmethods="17"/>
       <file name="About.jsx" path="/app/src/components/About.jsx">
         <metrics statements="85" coveredstatements="0" conditionals="1" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="1" count="0" type="cond" truecount="0" falsecount="1"/>
@@ -2166,7 +2166,7 @@
         <line num="924" count="0" type="stmt"/>
       </file>
       <file name="Layout.jsx" path="/app/src/components/Layout.jsx">
-        <metrics statements="428" coveredstatements="0" conditionals="1" coveredconditionals="0" methods="1" coveredmethods="0"/>
+        <metrics statements="424" coveredstatements="0" conditionals="1" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="1" count="0" type="cond" truecount="0" falsecount="1"/>
         <line num="2" count="0" type="stmt"/>
         <line num="3" count="0" type="stmt"/>
@@ -2570,31 +2570,27 @@
         <line num="475" count="0" type="stmt"/>
         <line num="476" count="0" type="stmt"/>
         <line num="477" count="0" type="stmt"/>
-        <line num="478" count="0" type="stmt"/>
-        <line num="479" count="0" type="stmt"/>
-        <line num="480" count="0" type="stmt"/>
         <line num="481" count="0" type="stmt"/>
+        <line num="482" count="0" type="stmt"/>
+        <line num="483" count="0" type="stmt"/>
+        <line num="484" count="0" type="stmt"/>
         <line num="485" count="0" type="stmt"/>
         <line num="486" count="0" type="stmt"/>
-        <line num="487" count="0" type="stmt"/>
         <line num="488" count="0" type="stmt"/>
-        <line num="489" count="0" type="stmt"/>
         <line num="490" count="0" type="stmt"/>
         <line num="492" count="0" type="stmt"/>
+        <line num="493" count="0" type="stmt"/>
         <line num="494" count="0" type="stmt"/>
+        <line num="495" count="0" type="stmt"/>
         <line num="496" count="0" type="stmt"/>
         <line num="497" count="0" type="stmt"/>
-        <line num="498" count="0" type="stmt"/>
-        <line num="499" count="0" type="stmt"/>
         <line num="500" count="0" type="stmt"/>
         <line num="501" count="0" type="stmt"/>
+        <line num="502" count="0" type="stmt"/>
+        <line num="503" count="0" type="stmt"/>
         <line num="504" count="0" type="stmt"/>
-        <line num="505" count="0" type="stmt"/>
         <line num="506" count="0" type="stmt"/>
-        <line num="507" count="0" type="stmt"/>
         <line num="508" count="0" type="stmt"/>
-        <line num="510" count="0" type="stmt"/>
-        <line num="512" count="0" type="stmt"/>
       </file>
       <file name="LimitRangeEditor.jsx" path="/app/src/components/LimitRangeEditor.jsx">
         <metrics statements="155" coveredstatements="0" conditionals="1" coveredconditionals="0" methods="1" coveredmethods="0"/>
