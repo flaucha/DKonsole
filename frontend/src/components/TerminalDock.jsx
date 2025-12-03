@@ -138,7 +138,10 @@ const TerminalDock = () => {
 
             <div className={`fixed bottom-2 right-2 w-[900px] max-w-[98vw] h-[70vh] z-40 pointer-events-none flex items-end justify-end ${activeSession ? '' : 'hidden'}`}>
                 {sessions.map(session => (
-                    <div key={session.id} className="pointer-events-auto w-full h-full flex items-end justify-end">
+                    <div
+                        key={session.id}
+                        className="pointer-events-auto w-[900px] max-w-[98vw] h-[70vh] flex items-end justify-end"
+                    >
                         <TerminalViewerInline
                             namespace={session.namespace}
                             pod={session.podName}
