@@ -457,6 +457,7 @@ const Layout = ({ children, headerContent }) => {
                                                 label="Namespaces"
                                                 to="/dashboard/namespaces"
                                             />
+                                            {/* Consolidated Quotas and Limits menu item */}
                                             <SubItem
                                                 label="Quotas / Limits"
                                                 to="/dashboard/resource-quotas"

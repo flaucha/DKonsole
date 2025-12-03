@@ -45,6 +45,7 @@ export const fetchResource = async (fetcher, kind, name, namespace) => {
 export const fetchResources = async (fetcher, kind, namespace, cluster) => {
     const f = fetcher || fetch;
     const params = new URLSearchParams({ kind });
+    // Fix: Send namespace parameter even if it is 'all' to ensure backend lists all namespaces
     if (namespace) params.append('namespace', namespace);
     if (cluster) params.append('cluster', cluster);
 
