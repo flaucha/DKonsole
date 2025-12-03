@@ -140,7 +140,7 @@ const TerminalDock = () => {
                 {sessions.map(session => (
                     <div
                         key={session.id}
-                        className="pointer-events-auto w-[900px] max-w-[98vw] h-[70vh] flex items-end justify-end"
+                        className={`pointer-events-auto w-full h-full ${activeId === session.id ? 'flex' : 'hidden'}`}
                     >
                         <TerminalViewerInline
                             namespace={session.namespace}
