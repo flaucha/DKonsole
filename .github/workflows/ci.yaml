@@ -21,7 +21,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25'
 
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -76,9 +76,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Cache npm dependencies
         uses: actions/cache@v4
@@ -94,18 +94,18 @@ jobs:
 
       - name: Run npm audit
         working-directory: ./frontend
-        run: npm audit --audit-level=moderate || true  # No fallar en vulnerabilidades bajas
+        run: npm audit --audit-level=high
 
       - name: Run linter
         working-directory: ./frontend
-        run: npm run lint || true  # No fallar si hay warnings del linter
+        run: npm run lint
 
       - name: Run tests
         working-directory: ./frontend
-        run: npm run test -- --run --coverage
+        run: npm run test -- --coverage
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         if: always()
         with:
           files: ./frontend/coverage/coverage-final.json
@@ -217,7 +217,7 @@ jobs:
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/dkonsole:buildcache,mode=max
 
       - name: Update Docker Hub README
-        uses: peter-evans/dockerhub-description@v4
+        uses: peter-evans/dockerhub-description@v5
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
