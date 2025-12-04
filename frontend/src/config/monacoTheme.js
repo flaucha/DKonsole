@@ -33,4 +33,7 @@ export const defineMonacoTheme = (monaco) => {
             'editor.inactiveSelectionBackground': '#3e445199',
         }
     });
+
+    // Force apply the theme so it stays dark even when app is in light mode
+    monaco.editor.setTheme('dkonsole-dark');
 };

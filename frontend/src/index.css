@@ -345,6 +345,30 @@ body {
   line-height: 22px !important;
 }
 
+/* Keep Monaco dark even in light/cream app themes */
+[data-theme="light"] .monaco-editor,
+[data-theme="light"] .monaco-editor .margin,
+[data-theme="light"] .monaco-editor .monaco-editor-background {
+  background-color: #282c34 !important;
+  color: #abb2bf !important;
+}
+[data-theme="light"] .monaco-editor .line-numbers,
+[data-theme="light"] .monaco-editor .margin-view-overlays {
+  background-color: #282c34 !important;
+  color: #636d83 !important;
+}
+[data-theme="cream"] .monaco-editor,
+[data-theme="cream"] .monaco-editor .margin,
+[data-theme="cream"] .monaco-editor .monaco-editor-background {
+  background-color: #282c34 !important;
+  color: #abb2bf !important;
+}
+[data-theme="cream"] .monaco-editor .line-numbers,
+[data-theme="cream"] .monaco-editor .margin-view-overlays {
+  background-color: #282c34 !important;
+  color: #636d83 !important;
+}
+
 /* Lock Monaco scale to 100% to avoid cursor drift when parent layouts use transforms */
 .monaco-editor-container,
 .monaco-editor,
