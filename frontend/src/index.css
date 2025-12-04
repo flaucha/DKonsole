@@ -284,11 +284,11 @@ body {
   color: rgb(var(--color-gray-100)) !important;
 }
 
-[data-theme="light"] .text-white {
+[data-theme="light"] .text-white:not(.monaco-editor-container *):not(.monaco-editor *) {
   color: rgb(var(--color-gray-100)) !important;
 }
 
-[data-theme="light"] .text-white * {
+[data-theme="light"] .text-white *:not(.monaco-editor-container *):not(.monaco-editor *) {
   color: rgb(var(--color-gray-100)) !important;
 }
 
