@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { Server, Palette, Type, Plus, Check, AlertCircle, Trash2, Settings as SettingsIcon, Info, Github, Mail, Coffee, Code, Lock, Save, Users, Key, Menu } from 'lucide-react';
 import { parseErrorResponse, parseError } from '../utils/errorParser';
-import { isLDAPAdmin, isCoreAdmin } from '../utils/permissions';
+import { isCoreAdmin } from '../utils/permissions';
 
 const Settings = () => {
     const {
@@ -39,7 +38,7 @@ const Settings = () => {
                     // Other error - assume not admin for security
                     setIsAdmin(false);
                 }
-            } catch (err) {
+            } catch {
                 // Error accessing - assume not admin for security
                 setIsAdmin(false);
             } finally {
@@ -648,7 +647,6 @@ const PrometheusURLSettings = ({ authFetch, error, setError, success, setSuccess
 
 // Password Change Settings Component
 const PasswordChangeSettings = ({ authFetch, error, setError, success, setSuccess }) => {
-    const navigate = useNavigate();
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -873,7 +871,7 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
                     setAdminGroups([]);
                 }
             }
-        } catch (err) {
+        } catch {
             // Ignore errors - LDAP might not be configured
         }
     };
@@ -885,7 +883,7 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
                 const data = await res.json();
                 setGroups(data);
             }
-        } catch (err) {
+        } catch {
             // Ignore errors
         }
     };
@@ -897,7 +895,7 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
                 const data = await res.json();
                 setNamespaces(data.map(ns => ns.name || ns));
             }
-        } catch (err) {
+        } catch {
             // Ignore errors
         }
     };
@@ -919,7 +917,7 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
                     });
                 }
             }
-        } catch (err) {
+        } catch {
             // Ignore errors
         }
     };
@@ -1350,7 +1348,7 @@ const LDAPSettings = ({ authFetch, error, setError, success, setSuccess }) => {
                                             onChange={(e) => {
                                                 setCredentials({ ...credentials, password: e.target.value });
                                             }}
-                                            onFocus={(e) => {
+                                            onFocus={() => {
                                                 // Clear mask when user focuses on the field
                                                 if (credentials.password === '*****') {
                                                     setCredentials({ ...credentials, password: '' });

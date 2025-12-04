@@ -1,8 +1,8 @@
 import React from 'react';
-import { Key, Database, Lock, Users } from 'lucide-react';
+import { Key, Database, Lock } from 'lucide-react';
 import { EditYamlButton } from './CommonDetails';
 
-export const ServiceAccountDetails = ({ details, onEditYAML }) => {
+export const ServiceAccountDetails = ({ details }) => {
     const secrets = details.secrets || [];
     const imagePullSecrets = details.imagePullSecrets || [];
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { Server, HardDrive, Box, Activity, Network } from 'lucide-react';
 import { DetailRow } from './CommonDetails';
 
-const NodeDetails = ({ details, onEditYAML }) => {
+const NodeDetails = ({ details }) => {
     const addresses = details.addresses || [];
     const nodeInfo = details.nodeInfo || {};
     const conditions = details.conditions || {};

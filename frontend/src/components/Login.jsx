@@ -74,7 +74,7 @@ const Login = () => {
             const idp = activeTab === 'ldap' ? 'ldap' : 'core';
             await login(username, password, idp);
             navigate('/');
-        } catch (err) {
+        } catch {
             setError('Invalid username or password');
         }
     };

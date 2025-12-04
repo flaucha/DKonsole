@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Activity, RefreshCw, Tag, Plus, MoreVertical, FileText, Trash2, AlertCircle, Box, Globe, MapPin, ChevronDown, ChevronRight } from 'lucide-react';
+import { Activity, RefreshCw, Tag, Plus, MoreVertical, FileText, Trash2, AlertCircle, Globe, MapPin } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';

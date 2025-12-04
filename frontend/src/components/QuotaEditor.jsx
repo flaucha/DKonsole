@@ -6,7 +6,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 
 const QuotaEditor = ({ resource, onClose, onSaved }) => {
-    const { name, namespace, kind } = resource || {};
+    const { name, namespace } = resource || {};
     const { currentCluster } = useSettings();
     const { authFetch } = useAuth();
     const [content, setContent] = useState('');

@@ -5,9 +5,9 @@ import { defineMonacoTheme } from '../config/monacoTheme';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
-import { getExpandableRowClasses, getExpandableCellClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
+import { getExpandableRowClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 import { useHelmReleases } from '../hooks/useHelmReleases';
-import { parseErrorResponse, parseError } from '../utils/errorParser';
+import { parseErrorResponse } from '../utils/errorParser';
 
 const HelmChartManager = ({ namespace }) => {
     const { currentCluster } = useSettings();
