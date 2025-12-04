@@ -68,7 +68,7 @@ export async function parseErrorResponse(response) {
 
         // Last resort: status text
         return response.statusText || `Error ${response.status}`;
-    } catch (err) {
+    } catch (_err) {
         // If all else fails, return a generic error
         return `Error ${response.status}: ${response.statusText || 'Unknown error'}`;
     }

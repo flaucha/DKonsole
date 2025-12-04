@@ -11,7 +11,7 @@ const __dirname = dirname(__filename)
 let version = '1.1.6' // default
 try {
   version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
-} catch (e) {
+} catch (_err) {
   console.warn('Could not read VERSION file, using default:', version)
 }
 
@@ -29,6 +29,20 @@ export default defineConfig({
         ws: true,
       }
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-query': ['@tanstack/react-query'],
+          'vendor-charts': ['recharts'],
+          'vendor-editor': ['@monaco-editor/react'],
+          'vendor-icons': ['lucide-react'],
+        },
+      },
+    },
   },
   test: {
     globals: true,
