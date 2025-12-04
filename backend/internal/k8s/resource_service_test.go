@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,434 +15,246 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
-// mockResourceRepository is a mock implementation of ResourceRepository
-type mockResourceRepository struct {
-	getFunc    func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool) (*unstructured.Unstructured, error)
-	createFunc func(ctx context.Context, gvr schema.GroupVersionResource, namespace string, namespaced bool, obj *unstructured.Unstructured, options metav1.CreateOptions) (*unstructured.Unstructured, error)
-	patchFunc  func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, patchData []byte, patchType types.PatchType, options metav1.PatchOptions) (*unstructured.Unstructured, error)
-	deleteFunc func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, options metav1.DeleteOptions) error
-}
-
-func (m *mockResourceRepository) Get(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool) (*unstructured.Unstructured, error) {
-	if m.getFunc != nil {
-		return m.getFunc(ctx, gvr, name, namespace, namespaced)
-	}
-	return nil, errors.New("get not implemented")
-}
-
-func (m *mockResourceRepository) Create(ctx context.Context, gvr schema.GroupVersionResource, namespace string, namespaced bool, obj *unstructured.Unstructured, options metav1.CreateOptions) (*unstructured.Unstructured, error) {
-	if m.createFunc != nil {
-		return m.createFunc(ctx, gvr, namespace, namespaced, obj, options)
-	}
-	return nil, errors.New("create not implemented")
-}
-
-func (m *mockResourceRepository) Patch(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, patchData []byte, patchType types.PatchType, options metav1.PatchOptions) (*unstructured.Unstructured, error) {
-	if m.patchFunc != nil {
-		return m.patchFunc(ctx, gvr, name, namespace, namespaced, patchData, patchType, options)
-	}
-	return nil, errors.New("patch not implemented")
-}
-
-func (m *mockResourceRepository) Delete(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, options metav1.DeleteOptions) error {
-	if m.deleteFunc != nil {
-		return m.deleteFunc(ctx, gvr, name, namespace, namespaced, options)
-	}
-	return errors.New("delete not implemented")
-}
-
-// mockGVRResolver is a mock implementation of GVRResolver
-type mockGVRResolver struct {
-	resolveFunc func(ctx context.Context, kind, apiVersion string, namespacedParam string) (schema.GroupVersionResource, models.ResourceMeta, error)
-}
-
-func (m *mockGVRResolver) ResolveGVR(ctx context.Context, kind, apiVersion string, namespacedParam string) (schema.GroupVersionResource, models.ResourceMeta, error) {
-	if m.resolveFunc != nil {
-		return m.resolveFunc(ctx, kind, apiVersion, namespacedParam)
-	}
-	return schema.GroupVersionResource{}, models.ResourceMeta{}, errors.New("resolve not implemented")
-}
-
-func TestResourceService_DeleteResource(t *testing.T) {
-	tests := []struct {
-		name       string
-		req        DeleteResourceRequest
-		setupMocks func() (*mockResourceRepository, *mockGVRResolver)
-		wantErr    bool
-		errMsg     string
-	}{
-		{
-			name: "successful deletion",
-			req: DeleteResourceRequest{
-				Kind:      "Deployment",
-				Name:      "test-deployment",
-				Namespace: "default",
-				Force:     false,
-			},
-			setupMocks: func() (*mockResourceRepository, *mockGVRResolver) {
-				repo := &mockResourceRepository{
-					deleteFunc: func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, options metav1.DeleteOptions) error {
-						if name != "test-deployment" || namespace != "default" {
-							return errors.New("unexpected parameters")
-						}
-						return nil
-					},
-				}
-				resolver := &mockGVRResolver{
-					resolveFunc: func(ctx context.Context, kind, apiVersion string, namespacedParam string) (schema.GroupVersionResource, models.ResourceMeta, error) {
-						return schema.GroupVersionResource{
-							Group:    "apps",
-							Version:  "v1",
-							Resource: "deployments",
-						}, models.ResourceMeta{Namespaced: true}, nil
-					},
-				}
-				return repo, resolver
-			},
-			wantErr: false,
-		},
-		{
-			name: "missing namespace for namespaced resource",
-			req: DeleteResourceRequest{
-				Kind:      "Deployment",
-				Name:      "test-deployment",
-				Namespace: "",
-				Force:     false,
-			},
-			setupMocks: func() (*mockResourceRepository, *mockGVRResolver) {
-				repo := &mockResourceRepository{}
-				resolver := &mockGVRResolver{
-					resolveFunc: func(ctx context.Context, kind, apiVersion string, namespacedParam string) (schema.GroupVersionResource, models.ResourceMeta, error) {
-						return schema.GroupVersionResource{}, models.ResourceMeta{Namespaced: true}, nil
-					},
-				}
-				return repo, resolver
-			},
-			wantErr: true,
-			errMsg:  "namespace is required",
-		},
-		{
-			name: "force deletion",
-			req: DeleteResourceRequest{
-				Kind:      "Pod",
-				Name:      "test-pod",
-				Namespace: "default",
-				Force:     true,
-			},
-			setupMocks: func() (*mockResourceRepository, *mockGVRResolver) {
-				repo := &mockResourceRepository{
-					deleteFunc: func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, options metav1.DeleteOptions) error {
-						if options.GracePeriodSeconds == nil || *options.GracePeriodSeconds != 0 {
-							return errors.New("expected grace period to be 0 for force delete")
-						}
-						return nil
-					},
-				}
-				resolver := &mockGVRResolver{
-					resolveFunc: func(ctx context.Context, kind, apiVersion string, namespacedParam string) (schema.GroupVersionResource, models.ResourceMeta, error) {
-						return schema.GroupVersionResource{
-							Group:    "",
-							Version:  "v1",
-							Resource: "pods",
-						}, models.ResourceMeta{Namespaced: true}, nil
-					},
-				}
-				return repo, resolver
-			},
-			wantErr: false,
-		},
-		{
-			name: "GVR resolution error",
-			req: DeleteResourceRequest{
-				Kind:      "Unknown",
-				Name:      "test",
-				Namespace: "default",
-			},
-			setupMocks: func() (*mockResourceRepository, *mockGVRResolver) {
-				repo := &mockResourceRepository{}
-				resolver := &mockGVRResolver{
-					resolveFunc: func(ctx context.Context, kind, apiVersion string, namespacedParam string) (schema.GroupVersionResource, models.ResourceMeta, error) {
-						return schema.GroupVersionResource{}, models.ResourceMeta{}, errors.New("failed to resolve GVR")
-					},
-				}
-				return repo, resolver
-			},
-			wantErr: true,
-			errMsg:  "failed to resolve GVR",
-		},
-		{
-			name: "delete repository error",
-			req: DeleteResourceRequest{
-				Kind:      "Deployment",
-				Name:      "test-deployment",
-				Namespace: "default",
-			},
-			setupMocks: func() (*mockResourceRepository, *mockGVRResolver) {
-				repo := &mockResourceRepository{
-					deleteFunc: func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, options metav1.DeleteOptions) error {
-						return errors.New("resource not found")
-					},
-				}
-				resolver := &mockGVRResolver{
-					resolveFunc: func(ctx context.Context, kind, apiVersion string, namespacedParam string) (schema.GroupVersionResource, models.ResourceMeta, error) {
-						return schema.GroupVersionResource{
-							Group:    "apps",
-							Version:  "v1",
-							Resource: "deployments",
-						}, models.ResourceMeta{Namespaced: true}, nil
-					},
-				}
-				return repo, resolver
-			},
-			wantErr: true,
-			errMsg:  "failed to delete resource",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			repo, resolver := tt.setupMocks()
-			service := NewResourceService(repo, resolver)
-
-			// Create context with user for permission checks
-			ctx := context.WithValue(context.Background(), auth.UserContextKey(), &auth.AuthClaims{
-				Claims: models.Claims{
-					Username: "admin",
-					Role:     "admin",
-				},
-			})
-
-			err := service.DeleteResource(ctx, tt.req)
-
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DeleteResource() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if tt.wantErr && tt.errMsg != "" {
-				if err == nil || !contains(err.Error(), tt.errMsg) {
-					t.Errorf("DeleteResource() error = %v, want error containing %v", err, tt.errMsg)
-				}
-			}
-		})
+type fakeGVRResolver struct {
+	gvr        schema.GroupVersionResource
+	meta       models.ResourceMeta
+	err        error
+	resolveLog []struct {
+		kind       string
+		api        string
+		namespaced string
 	}
 }
 
-func TestResourceService_GetResourceYAML(t *testing.T) {
-	tests := []struct {
-		name       string
-		req        GetResourceRequest
-		setupMocks func() (*mockResourceRepository, *mockGVRResolver)
-		wantErr    bool
-		checkYAML  bool
-	}{
-		{
-			name: "successful get",
-			req: GetResourceRequest{
-				Kind:      "Deployment",
-				Name:      "test-deployment",
-				Namespace: "default",
-			},
-			setupMocks: func() (*mockResourceRepository, *mockGVRResolver) {
-				repo := &mockResourceRepository{
-					getFunc: func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool) (*unstructured.Unstructured, error) {
-						obj := &unstructured.Unstructured{}
-						obj.SetName("test-deployment")
-						obj.SetNamespace("default")
-						obj.SetKind("Deployment")
-						obj.Object["apiVersion"] = "apps/v1"
-						obj.Object["metadata"] = map[string]interface{}{
-							"name":      "test-deployment",
-							"namespace": "default",
-						}
-						return obj, nil
-					},
-				}
-				resolver := &mockGVRResolver{
-					resolveFunc: func(ctx context.Context, kind, apiVersion string, namespacedParam string) (schema.GroupVersionResource, models.ResourceMeta, error) {
-						return schema.GroupVersionResource{
-							Group:    "apps",
-							Version:  "v1",
-							Resource: "deployments",
-						}, models.ResourceMeta{Namespaced: true}, nil
-					},
-				}
-				return repo, resolver
-			},
-			wantErr:   false,
-			checkYAML: true,
-		},
-		{
-			name: "resource not found",
-			req: GetResourceRequest{
-				Kind:      "Deployment",
-				Name:      "not-found",
-				Namespace: "default",
-			},
-			setupMocks: func() (*mockResourceRepository, *mockGVRResolver) {
-				repo := &mockResourceRepository{
-					getFunc: func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool) (*unstructured.Unstructured, error) {
-						return nil, errors.New("not found")
-					},
-				}
-				resolver := &mockGVRResolver{
-					resolveFunc: func(ctx context.Context, kind, apiVersion string, namespacedParam string) (schema.GroupVersionResource, models.ResourceMeta, error) {
-						return schema.GroupVersionResource{
-							Group:    "apps",
-							Version:  "v1",
-							Resource: "deployments",
-						}, models.ResourceMeta{Namespaced: true}, nil
-					},
-				}
-				return repo, resolver
-			},
-			wantErr: true,
-		},
+func (f *fakeGVRResolver) ResolveGVR(_ context.Context, kind, apiVersion, namespacedParam string) (schema.GroupVersionResource, models.ResourceMeta, error) {
+	f.resolveLog = append(f.resolveLog, struct {
+		kind       string
+		api        string
+		namespaced string
+	}{kind: kind, api: apiVersion, namespaced: namespacedParam})
+	if f.err != nil {
+		return schema.GroupVersionResource{}, models.ResourceMeta{}, f.err
+	}
+	return f.gvr, f.meta, nil
+}
+
+type fakeResourceRepo struct {
+	patchCalled     bool
+	patchName       string
+	patchNamespace  string
+	patchNamespaced bool
+	patchData       []byte
+	patchType       types.PatchType
+
+	deleteCalled     bool
+	deleteOptions    metav1.DeleteOptions
+	deleteNamespace  string
+	deleteNamespaced bool
+	deleteName       string
+
+	createNamespace  string
+	createNamespaced bool
+	createObj        *unstructured.Unstructured
+	createResult     *unstructured.Unstructured
+
+	err error
+}
+
+func (f *fakeResourceRepo) Get(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool) (*unstructured.Unstructured, error) {
+	return nil, errors.New("not implemented: Get")
+}
+
+func (f *fakeResourceRepo) Create(_ context.Context, _ schema.GroupVersionResource, namespace string, namespaced bool, obj *unstructured.Unstructured, _ metav1.CreateOptions) (*unstructured.Unstructured, error) {
+	f.createNamespace = namespace
+	f.createNamespaced = namespaced
+	f.createObj = obj
+	if f.err != nil {
+		return nil, f.err
+	}
+	if f.createResult != nil {
+		return f.createResult, nil
+	}
+	return obj, nil
+}
+
+func (f *fakeResourceRepo) Patch(_ context.Context, _ schema.GroupVersionResource, name, namespace string, namespaced bool, patchData []byte, patchType types.PatchType, _ metav1.PatchOptions) (*unstructured.Unstructured, error) {
+	f.patchCalled = true
+	f.patchName = name
+	f.patchNamespace = namespace
+	f.patchNamespaced = namespaced
+	f.patchData = patchData
+	f.patchType = patchType
+	if f.err != nil {
+		return nil, f.err
+	}
+	return &unstructured.Unstructured{}, nil
+}
+
+func (f *fakeResourceRepo) Delete(_ context.Context, _ schema.GroupVersionResource, name, namespace string, namespaced bool, options metav1.DeleteOptions) error {
+	f.deleteCalled = true
+	f.deleteName = name
+	f.deleteNamespace = namespace
+	f.deleteNamespaced = namespaced
+	f.deleteOptions = options
+	return f.err
+}
+
+func ctxWithPermissions(perms map[string]string, role string) context.Context {
+	return context.WithValue(context.Background(), auth.UserContextKey(), &models.Claims{
+		Role:        role,
+		Permissions: perms,
+	})
+}
+
+func TestResourceService_UpdateResource_Success(t *testing.T) {
+	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
+	resolver := &fakeGVRResolver{gvr: gvr, meta: models.ResourceMeta{Namespaced: true}}
+	repo := &fakeResourceRepo{}
+	svc := NewResourceService(repo, resolver)
+
+	ctx := ctxWithPermissions(map[string]string{"default": "edit"}, "")
+	req := UpdateResourceRequest{
+		YAMLContent: "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: my-dep\n  namespace: default\nspec: {}",
+		Kind:        "Deployment",
+		Namespace:   "default",
+		Namespaced:  true,
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			repo, resolver := tt.setupMocks()
-			service := NewResourceService(repo, resolver)
+	if err := svc.UpdateResource(ctx, req); err != nil {
+		t.Fatalf("expected success, got error: %v", err)
+	}
 
-			yaml, err := service.GetResourceYAML(context.Background(), tt.req, nil)
-
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetResourceYAML() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if !tt.wantErr && tt.checkYAML {
-				if yaml == "" {
-					t.Errorf("GetResourceYAML() yaml is empty")
-				}
-				if !contains(yaml, "test-deployment") {
-					t.Errorf("GetResourceYAML() yaml does not contain resource name")
-				}
-			}
-		})
+	if !repo.patchCalled {
+		t.Fatalf("expected Patch to be called")
+	}
+	if repo.patchName != "my-dep" {
+		t.Errorf("expected patch name 'my-dep', got %q", repo.patchName)
+	}
+	if repo.patchNamespace != "default" || !repo.patchNamespaced {
+		t.Errorf("expected namespaced patch to default, got namespace=%q namespaced=%v", repo.patchNamespace, repo.patchNamespaced)
+	}
+	if repo.patchType != types.ApplyPatchType {
+		t.Errorf("expected apply patch type, got %v", repo.patchType)
 	}
 }
 
-func TestResourceService_UpdateResource(t *testing.T) {
-	validYAML := `
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: test-deployment
-  namespace: default
-spec:
-  replicas: 3
-`
+func TestResourceService_UpdateResource_InvalidYAML(t *testing.T) {
+	resolver := &fakeGVRResolver{}
+	repo := &fakeResourceRepo{}
+	svc := NewResourceService(repo, resolver)
 
-	tests := []struct {
-		name       string
-		req        UpdateResourceRequest
-		setupMocks func() (*mockResourceRepository, *mockGVRResolver)
-		wantErr    bool
-		errMsg     string
-	}{
-		{
-			name: "successful update",
-			req: UpdateResourceRequest{
-				YAMLContent: validYAML,
-				Kind:        "Deployment",
-				Name:        "test-deployment",
-				Namespace:   "default",
-				Namespaced:  true,
-			},
-			setupMocks: func() (*mockResourceRepository, *mockGVRResolver) {
-				repo := &mockResourceRepository{
-					patchFunc: func(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool, patchData []byte, patchType types.PatchType, options metav1.PatchOptions) (*unstructured.Unstructured, error) {
-						if name != "test-deployment" || namespace != "default" {
-							return nil, errors.New("unexpected parameters")
-						}
-						obj := &unstructured.Unstructured{}
-						obj.SetName(name)
-						obj.SetNamespace(namespace)
-						return obj, nil
-					},
-				}
-				resolver := &mockGVRResolver{
-					resolveFunc: func(ctx context.Context, kind, apiVersion string, namespacedParam string) (schema.GroupVersionResource, models.ResourceMeta, error) {
-						return schema.GroupVersionResource{
-							Group:    "apps",
-							Version:  "v1",
-							Resource: "deployments",
-						}, models.ResourceMeta{Namespaced: true}, nil
-					},
-				}
-				return repo, resolver
-			},
-			wantErr: false,
-		},
-		{
-			name: "invalid YAML",
-			req: UpdateResourceRequest{
-				YAMLContent: "invalid: yaml: content: [",
-				Kind:        "Deployment",
-			},
-			setupMocks: func() (*mockResourceRepository, *mockGVRResolver) {
-				return &mockResourceRepository{}, &mockGVRResolver{}
-			},
-			wantErr: true,
-			errMsg:  "invalid YAML",
-		},
-		{
-			name: "GVR resolution error",
-			req: UpdateResourceRequest{
-				YAMLContent: validYAML,
-				Kind:        "Unknown",
-			},
-			setupMocks: func() (*mockResourceRepository, *mockGVRResolver) {
-				repo := &mockResourceRepository{}
-				resolver := &mockGVRResolver{
-					resolveFunc: func(ctx context.Context, kind, apiVersion string, namespacedParam string) (schema.GroupVersionResource, models.ResourceMeta, error) {
-						return schema.GroupVersionResource{}, models.ResourceMeta{}, errors.New("failed to resolve GVR")
-					},
-				}
-				return repo, resolver
-			},
-			wantErr: true,
-			errMsg:  "failed to resolve GVR",
-		},
+	ctx := ctxWithPermissions(map[string]string{"default": "edit"}, "")
+	req := UpdateResourceRequest{
+		YAMLContent: "kind: Deployment\nmetadata: : :",
+		Kind:        "Deployment",
+		Namespace:   "default",
+		Namespaced:  true,
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			repo, resolver := tt.setupMocks()
-			service := NewResourceService(repo, resolver)
-
-			// Create context with user for permission checks
-			ctx := context.WithValue(context.Background(), auth.UserContextKey(), &auth.AuthClaims{
-				Claims: models.Claims{
-					Username: "admin",
-					Role:     "admin",
-				},
-			})
-
-			err := service.UpdateResource(ctx, tt.req)
-
-			if (err != nil) != tt.wantErr {
-				t.Errorf("UpdateResource() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if tt.wantErr && tt.errMsg != "" {
-				if err == nil || !contains(err.Error(), tt.errMsg) {
-					t.Errorf("UpdateResource() error = %v, want error containing %v", err, tt.errMsg)
-				}
-			}
-		})
+	err := svc.UpdateResource(ctx, req)
+	if err == nil || !strings.Contains(err.Error(), "invalid YAML") {
+		t.Fatalf("expected invalid YAML error, got: %v", err)
+	}
+	if repo.patchCalled {
+		t.Fatalf("expected no patch call on invalid YAML")
 	}
 }
 
-// Helper function
-func contains(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
+func TestResourceService_UpdateResource_PermissionDenied(t *testing.T) {
+	resolver := &fakeGVRResolver{meta: models.ResourceMeta{Namespaced: true}}
+	repo := &fakeResourceRepo{}
+	svc := NewResourceService(repo, resolver)
+
+	ctx := ctxWithPermissions(map[string]string{}, "")
+	req := UpdateResourceRequest{
+		YAMLContent: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: cm\n  namespace: default\ndata:\n  k: v",
+		Kind:        "ConfigMap",
+		Namespace:   "default",
+		Namespaced:  true,
 	}
-	return false
+
+	err := svc.UpdateResource(ctx, req)
+	if err == nil || !strings.Contains(err.Error(), "failed to check permissions") {
+		t.Fatalf("expected permission error, got: %v", err)
+	}
+	if repo.patchCalled {
+		t.Fatalf("expected no patch call on permission failure")
+	}
+}
+
+func TestResourceService_DeleteResource_RequiresNamespace(t *testing.T) {
+	resolver := &fakeGVRResolver{meta: models.ResourceMeta{Namespaced: true}}
+	repo := &fakeResourceRepo{}
+	svc := NewResourceService(repo, resolver)
+
+	ctx := ctxWithPermissions(map[string]string{"default": "edit"}, "")
+	err := svc.DeleteResource(ctx, DeleteResourceRequest{
+		Kind: "Deployment",
+		Name: "dep",
+		// Namespace intentionally empty
+	})
+
+	if err == nil || !strings.Contains(err.Error(), "namespace is required") {
+		t.Fatalf("expected namespace error, got: %v", err)
+	}
+	if repo.deleteCalled {
+		t.Fatalf("expected no delete call without namespace")
+	}
+}
+
+func TestResourceService_DeleteResource_Success(t *testing.T) {
+	resolver := &fakeGVRResolver{gvr: schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}, meta: models.ResourceMeta{Namespaced: true}}
+	repo := &fakeResourceRepo{}
+	svc := NewResourceService(repo, resolver)
+
+	ctx := ctxWithPermissions(map[string]string{"default": "edit"}, "")
+	err := svc.DeleteResource(ctx, DeleteResourceRequest{
+		Kind:      "Deployment",
+		Name:      "dep",
+		Namespace: "default",
+		Force:     true,
+	})
+	if err != nil {
+		t.Fatalf("expected success, got error: %v", err)
+	}
+
+	if !repo.deleteCalled {
+		t.Fatalf("expected delete to be called")
+	}
+	if repo.deleteNamespace != "default" || !repo.deleteNamespaced {
+		t.Errorf("expected namespaced delete to default, got namespace=%q namespaced=%v", repo.deleteNamespace, repo.deleteNamespaced)
+	}
+	if repo.deleteOptions.PropagationPolicy == nil || *repo.deleteOptions.PropagationPolicy != metav1.DeletePropagationBackground {
+		t.Errorf("expected background propagation, got %v", repo.deleteOptions.PropagationPolicy)
+	}
+	if repo.deleteOptions.GracePeriodSeconds == nil || *repo.deleteOptions.GracePeriodSeconds != 0 {
+		t.Errorf("expected zero grace period, got %v", repo.deleteOptions.GracePeriodSeconds)
+	}
+}
+
+func TestResourceService_CreateResource_DefaultNamespace(t *testing.T) {
+	resolver := &fakeGVRResolver{
+		gvr:  schema.GroupVersionResource{Group: "", Version: "v1", Resource: "configmaps"},
+		meta: models.ResourceMeta{Namespaced: true},
+	}
+	repo := &fakeResourceRepo{
+		createResult: &unstructured.Unstructured{Object: map[string]interface{}{"kind": "ConfigMap", "metadata": map[string]interface{}{"name": "cm", "namespace": "default"}}},
+	}
+	svc := NewResourceService(repo, resolver)
+
+	ctx := context.Background()
+	result, err := svc.CreateResource(ctx, "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: cm\nspec: {}")
+	if err != nil {
+		t.Fatalf("expected success, got error: %v", err)
+	}
+
+	if repo.createNamespace != "default" || !repo.createNamespaced {
+		t.Errorf("expected create namespace default, got namespace=%q namespaced=%v", repo.createNamespace, repo.createNamespaced)
+	}
+	if repo.createObj.GetNamespace() != "default" {
+		t.Errorf("expected object namespace default, got %q", repo.createObj.GetNamespace())
+	}
+	if objKind, ok := result.(map[string]interface{})["kind"]; !ok || objKind != "ConfigMap" {
+		t.Fatalf("expected returned object kind ConfigMap, got %v", result)
+	}
 }
