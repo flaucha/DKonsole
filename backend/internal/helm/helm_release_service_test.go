@@ -1,8 +1,13 @@
 package helm
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -18,6 +23,58 @@ type mockHelmReleaseRepository struct {
 	listConfigMapsInNamespaceFunc func(ctx context.Context, namespace string) ([]corev1.ConfigMap, error)
 	deleteSecretFunc              func(ctx context.Context, namespace, name string) error
 	deleteConfigMapFunc           func(ctx context.Context, namespace, name string) error
+}
+
+func buildReleaseDataJSON(status string, revision int, chartName, chartVersion, appVersion, description string) []byte {
+	releaseInfo := map[string]interface{}{
+		"chart": map[string]interface{}{
+			"metadata": map[string]interface{}{
+				"name":       chartName,
+				"version":    chartVersion,
+				"appVersion": appVersion,
+			},
+		},
+		"info": map[string]interface{}{
+			"status":      status,
+			"revision":    float64(revision),
+			"description": description,
+			"last_deployed": map[string]interface{}{
+				"Time": "2025-01-01T00:00:00Z",
+			},
+		},
+	}
+	data, _ := json.Marshal(releaseInfo)
+	return data
+}
+
+func buildHelmSecretWithRelease(name, namespace, status string, revision int, chart, version, appVersion, description string, encode bool) corev1.Secret {
+	data := buildReleaseDataJSON(status, revision, chart, version, appVersion, description)
+	if encode {
+		var buf bytes.Buffer
+		gz := gzip.NewWriter(&buf)
+		_, _ = gz.Write(data)
+		gz.Close()
+		data = []byte(base64.StdEncoding.EncodeToString(buf.Bytes()))
+	}
+
+	return corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("sh.helm.release.v1.%s.v%d", name, revision),
+			Namespace: namespace,
+			Labels: map[string]string{
+				"name":    name,
+				"version": fmt.Sprintf("%d", revision),
+				"status":  "superseded",
+			},
+			Annotations: map[string]string{
+				"meta.helm.sh/release-name":      name,
+				"meta.helm.sh/release-namespace": namespace,
+			},
+		},
+		Data: map[string][]byte{
+			"release": data,
+		},
+	}
 }
 
 func (m *mockHelmReleaseRepository) ListHelmSecrets(ctx context.Context) ([]corev1.Secret, error) {
@@ -340,5 +397,93 @@ func TestHelmReleaseService_IsSecretRelatedToRelease(t *testing.T) {
 				t.Errorf("isSecretRelatedToRelease() = %v, want %v", result, tt.want)
 			}
 		})
+	}
+}
+
+func TestHelmReleaseService_ParseReleaseFromSecretAndConfigMap(t *testing.T) {
+	service := NewHelmReleaseService(nil)
+
+	secret := buildHelmSecretWithRelease("demo", "ns1", "superseded", 2, "chart-demo", "1.2.3", "2.0.0", "first deploy", true)
+	result := service.parseReleaseFromSecret(secret)
+	if result == nil {
+		t.Fatalf("parseReleaseFromSecret returned nil")
+	}
+	if result.Name != "demo" || result.Namespace != "ns1" {
+		t.Fatalf("unexpected name/namespace: %+v", result)
+	}
+	if result.Chart != "chart-demo" || result.Version != "1.2.3" || result.AppVersion != "2.0.0" {
+		t.Fatalf("unexpected chart fields: %+v", result)
+	}
+	if result.Description != "first deploy" || result.Updated == "" {
+		t.Fatalf("description/updated not set: %+v", result)
+	}
+	if result.Revision != 2 || result.Status != "superseded" {
+		t.Fatalf("revision/status not taken from labels/info: %+v", result)
+	}
+
+	cm := corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "demo.v3",
+			Namespace: "ns1",
+			Labels: map[string]string{
+				"name":    "demo",
+				"version": "3",
+				"status":  "deployed",
+			},
+			Annotations: map[string]string{
+				"meta.helm.sh/release-name":      "demo",
+				"meta.helm.sh/release-namespace": "ns1",
+			},
+		},
+	}
+	cmResult := service.parseReleaseFromConfigMap(cm)
+	if cmResult == nil {
+		t.Fatalf("parseReleaseFromConfigMap returned nil")
+	}
+	if cmResult.Revision != 3 || cmResult.Status != "deployed" {
+		t.Fatalf("expected revision 3 deployed from labels, got %+v", cmResult)
+	}
+}
+
+func TestHelmReleaseService_GetHelmReleasesPrefersNewestDeployed(t *testing.T) {
+	secretOld := buildHelmSecretWithRelease("app", "ns1", "deployed", 1, "old", "0.1.0", "1.0", "old deploy", true)
+	secretNewSuperseded := buildHelmSecretWithRelease("app", "ns1", "superseded", 3, "new", "0.2.0", "1.1", "new deploy", true)
+	cm := corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "app.v2",
+			Namespace: "ns1",
+			Labels: map[string]string{
+				"name":    "app",
+				"version": "2",
+				"status":  "failed",
+			},
+			Annotations: map[string]string{
+				"meta.helm.sh/release-name":      "app",
+				"meta.helm.sh/release-namespace": "ns1",
+			},
+		},
+	}
+
+	service := NewHelmReleaseService(&mockHelmReleaseRepository{
+		listHelmSecretsFunc: func(ctx context.Context) ([]corev1.Secret, error) {
+			return []corev1.Secret{secretOld, secretNewSuperseded}, nil
+		},
+		listHelmConfigMapsFunc: func(ctx context.Context) ([]corev1.ConfigMap, error) {
+			return []corev1.ConfigMap{cm}, nil
+		},
+	})
+
+	releases, err := service.GetHelmReleases(context.Background())
+	if err != nil {
+		t.Fatalf("GetHelmReleases returned error: %v", err)
+	}
+	if len(releases) != 1 {
+		t.Fatalf("expected 1 release, got %d", len(releases))
+	}
+	if releases[0].Revision != 3 {
+		t.Fatalf("expected highest revision 3, got %d", releases[0].Revision)
+	}
+	if releases[0].Chart != "new" {
+		t.Fatalf("expected chart new, got %s", releases[0].Chart)
 	}
 }

@@ -50,6 +50,17 @@ func (m *mockDynamicResourceRepository) List(ctx context.Context, gvr schema.Gro
 	return nil, "", errors.New("list not implemented")
 }
 
+type mockCRDRepository struct {
+	listFunc func(ctx context.Context, limit int64, continueToken string) (*unstructured.UnstructuredList, error)
+}
+
+func (m *mockCRDRepository) ListCRDs(ctx context.Context, limit int64, continueToken string) (*unstructured.UnstructuredList, error) {
+	if m.listFunc != nil {
+		return m.listFunc(ctx, limit, continueToken)
+	}
+	return nil, errors.New("list not implemented")
+}
+
 func TestAPIService_ListAPIResources(t *testing.T) {
 	tests := []struct {
 		name                  string
@@ -309,6 +320,241 @@ func TestAPIService_GetResourceYAML(t *testing.T) {
 				if !strings.Contains(yamlData, "kind: ConfigMap") {
 					t.Errorf("GetResourceYAML() yamlData doesn't contain expected kind")
 				}
+			}
+		})
+	}
+}
+
+func TestAPIService_ListAPIResourceObjects(t *testing.T) {
+	allowedCtx := context.WithValue(context.Background(), auth.UserContextKey(), &auth.AuthClaims{
+		Claims: models.Claims{
+			Username:    "viewer",
+			Permissions: map[string]string{"allowed": "view"},
+		},
+	})
+
+	allowedItem := unstructured.Unstructured{}
+	allowedItem.SetName("ok")
+	allowedItem.SetNamespace("allowed")
+	allowedItem.SetCreationTimestamp(metav1.Now())
+	allowedItem.SetKind("Demo")
+	allowedItem.Object["status"] = map[string]interface{}{"phase": "Running"}
+
+	deniedItem := unstructured.Unstructured{}
+	deniedItem.SetName("nope")
+	deniedItem.SetNamespace("denied")
+	deniedItem.SetCreationTimestamp(metav1.Now())
+	deniedItem.SetKind("Demo")
+
+	tests := []struct {
+		name         string
+		ctx          context.Context
+		req          ListAPIResourceObjectsRequest
+		listFunc     func(ctx context.Context, gvr schema.GroupVersionResource, namespace string, namespaced bool, limit int64, continueToken string) (*unstructured.UnstructuredList, string, error)
+		wantErr      bool
+		errMsg       string
+		wantCount    int
+		wantContinue string
+	}{
+		{
+			name: "happy path filters unauthorized namespaces",
+			ctx:  allowedCtx,
+			req: ListAPIResourceObjectsRequest{
+				Group:      "demo.k8s",
+				Version:    "v1",
+				Resource:   "demos",
+				Namespaced: true,
+			},
+			listFunc: func(ctx context.Context, gvr schema.GroupVersionResource, namespace string, namespaced bool, limit int64, continueToken string) (*unstructured.UnstructuredList, string, error) {
+				return &unstructured.UnstructuredList{
+					Items: []unstructured.Unstructured{allowedItem, deniedItem},
+				}, "token123", nil
+			},
+			wantErr:      false,
+			wantCount:    1,
+			wantContinue: "token123",
+		},
+		{
+			name: "deny namespace without permission",
+			ctx:  allowedCtx,
+			req: ListAPIResourceObjectsRequest{
+				Group:      "demo.k8s",
+				Version:    "v1",
+				Resource:   "demos",
+				Namespace:  "denied",
+				Namespaced: true,
+			},
+			listFunc: func(ctx context.Context, gvr schema.GroupVersionResource, namespace string, namespaced bool, limit int64, continueToken string) (*unstructured.UnstructuredList, string, error) {
+				return &unstructured.UnstructuredList{}, "", nil
+			},
+			wantErr: true,
+			errMsg:  "access denied",
+		},
+		{
+			name:    "resource repository not set",
+			ctx:     allowedCtx,
+			req:     ListAPIResourceObjectsRequest{Resource: "demos"},
+			wantErr: true,
+			errMsg:  "resource repository not set",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var repo DynamicResourceRepository
+			if tt.listFunc != nil {
+				repo = &mockDynamicResourceRepository{listFunc: tt.listFunc}
+			}
+			service := NewAPIService(nil, repo)
+
+			resp, err := service.ListAPIResourceObjects(tt.ctx, tt.req)
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ListAPIResourceObjects() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				if tt.errMsg != "" && (err == nil || !strings.Contains(err.Error(), tt.errMsg)) {
+					t.Fatalf("expected error containing %q, got %v", tt.errMsg, err)
+				}
+				return
+			}
+			if resp == nil {
+				t.Fatalf("response is nil")
+			}
+			if len(resp.Resources) != tt.wantCount {
+				t.Fatalf("expected %d resources, got %d", tt.wantCount, len(resp.Resources))
+			}
+			if resp.Continue != tt.wantContinue {
+				t.Fatalf("expected continue token %q, got %q", tt.wantContinue, resp.Continue)
+			}
+			if resp.Resources[0].Name != "ok" || resp.Resources[0].Namespace != "allowed" {
+				t.Fatalf("unexpected resource %+v", resp.Resources[0])
+			}
+		})
+	}
+}
+
+func TestCRDService_GetCRDs(t *testing.T) {
+	validCRD := unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"metadata": map[string]interface{}{"name": "demos.demo.k8s.io"},
+			"spec": map[string]interface{}{
+				"group": "demo.k8s.io",
+				"names": map[string]interface{}{
+					"kind": "Demo",
+				},
+				"scope": "Namespaced",
+				"versions": []interface{}{
+					map[string]interface{}{
+						"name":   "v1",
+						"served": true,
+					},
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		listFunc func(ctx context.Context, limit int64, continueToken string) (*unstructured.UnstructuredList, error)
+		wantErr  bool
+		wantLen  int
+	}{
+		{
+			name: "happy path",
+			listFunc: func(ctx context.Context, limit int64, continueToken string) (*unstructured.UnstructuredList, error) {
+				return &unstructured.UnstructuredList{
+					Items: []unstructured.Unstructured{validCRD},
+				}, nil
+			},
+			wantLen: 1,
+		},
+		{
+			name: "repo error",
+			listFunc: func(ctx context.Context, limit int64, continueToken string) (*unstructured.UnstructuredList, error) {
+				return nil, errors.New("boom")
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := NewCRDService(&mockCRDRepository{listFunc: tt.listFunc})
+			resp, err := service.GetCRDs(context.Background(), GetCRDsRequest{Limit: 10})
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("GetCRDs() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if resp == nil {
+				t.Fatalf("response is nil")
+			}
+			if len(resp.CRDs) != tt.wantLen {
+				t.Fatalf("expected %d CRDs, got %d", tt.wantLen, len(resp.CRDs))
+			}
+			if resp.CRDs[0].Name != "demos.demo.k8s.io" || resp.CRDs[0].Version != "v1" {
+				t.Fatalf("unexpected CRD %+v", resp.CRDs[0])
+			}
+		})
+	}
+}
+
+func TestAPIService_GetCRDResources(t *testing.T) {
+	listItem := unstructured.Unstructured{}
+	listItem.SetName("demo1")
+	listItem.SetNamespace("default")
+	listItem.SetCreationTimestamp(metav1.Now())
+
+	tests := []struct {
+		name     string
+		listFunc func(ctx context.Context, gvr schema.GroupVersionResource, namespace string, namespaced bool, limit int64, continueToken string) (*unstructured.UnstructuredList, string, error)
+		wantErr  bool
+		wantLen  int
+	}{
+		{
+			name: "happy path",
+			listFunc: func(ctx context.Context, gvr schema.GroupVersionResource, namespace string, namespaced bool, limit int64, continueToken string) (*unstructured.UnstructuredList, string, error) {
+				return &unstructured.UnstructuredList{
+					Items: []unstructured.Unstructured{listItem},
+				}, "next", nil
+			},
+			wantLen: 1,
+		},
+		{
+			name: "repository error",
+			listFunc: func(ctx context.Context, gvr schema.GroupVersionResource, namespace string, namespaced bool, limit int64, continueToken string) (*unstructured.UnstructuredList, string, error) {
+				return nil, "", errors.New("fail list")
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := NewAPIService(nil, &mockDynamicResourceRepository{listFunc: tt.listFunc})
+			resp, err := service.GetCRDResources(context.Background(), GetCRDResourcesRequest{
+				Group:    "demo.k8s.io",
+				Version:  "v1",
+				Resource: "demos",
+			})
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("GetCRDResources() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if resp == nil {
+				t.Fatalf("response is nil")
+			}
+			if len(resp.Resources) != tt.wantLen {
+				t.Fatalf("expected %d resources, got %d", tt.wantLen, len(resp.Resources))
+			}
+			if resp.Continue != "next" {
+				t.Fatalf("expected continue token next, got %q", resp.Continue)
 			}
 		})
 	}

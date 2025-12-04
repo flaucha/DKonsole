@@ -16,7 +16,7 @@ import (
 type Service struct {
 	handlers       *models.Handlers
 	clusterService *cluster.Service
-	serviceFactory *ServiceFactory
+	serviceFactory Factory
 }
 
 // NewService creates a new Kubernetes service with the provided handlers and cluster service.

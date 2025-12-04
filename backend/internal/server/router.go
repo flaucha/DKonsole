@@ -432,53 +432,34 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		allowed := false
-		if allowedOrigins != "" {
-			origins := strings.Split(allowedOrigins, ",")
-			for _, o := range origins {
-				o = strings.TrimSpace(o)
-				if o == origin {
-					allowed = true
-					break
+		if origin != "" {
+			// Exact matches from allowlist
+			if allowedOrigins != "" {
+				origins := strings.Split(allowedOrigins, ",")
+				for _, o := range origins {
+					o = strings.TrimSpace(o)
+					if o != "" && strings.EqualFold(o, origin) {
+						allowed = true
+						break
+					}
 				}
 			}
-		} else {
-			if origin != "" {
+
+			// Always allow same-origin requests (host match)
+			if !allowed {
 				originURL, err := url.Parse(origin)
 				if err == nil {
 					host := r.Host
 					if strings.Contains(host, ":") {
-						host = strings.Split(host, ":")[0]
+						host, _, _ = strings.Cut(host, ":")
 					}
 					originHost := originURL.Host
 					if strings.Contains(originHost, ":") {
-						originHost = strings.Split(originHost, ":")[0]
+						originHost, _, _ = strings.Cut(originHost, ":")
 					}
-
-					host = strings.TrimSpace(host)
-					originHost = strings.TrimSpace(originHost)
-
-					if (originHost == "localhost" || originHost == "127.0.0.1" || originHost == host) &&
+					if strings.EqualFold(strings.TrimSpace(originHost), strings.TrimSpace(host)) &&
 						(originURL.Scheme == "http" || originURL.Scheme == "https") {
 						allowed = true
-					}
-
-					if !allowed && strings.HasPrefix(r.URL.Path, "/api/setup/") {
-						if strings.EqualFold(originHost, host) && (originURL.Scheme == "http" || originURL.Scheme == "https") {
-							allowed = true
-						}
-
-						if !allowed {
-							originParts := strings.Split(originHost, ".")
-							hostParts := strings.Split(host, ".")
-
-							if len(originParts) >= 2 && len(hostParts) >= 2 {
-								originDomain := strings.Join(originParts[len(originParts)-2:], ".")
-								hostDomain := strings.Join(hostParts[len(hostParts)-2:], ".")
-								if originDomain == hostDomain && (originURL.Scheme == "http" || originURL.Scheme == "https") {
-									allowed = true
-								}
-							}
-						}
 					}
 				}
 			}

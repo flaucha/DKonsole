@@ -5,6 +5,17 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// Factory defines the service factory contract to allow test doubles.
+type Factory interface {
+	CreateResourceService(dynamicClient dynamic.Interface) *ResourceService
+	CreateImportService(dynamicClient dynamic.Interface, client kubernetes.Interface) *ImportService
+	CreateNamespaceService(client kubernetes.Interface) *NamespaceService
+	CreateClusterStatsService(client kubernetes.Interface) *ClusterStatsService
+	CreateDeploymentService(client kubernetes.Interface) *DeploymentService
+	CreateCronJobService(client kubernetes.Interface) *CronJobService
+	CreateWatchService() *WatchService
+}
+
 // ServiceFactory provides factory methods for creating business logic services
 type ServiceFactory struct{}
 

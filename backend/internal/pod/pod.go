@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/gorilla/websocket"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
@@ -18,10 +20,17 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
+// execCreator abstracts exec creation to allow testing with mocks.
+type execCreator interface {
+	CreateExecutor(client kubernetes.Interface, config *rest.Config, req ExecRequest) (remotecommand.Executor, string, error)
+}
+
 // Service provides HTTP handlers for pod-specific operations including log streaming and exec.
 type Service struct {
 	handlers       *models.Handlers
 	clusterService *cluster.Service
+	logRepoFactory func(kubernetes.Interface) LogRepository
+	execFactory    func() execCreator
 }
 
 // NewService creates a new pod service with the provided handlers and cluster service.
@@ -29,8 +38,13 @@ func NewService(h *models.Handlers, cs *cluster.Service) *Service {
 	return &Service{
 		handlers:       h,
 		clusterService: cs,
-		// PodService will be created on-demand in handlers that need it
-		// This maintains backward compatibility while allowing refactoring
+		logRepoFactory: func(client kubernetes.Interface) LogRepository {
+			return NewK8sLogRepository(client)
+		},
+		execFactory: func() execCreator {
+			return NewExecService()
+		},
+		// PodService will be created on-demand in handlers that need it. Factories are overridable in tests.
 	}
 }
 
@@ -70,7 +84,7 @@ func (s *Service) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create repository for this request
-	logRepo := NewK8sLogRepository(client)
+	logRepo := s.logRepoFactory(client)
 
 	// Create service with repository
 	logService := NewLogService(logRepo)
@@ -215,7 +229,7 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create exec service
-	execService := NewExecService()
+	execService := s.execFactory()
 
 	// Prepare exec request
 	execReq := ExecRequest{
