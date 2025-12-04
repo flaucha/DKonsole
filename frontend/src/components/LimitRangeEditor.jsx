@@ -186,6 +186,7 @@ spec:
                                 minimap: { enabled: false },
                                 scrollBeyondLastLine: false,
                                 fontSize: 14,
+                                lineHeight: 22,
                                 automaticLayout: true,
                             }}
                         />
