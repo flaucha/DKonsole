@@ -1,6 +1,6 @@
 # Multi-stage build for DKonsole
 # Stage 1: Build Frontend
-FROM node:18-alpine AS frontend-builder
+FROM node:22-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
@@ -18,8 +18,8 @@ RUN npm run build
 # Verify build output
 RUN ls -la /app/frontend/dist/ || (echo "ERROR: Frontend build failed - dist directory not found" && exit 1)
 
-# Stage 2: Build Backend (align with go.mod 1.24.11)
-FROM golang:1.24.11-alpine AS backend-builder
+# Stage 2: Build Backend (align with go.mod 1.25)
+FROM golang:1.25.5-alpine AS backend-builder
 
 WORKDIR /app/backend
 

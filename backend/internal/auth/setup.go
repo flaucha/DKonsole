@@ -222,11 +222,6 @@ func (s *Service) createSecret(ctx context.Context, username, passwordHash, jwtS
 	return s.k8sRepo.CreateSecret(ctx, username, passwordHash, jwtSecret)
 }
 
-// IsSetupMode returns true if the service is running in setup mode.
-func (s *Service) IsSetupMode() bool {
-	return s.setupMode
-}
-
 // generateJWTSecret generates a secure random JWT secret (32 bytes, base64 encoded = 44 characters).
 func generateJWTSecret() (string, error) {
 	bytes := make([]byte, 32)

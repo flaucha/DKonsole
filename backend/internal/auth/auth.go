@@ -50,6 +50,13 @@ func (s *Service) SetLDAPAuthenticator(ldapAuth LDAPAuthenticator) {
 	}
 }
 
+// IsSetupMode reports whether the service is waiting for initial setup (secret missing)
+func (s *Service) IsSetupMode() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.setupMode
+}
+
 // NewService creates a new authentication service with default configuration.
 // It initializes the user repository and JWT services.
 // If k8sClient is provided, it will try to use Kubernetes secrets.

@@ -136,8 +136,7 @@ func TestJWTService_ExtractToken(t *testing.T) {
 				req := httptest.NewRequest("GET", "/?token="+testToken, nil)
 				return req
 			},
-			wantToken: testToken,
-			wantErr:   false,
+			wantErr: true,
 		},
 		{
 			name: "token in cookie",
