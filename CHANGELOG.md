@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2] - 2025-12-05
+
+### Added
+- **Terminal Dock**: Global header dock for pinning/minimizing multiple terminal sessions; sessions stay alive across navigation with one active view at a time.
+- **WebSocket Keep-Alive**: Exec terminals send periodic pings to reduce idle disconnects.
+
+### Changed
+- **Backend Limits**: Raised default WebSocket connection limit to 20 and made it configurable via `MAX_WS_CONNECTIONS`.
+- **Terminal Layout**: Standardized pinned terminal placement (bottom-right) and sizing for consistent UX.
+- **Builder Update**: Backend build now targets Go 1.24.11 to match `go.mod`.
+
+### Fixed
+- **Exec Timeouts**: Removed fixed 30s deadline on exec WebSocket streams to prevent premature “context deadline exceeded”.
+- **Terminal Resizing**: Prevented pinned terminals from shrinking or reinitializing when toggling between sessions or minimizing.
+
 ## [1.4.1] - 2025-12-03
 
 ### ✨ Added

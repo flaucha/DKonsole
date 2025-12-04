@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.4.1-green.svg)
+![Version](https://img.shields.io/badge/version-1.4.2-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built entirely with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -30,7 +30,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.4.1
+git checkout v1.4.2
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -151,55 +151,35 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.4.1"
+  tag: "1.4.2"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.4.1`
+- **Unified**: `dkonsole/dkonsole:1.4.2`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
 
+### v1.4.2 (2025-12-05)
+**🔧 Terminal dock & stability**
+
+- **Pin/Minimize Dock**: Header dock for multiple pinned terminals; one active view at a time with minimize/restore.
+- **Stability**: Removed exec timeouts, added WebSocket keep-alive, and raised default connection cap to 20 (`MAX_WS_CONNECTIONS`).
+- **UI**: Consistent terminal sizing anchored bottom-right; pin action moved into terminal header.
+
 ### v1.4.1 (2025-12-03)
 **🐛 Bug Fixes & UX Improvements**
 
-This release addresses critical bugs and enhances user experience with faster updates and improved navigation.
-
-- **Namespace Filter "All"**: Fixed bug where selecting "All" namespaces in Resource Quotas/Limit Ranges view showed no data
-- **Faster Refresh Rates**: Reduced refetch intervals from 10 seconds to 2 seconds for more responsive UI updates
-- **Quotas/Limits Menu**: Consolidated Resource Quotas and Limit Ranges into a single menu item under Admin Area
-- **Reorderable AGE Column**: Made the AGE column reorderable in workload lists
+- **Namespace Filter "All"** fixed for quotas/limits, faster refetch (2s), merged Quotas/Limits menu, reorderable AGE column.
 
 ### v1.4.0 (2025-12-01)
 **✨ Persistent column layouts & documentation refresh**
 
-This release keeps user-defined column order sticky and aligns all docs with the real deployment defaults.
-
-- **Column Layout Persistence**: Workload and Namespace tables now expose drag handles and remember per-user column order using cookies + localStorage.
-- **Namespace Defaults**: The dashboard shares a `DEFAULT_NAMESPACE` constant so selectors, quota dialogs, and other flows open the `dkonsole` namespace when no preference is stored.
-- **Docs & Helm Samples**: README, Helm values, and dockerhub docs all reference `dkonsole.lan`/`allowedOrigins` to match the deployed environment, alongside a refreshed `docs/iacf` AI automation pack.
-
-### v1.3.6 (2025-11-30)
-**✨ Dynamic Column Distribution & Layout Improvements**
-
-This release implements intelligent column sizing and improves table layout responsiveness.
-
-- **Dynamic Column Distribution**: Implemented intelligent column sizing that automatically adjusts based on available space
-  - Columns now distribute equitably with minimum space constraints
-  - Each column has a minimum width and shares remaining space proportionally
-  - Better space utilization across all table types
-- **Table Column System**: Migrated from fixed 12-column grid to dynamic CSS Grid with flexible sizing
-  - Name column maintains minimum width (200px) and grows with available space
-  - All columns use `minmax()` for responsive sizing with minimum constraints
-  - Improved column alignment and spacing across all resource types
-- **Row Height Optimization**: Made table rows thinner while maintaining readability
-  - Minimum height to accommodate 2 lines of AGE text
-  - Better vertical space utilization
-- **Fixes**: Fixed Provisioner column width, Ports display, Access Mode alignment, and prevented column title wrapping
+- Column order persistence with drag handles and saved preferences, shared `DEFAULT_NAMESPACE`, docs/Helm/dockerhub aligned to `dkonsole.lan`.
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 
