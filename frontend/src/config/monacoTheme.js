@@ -3,21 +3,27 @@ export const defineMonacoTheme = (monaco) => {
         base: 'vs-dark',
         inherit: true,
         rules: [
-            { token: '', background: '1f2937' }, // gray-800
-            { token: 'comment', foreground: '6b7280' }, // gray-500
-            { token: 'keyword', foreground: '60a5fa' }, // blue-400
-            { token: 'string', foreground: '34d399' }, // green-400
-            { token: 'number', foreground: 'f87171' }, // red-400
-            { token: 'type', foreground: 'a78bfa' }, // purple-400
+            { token: '', foreground: 'abb2bf', background: '282c34' }, // default
+            { token: 'comment', foreground: '5c6370' },
+            { token: 'keyword', foreground: 'c678dd' },
+            { token: 'string', foreground: '98c379' },
+            { token: 'number', foreground: 'd19a66' },
+            { token: 'type', foreground: '56b6c2' },
+            { token: 'delimiter', foreground: 'abb2bf' },
+            { token: 'key', foreground: 'e06c75' },
         ],
         colors: {
-            'editor.background': '#1f2937', // gray-800
-            'editor.foreground': '#e5e7eb', // gray-200
-            'editor.lineHighlightBackground': '#374151', // gray-700
-            'editorCursor.foreground': '#60a5fa', // blue-400
-            'editorWhitespace.foreground': '#4b5563', // gray-600
-            'editorIndentGuide.background': '#374151', // gray-700
-            'editorIndentGuide.activeBackground': '#6b7280', // gray-500
+            'editor.background': '#282c34',
+            'editor.foreground': '#abb2bf',
+            'editor.lineHighlightBackground': '#2c313c',
+            'editorCursor.foreground': '#528bff',
+            'editor.selectionBackground': '#3e4451',
+            'editor.selectionHighlightBackground': '#3e445180',
+            'editorWhitespace.foreground': '#4b5263',
+            'editorIndentGuide.background': '#3e4451',
+            'editorIndentGuide.activeBackground': '#abb2bf',
+            'editorLineNumber.foreground': '#5c6370',
+            'editorLineNumber.activeForeground': '#abb2bf',
         }
     });
 };

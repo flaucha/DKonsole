@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -69,6 +70,18 @@ func (f *mockServiceFactory) CreateWatchService() *WatchService {
 	return f.realFactory.CreateWatchService()
 }
 
+type stubNamespaceRepository struct {
+	namespaces []corev1.Namespace
+	err        error
+}
+
+func (s *stubNamespaceRepository) List(ctx context.Context) ([]corev1.Namespace, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	return s.namespaces, nil
+}
+
 type stubDeploymentRepository struct {
 	replicas  int32
 	getErr    error
@@ -94,6 +107,37 @@ func (s *stubDeploymentRepository) GetDeployment(ctx context.Context, namespace,
 }
 
 func (s *stubDeploymentRepository) UpdateDeployment(ctx context.Context, namespace string, deployment *appsv1.Deployment) (*appsv1.Deployment, error) {
+	return deployment, nil
+}
+
+type stubRolloutDeploymentRepository struct {
+	getErr    error
+	updateErr error
+}
+
+func (s *stubRolloutDeploymentRepository) GetScale(ctx context.Context, namespace, name string) (*autoscalingv1.Scale, error) {
+	return &autoscalingv1.Scale{}, nil
+}
+
+func (s *stubRolloutDeploymentRepository) UpdateScale(ctx context.Context, namespace, name string, scale *autoscalingv1.Scale) (*autoscalingv1.Scale, error) {
+	return scale, nil
+}
+
+func (s *stubRolloutDeploymentRepository) GetDeployment(ctx context.Context, namespace, name string) (*appsv1.Deployment, error) {
+	if s.getErr != nil {
+		return nil, s.getErr
+	}
+	return &appsv1.Deployment{
+		Spec: appsv1.DeploymentSpec{
+			Template: corev1.PodTemplateSpec{},
+		},
+	}, nil
+}
+
+func (s *stubRolloutDeploymentRepository) UpdateDeployment(ctx context.Context, namespace string, deployment *appsv1.Deployment) (*appsv1.Deployment, error) {
+	if s.updateErr != nil {
+		return nil, s.updateErr
+	}
 	return deployment, nil
 }
 
@@ -240,6 +284,33 @@ func TestGetNamespacesHandler_ClusterNotFound(t *testing.T) {
 	}
 }
 
+func TestGetNamespacesHandler_ServiceError(t *testing.T) {
+	handlers := &models.Handlers{
+		Clients: map[string]kubernetes.Interface{"default": k8sfake.NewClientset()},
+	}
+	clusterService := cluster.NewService(handlers)
+	service := NewService(handlers, clusterService)
+
+	mockFactory := newMockServiceFactory()
+	mockFactory.namespaceService = NewNamespaceService(&stubNamespaceRepository{err: errors.New("boom")})
+	service.serviceFactory = mockFactory
+
+	req := withUser(httptest.NewRequest(http.MethodGet, "/api/namespaces", nil), models.Claims{
+		Username: "ops",
+		Role:     "admin",
+	})
+	rr := httptest.NewRecorder()
+
+	service.GetNamespaces(rr, req)
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Fatalf("expected status 500, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "Failed to get namespaces") {
+		t.Fatalf("expected namespace failure message, got %s", rr.Body.String())
+	}
+}
+
 func TestGetResourcesHandler_Success(t *testing.T) {
 	now := metav1.Now()
 	client := k8sfake.NewClientset(
@@ -312,6 +383,49 @@ func TestGetResourcesHandler_MissingKind(t *testing.T) {
 
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", rr.Code)
+	}
+}
+
+func TestGetResourcesHandler_ClusterNotFound(t *testing.T) {
+	handlers := &models.Handlers{
+		Clients: map[string]kubernetes.Interface{},
+	}
+	clusterService := cluster.NewService(handlers)
+	service := NewService(handlers, clusterService)
+
+	req := withUser(httptest.NewRequest(http.MethodGet, "/api/resources?kind=Deployment&cluster=ghost", nil), models.Claims{
+		Username: "admin",
+		Role:     "admin",
+	})
+	rr := httptest.NewRecorder()
+
+	service.GetResources(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "cluster not found: ghost") {
+		t.Fatalf("expected cluster not found message, got %s", rr.Body.String())
+	}
+}
+
+func TestGetResourcesHandler_InternalError(t *testing.T) {
+	handlers := &models.Handlers{
+		Clients: map[string]kubernetes.Interface{"default": k8sfake.NewClientset()},
+	}
+	clusterService := cluster.NewService(handlers)
+	service := NewService(handlers, clusterService)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/resources?kind=Deployment&namespace=default", nil)
+	rr := httptest.NewRecorder()
+
+	service.GetResources(rr, req)
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Fatalf("expected status 500, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "Failed to list resources") {
+		t.Fatalf("expected resources failure message, got %s", rr.Body.String())
 	}
 }
 
@@ -393,6 +507,126 @@ func TestScaleResourceHandler_Forbidden(t *testing.T) {
 	}
 }
 
+func TestScaleResourceHandler_ValidationErrors(t *testing.T) {
+	handlers := &models.Handlers{
+		Clients: map[string]kubernetes.Interface{"default": k8sfake.NewClientset()},
+	}
+	clusterService := cluster.NewService(handlers)
+	service := NewService(handlers, clusterService)
+
+	admin := models.Claims{Username: "admin", Role: "admin"}
+	tests := []struct {
+		name     string
+		method   string
+		url      string
+		code     int
+		contains string
+	}{
+		{
+			name:     "method not allowed",
+			method:   http.MethodGet,
+			url:      "/api/scale?kind=Deployment&name=demo&namespace=default&delta=1",
+			code:     http.StatusMethodNotAllowed,
+			contains: "Method not allowed",
+		},
+		{
+			name:     "unsupported kind",
+			method:   http.MethodPost,
+			url:      "/api/scale?kind=Pod&name=demo&namespace=default&delta=1",
+			code:     http.StatusBadRequest,
+			contains: "Scaling supported only for Deployments",
+		},
+		{
+			name:     "missing name",
+			method:   http.MethodPost,
+			url:      "/api/scale?kind=Deployment&namespace=default&delta=1",
+			code:     http.StatusBadRequest,
+			contains: "Missing name",
+		},
+		{
+			name:     "invalid name",
+			method:   http.MethodPost,
+			url:      "/api/scale?kind=Deployment&name=BadName&namespace=default&delta=1",
+			code:     http.StatusBadRequest,
+			contains: "invalid name",
+		},
+		{
+			name:     "invalid namespace",
+			method:   http.MethodPost,
+			url:      "/api/scale?kind=Deployment&name=demo&namespace=BadNS&delta=1",
+			code:     http.StatusBadRequest,
+			contains: "invalid namespace",
+		},
+		{
+			name:     "missing delta",
+			method:   http.MethodPost,
+			url:      "/api/scale?kind=Deployment&name=demo&namespace=default",
+			code:     http.StatusBadRequest,
+			contains: "Invalid delta",
+		},
+		{
+			name:     "zero delta",
+			method:   http.MethodPost,
+			url:      "/api/scale?kind=Deployment&name=demo&namespace=default&delta=0",
+			code:     http.StatusBadRequest,
+			contains: "Delta cannot be zero",
+		},
+		{
+			name:     "cluster not found",
+			method:   http.MethodPost,
+			url:      "/api/scale?cluster=ghost&kind=Deployment&name=demo&namespace=default&delta=1",
+			code:     http.StatusBadRequest,
+			contains: "cluster not found: ghost",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rr := httptest.NewRecorder()
+			req := withUser(httptest.NewRequest(tt.method, tt.url, nil), admin)
+
+			service.ScaleResource(rr, req)
+
+			if rr.Code != tt.code {
+				t.Fatalf("%s: expected status %d, got %d", tt.name, tt.code, rr.Code)
+			}
+			if tt.contains != "" && !strings.Contains(rr.Body.String(), tt.contains) {
+				t.Fatalf("%s: expected body to contain %q, got %s", tt.name, tt.contains, rr.Body.String())
+			}
+		})
+	}
+}
+
+func TestScaleResourceHandler_ServiceError(t *testing.T) {
+	client := k8sfake.NewClientset()
+	handlers := &models.Handlers{
+		Clients: map[string]kubernetes.Interface{"default": client},
+	}
+	clusterService := cluster.NewService(handlers)
+	service := NewService(handlers, clusterService)
+
+	mockFactory := newMockServiceFactory()
+	mockFactory.deploymentSvc = NewDeploymentService(&stubDeploymentRepository{
+		getErr: errors.New("cannot fetch scale"),
+	})
+	service.serviceFactory = mockFactory
+
+	req := withUser(httptest.NewRequest(http.MethodPost, "/api/scale?kind=Deployment&name=demo&namespace=default&delta=1", nil), models.Claims{
+		Username: "ops",
+		Role:     "admin",
+	})
+	rr := httptest.NewRecorder()
+
+	service.ScaleResource(rr, req)
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Fatalf("expected status 500, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "Failed to scale deployment") {
+		t.Fatalf("expected scale failure message, got %s", rr.Body.String())
+	}
+}
+
 func TestGetClusterStatsHandler_Success(t *testing.T) {
 	handlers := &models.Handlers{
 		Clients: map[string]kubernetes.Interface{"default": k8sfake.NewClientset()},
@@ -454,6 +688,150 @@ func TestGetClusterStatsHandler_Error(t *testing.T) {
 	if rr.Code != http.StatusInternalServerError {
 		t.Fatalf("expected status 500, got %d", rr.Code)
 	}
+}
+
+func TestGetClusterStatsHandler_ClusterNotFound(t *testing.T) {
+	handlers := &models.Handlers{
+		Clients: map[string]kubernetes.Interface{},
+	}
+	clusterService := cluster.NewService(handlers)
+	service := NewService(handlers, clusterService)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/cluster-stats?cluster=ghost", nil)
+	rr := httptest.NewRecorder()
+
+	service.GetClusterStats(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "cluster not found") {
+		t.Fatalf("expected cluster not found message, got %s", rr.Body.String())
+	}
+}
+
+func TestRolloutDeploymentHandler(t *testing.T) {
+	handlers := &models.Handlers{
+		Clients: map[string]kubernetes.Interface{"default": k8sfake.NewClientset()},
+	}
+	clusterService := cluster.NewService(handlers)
+	service := NewService(handlers, clusterService)
+
+	mockFactory := newMockServiceFactory()
+	mockFactory.deploymentSvc = NewDeploymentService(&stubRolloutDeploymentRepository{})
+	service.serviceFactory = mockFactory
+
+	admin := models.Claims{Username: "ops", Role: "admin"}
+
+	t.Run("success", func(t *testing.T) {
+		body := strings.NewReader(`{"namespace":"default","name":"demo"}`)
+		req := withUser(httptest.NewRequest(http.MethodPost, "/api/rollout", body), admin)
+		rr := httptest.NewRecorder()
+
+		service.RolloutDeployment(rr, req)
+
+		if rr.Code != http.StatusOK {
+			t.Fatalf("expected status 200, got %d", rr.Code)
+		}
+		if !strings.Contains(rr.Body.String(), "Deployment rollout triggered successfully") {
+			t.Fatalf("unexpected response body: %s", rr.Body.String())
+		}
+	})
+
+	t.Run("method not allowed", func(t *testing.T) {
+		req := withUser(httptest.NewRequest(http.MethodGet, "/api/rollout", nil), admin)
+		rr := httptest.NewRecorder()
+
+		service.RolloutDeployment(rr, req)
+
+		if rr.Code != http.StatusMethodNotAllowed {
+			t.Fatalf("expected status 405, got %d", rr.Code)
+		}
+	})
+
+	t.Run("invalid json", func(t *testing.T) {
+		req := withUser(httptest.NewRequest(http.MethodPost, "/api/rollout", strings.NewReader("{invalid")), admin)
+		rr := httptest.NewRecorder()
+
+		service.RolloutDeployment(rr, req)
+
+		if rr.Code != http.StatusBadRequest {
+			t.Fatalf("expected status 400, got %d", rr.Code)
+		}
+		if !strings.Contains(rr.Body.String(), "Invalid request body") {
+			t.Fatalf("expected invalid body message, got %s", rr.Body.String())
+		}
+	})
+
+	t.Run("missing params", func(t *testing.T) {
+		req := withUser(httptest.NewRequest(http.MethodPost, "/api/rollout", strings.NewReader(`{"namespace":""}`)), admin)
+		rr := httptest.NewRecorder()
+
+		service.RolloutDeployment(rr, req)
+
+		if rr.Code != http.StatusBadRequest {
+			t.Fatalf("expected status 400, got %d", rr.Code)
+		}
+		if !strings.Contains(rr.Body.String(), "Missing name or namespace") {
+			t.Fatalf("expected missing params message, got %s", rr.Body.String())
+		}
+	})
+
+	t.Run("invalid name", func(t *testing.T) {
+		req := withUser(httptest.NewRequest(http.MethodPost, "/api/rollout", strings.NewReader(`{"namespace":"default","name":"BadName"}`)), admin)
+		rr := httptest.NewRecorder()
+
+		service.RolloutDeployment(rr, req)
+
+		if rr.Code != http.StatusBadRequest {
+			t.Fatalf("expected status 400, got %d", rr.Code)
+		}
+		if !strings.Contains(rr.Body.String(), "invalid name") {
+			t.Fatalf("expected invalid name message, got %s", rr.Body.String())
+		}
+	})
+
+	t.Run("forbidden", func(t *testing.T) {
+		req := withUser(httptest.NewRequest(http.MethodPost, "/api/rollout", strings.NewReader(`{"namespace":"default","name":"demo"}`)), models.Claims{
+			Username:    "viewer",
+			Permissions: map[string]string{"default": "view"},
+		})
+		rr := httptest.NewRecorder()
+
+		service.RolloutDeployment(rr, req)
+
+		if rr.Code != http.StatusForbidden {
+			t.Fatalf("expected status 403, got %d", rr.Code)
+		}
+	})
+
+	t.Run("service error", func(t *testing.T) {
+		mockFactory.deploymentSvc = NewDeploymentService(&stubRolloutDeploymentRepository{getErr: errors.New("boom")})
+		service.serviceFactory = mockFactory
+
+		req := withUser(httptest.NewRequest(http.MethodPost, "/api/rollout", strings.NewReader(`{"namespace":"default","name":"demo"}`)), admin)
+		rr := httptest.NewRecorder()
+
+		service.RolloutDeployment(rr, req)
+
+		if rr.Code != http.StatusInternalServerError {
+			t.Fatalf("expected status 500, got %d", rr.Code)
+		}
+		if !strings.Contains(rr.Body.String(), "Failed to rollout deployment") {
+			t.Fatalf("expected rollout failure message, got %s", rr.Body.String())
+		}
+	})
+
+	t.Run("cluster not found", func(t *testing.T) {
+		req := withUser(httptest.NewRequest(http.MethodPost, "/api/rollout?cluster=ghost", strings.NewReader(`{"namespace":"default","name":"demo"}`)), admin)
+		rr := httptest.NewRecorder()
+
+		service.RolloutDeployment(rr, req)
+
+		if rr.Code != http.StatusBadRequest {
+			t.Fatalf("expected status 400, got %d", rr.Code)
+		}
+	})
 }
 
 type assertError struct{}

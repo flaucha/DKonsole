@@ -20,6 +20,17 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
         defineMonacoTheme(monaco);
     };
 
+    const handleEditorDidMount = (editor, monaco) => {
+        // Ensure font metrics are measured after the font is available to avoid cursor drift
+        monaco.editor.remeasureFonts();
+        editor.updateOptions({
+            fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, "Courier New", monospace',
+            fontLigatures: true,
+            lineHeight: 22,
+            letterSpacing: 0,
+        });
+    };
+
     const buildUrl = () => {
         const params = new URLSearchParams({ kind, name });
         if (namespace) params.append('namespace', namespace);
@@ -187,6 +198,7 @@ ${namespace ? `  namespace: ${namespace}` : ''}
                             defaultLanguage="yaml"
                             theme="dkonsole-dark"
                             beforeMount={handleEditorWillMount}
+                            onMount={handleEditorDidMount}
                             value={content}
                             onChange={(value) => setContent(value)}
                             options={{
