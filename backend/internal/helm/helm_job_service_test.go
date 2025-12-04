@@ -332,3 +332,71 @@ func TestHelmJobService_CreateHelmJob(t *testing.T) {
 		})
 	}
 }
+
+func TestHelmJobService_BuildHelmCommand(t *testing.T) {
+	service := NewHelmJobService(nil)
+
+	cmd := service.BuildHelmCommand(HelmCommandRequest{
+		Operation:    "install",
+		ReleaseName:  "demo",
+		Namespace:    "default",
+		ChartName:    "nginx",
+		Version:      "1.0.0",
+		Repo:         "https://charts.example.com",
+		ValuesYAML:   "key: val",
+		ValuesCMName: "values-cm",
+	})
+
+	if len(cmd) != 3 || cmd[0] != "/bin/sh" || cmd[1] != "-c" {
+		t.Fatalf("expected shell command wrapper, got %v", cmd)
+	}
+	if !strings.Contains(cmd[2], "helm install demo charts-example-com/nginx --namespace default --create-namespace") {
+		t.Fatalf("helm command missing install part: %s", cmd[2])
+	}
+	if !strings.Contains(cmd[2], "--version 1.0.0") || !strings.Contains(cmd[2], "-f /tmp/values/values.yaml") {
+		t.Fatalf("helm command missing flags: %s", cmd[2])
+	}
+
+	cmdNoRepo := service.BuildHelmCommand(HelmCommandRequest{
+		Operation:   "upgrade",
+		ReleaseName: "demo",
+		Namespace:   "default",
+		ChartName:   "nginx",
+	})
+	if !strings.Contains(cmdNoRepo[2], "helm repo add bitnami") || !strings.Contains(cmdNoRepo[2], "helm upgrade demo nginx --namespace default") {
+		t.Fatalf("expected default repo setup and upgrade command, got: %s", cmdNoRepo[2])
+	}
+}
+
+func TestHelmJobService_CreateHelmJob_AddsValuesVolume(t *testing.T) {
+	var capturedJob *batchv1.Job
+	mockRepo := &mockHelmJobRepository{
+		createJobFunc: func(ctx context.Context, namespace string, job *batchv1.Job) error {
+			capturedJob = job
+			return nil
+		},
+	}
+	service := NewHelmJobService(mockRepo)
+
+	_, err := service.CreateHelmJob(context.Background(), CreateHelmJobRequest{
+		Operation:         "upgrade",
+		ReleaseName:       "demo",
+		Namespace:         "default",
+		ChartName:         "nginx",
+		DkonsoleNamespace: "dkonsole",
+		ValuesYAML:        "key: val",
+		ValuesCMName:      "values-cm",
+	})
+	if err != nil {
+		t.Fatalf("CreateHelmJob returned error: %v", err)
+	}
+	if capturedJob == nil {
+		t.Fatalf("expected job to be created")
+	}
+	if len(capturedJob.Spec.Template.Spec.Volumes) == 0 {
+		t.Fatalf("expected values volume to be mounted")
+	}
+	if capturedJob.Spec.Template.Spec.Containers[0].VolumeMounts == nil {
+		t.Fatalf("expected volume mount to be set")
+	}
+}

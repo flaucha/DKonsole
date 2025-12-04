@@ -23,7 +23,7 @@ func NewService(h *models.Handlers) *Service {
 }
 
 // GetClient returns the Kubernetes client for the specified cluster
-func (s *Service) GetClient(r *http.Request) (*kubernetes.Clientset, error) {
+func (s *Service) GetClient(r *http.Request) (kubernetes.Interface, error) {
 	cluster := r.URL.Query().Get("cluster")
 	if cluster == "" {
 		cluster = "default"

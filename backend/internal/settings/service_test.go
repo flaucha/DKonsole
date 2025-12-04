@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/flaucha/DKonsole/backend/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/prometheus"
 )
 
 // mockRepository is a mock implementation of Repository
@@ -116,6 +117,7 @@ func TestService_UpdatePrometheusURLHandler(t *testing.T) {
 		wantStatusCode int
 		wantErrMsg     string
 		expectedURL    string
+		expectPromCall bool
 	}{
 		{
 			name: "successful update URL",
@@ -127,6 +129,7 @@ func TestService_UpdatePrometheusURLHandler(t *testing.T) {
 			},
 			wantStatusCode: http.StatusOK,
 			expectedURL:    "http://prometheus:9090",
+			expectPromCall: true,
 		},
 		{
 			name: "successful update HTTPS URL",
@@ -195,8 +198,9 @@ func TestService_UpdatePrometheusURLHandler(t *testing.T) {
 			}
 
 			handlersModel := &models.Handlers{}
+			promHandler := prometheus.NewHTTPHandler("", nil)
 
-			service := NewService(mockRepo, handlersModel, nil)
+			service := NewService(mockRepo, handlersModel, promHandler)
 
 			var bodyBytes []byte
 			var err error
@@ -237,6 +241,19 @@ func TestService_UpdatePrometheusURLHandler(t *testing.T) {
 					t.Errorf("UpdatePrometheusURLHandler() handlersModel.PrometheusURL = %v, want %v", handlersModel.PrometheusURL, tt.expectedURL)
 				}
 				handlersModel.RUnlock()
+
+				if tt.expectPromCall {
+					statusRR := httptest.NewRecorder()
+					statusReq := httptest.NewRequest(http.MethodGet, "/prom/status", nil)
+					promHandler.GetStatus(statusRR, statusReq)
+					var statusResp map[string]any
+					if err := json.NewDecoder(statusRR.Body).Decode(&statusResp); err != nil {
+						t.Fatalf("failed to decode prom status: %v", err)
+					}
+					if statusResp["url"] != tt.expectedURL {
+						t.Errorf("UpdatePrometheusURLHandler() prometheus url = %v, want %v", statusResp["url"], tt.expectedURL)
+					}
+				}
 			} else {
 				body := w.Body.String()
 				if tt.wantErrMsg != "" && !strings.Contains(body, tt.wantErrMsg) {

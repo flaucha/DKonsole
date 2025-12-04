@@ -61,7 +61,7 @@ func setSecurityHeaders(w http.ResponseWriter, r *http.Request) {
 
 // buildCSP constructs a Content Security Policy based on the request
 // For API routes, we use a more restrictive policy
-// For static files, we allow more resources (scripts, styles, etc.)
+// For static files, we allow needed resources without enabling inline execution
 func buildCSP(r *http.Request) string {
 	path := r.URL.Path
 
@@ -72,7 +72,7 @@ func buildCSP(r *http.Request) string {
 			"frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 	}
 
-	// For static files and frontend routes, allow necessary resources
-	// This allows inline scripts/styles for React (can be tightened with nonces in the future)
-	return "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ws: wss: https://cdn.jsdelivr.net; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+	// For static files and frontend routes, allow required resources while avoiding inline execution.
+	// Nonces/hashes can be added when wiring the HTML template if inline assets become necessary.
+	return "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ws: wss: https://cdn.jsdelivr.net; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 }

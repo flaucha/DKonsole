@@ -1,5 +1,5 @@
 // @title DKonsole API
-// @version 1.2.2
+// @version 1.4.2
 // @description API para gestión de recursos Kubernetes y Helm releases
 // @termsOfService http://swagger.io/terms/
 
@@ -113,7 +113,7 @@ func main() {
 	}
 
 	handlersModel := &models.Handlers{
-		Clients:       make(map[string]*kubernetes.Clientset),
+		Clients:       make(map[string]kubernetes.Interface),
 		Dynamics:      make(map[string]dynamic.Interface),
 		Metrics:       make(map[string]*metricsv.Clientset),
 		RESTConfigs:   make(map[string]*rest.Config),
