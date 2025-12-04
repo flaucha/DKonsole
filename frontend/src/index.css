@@ -344,56 +344,7 @@ body {
   font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Fira Mono', monospace !important;
 }
 
-.monaco-editor,
-.monaco-editor .margin,
-.monaco-editor .monaco-editor-background,
-.monaco-editor .monaco-editor .inputarea.ime-input {
-  background-color: #0f172a !important; /* gray-900 */
-  color: #e5e7eb !important;
-}
 
-.monaco-editor .lines-content {
-  color: #e5e7eb !important;
-}
-
-.monaco-editor .view-overlays .current-line,
-.monaco-editor .margin {
-  background-color: #111827 !important; /* gray-900 */
-}
-
-.monaco-editor .selected-text {
-  background-color: rgba(96, 165, 250, 0.25) !important; /* blue-400 with opacity */
-}
-
-.monaco-editor .cursors-layer .cursor {
-  border-left-color: #60a5fa !important; /* blue-400 */
-}
-
-.monaco-editor .selectionHighlight {
-  background-color: rgba(96, 165, 250, 0.2) !important;
-}
-
-.monaco-editor .scrollbar {
-  background: transparent !important;
-}
-.monaco-editor .scrollbar .slider {
-  background: rgba(107, 114, 128, 0.6) !important; /* gray-500 */
-}
-
-.xterm {
-  font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Fira Mono', monospace !important;
-  font-size: 13px;
-  color: #e5e7eb !important;
-}
-
-.xterm .xterm-viewport,
-.xterm .xterm-screen {
-  background-color: #000000 !important;
-}
-
-.xterm .xterm-cursor-block {
-  background-color: #60a5fa !important;
-}
 
 /* Ensure borders are visible in light modes */
 [data-theme="light"] .border-gray-800,
