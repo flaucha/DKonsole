@@ -116,14 +116,14 @@ if [ "$SKIP_TESTS" = false ]; then
         echo "  ⚠️  Docker not available, skipping frontend tests"
         echo "  ✅ Frontend tests skipped (will run in CI)"
     else
-        echo "  🐳 Using Docker image: node:20-alpine (same as CI)"
+        echo "  🐳 Using Docker image: node:22-alpine (same as CI)"
 
         # Pull the image if not available
-        echo "  📥 Checking/pulling Docker image node:20-alpine..."
-        if ! docker image inspect node:20-alpine > /dev/null 2>&1; then
+        echo "  📥 Checking/pulling Docker image node:22-alpine..."
+        if ! docker image inspect node:22-alpine > /dev/null 2>&1; then
             echo "  📥 Pulling Docker image (this may take a minute)..."
-            docker pull node:20-alpine || {
-                echo "  ❌ Failed to pull Docker image node:20-alpine"
+            docker pull node:22-alpine || {
+                echo "  ❌ Failed to pull Docker image node:22-alpine"
                 echo "  💡 Check your internet connection and Docker daemon"
                 exit 1
             }
@@ -139,19 +139,19 @@ if [ "$SKIP_TESTS" = false ]; then
         docker run --rm \
             -v "${FRONTEND_DIR}:/app" \
             -w /app \
-            node:20-alpine \
+            node:22-alpine \
             sh -c "
                 echo '📥 Installing dependencies...' &&
                 npm install &&
                 echo '' &&
-                echo '🔒 Running npm audit...' &&
-                npm audit --audit-level=moderate 2>&1 || echo '⚠️  npm audit found vulnerabilities (non-blocking)' &&
+                echo '🔒 Running npm audit (high)...' &&
+                npm audit --audit-level=high 2>&1 &&
                 echo '' &&
                 echo '🔍 Running linter...' &&
-                npm run lint 2>&1 || echo '⚠️  Linter found issues (non-blocking)' &&
+                npm run lint 2>&1 &&
                 echo '' &&
                 echo '🧪 Running tests with coverage...' &&
-                npm run test -- --run --coverage
+                npm run test -- --coverage
             " || {
             echo "  ❌ Frontend tests failed in Docker"
             exit 1

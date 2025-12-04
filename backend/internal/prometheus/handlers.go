@@ -1,9 +1,13 @@
 package prometheus
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
@@ -216,4 +220,51 @@ func (h *HTTPHandler) GetClusterOverview(w http.ResponseWriter, r *http.Request)
 
 	// Write JSON response (HTTP layer)
 	utils.JSONResponse(w, http.StatusOK, response)
+}
+
+// IsConfigured returns true if a Prometheus URL is set.
+func (h *HTTPHandler) IsConfigured() bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.prometheusURL != ""
+}
+
+// HealthCheck verifies Prometheus readiness. Returns nil if not configured.
+func (h *HTTPHandler) HealthCheck(ctx context.Context) error {
+	h.mu.RLock()
+	base := h.prometheusURL
+	h.mu.RUnlock()
+
+	if base == "" {
+		return nil
+	}
+
+	parsed, err := url.Parse(base)
+	if err != nil {
+		return fmt.Errorf("invalid prometheus url: %w", err)
+	}
+
+	// Ensure single slash join
+	readyPath := strings.TrimSuffix(parsed.Path, "/") + "/-/ready"
+	parsed.Path = readyPath
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, parsed.String(), nil)
+	if err != nil {
+		return fmt.Errorf("failed to create readiness request: %w", err)
+	}
+
+	client := &http.Client{
+		Timeout: 2 * time.Second,
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("prometheus readiness check failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("prometheus readiness returned status %d", resp.StatusCode)
+	}
+
+	return nil
 }

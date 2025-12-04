@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"mime"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 
@@ -97,6 +99,9 @@ func NewRouter(deps Dependencies) *http.ServeMux {
 	mux.HandleFunc("/healthz", middleware.SecurityHeadersMiddleware(health.HealthHandler))
 	mux.HandleFunc("/health", middleware.SecurityHeadersMiddleware(health.HealthHandler))
 	mux.HandleFunc("/readyz", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+
 		setupRequired := false
 		if authService != nil && authService.IsSetupMode() {
 			setupRequired = true
@@ -126,9 +131,26 @@ func NewRouter(deps Dependencies) *http.ServeMux {
 			return
 		}
 
+		prometheusStatus := map[string]interface{}{
+			"enabled": false,
+			"healthy": true,
+		}
+		if deps.PrometheusService != nil {
+			prometheusStatus["enabled"] = deps.PrometheusService.IsConfigured()
+			if deps.PrometheusService.IsConfigured() {
+				if err := deps.PrometheusService.HealthCheck(ctx); err != nil {
+					utils.ErrorResponse(w, http.StatusServiceUnavailable, fmt.Sprintf("prometheus unhealthy: %v", err))
+					return
+				}
+			} else {
+				prometheusStatus["healthy"] = false
+			}
+		}
+
 		utils.JSONResponse(w, http.StatusOK, map[string]interface{}{
 			"status":        "ready",
 			"setupRequired": setupRequired,
+			"prometheus":    prometheusStatus,
 		})
 	}))
 
