@@ -60,8 +60,12 @@ jobs:
         working-directory: ./backend
         run: go test -v -coverprofile=coverage.out ./...
 
+      - name: Build backend
+        working-directory: ./backend
+        run: go build ./...
+
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         if: always()
         with:
           file: ./backend/coverage.out
@@ -103,6 +107,10 @@ jobs:
       - name: Run tests
         working-directory: ./frontend
         run: npm run test -- --coverage
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
 
       - name: Upload coverage
         uses: codecov/codecov-action@v5
