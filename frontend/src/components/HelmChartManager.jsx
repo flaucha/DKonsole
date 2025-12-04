@@ -815,7 +815,8 @@ const HelmChartManager = ({ namespace }) => {
                                         <Editor
                                             height="100%"
                                             defaultLanguage="yaml"
-                                            theme="vs-dark"
+                                            theme="dkonsole-dark"
+                                            beforeMount={handleEditorWillMount}
                                             value={installForm.valuesYaml}
                                             onChange={(value) => setInstallForm({ ...installForm, valuesYaml: value || '' })}
                                             options={{
