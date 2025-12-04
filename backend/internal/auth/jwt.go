@@ -33,16 +33,13 @@ type AuthClaims struct {
 // ExtractToken extracts JWT token from HTTP request.
 // It checks for the token in the following order:
 //  1. Authorization header (Bearer token)
-//  2. Query parameter "token"
-//  3. Cookie named "token"
+//  2. Cookie named "token"
 //
 // Returns an error if no token is found in any of these locations.
 func (s *JWTService) ExtractToken(r *http.Request) (string, error) {
 	tokenString := ""
 	if authHeader := r.Header.Get("Authorization"); authHeader != "" {
 		tokenString = strings.Replace(authHeader, "Bearer ", "", 1)
-	} else if q := r.URL.Query().Get("token"); q != "" {
-		tokenString = q
 	} else if c, err := r.Cookie("token"); err == nil {
 		tokenString = c.Value
 	}

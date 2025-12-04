@@ -1,6 +1,6 @@
 module github.com/flaucha/DKonsole/backend
 
-go 1.24.11
+go 1.25
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.3.0

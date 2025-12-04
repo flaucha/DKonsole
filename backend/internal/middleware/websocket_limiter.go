@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -101,7 +102,7 @@ func WebSocketLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		// Check if connection limit is exceeded
 		if !wsLimiter.incrementConnection(clientIP) {
-			http.Error(w, "WebSocket connection limit exceeded. Maximum 5 concurrent connections per IP.", http.StatusTooManyRequests)
+			http.Error(w, fmt.Sprintf("WebSocket connection limit exceeded. Maximum %d concurrent connections per IP.", wsLimiter.maxPerIP), http.StatusTooManyRequests)
 			return
 		}
 

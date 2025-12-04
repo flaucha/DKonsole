@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"log"
 	"os"
 
@@ -15,18 +17,19 @@ var (
 func init() {
 	jwtSecretStr := os.Getenv("JWT_SECRET")
 	if len(jwtSecretStr) == 0 {
-		// JWT_SECRET is optional in setup mode (will be created during setup)
-		// In non-production environments, use a default for testing/development
 		if os.Getenv("GO_ENV") == "production" {
-			// In production, we'll allow it to be empty if we're in setup mode
-			// The actual validation will happen when we try to use it
-			utils.LogWarn("JWT_SECRET environment variable not set - may be in setup mode", map[string]interface{}{
+			// In production we expect Kubernetes secret to be present; leave empty to force failure if used.
+			utils.LogWarn("JWT_SECRET environment variable not set - relying on cluster secret or setup mode", map[string]interface{}{
 				"level": "warning",
 			})
 		} else {
-			// In non-production, use a default for testing/development
-			jwtSecretStr = "default-secret-key-for-testing-only-change-in-production"
-			utils.LogWarn("Using default JWT_SECRET (INSECURE - for testing only)", map[string]interface{}{
+			// Generate a random secret for non-production to avoid predictable defaults
+			buf := make([]byte, 32)
+			if _, err := rand.Read(buf); err != nil {
+				log.Fatal("CRITICAL: failed to generate JWT secret:", err)
+			}
+			jwtSecretStr = hex.EncodeToString(buf)
+			utils.LogWarn("Generated random JWT_SECRET for non-production (set JWT_SECRET to persist sessions)", map[string]interface{}{
 				"level": "warning",
 			})
 		}
