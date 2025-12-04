@@ -27,8 +27,6 @@ export const parseMemory = (value) => {
 export const calculatePercentage = (used, hard) => {
     if (!used || !hard) return 0;
 
-    // Determine type based on hard value format (heuristic)
-    const isCpu = hard.endsWith('m') || !isNaN(hard); // Simple check, can be improved
     const isMemory = ['Ki', 'Mi', 'Gi', 'Ti'].some(u => hard.endsWith(u));
 
     let usedVal = 0;

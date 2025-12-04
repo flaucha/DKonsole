@@ -24,7 +24,7 @@ export const getExpandableRowClasses = (isExpanded, hasPadding = true) => {
  * @param {number} colSpan - Number of columns to span
  * @returns {string} CSS classes for the table cell
  */
-export const getExpandableCellClasses = (isExpanded, colSpan) => {
+export const getExpandableCellClasses = (isExpanded) => {
     return `px-6 pt-0 bg-gray-800 border-0 ${isExpanded ? 'border-b border-gray-700' : ''}`;
 };
 
@@ -58,7 +58,6 @@ export const getExpandableRowStyles = (isExpanded, kind = null, customMaxHeight 
 export const getExpandableRowRowClasses = (isExpanded) => {
     return `group hover:bg-gray-800/50 transition-colors cursor-pointer ${isExpanded ? 'bg-gray-800/30' : ''}`;
 };
-
 
 
 
