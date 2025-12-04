@@ -123,7 +123,7 @@ const TerminalViewer = ({ namespace, pod, container, onClose }) => {
                 </div>
 
                 {/* Terminal Surface */}
-                <div className="flex-1 bg-black overflow-hidden">
+                <div className="flex-1 bg-black overflow-hidden" style={{ backgroundColor: '#000000' }}>
                     <div ref={termContainerRef} className="w-full h-full" />
                 </div>
             </div>

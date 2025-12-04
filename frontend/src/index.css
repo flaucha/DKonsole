@@ -341,7 +341,7 @@ body {
 /* Monaco & xterm isolation: prevent global overrides and ensure readable selections */
 .monaco-editor,
 .monaco-editor * {
-  font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Fira Mono', monospace !important;
+  font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Fira Mono', monospace;
 }
 
 

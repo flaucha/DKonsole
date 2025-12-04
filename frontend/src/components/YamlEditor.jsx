@@ -175,7 +175,7 @@ ${namespace ? `  namespace: ${namespace}` : ''}
                     </div>
                 )}
 
-                <div className="flex-1 flex flex-col relative monaco-editor-container">
+                <div className="flex-1 flex flex-col relative monaco-editor-container" style={{ backgroundColor: '#1f2937' }}>
                     {loading ? (
                         <div className="flex-1 flex items-center justify-center text-gray-400">
                             <Loader2 size={20} className="animate-spin mr-2" />
