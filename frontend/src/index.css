@@ -338,6 +338,39 @@ body {
   background-color: rgb(var(--color-gray-800)) !important;
 }
 
+/* Monaco & xterm isolation: prevent global overrides and ensure readable selections */
+.monaco-editor,
+.monaco-editor * {
+  font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Fira Mono', monospace !important;
+}
+
+.monaco-editor .view-overlays .current-line,
+.monaco-editor .margin {
+  background-color: #111827 !important; /* gray-900 */
+}
+
+.monaco-editor .selected-text {
+  background-color: rgba(96, 165, 250, 0.25) !important; /* blue-400 with opacity */
+}
+
+.monaco-editor .cursors-layer .cursor {
+  border-left-color: #60a5fa !important; /* blue-400 */
+}
+
+.xterm {
+  font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Fira Mono', monospace !important;
+  font-size: 13px;
+}
+
+.xterm .xterm-viewport,
+.xterm .xterm-screen {
+  background-color: #000000 !important;
+}
+
+.xterm .xterm-cursor-block {
+  background-color: #60a5fa !important;
+}
+
 /* Ensure borders are visible in light modes */
 [data-theme="light"] .border-gray-800,
 [data-theme="light"] .border-gray-700 {
