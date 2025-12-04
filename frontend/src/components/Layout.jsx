@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Box, Settings, Activity, ChevronDown, ChevronRight, Network, HardDrive, Menu, Server, ListTree, Shield, Database, Gauge, Package, LogOut, PanelLeftClose, PanelLeftOpen, X, Siren } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { LayoutDashboard, Box, ChevronDown, Network, HardDrive, Shield, Package, PanelLeftClose, PanelLeftOpen, X, Siren } from 'lucide-react';
 import logoFullDark from '../assets/logo-full-dark.svg';
 import logoFullLight from '../assets/logo-full-light.svg';
 import { useSettings } from '../context/SettingsContext';
@@ -135,8 +135,8 @@ const SubMenu = ({ isOpen, children, animationStyle = 'slide', animationSpeed = 
 };
 
 const Layout = ({ children, headerContent }) => {
-    const { currentCluster, theme, menuAnimation, menuAnimationSpeed } = useSettings();
-    const { logout, authFetch, user } = useAuth();
+    const { theme, menuAnimation, menuAnimationSpeed } = useSettings();
+    const { authFetch, user } = useAuth();
     const [isAdmin, setIsAdmin] = useState(false);
     const [checkingAdmin, setCheckingAdmin] = useState(true);
     const [hasPermissions, setHasPermissions] = useState(false);
@@ -154,7 +154,7 @@ const Layout = ({ children, headerContent }) => {
                 } else {
                     setIsAdmin(false);
                 }
-            } catch (err) {
+            } catch {
                 setIsAdmin(false);
             } finally {
                 setCheckingAdmin(false);
@@ -196,8 +196,6 @@ const Layout = ({ children, headerContent }) => {
         accessControl: false,
         adminArea: false,
     });
-    const location = useLocation();
-
     // Get current theme and determine default logo immediately
     const currentTheme = theme || localStorage.getItem('theme') || 'default';
     const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';

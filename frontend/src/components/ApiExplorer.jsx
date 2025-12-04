@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Search, ListTree, RefreshCw, Globe, MapPin, FileText, ChevronDown, X } from 'lucide-react';
+import { Search, ListTree, RefreshCw, Globe, MapPin, FileText, X } from 'lucide-react';
 import YamlEditor from './YamlEditor';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -32,7 +32,7 @@ const ApiExplorer = ({ namespace }) => {
                 } else {
                     setIsAdmin(false);
                 }
-            } catch (err) {
+            } catch {
                 setIsAdmin(false);
             } finally {
                 setCheckingAdmin(false);

@@ -1,78 +1,62 @@
 /**
  * Parses error responses from the API and extracts a human-readable error message.
- * Handles both JSON and text responses.
+ * Handles JSON bodies, plain text and empty responses without throwing.
  *
  * @param {Response} response - The fetch Response object
  * @returns {Promise<string>} A human-readable error message
  */
 export async function parseErrorResponse(response) {
+    const status = response?.status;
+    const statusText = response?.statusText || '';
+    const contentType = response?.headers?.get?.('content-type') || '';
+
     try {
-        const contentType = response.headers.get('content-type');
+        const raw = (await response?.text?.()) || '';
+        const text = raw.trim();
+        const looksJson = contentType.includes('application/json') || text.startsWith('{') || text.startsWith('[');
 
-        // Try to parse as JSON first
-        if (contentType && contentType.includes('application/json')) {
-            const errorData = await response.json();
+        if (looksJson && text) {
+            try {
+                const errorData = JSON.parse(text);
 
-            // Handle different error response formats
-            if (typeof errorData === 'string') {
-                return errorData;
-            }
+                if (typeof errorData === 'string') {
+                    return errorData;
+                }
 
-            if (errorData.error) {
-                return errorData.error;
-            }
-
-            if (errorData.message) {
-                return errorData.message;
-            }
-
-            // If it's an object, try to extract meaningful information
-            if (typeof errorData === 'object') {
-                // Check for common error fields
-                const errorFields = ['error', 'message', 'detail', 'description', 'reason'];
-                for (const field of errorFields) {
-                    if (errorData[field]) {
+                const knownFields = ['error', 'message', 'detail', 'description', 'reason'];
+                for (const field of knownFields) {
+                    if (errorData?.[field]) {
                         return String(errorData[field]);
                     }
                 }
 
-                // If no standard field found, stringify but make it readable
-                const errorStr = JSON.stringify(errorData, null, 2);
-                // If it's a short error, return it directly
-                if (errorStr.length < 200) {
-                    return errorStr;
+                if (typeof errorData === 'object' && errorData !== null) {
+                    const stringified = JSON.stringify(errorData, null, 2);
+                    if (stringified.length < 200) {
+                        return stringified;
+                    }
+                    const firstValue = Object.values(errorData)[0];
+                    if (firstValue) {
+                        return String(firstValue);
+                    }
                 }
-                // Otherwise, try to extract the first meaningful value
-                const firstValue = Object.values(errorData)[0];
-                if (firstValue) {
-                    return String(firstValue);
-                }
+            } catch {
+                // Parsing failed, fall back to the raw text below.
             }
         }
 
-        // Fallback to text
-        const text = await response.text();
         if (text) {
-            // Try to parse as JSON if it looks like JSON
-            if (text.trim().startsWith('{') || text.trim().startsWith('[')) {
-                try {
-                    const parsed = JSON.parse(text);
-                    if (parsed.error) return parsed.error;
-                    if (parsed.message) return parsed.message;
-                } catch {
-                    // Not valid JSON, return as text
-                }
-            }
             return text;
         }
 
-        // Last resort: status text
-        return response.statusText || `Error ${response.status}`;
-    } catch (_err) {
-        // If all else fails, return a generic error
-        return `Error ${response.status}: ${response.statusText || 'Unknown error'}`;
+        return statusText || (status ? `Error ${status}` : 'Unknown error');
+    } catch {
+        return status ? `Error ${status}: ${statusText || 'Unknown error'}` : 'Unknown error';
     }
 }
+
+// Backwards compatibility for older imports.
+export const parseResponseError = parseErrorResponse;
 
 /**
  * Parses an error object (from catch blocks) and extracts a human-readable message.

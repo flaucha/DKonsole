@@ -179,7 +179,6 @@ export const DataEditor = ({ resource, data, isSecret, onClose, onSaved }) => {
                     }
                 }
                 // Insert data section
-                const indent = 2; // Default indent for data section
                 lines.splice(insertIndex, 0, 'data:');
                 dataStartIndex = insertIndex;
                 dataIndent = 0; // Top level

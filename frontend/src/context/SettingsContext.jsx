@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
 import { logger } from '../utils/logger';
 
 const SettingsContext = createContext();
@@ -7,7 +6,6 @@ const SettingsContext = createContext();
 export const useSettings = () => useContext(SettingsContext);
 
 export const SettingsProvider = ({ children }) => {
-    const { authFetch } = useAuth();
     const [clusters, setClusters] = useState([]);
     const [currentCluster, setCurrentCluster] = useState('default');
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'default');

@@ -493,7 +493,7 @@ const WorkloadList = ({ namespace, kind }) => {
                             } else {
                                 setConfirmRollout(res);
                             }
-                        } catch (err) {
+                        } catch {
                             setConfirmRollout(res);
                         }
                     }}

@@ -11,7 +11,7 @@ const __dirname = dirname(__filename)
 let version = '1.1.6' // default
 try {
   version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
-} catch (_err) {
+} catch {
   console.warn('Could not read VERSION file, using default:', version)
 }
 

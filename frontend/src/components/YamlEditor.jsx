@@ -111,7 +111,7 @@ ${namespace ? `  namespace: ${namespace}` : ''}
             setCopying(true);
             await navigator.clipboard.writeText(content);
             setTimeout(() => setCopying(false), 800);
-        } catch (e) {
+        } catch {
             setCopying(false);
         }
     };

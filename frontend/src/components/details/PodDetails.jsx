@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Server, Network, Activity, Box, HardDrive, Clock, Terminal, Pin } from 'lucide-react';
+import { Server, Network, Activity, Box, HardDrive, Clock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { DetailRow, EditYamlButton } from './CommonDetails';
 import LogViewerInline from './LogViewerInline';

@@ -5,7 +5,6 @@ import NamespaceSelector from './components/NamespaceSelector';
 import Loading from './components/Loading';
 import Settings from './components/Settings';
 import About from './components/About';
-import UserMenu from './components/UserMenu';
 import { SettingsProvider } from './context/SettingsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
