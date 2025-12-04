@@ -21,13 +21,24 @@ const YamlEditor = ({ resource, onClose, onSaved }) => {
     };
 
     const handleEditorDidMount = (editor, monaco) => {
-        // Ensure font metrics are measured after the font is available to avoid cursor drift
-        monaco.editor.remeasureFonts();
+        const remeasure = () => {
+            monaco.editor.remeasureFonts();
+            editor.layout();
+        };
+
         editor.updateOptions({
-            fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, "Courier New", monospace',
-            fontLigatures: true,
             lineHeight: 22,
             letterSpacing: 0,
+        });
+
+        // Run after fonts load and on next tick to avoid cursor drift due to stale metrics
+        document.fonts?.ready.then(remeasure).catch(() => {});
+        setTimeout(remeasure, 0);
+
+        // Keep in sync on resize; clean up on dispose
+        window.addEventListener('resize', remeasure);
+        editor.onDidDispose(() => {
+            window.removeEventListener('resize', remeasure);
         });
     };
 

@@ -341,7 +341,16 @@ body {
 /* Monaco & xterm isolation: prevent global overrides and ensure readable selections */
 .monaco-editor,
 .monaco-editor * {
-  font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Fira Mono', monospace;
+  font-size: 14px !important;
+  line-height: 22px !important;
+}
+
+/* Lock Monaco scale to 100% to avoid cursor drift when parent layouts use transforms */
+.monaco-editor-container,
+.monaco-editor,
+.monaco-editor .overflow-guard {
+  transform: none !important;
+  zoom: 1 !important;
 }
 
 
