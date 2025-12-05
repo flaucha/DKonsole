@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.4.2-green.svg)
+![Version](https://img.shields.io/badge/version-1.4.3-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built entirely with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -30,7 +30,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.4.2
+git checkout v1.4.3
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -151,18 +151,25 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.4.2"
+  tag: "1.4.3"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.4.2`
+- **Unified**: `dkonsole/dkonsole:1.4.3`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.4.3 (2025-12-06)
+**🎨 YAML editor polish & stability**
+
+- Atom One Dark theme applied to the Monaco YAML editor for consistent contrast.
+- Fixed cursor drift/light-mode overrides and locked popup editors to a stable 100% scale.
+- Added backend test coverage for watches, settings, API handlers, and logo storage.
 
 ### v1.4.2 (2025-12-05)
 **🔧 Terminal dock & stability**
@@ -175,11 +182,6 @@ The official image is available at:
 **🐛 Bug Fixes & UX Improvements**
 
 - **Namespace Filter "All"** fixed for quotas/limits, faster refetch (2s), merged Quotas/Limits menu, reorderable AGE column.
-
-### v1.4.0 (2025-12-01)
-**✨ Persistent column layouts & documentation refresh**
-
-- Column order persistence with drag handles and saved preferences, shared `DEFAULT_NAMESPACE`, docs/Helm/dockerhub aligned to `dkonsole.lan`.
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 
