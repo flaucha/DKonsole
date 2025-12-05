@@ -62,8 +62,8 @@ The Helm chart handles:
 
 ## Image Layers
 
-- **Frontend Builder**: Node.js 18 Alpine - builds React application
-- **Backend Builder**: Go 1.24 Alpine - compiles Go backend
+- **Frontend Builder**: Node.js 22 Alpine - builds React application
+- **Backend Builder**: Go 1.25.5 Alpine - compiles Go backend
 - **Runtime**: Alpine 3.19 - minimal production image
 
 ## Security
@@ -95,7 +95,7 @@ Default Helm values:
 ## Tags
 
 - `latest`: Points to the most recent stable release
-- Version tags: `1.4.3`, `1.4.2`, `1.4.1`, etc.
+- Version tags: `1.4.4`, `1.4.3`, `1.4.2`, etc.
 
 See [Docker Hub tags](https://hub.docker.com/r/dkonsole/dkonsole/tags) for all available versions.
 

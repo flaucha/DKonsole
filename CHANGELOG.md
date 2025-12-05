@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.4] - 2025-12-07
+
+### Changed
+- **Go Toolchain**: Backend now builds with Go 1.25.5 (Docker image, go.mod toolchain, and install script) to pick up the patched crypto/x509 standard library.
+- **CI Pinning**: GitHub Actions workflows pin Go 1.25.5 so govulncheck and test runs use the fixed toolchain.
+
+### Fixed
+- **Security Scans**: Resolved govulncheck failures for GO-2025-4175 and GO-2025-4155 by consuming the patched Go release.
+
 ## [1.4.3] - 2025-12-06
 
 ### Added

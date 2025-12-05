@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.4.3-green.svg)
+![Version](https://img.shields.io/badge/version-1.4.4-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built entirely with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -30,7 +30,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.4.3
+git checkout v1.4.4
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -151,18 +151,24 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.4.3"
+  tag: "1.4.4"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.4.3`
+- **Unified**: `dkonsole/dkonsole:1.4.4`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.4.4 (2025-12-07)
+**🔒 Go toolchain patch**
+
+- Backend build (go.mod, Docker image, install script) now uses Go 1.25.5 to include the patched crypto/x509 standard library (GO-2025-4175, GO-2025-4155).
+- CI/security workflows pin Go 1.25.5 so govulncheck runs against the fixed toolchain.
 
 ### v1.4.3 (2025-12-06)
 **🎨 YAML editor polish & stability**
@@ -177,11 +183,6 @@ The official image is available at:
 - **Pin/Minimize Dock**: Header dock for multiple pinned terminals; one active view at a time with minimize/restore.
 - **Stability**: Removed exec timeouts, added WebSocket keep-alive, and raised default connection cap to 20 (`MAX_WS_CONNECTIONS`).
 - **UI**: Consistent terminal sizing anchored bottom-right; pin action moved into terminal header.
-
-### v1.4.1 (2025-12-03)
-**🐛 Bug Fixes & UX Improvements**
-
-- **Namespace Filter "All"** fixed for quotas/limits, faster refetch (2s), merged Quotas/Limits menu, reorderable AGE column.
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 
