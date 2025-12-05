@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -128,4 +129,142 @@ func TestContentTypeFixer_WriteHeader(t *testing.T) {
 	if ct := rr.Header().Get("Content-Type"); ct != "application/javascript; charset=utf-8" {
 		t.Fatalf("unexpected content type: %s", ct)
 	}
+
+	// Test default fallthrough
+	rr = httptest.NewRecorder()
+	fixer = &contentTypeFixer{ResponseWriter: rr, path: "/assets/unknown.xyz"}
+	fixer.WriteHeader(http.StatusOK)
+	// We just ensure it doesn't panic
 }
+
+func TestRouter_StaticFiles(t *testing.T) {
+
+	// We need to create the actual static files in the temp dir
+	// The newTestRouter uses a temp dir for static files
+	// However, we don't have easy access to it from here unless we modify newTestRouter return signature
+	// or recreating the router with known path.
+	// Let's create a specific router for this test.
+	tmpDir := t.TempDir()
+	staticDir := filepath.Join(tmpDir, "static")
+	if err := os.MkdirAll(filepath.Join(staticDir, "assets"), 0755); err != nil {
+		t.Fatalf("failed to create static dir: %v", err)
+	}
+
+	// Create a dummy index.html
+	if err := os.WriteFile(filepath.Join(staticDir, "index.html"), []byte("<html></html>"), 0644); err != nil {
+		t.Fatalf("failed to create index.html: %v", err)
+	}
+
+	// Create a dummy asset
+	if err := os.WriteFile(filepath.Join(staticDir, "assets", "test.js"), []byte("console.log('hi')"), 0644); err != nil {
+		t.Fatalf("failed to create test.js: %v", err)
+	}
+
+	// Re-init router with this static dir
+	clientset := k8sfake.NewSimpleClientset()
+	handlersModel := &models.Handlers{Clients: map[string]kubernetes.Interface{"default": clientset}}
+	nullDep := Dependencies{
+		StaticDir:     staticDir,
+		HandlersModel: handlersModel,
+		AuthService:   &auth.Service{}, // Minimal needed
+	}
+	// We need a clearer way to init null deps, but let's try to reuse newTestRouter logic manually or modify it.
+	// Actually, let's just use NewRouter with minimal deps
+	r := NewRouter(nullDep)
+
+	t.Run("serve index.html", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("serve asset", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/assets/test.js", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		if ct := rr.Header().Get("Content-Type"); ct != "application/javascript; charset=utf-8" {
+			t.Errorf("expected js content type, got %s", ct)
+		}
+	})
+
+	t.Run("404 for unknown", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/unknown", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		// It should serve index.html for SPA routing (if configured) or 404
+		// Looking at code:
+		// if strings.HasPrefix(r.URL.Path, "/api") -> 404
+		// else serve index.html
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200 (index.html), got %d", rr.Code)
+		}
+	})
+
+	t.Run("404 for api", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/unknown", nil)
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
+		if rr.Code != http.StatusNotFound {
+			t.Errorf("expected 404, got %d", rr.Code)
+		}
+	})
+}
+
+func TestEnableCors(t *testing.T) {
+	// Setup a handler wrapped with enableCors
+	handler := enableCors(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	t.Run("no origin", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/", nil)
+		rr := httptest.NewRecorder()
+		handler(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("same origin", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/", nil)
+		req.Header.Set("Origin", "http://example.com")
+		req.Host = "example.com"
+		rr := httptest.NewRecorder()
+		handler(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		if rr.Header().Get("Access-Control-Allow-Origin") != "http://example.com" {
+			t.Errorf("expected ACAO header")
+		}
+	})
+
+	t.Run("different origin allowed via env", func(t *testing.T) {
+		t.Setenv("ALLOWED_ORIGINS", "http://allowed.com")
+		req := httptest.NewRequest("GET", "/", nil)
+		req.Header.Set("Origin", "http://allowed.com")
+		rr := httptest.NewRecorder()
+		handler(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+	})
+
+	t.Run("different origin denied", func(t *testing.T) {
+		t.Setenv("ALLOWED_ORIGINS", "http://allowed.com")
+		req := httptest.NewRequest("GET", "/", nil)
+		req.Header.Set("Origin", "http://denied.com")
+		rr := httptest.NewRecorder()
+		handler(rr, req)
+		if rr.Code != http.StatusForbidden {
+			t.Errorf("expected 403, got %d", rr.Code)
+		}
+	})
+}
+

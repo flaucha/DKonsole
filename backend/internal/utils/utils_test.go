@@ -1,11 +1,14 @@
 package utils
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -247,11 +250,205 @@ func TestGetClientIP(t *testing.T) {
 }
 
 func TestAuditLog(t *testing.T) {
-	// This is a logging function, so we just test it doesn't panic
+	// hook logger to buffer
+	var buf bytes.Buffer
+	Logger.SetOutput(&buf)
+	defer Logger.SetOutput(os.Stdout)
+	Logger.SetFormatter(&logrus.JSONFormatter{})
+
 	req := httptest.NewRequest("GET", "/test", nil)
 	req.RemoteAddr = "192.168.1.1:8080"
-	AuditLog(req, "test-action", "test-resource", "test-name", "default", true, nil, nil)
-	// If we get here without panic, the test passes
+	
+	AuditLog(req, "test-action", "test-resource", "test-name", "default", true, nil, map[string]interface{}{"key": "value"})
+
+	// Verify log output
+	var entry map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &entry); err != nil {
+		t.Fatalf("Failed to parse log entry: %v", err)
+	}
+
+	if entry["action"] != "test-action" {
+		t.Errorf("AuditLog() action = %v, want %v", entry["action"], "test-action")
+	}
+	if entry["user"] != "anonymous" {
+		t.Errorf("AuditLog() user = %v, want %v", entry["user"], "anonymous")
+	}
+	if entry["key"] != "value" {
+		t.Errorf("AuditLog() details key = %v, want %v", entry["key"], "value")
+	}
+}
+
+func TestLogAuditEntry(t *testing.T) {
+	var buf bytes.Buffer
+	Logger.SetOutput(&buf)
+	defer Logger.SetOutput(os.Stdout)
+	Logger.SetFormatter(&logrus.JSONFormatter{})
+
+	entry := AuditLogEntry{
+		User:      "test-user",
+		IP:        "10.0.0.1",
+		Action:    "create",
+		Resource:  "pods",
+		Namespace: "default",
+		Success:   true,
+		Details:   map[string]interface{}{"foo": "bar"},
+	}
+
+	LogAuditEntry(entry)
+
+	var logEntry map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &logEntry); err != nil {
+		t.Fatalf("Failed to parse log entry: %v", err)
+	}
+
+	if logEntry["user"] != "test-user" {
+		t.Errorf("LogAuditEntry() user = %v, want %v", logEntry["user"], "test-user")
+	}
+	if logEntry["foo"] != "bar" {
+		t.Errorf("LogAuditEntry() detail foo = %v, want %v", logEntry["foo"], "bar")
+	}
+}
+
+func TestJSONResponse(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]string{"foo": "bar"}
+	
+	JSONResponse(w, http.StatusCreated, data)
+
+	if w.Code != http.StatusCreated {
+		t.Errorf("JSONResponse() status = %v, want %v", w.Code, http.StatusCreated)
+	}
+	if w.Header().Get("Content-Type") != "application/json" {
+		t.Errorf("JSONResponse() Content-Type = %v, want application/json", w.Header().Get("Content-Type"))
+	}
+
+	var response map[string]string
+	if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+	if response["foo"] != "bar" {
+		t.Errorf("JSONResponse() body = %v, want %v", response["foo"], "bar")
+	}
+}
+
+func TestErrorResponse(t *testing.T) {
+	w := httptest.NewRecorder()
+	ErrorResponse(w, http.StatusForbidden, "access denied")
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("ErrorResponse() status = %v, want %v", w.Code, http.StatusForbidden)
+	}
+
+	var response map[string]string
+	if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+	if response["error"] != "access denied" {
+		t.Errorf("ErrorResponse() error = %v, want %v", response["error"], "access denied")
+	}
+}
+
+func TestSuccessResponse(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]string{"id": "123"}
+	SuccessResponse(w, "created successfully", data)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("SuccessResponse() status = %v, want %v", w.Code, http.StatusOK)
+	}
+
+	var response map[string]interface{}
+	if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+	if response["status"] != "success" {
+		t.Errorf("SuccessResponse() status = %v, want success", response["status"])
+	}
+	if response["message"] != "created successfully" {
+		t.Errorf("SuccessResponse() message = %v, want created successfully", response["message"])
+	}
+	
+	respData, ok := response["data"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("SuccessResponse() data is not a map")
+	}
+	if respData["id"] != "123" {
+		t.Errorf("SuccessResponse() data.id = %v, want 123", respData["id"])
+	}
+}
+
+func TestParsePodParams(t *testing.T) {
+	tests := []struct {
+		name        string
+		queryParams map[string]string
+		wantErr     bool
+		wantParams  *PodParams
+	}{
+		{
+			name: "valid params",
+			queryParams: map[string]string{
+				"namespace": "default",
+				"pod":       "my-pod",
+				"container": "my-container",
+			},
+			wantErr: false,
+			wantParams: &PodParams{
+				Namespace: "default",
+				PodName:   "my-pod",
+				Container: "my-container",
+			},
+		},
+		{
+			name: "missing namespace",
+			queryParams: map[string]string{
+				"pod": "my-pod",
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing pod",
+			queryParams: map[string]string{
+				"namespace": "default",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid namespace",
+			queryParams: map[string]string{
+				"namespace": "InvalidNamespace",
+				"pod":       "my-pod",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/test", nil)
+			q := req.URL.Query()
+			for k, v := range tt.queryParams {
+				q.Set(k, v)
+			}
+			req.URL.RawQuery = q.Encode()
+
+			got, err := ParsePodParams(req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParsePodParams() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr {
+				if got.Namespace != tt.wantParams.Namespace {
+					t.Errorf("ParsePodParams() namespace = %v, want %v", got.Namespace, tt.wantParams.Namespace)
+				}
+				if got.PodName != tt.wantParams.PodName {
+					t.Errorf("ParsePodParams() pod = %v, want %v", got.PodName, tt.wantParams.PodName)
+				}
+				if got.Container != tt.wantParams.Container {
+					t.Errorf("ParsePodParams() container = %v, want %v", got.Container, tt.wantParams.Container)
+				}
+			}
+		})
+	}
 }
 
 // Helper function to check if string contains substring

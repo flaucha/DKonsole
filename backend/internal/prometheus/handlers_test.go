@@ -2,6 +2,7 @@ package prometheus
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -114,6 +115,32 @@ func TestHTTPHandler_GetMetrics(t *testing.T) {
 			t.Fatalf("status = %d, want 200: %s", rr.Code, rr.Body.String())
 		}
 	})
+
+	t.Run("not configured", func(t *testing.T) {
+		h := newTestHandler("")
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/api/prometheus/metrics?deployment=demo&namespace=default", nil)
+		h.GetMetrics(rr, req)
+		if rr.Code != http.StatusServiceUnavailable {
+			t.Fatalf("status = %d, want 503", rr.Code)
+		}
+	})
+
+	t.Run("service error", func(t *testing.T) {
+		// Create handler with repo that returns error
+		h := &HTTPHandler{
+			prometheusURL: "http://prom",
+			repo:          &mockRepo{queryRangeErr: fmt.Errorf("prometheus error")},
+			promService:   NewService(&mockRepo{queryRangeErr: fmt.Errorf("prometheus error")}),
+		}
+
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/api/prometheus/metrics?deployment=demo&namespace=default", nil)
+		h.GetMetrics(rr, req)
+		if rr.Code != http.StatusInternalServerError {
+			t.Fatalf("status = %d, want 500", rr.Code)
+		}
+	})
 }
 
 func TestHTTPHandler_GetClusterOverview(t *testing.T) {
@@ -154,3 +181,61 @@ func TestHTTPHandler_GetClusterOverview(t *testing.T) {
 		}
 	})
 }
+
+func TestHTTPHandler_GetStatus(t *testing.T) {
+	handler := &HTTPHandler{
+		prometheusURL: "http://prom",
+	}
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/prometheus/status", nil)
+	handler.GetStatus(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+
+	// Verify response body contains expected fields
+	expected := `{"enabled":true,"url":"http://prom"}`
+	if rr.Body.String() != expected+"\n" { // JSONResponse adds a newline
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			rr.Body.String(), expected)
+	}
+}
+
+func TestHTTPHandler_GetPodMetrics(t *testing.T) {
+	handler := &HTTPHandler{
+		prometheusURL: "http://prom",
+		repo:          &mockRepo{},
+		promService:   NewService(&mockRepo{}),
+	}
+
+	t.Run("missing params", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/api/prometheus/pod-metrics", nil)
+		handler.GetPodMetrics(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Fatalf("status = %d, want 400", rr.Code)
+		}
+	})
+
+	t.Run("success", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/api/prometheus/pod-metrics?pod=my-pod&namespace=default", nil)
+		handler.GetPodMetrics(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200: %s", rr.Code, rr.Body.String())
+		}
+	})
+
+	t.Run("not configured", func(t *testing.T) {
+		h := newTestHandler("")
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/api/prometheus/pod-metrics?pod=my-pod&namespace=default", nil)
+		h.GetPodMetrics(rr, req)
+		if rr.Code != http.StatusServiceUnavailable {
+			t.Fatalf("status = %d, want 503", rr.Code)
+		}
+	})
+}
+

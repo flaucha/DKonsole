@@ -1,0 +1,370 @@
+package k8s
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
+
+	"github.com/flaucha/DKonsole/backend/internal/models"
+)
+
+func (s *ResourceListService) listNodes(ctx context.Context, client kubernetes.Interface, opts metav1.ListOptions) ([]models.Resource, error) {
+	list, err := client.CoreV1().Nodes().List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var resources []models.Resource
+	for _, i := range list.Items {
+		conditions := make(map[string]string)
+		for _, c := range i.Status.Conditions {
+			conditions[string(c.Type)] = string(c.Status)
+		}
+
+		var images []string
+		for _, img := range i.Status.Images {
+			if len(img.Names) > 0 {
+				images = append(images, img.Names[0])
+			}
+		}
+
+		details := map[string]interface{}{
+			"addresses":     i.Status.Addresses,
+			"nodeInfo":      i.Status.NodeInfo,
+			"capacity":      i.Status.Capacity,
+			"allocatable":   i.Status.Allocatable,
+			"conditions":    conditions,
+			"images":        images,
+			"taints":        i.Spec.Taints,
+			"podCIDR":       i.Spec.PodCIDR,
+			"podCIDRs":      i.Spec.PodCIDRs,
+			"unschedulable": i.Spec.Unschedulable,
+			"labels":        i.Labels,
+			"annotations":   i.Annotations,
+		}
+
+		status := "Ready"
+		for _, c := range i.Status.Conditions {
+			if c.Type == corev1.NodeReady && c.Status != corev1.ConditionTrue {
+				status = "NotReady"
+			}
+		}
+		if i.Spec.Unschedulable {
+			status += ",SchedulingDisabled"
+		}
+
+		resources = append(resources, models.Resource{
+			Name:      i.Name,
+			Namespace: "",
+			Kind:      "Node",
+			Status:    status,
+			Created:   i.CreationTimestamp.Format(time.RFC3339),
+			UID:       string(i.UID),
+			Details:   details,
+		})
+	}
+
+	return resources, nil
+}
+
+func (s *ResourceListService) listPods(ctx context.Context, client kubernetes.Interface, metricsClient *metricsv.Clientset, namespace string, opts metav1.ListOptions) ([]models.Resource, error) {
+	list, err := client.CoreV1().Pods(namespace).List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build metrics map
+	metricsMap := make(map[string]models.PodMetric)
+	if metricsClient != nil {
+		if pmList, mErr := metricsClient.MetricsV1beta1().PodMetricses(namespace).List(ctx, opts); mErr == nil {
+			for _, pm := range pmList.Items {
+				var cpuMilli int64
+				var memBytes int64
+				for _, c := range pm.Containers {
+					cpuMilli += c.Usage.Cpu().MilliValue()
+					memBytes += c.Usage.Memory().Value()
+				}
+				metricsMap[pm.Name] = models.PodMetric{
+					CPU:    fmt.Sprintf("%dm", cpuMilli),
+					Memory: fmt.Sprintf("%.1fMi", float64(memBytes)/(1024*1024)),
+				}
+			}
+		}
+	}
+
+	var resources []models.Resource
+	for _, i := range list.Items {
+		var containers []string
+		for _, c := range i.Spec.Containers {
+			containers = append(containers, c.Name)
+		}
+
+		restarts := int32(0)
+		readyCount := int32(0)
+		totalContainers := int32(len(i.Spec.Containers))
+		var containerStatuses []map[string]interface{}
+
+		for _, cs := range i.Status.ContainerStatuses {
+			restarts += cs.RestartCount
+			if cs.Ready {
+				readyCount++
+			}
+
+			containerStatus := map[string]interface{}{
+				"name":         cs.Name,
+				"ready":        cs.Ready,
+				"restartCount": cs.RestartCount,
+				"image":        cs.Image,
+			}
+
+			if cs.State.Waiting != nil {
+				containerStatus["state"] = "Waiting"
+				containerStatus["reason"] = cs.State.Waiting.Reason
+				containerStatus["message"] = cs.State.Waiting.Message
+			} else if cs.State.Running != nil {
+				containerStatus["state"] = "Running"
+				containerStatus["startedAt"] = cs.State.Running.StartedAt.Format(time.RFC3339)
+			} else if cs.State.Terminated != nil {
+				containerStatus["state"] = "Terminated"
+				containerStatus["reason"] = cs.State.Terminated.Reason
+				containerStatus["exitCode"] = cs.State.Terminated.ExitCode
+				if !cs.State.Terminated.StartedAt.IsZero() {
+					containerStatus["startedAt"] = cs.State.Terminated.StartedAt.Format(time.RFC3339)
+				}
+				if !cs.State.Terminated.FinishedAt.IsZero() {
+					containerStatus["finishedAt"] = cs.State.Terminated.FinishedAt.Format(time.RFC3339)
+				}
+			}
+
+			containerStatuses = append(containerStatuses, containerStatus)
+		}
+
+		resources = append(resources, models.Resource{
+			Name:      i.Name,
+			Namespace: i.Namespace,
+			Kind:      "Pod",
+			Status:    string(i.Status.Phase),
+			Created:   i.CreationTimestamp.Format(time.RFC3339),
+			UID:       string(i.UID),
+			Details: map[string]interface{}{
+				"node":              i.Spec.NodeName,
+				"ip":                i.Status.PodIP,
+				"restarts":          restarts,
+				"ready":             fmt.Sprintf("%d/%d", readyCount, totalContainers),
+				"readyCount":        readyCount,
+				"totalContainers":   totalContainers,
+				"containers":        containers,
+				"containerStatuses": containerStatuses,
+				"metrics":           metricsMap[i.Name],
+				"labels":            i.Labels,
+			},
+		})
+	}
+
+	return resources, nil
+}
+
+func (s *ResourceListService) listConfigMaps(ctx context.Context, client kubernetes.Interface, namespace string, opts metav1.ListOptions) ([]models.Resource, error) {
+	list, err := client.CoreV1().ConfigMaps(namespace).List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var resources []models.Resource
+	for _, i := range list.Items {
+		resources = append(resources, models.Resource{
+			Name:      i.Name,
+			Namespace: i.Namespace,
+			Kind:      "ConfigMap",
+			Status:    fmt.Sprintf("%d keys", len(i.Data)),
+			Created:   i.CreationTimestamp.Format(time.RFC3339),
+			UID:       string(i.UID),
+			Details: map[string]interface{}{
+				"data": i.Data,
+			},
+		})
+	}
+
+	return resources, nil
+}
+
+func (s *ResourceListService) listSecrets(ctx context.Context, client kubernetes.Interface, namespace string, opts metav1.ListOptions) ([]models.Resource, error) {
+	list, err := client.CoreV1().Secrets(namespace).List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var resources []models.Resource
+	for _, i := range list.Items {
+		data := make(map[string]string)
+		for k, v := range i.Data {
+			data[k] = string(v)
+		}
+		resources = append(resources, models.Resource{
+			Name:      i.Name,
+			Namespace: i.Namespace,
+			Kind:      "Secret",
+			Status:    string(i.Type),
+			Created:   i.CreationTimestamp.Format(time.RFC3339),
+			UID:       string(i.UID),
+			Details: map[string]interface{}{
+				"type":      string(i.Type),
+				"data":      data,
+				"keysCount": len(data),
+			},
+		})
+	}
+
+	return resources, nil
+}
+
+func (s *ResourceListService) listServices(ctx context.Context, client kubernetes.Interface, namespace string, opts metav1.ListOptions) ([]models.Resource, error) {
+	list, err := client.CoreV1().Services(namespace).List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var resources []models.Resource
+	for _, i := range list.Items {
+		var ports []string
+		for _, p := range i.Spec.Ports {
+			var targetPort string
+			if p.TargetPort.Type == 0 { // IntOrString with int value
+				targetPort = fmt.Sprintf("%d", p.TargetPort.IntVal)
+			} else {
+				targetPort = p.TargetPort.StrVal
+			}
+			ports = append(ports, fmt.Sprintf("%d:%s/%s", p.Port, targetPort, p.Protocol))
+		}
+		resources = append(resources, models.Resource{
+			Name:      i.Name,
+			Namespace: i.Namespace,
+			Kind:      "Service",
+			Status:    string(i.Spec.Type),
+			Created:   i.CreationTimestamp.Format(time.RFC3339),
+			UID:       string(i.UID),
+			Details: map[string]interface{}{
+				"clusterIP": i.Spec.ClusterIP,
+				"ports":     ports,
+				"selector":  i.Spec.Selector,
+			},
+		})
+	}
+
+	return resources, nil
+}
+
+func (s *ResourceListService) listIngresses(ctx context.Context, client kubernetes.Interface, namespace string, opts metav1.ListOptions) ([]models.Resource, error) {
+	list, err := client.NetworkingV1().Ingresses(namespace).List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var resources []models.Resource
+	for _, i := range list.Items {
+		var tls []map[string]interface{}
+		for _, t := range i.Spec.TLS {
+			tls = append(tls, map[string]interface{}{
+				"hosts":      t.Hosts,
+				"secretName": t.SecretName,
+			})
+		}
+
+		var rules []map[string]interface{}
+		for _, r := range i.Spec.Rules {
+			var paths []interface{}
+			if r.HTTP != nil {
+				for _, p := range r.HTTP.Paths {
+					svcName := "unknown"
+					svcPort := int32(0)
+					if p.Backend.Service != nil {
+						svcName = p.Backend.Service.Name
+						svcPort = p.Backend.Service.Port.Number
+					}
+					paths = append(paths, map[string]interface{}{
+						"path":        p.Path,
+						"serviceName": svcName,
+						"servicePort": svcPort,
+					})
+				}
+			}
+			rules = append(rules, map[string]interface{}{
+				"host":  r.Host,
+				"paths": paths,
+			})
+		}
+
+		resources = append(resources, models.Resource{
+			Name:      i.Name,
+			Namespace: i.Namespace,
+			Kind:      "Ingress",
+			Status:    fmt.Sprintf("%d rules", len(i.Spec.Rules)),
+			Created:   i.CreationTimestamp.Format(time.RFC3339),
+			UID:       string(i.UID),
+			Details: map[string]interface{}{
+				"rules":        rules,
+				"tls":          tls,
+				"annotations":  i.Annotations,
+				"loadBalancer": i.Status.LoadBalancer.Ingress,
+			},
+		})
+	}
+
+	return resources, nil
+}
+
+func (s *ResourceListService) listServiceAccounts(ctx context.Context, client kubernetes.Interface, namespace string, opts metav1.ListOptions) ([]models.Resource, error) {
+	list, err := client.CoreV1().ServiceAccounts(namespace).List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var resources []models.Resource
+	for _, i := range list.Items {
+		details := map[string]interface{}{
+			"secrets":          i.Secrets,
+			"imagePullSecrets": i.ImagePullSecrets,
+		}
+		resources = append(resources, models.Resource{
+			Name:      i.Name,
+			Namespace: i.Namespace,
+			Kind:      "ServiceAccount",
+			Status:    fmt.Sprintf("%d secrets", len(i.Secrets)),
+			Created:   i.CreationTimestamp.Format(time.RFC3339),
+			UID:       string(i.UID),
+			Details:   details,
+		})
+	}
+
+	return resources, nil
+}
+
+func (s *ResourceListService) listNetworkPolicies(ctx context.Context, client kubernetes.Interface, namespace string, opts metav1.ListOptions) ([]models.Resource, error) {
+	list, err := client.NetworkingV1().NetworkPolicies(namespace).List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var resources []models.Resource
+	for _, i := range list.Items {
+		resources = append(resources, models.Resource{
+			Name:      i.Name,
+			Namespace: i.Namespace,
+			Kind:      "NetworkPolicy",
+			Status:    "Active",
+			Created:   i.CreationTimestamp.Format(time.RFC3339),
+			UID:       string(i.UID),
+			Details: map[string]interface{}{
+				"podSelector": i.Spec.PodSelector.MatchLabels,
+				"policyTypes": i.Spec.PolicyTypes,
+			},
+		})
+	}
+
+	return resources, nil
+}
