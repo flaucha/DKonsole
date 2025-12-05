@@ -107,9 +107,9 @@ func (f *fakeResourceRepo) Delete(_ context.Context, _ schema.GroupVersionResour
 	return f.err
 }
 
-func ctxWithPermissions(perms map[string]string, role string) context.Context {
+func ctxWithPermissions(perms map[string]string) context.Context {
 	return context.WithValue(context.Background(), auth.UserContextKey(), &models.Claims{
-		Role:        role,
+		Role:        "user",
 		Permissions: perms,
 	})
 }
@@ -156,7 +156,7 @@ func TestResourceService_UpdateResource_Success(t *testing.T) {
 	repo := &fakeResourceRepo{}
 	svc := NewResourceService(repo, resolver)
 
-	ctx := ctxWithPermissions(map[string]string{"default": "edit"}, "")
+	ctx := ctxWithPermissions(map[string]string{"default": "edit"})
 	req := UpdateResourceRequest{
 		YAMLContent: "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: my-dep\n  namespace: default\nspec: {}",
 		Kind:        "Deployment",
@@ -187,7 +187,7 @@ func TestResourceService_UpdateResource_InvalidYAML(t *testing.T) {
 	repo := &fakeResourceRepo{}
 	svc := NewResourceService(repo, resolver)
 
-	ctx := ctxWithPermissions(map[string]string{"default": "edit"}, "")
+	ctx := ctxWithPermissions(map[string]string{"default": "edit"})
 	req := UpdateResourceRequest{
 		YAMLContent: "kind: Deployment\nmetadata: : :",
 		Kind:        "Deployment",
@@ -209,7 +209,7 @@ func TestResourceService_UpdateResource_PermissionDenied(t *testing.T) {
 	repo := &fakeResourceRepo{}
 	svc := NewResourceService(repo, resolver)
 
-	ctx := ctxWithPermissions(map[string]string{}, "")
+	ctx := ctxWithPermissions(map[string]string{})
 	req := UpdateResourceRequest{
 		YAMLContent: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: cm\n  namespace: default\ndata:\n  k: v",
 		Kind:        "ConfigMap",
@@ -231,7 +231,7 @@ func TestResourceService_DeleteResource_RequiresNamespace(t *testing.T) {
 	repo := &fakeResourceRepo{}
 	svc := NewResourceService(repo, resolver)
 
-	ctx := ctxWithPermissions(map[string]string{"default": "edit"}, "")
+	ctx := ctxWithPermissions(map[string]string{"default": "edit"})
 	err := svc.DeleteResource(ctx, DeleteResourceRequest{
 		Kind: "Deployment",
 		Name: "dep",
@@ -251,7 +251,7 @@ func TestResourceService_DeleteResource_Success(t *testing.T) {
 	repo := &fakeResourceRepo{}
 	svc := NewResourceService(repo, resolver)
 
-	ctx := ctxWithPermissions(map[string]string{"default": "edit"}, "")
+	ctx := ctxWithPermissions(map[string]string{"default": "edit"})
 	err := svc.DeleteResource(ctx, DeleteResourceRequest{
 		Kind:      "Deployment",
 		Name:      "dep",

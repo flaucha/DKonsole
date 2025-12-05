@@ -32,18 +32,18 @@ import (
 
 // Dependencies bundles the services and configuration required to build the HTTP router.
 type Dependencies struct {
-	AuthService        *auth.Service
-	LDAPService        *ldap.Service
-	ClusterService     *cluster.Service
-	K8sService         *k8s.Service
-	APIService         *api.Service
-	HelmService        *helm.Service
-	PodService         *pod.Service
-	PrometheusService  *prometheus.HTTPHandler
-	SettingsService    *settings.Service
-	LogoService        *logo.Service
-	HandlersModel      *models.Handlers
-	StaticDir          string
+	AuthService       *auth.Service
+	LDAPService       *ldap.Service
+	ClusterService    *cluster.Service
+	K8sService        *k8s.Service
+	APIService        *api.Service
+	HelmService       *helm.Service
+	PodService        *pod.Service
+	PrometheusService *prometheus.HTTPHandler
+	SettingsService   *settings.Service
+	LogoService       *logo.Service
+	HandlersModel     *models.Handlers
+	StaticDir         string
 }
 
 // NewRouter builds and returns the HTTP mux with all routes and middleware wired.

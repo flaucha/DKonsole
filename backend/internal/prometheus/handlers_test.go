@@ -9,8 +9,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8sfake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
 	"github.com/flaucha/DKonsole/backend/internal/models"
@@ -18,9 +18,9 @@ import (
 
 func newTestHandler(url string) *HTTPHandler {
 	h := &HTTPHandler{
-		prometheusURL: url,
-		repo:          NewHTTPPrometheusRepository(url),
-		promService:   NewService(NewHTTPPrometheusRepository(url)),
+		prometheusURL:  url,
+		repo:           NewHTTPPrometheusRepository(url),
+		promService:    NewService(NewHTTPPrometheusRepository(url)),
 		clusterService: nil,
 	}
 	return h
