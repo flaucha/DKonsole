@@ -13,8 +13,11 @@ import (
 )
 
 // WatchService provides business logic for watching Kubernetes resources
+// Optional function hooks allow overriding behavior in tests without changing production logic.
 type WatchService struct {
-	gvrResolver GVRResolver
+	gvrResolver   GVRResolver
+	watchFunc     func(ctx context.Context, client dynamic.Interface, req WatchRequest) (watch.Interface, error)
+	transformFunc func(event watch.Event) (*WatchResult, error)
 }
 
 // NewWatchService creates a new WatchService
@@ -41,6 +44,10 @@ type WatchResult struct {
 // StartWatch initializes a Kubernetes watch for the specified resource type
 // Returns a watcher interface that can be used to receive events
 func (s *WatchService) StartWatch(ctx context.Context, client dynamic.Interface, req WatchRequest) (watch.Interface, error) {
+	if s.watchFunc != nil {
+		return s.watchFunc(ctx, client, req)
+	}
+
 	// Normalize kind (handle aliases like HPA -> HorizontalPodAutoscaler)
 	normalizedKind := models.NormalizeKind(req.Kind)
 
@@ -87,6 +94,10 @@ func (s *WatchService) StartWatch(ctx context.Context, client dynamic.Interface,
 
 // TransformEvent transforms a Kubernetes watch event to a WatchResult DTO
 func (s *WatchService) TransformEvent(event watch.Event) (*WatchResult, error) {
+	if s.transformFunc != nil {
+		return s.transformFunc(event)
+	}
+
 	obj, ok := event.Object.(*unstructured.Unstructured)
 	if !ok {
 		return nil, fmt.Errorf("event object is not unstructured")
