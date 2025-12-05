@@ -201,9 +201,6 @@ sum(container_memory_working_set_bytes{namespace="<namespace>",pod="<pod-name>",
 
 If you find this project useful, consider donating to support development.
 
-**BSC (Binance Smart Chain) Wallet:**
-`0x9baf648fa316030e12b15cbc85278fdbd82a7d20`
-
 **Buy me a coffee:**
 https://buymeacoffee.com/flaucha
 
