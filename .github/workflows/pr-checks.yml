@@ -50,6 +50,7 @@ jobs:
         with:
           version: latest
           working-directory: ./backend
+          install-mode: goinstall
           args: --timeout=5m
 
       - name: Run govulncheck
