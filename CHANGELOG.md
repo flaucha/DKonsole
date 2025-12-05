@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.3] - 2025-12-06
+
+### Added
+- **Atom One Dark YAML**: Monaco YAML editor now ships with the Atom One Dark palette for consistent contrast with the terminal theme.
+
+### Changed
+- **Editor Layout**: Popup editors use a fixed, tested size with zoom locked at 100% to avoid scaling drift across themes.
+
+### Fixed
+- **Cursor Drift & Colors**: Removed custom font overrides and light-mode text overrides that caused cursor misalignment and blue-on-gray text in Monaco.
+- **Backend Reliability**: Expanded unit tests around watch WebSockets, settings storage, API handlers, and logo ConfigMap storage to prevent regressions.
+
 ## [1.4.2] - 2025-12-05
 
 ### Added
