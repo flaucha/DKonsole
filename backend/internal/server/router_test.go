@@ -27,7 +27,7 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/settings"
 )
 
-func newTestRouter(t *testing.T) *http.ServeMux {
+func newTestRouter(t *testing.T) (*http.ServeMux, *models.Handlers) {
 	t.Helper()
 
 	clientset := k8sfake.NewSimpleClientset(&appsv1.Deployment{})
@@ -55,7 +55,7 @@ func newTestRouter(t *testing.T) *http.ServeMux {
 
 	tmpDir := t.TempDir()
 
-	return NewRouter(Dependencies{
+	router := NewRouter(Dependencies{
 		AuthService:       authService,
 		LDAPService:       ldapService,
 		ClusterService:    clusterService,
@@ -69,11 +69,13 @@ func newTestRouter(t *testing.T) *http.ServeMux {
 		HandlersModel:     handlersModel,
 		StaticDir:         filepath.Join(tmpDir, "static"),
 	})
+
+	return router, handlersModel
 }
 
 func TestRouter_HealthAndCORS(t *testing.T) {
 	t.Setenv("ALLOWED_ORIGINS", "https://example.com")
-	router := newTestRouter(t)
+	router, _ := newTestRouter(t)
 
 	// Liveness endpoint
 	rr := httptest.NewRecorder()
@@ -98,5 +100,32 @@ func TestRouter_HealthAndCORS(t *testing.T) {
 	}
 	if got := rr.Header().Get("Access-Control-Allow-Origin"); got != "https://example.com" {
 		t.Fatalf("CORS header = %q, want https://example.com", got)
+	}
+}
+
+func TestRouter_ReadyzVariants(t *testing.T) {
+	router, handlers := newTestRouter(t)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/readyz", nil)
+	router.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("readyz status = %d, want 200", rr.Code)
+	}
+
+	handlers.Clients = map[string]kubernetes.Interface{} // simulate missing client
+	rr2 := httptest.NewRecorder()
+	router.ServeHTTP(rr2, req)
+	if rr2.Code != http.StatusServiceUnavailable {
+		t.Fatalf("readyz status without client = %d, want 503", rr2.Code)
+	}
+}
+
+func TestContentTypeFixer_WriteHeader(t *testing.T) {
+	rr := httptest.NewRecorder()
+	fixer := &contentTypeFixer{ResponseWriter: rr, path: "/assets/app.js"}
+	fixer.WriteHeader(http.StatusOK)
+	if ct := rr.Header().Get("Content-Type"); ct != "application/javascript; charset=utf-8" {
+		t.Fatalf("unexpected content type: %s", ct)
 	}
 }

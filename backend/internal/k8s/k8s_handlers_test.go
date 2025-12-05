@@ -27,6 +27,9 @@ type mockServiceFactory struct {
 	namespaceService *NamespaceService
 	clusterStatsSvc  *ClusterStatsService
 	deploymentSvc    *DeploymentService
+	resourceSvc      *ResourceService
+	importSvc        *ImportService
+	watchSvc         *WatchService
 }
 
 func newMockServiceFactory() *mockServiceFactory {
@@ -34,10 +37,16 @@ func newMockServiceFactory() *mockServiceFactory {
 }
 
 func (f *mockServiceFactory) CreateResourceService(dynamicClient dynamic.Interface) *ResourceService {
+	if f.resourceSvc != nil {
+		return f.resourceSvc
+	}
 	return f.realFactory.CreateResourceService(dynamicClient)
 }
 
 func (f *mockServiceFactory) CreateImportService(dynamicClient dynamic.Interface, client kubernetes.Interface) *ImportService {
+	if f.importSvc != nil {
+		return f.importSvc
+	}
 	return f.realFactory.CreateImportService(dynamicClient, client)
 }
 
@@ -67,6 +76,9 @@ func (f *mockServiceFactory) CreateCronJobService(client kubernetes.Interface) *
 }
 
 func (f *mockServiceFactory) CreateWatchService() *WatchService {
+	if f.watchSvc != nil {
+		return f.watchSvc
+	}
 	return f.realFactory.CreateWatchService()
 }
 

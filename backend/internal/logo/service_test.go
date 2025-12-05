@@ -339,3 +339,71 @@ func TestLogoService_GetLogoPath(t *testing.T) {
 		})
 	}
 }
+
+func TestLogoService_GetLogoContent(t *testing.T) {
+	tests := []struct {
+		name               string
+		getLogoContentFunc func(ctx context.Context, logoType string, ext string) ([]byte, error)
+		getFunc            func(ctx context.Context, logoType string, ext string) (string, error)
+		wantContentType    string
+		wantContent        []byte
+		expectPath         bool
+	}{
+		{
+			name: "returns png content with content type",
+			getLogoContentFunc: func(ctx context.Context, logoType string, ext string) ([]byte, error) {
+				if ext == ".png" {
+					return []byte{1, 2, 3}, nil
+				}
+				return nil, io.EOF
+			},
+			wantContentType: "image/png",
+			wantContent:     []byte{1, 2, 3},
+		},
+		{
+			name: "falls back to filesystem path",
+			getLogoContentFunc: func(ctx context.Context, logoType string, ext string) ([]byte, error) {
+				return nil, io.EOF
+			},
+			getFunc: func(ctx context.Context, logoType string, ext string) (string, error) {
+				if ext == ".png" {
+					return "/tmp/logo.png", nil
+				}
+				return "", io.EOF
+			},
+			expectPath: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storage := &mockLogoStorage{
+				getLogoContentFunc: tt.getLogoContentFunc,
+				getFunc:            tt.getFunc,
+			}
+			svc := NewLogoService(&mockLogoValidator{}, storage)
+
+			content, ct, err := svc.GetLogoContent(context.Background(), "normal")
+			if err != nil {
+				t.Fatalf("GetLogoContent error: %v", err)
+			}
+
+			if tt.expectPath {
+				if ct != "" {
+					t.Fatalf("expected empty content type for path fallback, got %s", ct)
+				}
+				if string(content) != "/tmp/logo.png" {
+					t.Fatalf("expected path fallback, got %s", string(content))
+				}
+				return
+			}
+
+			if ct != tt.wantContentType {
+				t.Fatalf("unexpected content type: %s", ct)
+			}
+			if !bytes.Equal(content, tt.wantContent) {
+				t.Fatalf("content mismatch: %v", content)
+			}
+		})
+	}
+}

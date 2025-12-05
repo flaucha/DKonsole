@@ -57,10 +57,18 @@ type fakeResourceRepo struct {
 	createObj        *unstructured.Unstructured
 	createResult     *unstructured.Unstructured
 
+	getObj *unstructured.Unstructured
+
 	err error
 }
 
 func (f *fakeResourceRepo) Get(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool) (*unstructured.Unstructured, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	if f.getObj != nil {
+		return f.getObj.DeepCopy(), nil
+	}
 	return nil, errors.New("not implemented: Get")
 }
 
@@ -104,6 +112,42 @@ func ctxWithPermissions(perms map[string]string, role string) context.Context {
 		Role:        role,
 		Permissions: perms,
 	})
+}
+
+func TestResourceService_GetResourceYAML(t *testing.T) {
+	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
+	obj := &unstructured.Unstructured{}
+	obj.SetName("demo")
+	obj.SetNamespace("default")
+	obj.SetKind("Deployment")
+	obj.SetAPIVersion("apps/v1")
+	obj.Object["spec"] = map[string]interface{}{"replicas": int64(1)}
+	obj.Object["metadata"] = map[string]interface{}{
+		"managedFields": []interface{}{"noise"},
+		"uid":           "abc",
+	}
+
+	resolver := &fakeGVRResolver{gvr: gvr, meta: models.ResourceMeta{Namespaced: true}}
+	repo := &fakeResourceRepo{getObj: obj}
+	svc := NewResourceService(repo, resolver)
+
+	req := GetResourceRequest{
+		Kind:       "Deployment",
+		Name:       "demo",
+		Namespace:  "default",
+		Namespaced: true,
+	}
+
+	yamlStr, err := svc.GetResourceYAML(context.Background(), req, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if yamlStr == "" {
+		t.Fatalf("expected yaml output")
+	}
+	if contains := strings.Contains(yamlStr, "managedFields"); contains {
+		t.Fatalf("expected managedFields removed, got %s", yamlStr)
+	}
 }
 
 func TestResourceService_UpdateResource_Success(t *testing.T) {
