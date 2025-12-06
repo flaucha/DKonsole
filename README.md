@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.4.4-green.svg)
+![Version](https://img.shields.io/badge/version-1.4.5-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built entirely with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -30,7 +30,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.4.4
+git checkout v1.4.5
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -151,18 +151,25 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.4.4"
+  tag: "1.4.5"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.4.4`
+- **Unified**: `dkonsole/dkonsole:1.4.5`
 
 **Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
+
+### v1.4.5 (2025-12-06)
+**🔧 WebSocket stability & appearance refactor**
+
+- **WebSocket**: Replaced null char keep-alive with ping/pong protocol; added auto-reconnection with exponential backoff.
+- **Appearance**: Simplified settings with dark/cream toggle, font dropdown, and removed animation type selector.
+- **Cream Theme**: Warmer, less bright colors; fixed metric tooltip contrast.
 
 ### v1.4.4 (2025-12-07)
 **🔒 Go toolchain patch**
@@ -176,13 +183,6 @@ The official image is available at:
 - Atom One Dark theme applied to the Monaco YAML editor for consistent contrast.
 - Fixed cursor drift/light-mode overrides and locked popup editors to a stable 100% scale.
 - Added backend test coverage for watches, settings, API handlers, and logo storage.
-
-### v1.4.2 (2025-12-05)
-**🔧 Terminal dock & stability**
-
-- **Pin/Minimize Dock**: Header dock for multiple pinned terminals; one active view at a time with minimize/restore.
-- **Stability**: Removed exec timeouts, added WebSocket keep-alive, and raised default connection cap to 20 (`MAX_WS_CONNECTIONS`).
-- **UI**: Consistent terminal sizing anchored bottom-right; pin action moved into terminal header.
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 

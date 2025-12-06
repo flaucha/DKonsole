@@ -21,7 +21,6 @@ const TerminalViewerInline = ({
     const wsRef = useRef(null);
     const containerRef = useRef(null);
     const isActiveRef = useRef(isActive);
-    const keepAliveRef = useRef(null);
 
     // Initialize terminal once
     useEffect(() => {
@@ -73,71 +72,93 @@ const TerminalViewerInline = ({
         }
     }, [isActive]);
 
-    // Connect WebSocket for the active pod/container
+    // Connect WebSocket for the active pod/container with auto-reconnection
     useEffect(() => {
         const term = termRef.current;
         if (!term) return;
 
-        // Close existing connection
-        if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
-            wsRef.current.close();
-        }
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        let reconnectTimeout = null;
+        let isCleaningUp = false;
 
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/api/pods/exec?namespace=${namespace}&pod=${pod}&container=${container || ''}`;
-
-        const ws = new WebSocket(wsUrl);
-        ws.binaryType = 'arraybuffer';
-        wsRef.current = ws;
-
-        // Keep-alive pings to avoid idle disconnects
-        keepAliveRef.current = setInterval(() => {
-            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                wsRef.current.send('\u0000');
+        const connect = () => {
+            // Close existing connection
+            if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+                wsRef.current.close();
             }
-        }, 20000);
 
-        const decoder = new TextDecoder();
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/api/pods/exec?namespace=${namespace}&pod=${pod}&container=${container || ''}`;
+
+            const ws = new WebSocket(wsUrl);
+            ws.binaryType = 'arraybuffer';
+            wsRef.current = ws;
+
+            const decoder = new TextDecoder();
+
+            ws.onopen = () => {
+                reconnectAttempts = 0; // Reset on successful connection
+                term.clear();
+                term.writeln(`\x1b[33mConnected to ${pod}${container ? ` (${container})` : ''}\x1b[0m`);
+                fitAddonRef.current?.fit();
+                if (isActiveRef.current) {
+                    term.focus();
+                }
+            };
+
+            ws.onmessage = (event) => {
+                if (typeof event.data === 'string') {
+                    term.write(event.data);
+                } else if (event.data instanceof ArrayBuffer) {
+                    term.write(decoder.decode(event.data));
+                } else if (event.data instanceof Blob) {
+                    event.data.arrayBuffer().then((buf) => term.write(decoder.decode(buf)));
+                }
+            };
+
+            ws.onerror = () => {
+                if (!isCleaningUp) {
+                    term.writeln('\r\n\x1b[31mWebSocket error. Attempting to reconnect...\x1b[0m');
+                }
+            };
+
+            ws.onclose = () => {
+                if (isCleaningUp) {
+                    term.writeln('\r\n\x1b[31mConnection closed.\x1b[0m');
+                    return;
+                }
+
+                // Attempt reconnection with exponential backoff
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 16000);
+                    term.writeln(`\r\n\x1b[33mConnection lost. Reconnecting in ${delay / 1000}s... (attempt ${reconnectAttempts}/${maxReconnectAttempts})\x1b[0m`);
+                    reconnectTimeout = setTimeout(connect, delay);
+                } else {
+                    term.writeln('\r\n\x1b[31mConnection closed. Max reconnection attempts reached.\x1b[0m');
+                    term.writeln('\x1b[33mClose and reopen terminal to reconnect.\x1b[0m');
+                }
+            };
+
+            return ws;
+        };
+
+        const ws = connect();
+
         const dataListener = term.onData((data) => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(data);
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                wsRef.current.send(data);
             }
         });
 
-        ws.onopen = () => {
-            term.clear();
-            term.writeln(`\x1b[33mConnected to ${pod}${container ? ` (${container})` : ''}\x1b[0m`);
-            fitAddonRef.current?.fit();
-            if (isActiveRef.current) {
-                term.focus();
-            }
-        };
-
-        ws.onmessage = (event) => {
-            if (typeof event.data === 'string') {
-                term.write(event.data);
-            } else if (event.data instanceof ArrayBuffer) {
-                term.write(decoder.decode(event.data));
-            } else if (event.data instanceof Blob) {
-                event.data.arrayBuffer().then((buf) => term.write(decoder.decode(buf)));
-            }
-        };
-
-        ws.onerror = () => {
-            term.writeln('\r\n\x1b[31mWebSocket error. Check connection.\x1b[0m');
-        };
-
-        ws.onclose = () => {
-            term.writeln('\r\n\x1b[31mConnection closed.\x1b[0m');
-        };
-
         return () => {
-            if (keepAliveRef.current) {
-                clearInterval(keepAliveRef.current);
-                keepAliveRef.current = null;
+            isCleaningUp = true;
+            if (reconnectTimeout) {
+                clearTimeout(reconnectTimeout);
             }
             dataListener.dispose();
-            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+            if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
                 ws.close();
             }
         };
@@ -183,7 +204,7 @@ const TerminalViewerInline = ({
                             className={`p-1.5 rounded-md border transition-colors ${pinned
                                 ? 'bg-amber-900/50 border-amber-700 text-amber-300 hover:bg-amber-800/60'
                                 : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500 hover:text-white'
-                            }`}
+                                }`}
                             title={pinned ? 'Unpin terminal' : 'Pin terminal'}
                         >
                             {pinned ? <PinOff size={15} /> : <Pin size={15} />}

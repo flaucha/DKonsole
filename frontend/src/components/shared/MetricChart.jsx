@@ -29,7 +29,14 @@ const MetricChart = ({ data, dataKey, color, title, unit, icon: Icon }) => {
                         />
                         <YAxis stroke="#9CA3AF" fontSize={9} tick={{ fill: '#9CA3AF' }} />
                         <Tooltip
-                            contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#F3F4F6', fontSize: '11px' }}
+                            wrapperClassName="recharts-tooltip-wrapper"
+                            contentStyle={{
+                                backgroundColor: 'rgb(var(--color-gray-800))',
+                                borderColor: 'rgb(var(--color-gray-700))',
+                                color: 'rgb(var(--color-gray-100))',
+                                fontSize: '11px'
+                            }}
+                            labelStyle={{ color: 'rgb(var(--color-gray-100))' }}
                             itemStyle={{ color: color }}
                         />
                         <Area

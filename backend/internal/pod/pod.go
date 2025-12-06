@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"k8s.io/client-go/kubernetes"
@@ -335,17 +337,70 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 		"container": params.Container,
 	})
 
+	// Configure WebSocket connection with ping/pong for keep-alive
+	const (
+		pongWait   = 60 * time.Second  // Time allowed to read the next pong message
+		pingPeriod = 30 * time.Second  // Send pings with this period (must be less than pongWait)
+		writeWait  = 10 * time.Second  // Time allowed to write a message
+	)
+
+	// Set initial read deadline
+	conn.SetReadDeadline(time.Now().Add(pongWait))
+
+	// Handle pong messages - extend the read deadline when we receive a pong
+	conn.SetPongHandler(func(appData string) error {
+		conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+
+	// Mutex to protect concurrent writes to WebSocket
+	var writeMu sync.Mutex
+
 	// Create pipes for stdin/stdout/stderr
 	stdinReader, stdinWriter := io.Pipe()
 	stdoutReader, stdoutWriter := io.Pipe()
 
+	// Context for cleanup coordination
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
+	// Ping ticker to keep connection alive
+	go func() {
+		ticker := time.NewTicker(pingPeriod)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				writeMu.Lock()
+				conn.SetWriteDeadline(time.Now().Add(writeWait))
+				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					writeMu.Unlock()
+					cancel() // Signal to close the connection
+					return
+				}
+				writeMu.Unlock()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
 	// Handle WebSocket messages (send to pod stdin) - HTTP layer
 	go func() {
 		defer stdinWriter.Close()
+		defer cancel()
 		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {
 				return
+			}
+			// Filter out null characters used for keep-alive (legacy clients)
+			// Only forward non-empty, non-null messages to the shell
+			if len(message) == 0 {
+				continue
+			}
+			if len(message) == 1 && message[0] == 0 {
+				continue
 			}
 			stdinWriter.Write(message)
 		}
@@ -354,11 +409,16 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 	// Read from pod stdout and send to WebSocket - HTTP layer
 	go func() {
 		defer stdoutReader.Close()
+		defer cancel()
 		buf := make([]byte, 8192)
 		for {
 			n, err := stdoutReader.Read(buf)
 			if n > 0 {
-				if err := conn.WriteMessage(websocket.BinaryMessage, buf[:n]); err != nil {
+				writeMu.Lock()
+				conn.SetWriteDeadline(time.Now().Add(writeWait))
+				writeErr := conn.WriteMessage(websocket.BinaryMessage, buf[:n])
+				writeMu.Unlock()
+				if writeErr != nil {
 					return
 				}
 			}
@@ -368,9 +428,7 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	// Execute the command with a cancelable context (no fixed timeout to avoid dropping long sessions)
-	ctx, cancel := context.WithCancel(r.Context())
-	defer cancel()
+	// Execute the command (uses the previously created cancelable context)
 	err = executor.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdin:  stdinReader,
 		Stdout: stdoutWriter,
@@ -383,6 +441,8 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 			"pod":       fmt.Sprintf("%s/%s", params.Namespace, params.PodName),
 			"container": params.Container,
 		})
+		writeMu.Lock()
 		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Exec error: %v", err)))
+		writeMu.Unlock()
 	}
 }

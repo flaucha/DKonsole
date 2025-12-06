@@ -244,33 +244,33 @@
 }
 
 [data-theme="cream"] {
-  /* Cream Theme (Sepia/Beige) - Inverted for proper contrast */
-  --color-gray-900: 250 247 240;
-  /* Main background - cream */
-  --color-gray-800: 245 241 230;
-  /* Card backgrounds - light cream */
-  --color-gray-750: 240 235 220;
-  /* Hover states - cream */
-  --color-gray-700: 235 229 210;
-  /* Borders, dividers - medium cream */
-  --color-gray-600: 220 210 190;
-  /* Disabled states - beige */
-  --color-gray-500: 180 165 145;
+  /* Cream Theme (Sepia/Beige) - Warmer, less bright tones */
+  --color-gray-900: 235 228 215;
+  /* Main background - soft cream */
+  --color-gray-800: 225 216 200;
+  /* Card backgrounds - warm cream */
+  --color-gray-750: 215 205 185;
+  /* Hover states - tan */
+  --color-gray-700: 200 188 168;
+  /* Borders, dividers - medium tan */
+  --color-gray-600: 180 165 140;
+  /* Disabled states - deeper beige */
+  --color-gray-500: 150 130 105;
   /* Placeholder text - sepia */
-  --color-gray-400: 140 120 100;
+  --color-gray-400: 115 95 70;
   /* Secondary text - dark sepia */
-  --color-gray-300: 100 80 60;
+  --color-gray-300: 85 65 45;
   /* Primary text - darker sepia */
-  --color-gray-200: 70 55 40;
+  --color-gray-200: 60 45 30;
   /* Headings - very dark sepia */
-  --color-gray-100: 45 35 25;
-  /* Strong text - almost black sepia */
+  --color-gray-100: 40 28 18;
+  /* Strong text - deep brown */
 
-  --color-blue-700: 139 90 43;
+  --color-blue-700: 120 75 35;
   /* Brown/sepia accent */
-  --color-blue-600: 160 110 60;
-  --color-blue-500: 180 130 80;
-  --color-blue-400: 200 150 100;
+  --color-blue-600: 145 100 55;
+  --color-blue-500: 165 120 75;
+  --color-blue-400: 185 145 100;
 }
 
 body {
@@ -397,6 +397,20 @@ body {
 
 [data-theme="cream"] .hover\:text-white:hover {
   color: rgb(var(--color-gray-100)) !important;
+}
+
+/* Recharts tooltip styling for cream theme - ensure readable text */
+[data-theme="cream"] .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: rgb(var(--color-gray-800)) !important;
+  border-color: rgb(var(--color-gray-700)) !important;
+}
+
+[data-theme="cream"] .recharts-tooltip-wrapper .recharts-tooltip-label {
+  color: rgb(var(--color-gray-100)) !important;
+}
+
+[data-theme="cream"] .recharts-tooltip-wrapper .recharts-tooltip-item {
+  color: rgb(var(--color-gray-200)) !important;
 }
 
 @keyframes fadeIn {

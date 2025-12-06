@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.5] - 2025-12-06
+
+### Added
+- **WebSocket Auto-Reconnection**: Terminal sessions now automatically reconnect with exponential backoff (up to 5 attempts) when connection is lost.
+
+### Changed
+- **WebSocket Keep-Alive**: Replaced null character keep-alive with proper WebSocket ping/pong protocol (30s ping, 60s pong timeout).
+- **AppearanceSettings Refactor**: Simplified appearance settings with dark/cream theme toggle, grouped font dropdown, and removed animation type selector (slide is now default).
+- **Cream Theme Colors**: Made cream theme less bright with warmer sepia tones for better readability.
+
+### Fixed
+- **Backend WebSocket Stability**: Added write mutex to prevent concurrent writes, null character filtering to prevent shell corruption.
+- **Metric Tooltip Contrast**: Fixed tooltip contrast in cream theme using CSS variables.
+- **Favicon**: Updated favicon reference from SVG to PNG format.
+
 ## [1.4.4] - 2025-12-07
 
 ### Changed
