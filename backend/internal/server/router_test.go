@@ -138,7 +138,6 @@ func TestContentTypeFixer_WriteHeader(t *testing.T) {
 }
 
 func TestRouter_StaticFiles(t *testing.T) {
-
 	// We need to create the actual static files in the temp dir
 	// The newTestRouter uses a temp dir for static files
 	// However, we don't have easy access to it from here unless we modify newTestRouter return signature
