@@ -264,15 +264,14 @@ func (s *Service) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set cookie (HTTP layer)
-	// Note: Using SameSiteLaxMode instead of Strict to allow WebSocket connections
-	// to include the auth cookie. Strict mode blocks cookies on WebSocket handshakes.
+	// Use SameSite=None to allow cross-origin WebSocket handshakes after CORS restrictions.
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
 		Value:    result.Token,
 		Expires:  result.Expires,
 		HttpOnly: true,
 		Secure:   true, // Should be true in production (HTTPS)
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteNoneMode,
 		Path:     "/",
 	})
 
@@ -290,7 +289,7 @@ func (s *Service) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Unix(0, 0),
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteNoneMode,
 		Path:     "/",
 		MaxAge:   -1,
 	})
