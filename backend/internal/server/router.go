@@ -157,9 +157,9 @@ func NewRouter(deps Dependencies) *http.ServeMux {
 	// Swagger documentation - protected with authentication
 	mux.Handle("/swagger/", secureHandler(httpSwagger.WrapHandler))
 
-	// WebSocket endpoint - secure but without CORS/CSRF (handled by Upgrader)
+	// WebSocket endpoint - secure but without CSRF (Upgrader already handles origin).
 	secureWS := func(h http.HandlerFunc) http.HandlerFunc {
-		return middleware.SecurityHeadersMiddleware(middleware.RateLimitMiddleware(middleware.AuditMiddleware(authService.AuthMiddleware(h))))
+		return middleware.SecurityHeadersMiddleware(enableCors(middleware.RateLimitMiddleware(middleware.AuditMiddleware(authService.AuthMiddleware(h)))))
 	}
 
 	// K8s handlers - using services
