@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Palette, Type, Check, AlertCircle, Menu, Plus } from 'lucide-react';
+import { Palette, Type, Check, AlertCircle, Menu, Plus, Trash2 } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
 import { useAuth } from '../../context/AuthContext';
 import { parseErrorResponse, parseError } from '../../utils/errorParser';
@@ -149,8 +149,8 @@ const AppearanceSettings = () => {
                                 key={anim.id}
                                 onClick={() => setMenuAnimation(anim.id)}
                                 className={`p-4 rounded-lg border transition-all ${menuAnimation === anim.id
-                                        ? 'border-blue-500 bg-blue-900/20 shadow-md'
-                                        : 'border-gray-700 bg-gray-750 hover:bg-gray-700 hover:border-gray-600'
+                                    ? 'border-blue-500 bg-blue-900/20 shadow-md'
+                                    : 'border-gray-700 bg-gray-750 hover:bg-gray-700 hover:border-gray-600'
                                     }`}
                             >
                                 <div className={`font-medium text-left ${menuAnimation === anim.id ? 'text-white' : 'text-gray-300'}`}>
@@ -176,8 +176,8 @@ const AppearanceSettings = () => {
                                     key={speed.id}
                                     onClick={() => setMenuAnimationSpeed(speed.id)}
                                     className={`flex-1 py-2 text-sm rounded-md transition-all ${menuAnimationSpeed === speed.id
-                                            ? 'bg-gray-700 text-white shadow'
-                                            : 'text-gray-400 hover:text-gray-200'
+                                        ? 'bg-gray-700 text-white shadow'
+                                        : 'text-gray-400 hover:text-gray-200'
                                         }`}
                                 >
                                     <div className="font-medium">{speed.name}</div>
@@ -201,27 +201,48 @@ const AppearanceSettings = () => {
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm text-gray-300 mb-2">Logo for Dark Themes</label>
-                                    <label className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors border border-gray-600 hover:border-gray-500 shadow-sm">
-                                        <Plus size={16} className="mr-2" /> Upload Dark Theme Logo
-                                        <input
-                                            type="file"
-                                            className="hidden"
-                                            accept=".png,.svg"
-                                            onChange={(e) => {
-                                                const file = e.target.files[0];
-                                                if (!file) return;
+                                    <div className="flex items-center space-x-3">
+                                        <label className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors border border-gray-600 hover:border-gray-500 shadow-sm">
+                                            <Plus size={16} className="mr-2" /> Upload Dark Theme Logo
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                accept=".png,.svg"
+                                                onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (!file) return;
 
-                                                const formData = new FormData();
-                                                formData.append('logo', file);
-                                                formData.append('type', 'normal');
+                                                    const formData = new FormData();
+                                                    formData.append('logo', file);
+                                                    formData.append('type', 'normal');
 
-                                                authFetch('/api/logo', {
-                                                    method: 'POST',
-                                                    body: formData,
+                                                    authFetch('/api/logo', {
+                                                        method: 'POST',
+                                                        body: formData,
+                                                    })
+                                                        .then(async (res) => {
+                                                            if (res.ok) {
+                                                                setSuccess('Logo uploaded successfully! Refreshing...');
+                                                                setTimeout(() => window.location.reload(), 1500);
+                                                            } else {
+                                                                const errorText = await parseErrorResponse(res);
+                                                                throw new Error(errorText);
+                                                            }
+                                                        })
+                                                        .catch((err) => setError(parseError(err)));
+                                                }}
+                                            />
+                                        </label>
+                                        <button
+                                            onClick={() => {
+                                                if (!window.confirm('Are you sure you want to reset the dark theme logo to default?')) return;
+
+                                                authFetch('/api/logo?type=normal', {
+                                                    method: 'DELETE',
                                                 })
                                                     .then(async (res) => {
                                                         if (res.ok) {
-                                                            setSuccess('Logo uploaded successfully! Refreshing...');
+                                                            setSuccess('Logo reset to default successfully! Refreshing...');
                                                             setTimeout(() => window.location.reload(), 1500);
                                                         } else {
                                                             const errorText = await parseErrorResponse(res);
@@ -230,32 +251,56 @@ const AppearanceSettings = () => {
                                                     })
                                                     .catch((err) => setError(parseError(err)));
                                             }}
-                                        />
-                                    </label>
+                                            className="inline-flex items-center px-4 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 text-sm font-medium rounded-lg cursor-pointer transition-colors border border-red-900/50 hover:border-red-800"
+                                        >
+                                            <Trash2 size={16} className="mr-2" /> Reset Default
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm text-gray-300 mb-2">Logo for Light Themes</label>
-                                    <label className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors border border-gray-600 hover:border-gray-500 shadow-sm">
-                                        <Plus size={16} className="mr-2" /> Upload Light Theme Logo
-                                        <input
-                                            type="file"
-                                            className="hidden"
-                                            accept=".png,.svg"
-                                            onChange={(e) => {
-                                                const file = e.target.files[0];
-                                                if (!file) return;
+                                    <div className="flex items-center space-x-3">
+                                        <label className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors border border-gray-600 hover:border-gray-500 shadow-sm">
+                                            <Plus size={16} className="mr-2" /> Upload Light Theme Logo
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                accept=".png,.svg"
+                                                onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (!file) return;
 
-                                                const formData = new FormData();
-                                                formData.append('logo', file);
-                                                formData.append('type', 'light');
+                                                    const formData = new FormData();
+                                                    formData.append('logo', file);
+                                                    formData.append('type', 'light');
 
-                                                authFetch('/api/logo', {
-                                                    method: 'POST',
-                                                    body: formData,
+                                                    authFetch('/api/logo', {
+                                                        method: 'POST',
+                                                        body: formData,
+                                                    })
+                                                        .then(async (res) => {
+                                                            if (res.ok) {
+                                                                setSuccess('Logo uploaded successfully! Refreshing...');
+                                                                setTimeout(() => window.location.reload(), 1500);
+                                                            } else {
+                                                                const errorText = await parseErrorResponse(res);
+                                                                throw new Error(errorText);
+                                                            }
+                                                        })
+                                                        .catch((err) => setError(parseError(err)));
+                                                }}
+                                            />
+                                        </label>
+                                        <button
+                                            onClick={() => {
+                                                if (!window.confirm('Are you sure you want to reset the light theme logo to default?')) return;
+
+                                                authFetch('/api/logo?type=light', {
+                                                    method: 'DELETE',
                                                 })
                                                     .then(async (res) => {
                                                         if (res.ok) {
-                                                            setSuccess('Logo uploaded successfully! Refreshing...');
+                                                            setSuccess('Logo reset to default successfully! Refreshing...');
                                                             setTimeout(() => window.location.reload(), 1500);
                                                         } else {
                                                             const errorText = await parseErrorResponse(res);
@@ -264,8 +309,11 @@ const AppearanceSettings = () => {
                                                     })
                                                     .catch((err) => setError(parseError(err)));
                                             }}
-                                        />
-                                    </label>
+                                            className="inline-flex items-center px-4 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 text-sm font-medium rounded-lg cursor-pointer transition-colors border border-red-900/50 hover:border-red-800"
+                                        >
+                                            <Trash2 size={16} className="mr-2" /> Reset Default
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

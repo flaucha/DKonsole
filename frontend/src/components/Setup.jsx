@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, Key, RefreshCw, Loader2 } from 'lucide-react';
-import logoFullDark from '../assets/logo-full-dark.svg';
-import logoFullLight from '../assets/logo-full-light.svg';
+import logoFullDark from '../assets/logo-full-dark.png';
+import logoFullLight from '../assets/logo-full-light.png';
 import { logger } from '../utils/logger';
 
 const Setup = () => {

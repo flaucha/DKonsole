@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import PodDetails from './PodDetails';
 import { useAuth } from '../../context/AuthContext';
 import { useTerminalDock } from '../../context/TerminalDockContext';

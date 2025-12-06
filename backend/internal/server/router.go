@@ -228,6 +228,10 @@ func NewRouter(deps Dependencies) *http.ServeMux {
 			secure(func(w http.ResponseWriter, r *http.Request) {
 				deps.LogoService.UploadLogo(w, r)
 			})(w, r)
+		} else if r.Method == http.MethodDelete {
+			secure(func(w http.ResponseWriter, r *http.Request) {
+				deps.LogoService.DeleteLogo(w, r)
+			})(w, r)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -329,31 +333,31 @@ func NewRouter(deps Dependencies) *http.ServeMux {
 		mux.HandleFunc("/favicon.ico", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, filepath.Join(staticDir, "favicon.ico"))
 		}))
-		mux.HandleFunc("/favicon.svg", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			faviconPath := filepath.Join(staticDir, "favicon.svg")
+		mux.HandleFunc("/favicon.png", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			faviconPath := filepath.Join(staticDir, "favicon.png")
 			if _, err := os.Stat(faviconPath); err != nil {
 				http.NotFound(w, r)
 				return
 			}
-			w.Header().Set("Content-Type", "image/svg+xml")
+			w.Header().Set("Content-Type", "image/png")
 			http.ServeFile(w, r, faviconPath)
 		}))
-		mux.HandleFunc("/logo-full-dark.svg", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			logoPath := filepath.Join(staticDir, "logo-full-dark.svg")
+		mux.HandleFunc("/logo-full-dark.png", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			logoPath := filepath.Join(staticDir, "logo-full-dark.png")
 			if _, err := os.Stat(logoPath); err != nil {
 				http.NotFound(w, r)
 				return
 			}
-			w.Header().Set("Content-Type", "image/svg+xml")
+			w.Header().Set("Content-Type", "image/png")
 			http.ServeFile(w, r, logoPath)
 		}))
-		mux.HandleFunc("/logo-full-light.svg", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			logoPath := filepath.Join(staticDir, "logo-full-light.svg")
+		mux.HandleFunc("/logo-full-light.png", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			logoPath := filepath.Join(staticDir, "logo-full-light.png")
 			if _, err := os.Stat(logoPath); err != nil {
 				http.NotFound(w, r)
 				return
 			}
-			w.Header().Set("Content-Type", "image/svg+xml")
+			w.Header().Set("Content-Type", "image/png")
 			http.ServeFile(w, r, logoPath)
 		}))
 		mux.HandleFunc("/robots.txt", middleware.SecurityHeadersMiddleware(func(w http.ResponseWriter, r *http.Request) {
@@ -369,7 +373,7 @@ func NewRouter(deps Dependencies) *http.ServeMux {
 				http.NotFound(w, r)
 				return
 			}
-			if r.URL.Path == "/favicon.ico" || r.URL.Path == "/favicon.svg" || r.URL.Path == "/logo-full-dark.svg" || r.URL.Path == "/logo-full-light.svg" || r.URL.Path == "/robots.txt" {
+			if r.URL.Path == "/favicon.ico" || r.URL.Path == "/favicon.png" || r.URL.Path == "/logo-full-dark.png" || r.URL.Path == "/logo-full-light.png" || r.URL.Path == "/robots.txt" {
 				http.NotFound(w, r)
 				return
 			}

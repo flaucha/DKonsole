@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Box, ChevronDown, Network, HardDrive, Shield, Package, PanelLeftClose, PanelLeftOpen, X, Siren } from 'lucide-react';
-import logoFullDark from '../assets/logo-full-dark.svg';
-import logoFullLight from '../assets/logo-full-light.svg';
+import logoFullDark from '../assets/logo-full-dark.png';
+import logoFullLight from '../assets/logo-full-light.png';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import UserMenu from './UserMenu';

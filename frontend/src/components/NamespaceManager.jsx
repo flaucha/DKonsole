@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Database, RefreshCw, Tag, Clock, MoreVertical, FileText, ChevronDown, Search, X, Plus, GripVertical } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import YamlEditor from './YamlEditor';
 import { getStatusBadgeClass } from '../utils/statusBadge';
 import { formatDateTime, formatDateParts } from '../utils/dateUtils';
@@ -28,6 +29,7 @@ const parseDateValue = (value) => {
 const NamespaceManager = () => {
     const { currentCluster } = useSettings();
     const { authFetch, user } = useAuth();
+    const toast = useToast();
     const [expandedId, setExpandedId] = useState(null);
     const [sortField, setSortField] = useState('name');
     const [sortDirection, setSortDirection] = useState('asc');
@@ -236,7 +238,7 @@ const NamespaceManager = () => {
 
             refetch();
         } catch (err) {
-            alert(`Error deleting namespace: ${err.message}`);
+            toast.error(`Error deleting namespace: ${err.message}`);
         }
     };
 
@@ -386,61 +388,61 @@ const NamespaceManager = () => {
                                     <div className="px-6 py-4 bg-gray-900/30 border-t border-gray-800">
                                         <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden">
                                             <div className="p-4 space-y-6">
-                                            {/* Edit YAML Button */}
-                                            <div className="flex justify-end mb-2">
-                                                <EditYamlButton onClick={() => setEditingYaml({ name: ns.name, kind: 'Namespace', namespaced: false })} />
-                                            </div>
-                                            {/* Basic Information */}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
-                                                        <Clock size={12} className="mr-1" />
-                                                        Creation Time
-                                                    </h4>
-                                                    <div className="text-sm text-gray-300">{formatDateTime(ns.created)}</div>
+                                                {/* Edit YAML Button */}
+                                                <div className="flex justify-end mb-2">
+                                                    <EditYamlButton onClick={() => setEditingYaml({ name: ns.name, kind: 'Namespace', namespaced: false })} />
                                                 </div>
+                                                {/* Basic Information */}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                            <Clock size={12} className="mr-1" />
+                                                            Creation Time
+                                                        </h4>
+                                                        <div className="text-sm text-gray-300">{formatDateTime(ns.created)}</div>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
+                                                            <Tag size={12} className="mr-1" />
+                                                            Labels Count
+                                                        </h4>
+                                                        <div className="text-sm text-gray-300">{ns.labels ? Object.keys(ns.labels).length : 0}</div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Labels Section */}
                                                 <div>
                                                     <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
                                                         <Tag size={12} className="mr-1" />
-                                                        Labels Count
+                                                        Labels
                                                     </h4>
-                                                    <div className="text-sm text-gray-300">{ns.labels ? Object.keys(ns.labels).length : 0}</div>
-                                                </div>
-                                            </div>
-
-                                            {/* Labels Section */}
-                                            <div>
-                                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center">
-                                                    <Tag size={12} className="mr-1" />
-                                                    Labels
-                                                </h4>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {ns.labels && Object.keys(ns.labels).length > 0 ? (
-                                                        Object.entries(ns.labels).map(([k, v]) => (
-                                                            <span key={k} className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-300">
-                                                                {k}={v}
-                                                            </span>
-                                                        ))
-                                                    ) : (
-                                                        <span className="text-sm text-gray-500 italic">No labels</span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Annotations Section */}
-                                            {ns.annotations && Object.keys(ns.annotations).length > 0 && (
-                                                <div>
-                                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Annotations</h4>
-                                                    <div className="space-y-1">
-                                                        {Object.entries(ns.annotations).map(([k, v]) => (
-                                                            <div key={k} className="bg-gray-800 border border-gray-700 rounded p-2 text-xs">
-                                                                <span className="font-medium text-gray-400">{k}:</span>
-                                                                <span className="ml-2 text-gray-300 break-words">{v}</span>
-                                                            </div>
-                                                        ))}
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {ns.labels && Object.keys(ns.labels).length > 0 ? (
+                                                            Object.entries(ns.labels).map(([k, v]) => (
+                                                                <span key={k} className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-300">
+                                                                    {k}={v}
+                                                                </span>
+                                                            ))
+                                                        ) : (
+                                                            <span className="text-sm text-gray-500 italic">No labels</span>
+                                                        )}
                                                     </div>
                                                 </div>
-                                            )}
+
+                                                {/* Annotations Section */}
+                                                {ns.annotations && Object.keys(ns.annotations).length > 0 && (
+                                                    <div>
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Annotations</h4>
+                                                        <div className="space-y-1">
+                                                            {Object.entries(ns.annotations).map(([k, v]) => (
+                                                                <div key={k} className="bg-gray-800 border border-gray-700 rounded p-2 text-xs">
+                                                                    <span className="font-medium text-gray-400">{k}:</span>
+                                                                    <span className="ml-2 text-gray-300 break-words">{v}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

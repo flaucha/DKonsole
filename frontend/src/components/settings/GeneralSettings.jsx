@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Server, Settings as SettingsIcon } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { isCoreAdmin } from '../../utils/permissions';
 import PrometheusSettings from './PrometheusSettings';

@@ -39,6 +39,34 @@ func NewService(client kubernetes.Interface, namespace string) *Service {
 	}
 }
 
+// DeleteLogo handles logo deletion requests
+func (s *Service) DeleteLogo(w http.ResponseWriter, r *http.Request) {
+	// Get logo type from query parameter (defaults to "normal" if not provided)
+	logoType := r.URL.Query().Get("type")
+	if logoType == "" {
+		logoType = "normal"
+	}
+	if logoType != "normal" && logoType != "light" {
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid logo type. Must be 'normal' or 'light'")
+		return
+	}
+
+	ctx := r.Context()
+	if err := s.logoService.DeleteLogo(ctx, logoType); err != nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.LogInfo("Logo deleted successfully", map[string]interface{}{
+		"type": logoType,
+	})
+
+	utils.JSONResponse(w, http.StatusOK, map[string]string{
+		"status":  "success",
+		"message": "Logo deleted successfully",
+	})
+}
+
 // UploadLogo handles logo file uploads
 // Refactored to use layered architecture:
 // Handler (HTTP) -> Service (Business Logic) -> Storage (Data Access)

@@ -7,6 +7,9 @@ import Settings from './components/Settings';
 import About from './components/About';
 import { SettingsProvider } from './context/SettingsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
+import { ToastContainer } from './components/Toast';
+import ErrorBoundary from './components/ErrorBoundary';
 import Login from './components/Login';
 import Setup from './components/Setup';
 import { canEdit, isAdmin } from './utils/permissions';
@@ -139,23 +142,28 @@ const queryClient = new QueryClient();
 function App() {
     return (
         <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-                <TerminalDockProvider>
-                    <BrowserRouter>
-                        <Routes>
-                            <Route path="/setup" element={<Setup />} />
-                            <Route path="/login" element={<SetupOrLogin />} />
-                            <Route path="/dashboard/*" element={
-                                <ProtectedRoute>
-                                    <Dashboard />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/" element={<Navigate to="/dashboard/overview" replace />} />
-                            <Route path="*" element={<Navigate to="/dashboard/overview" replace />} />
-                        </Routes>
-                    </BrowserRouter>
-                </TerminalDockProvider>
-            </AuthProvider>
+            <ToastProvider>
+                <AuthProvider>
+                    <TerminalDockProvider>
+                        <ErrorBoundary>
+                            <BrowserRouter>
+                                <Routes>
+                                    <Route path="/setup" element={<Setup />} />
+                                    <Route path="/login" element={<SetupOrLogin />} />
+                                    <Route path="/dashboard/*" element={
+                                        <ProtectedRoute>
+                                            <Dashboard />
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/" element={<Navigate to="/dashboard/overview" replace />} />
+                                    <Route path="*" element={<Navigate to="/dashboard/overview" replace />} />
+                                </Routes>
+                            </BrowserRouter>
+                        </ErrorBoundary>
+                        <ToastContainer />
+                    </TerminalDockProvider>
+                </AuthProvider>
+            </ToastProvider>
         </QueryClientProvider>
     );
 }

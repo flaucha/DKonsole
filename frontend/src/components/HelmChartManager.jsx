@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { Package, RefreshCw, Clock, Tag, MoreVertical, Trash2, ArrowUp, X, Info, Download, ChevronDown, Search } from 'lucide-react';
-import Editor from '@monaco-editor/react';
-import { defineMonacoTheme } from '../config/monacoTheme';
+import { Package, Clock, Tag, MoreVertical, Trash2, ArrowUp, ChevronDown } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { formatDateTime } from '../utils/dateUtils';
 import { getExpandableRowClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
 import { useHelmReleases } from '../hooks/useHelmReleases';
-import { parseErrorResponse } from '../utils/errorParser';
+import HelmToolbar from './helm/HelmToolbar';
+import HelmUpgradeModal from './helm/HelmUpgradeModal';
+import HelmInstallModal from './helm/HelmInstallModal';
 
 const HelmChartManager = ({ namespace }) => {
     const { currentCluster } = useSettings();
     const { authFetch, user } = useAuth();
+    const toast = useToast();
 
     // Check if user is admin (core admin has role='admin', LDAP admin groups have no permissions but are admins)
     const isAdmin = user && user.role === 'admin';
@@ -19,31 +21,13 @@ const HelmChartManager = ({ namespace }) => {
     const [sortField, setSortField] = useState('name');
     const [sortDirection, setSortDirection] = useState('asc');
     const [filter, setFilter] = useState('');
-    const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [menuOpen, setMenuOpen] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
-    const [upgradeRelease, setUpgradeRelease] = useState(null);
-    const [upgradeForm, setUpgradeForm] = useState({
-        chart: '',
-        version: '',
-        repo: '',
-        valuesYaml: ''
-    });
-    const [upgrading, setUpgrading] = useState(false);
-    const [installModalOpen, setInstallModalOpen] = useState(false);
-    const [installForm, setInstallForm] = useState({
-        name: '',
-        namespace: '',
-        chart: '',
-        version: '',
-        repo: '',
-        valuesYaml: ''
-    });
-    const [installing, setInstalling] = useState(false);
 
-    const handleEditorWillMount = (monaco) => {
-        defineMonacoTheme(monaco);
-    };
+    // Modal states
+    const [upgradeRelease, setUpgradeRelease] = useState(null);
+    const [installModalOpen, setInstallModalOpen] = useState(false);
+    const [installNamespace, setInstallNamespace] = useState('');
 
     const { data: releases = [], isLoading: loading, refetch } = useHelmReleases(authFetch, currentCluster);
 
@@ -176,165 +160,36 @@ const HelmChartManager = ({ namespace }) => {
                 refetch();
             }, 500);
         } catch (err) {
-            alert(`Error uninstalling Helm release: ${err.message}`);
+            toast.error(`Error uninstalling Helm release: ${err.message}`);
         }
     };
 
-    const handleUpgrade = async () => {
-        if (!upgradeRelease) return;
-
-        setUpgrading(true);
-        const params = new URLSearchParams();
-        if (currentCluster) params.append('cluster', currentCluster);
-
-        try {
-            const payload = {
-                name: upgradeRelease.name,
-                namespace: upgradeRelease.namespace,
-                chart: upgradeForm.chart || upgradeRelease.chart,
-                version: upgradeForm.version || undefined,
-                repo: upgradeForm.repo || undefined,
-                valuesYaml: upgradeForm.valuesYaml || undefined
-            };
-
-            const res = await authFetch(`/api/helm/releases?${params.toString()}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) {
-                const errorText = await parseErrorResponse(res);
-                throw new Error(errorText || 'Failed to upgrade Helm release');
-            }
-
-            const result = await res.json();
-            setUpgradeRelease(null);
-            setUpgradeForm({ chart: '', version: '', repo: '', valuesYaml: '' });
-
-            // Show success message
-            alert(`Upgrade initiated! Job: ${result.job || 'created'}`);
-
-            // Refresh the list after a delay
-            setTimeout(() => {
-                refetch();
-            }, 2000);
-        } catch (err) {
-            alert(`Error upgrading Helm release: ${err.message}`);
-        } finally {
-            setUpgrading(false);
-        }
-    };
-
-    const handleInstall = async () => {
-        if (!installForm.name || !installForm.namespace || !installForm.chart) {
-            alert('Please fill in all required fields (Name, Namespace, Chart)');
-            return;
-        }
-
-        setInstalling(true);
-        const params = new URLSearchParams();
-        if (currentCluster) params.append('cluster', currentCluster);
-
-        try {
-            const payload = {
-                name: installForm.name,
-                namespace: installForm.namespace,
-                chart: installForm.chart,
-                version: installForm.version || undefined,
-                repo: installForm.repo || undefined,
-                valuesYaml: installForm.valuesYaml || undefined
-            };
-
-            const res = await authFetch(`/api/helm/releases/install?${params.toString()}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) {
-                const errorText = await parseErrorResponse(res);
-                throw new Error(errorText || 'Failed to install Helm chart');
-            }
-
-            const result = await res.json();
-            setInstallModalOpen(false);
-            setInstallForm({ name: '', namespace: '', chart: '', version: '', repo: '', valuesYaml: '' });
-
-            // Show success message
-            alert(`Installation initiated! Job: ${result.job || 'created'}`);
-
-            // Refresh the list after a delay
-            setTimeout(() => {
-                refetch();
-            }, 2000);
-        } catch (err) {
-            alert(`Error installing Helm chart: ${err.message}`);
-        } finally {
-            setInstalling(false);
-        }
+    const handleSuccess = () => {
+        // Refresh the list after a delay
+        setTimeout(() => {
+            refetch();
+        }, 2000);
     };
 
     if (loading && releases.length === 0) {
         return <div className="text-gray-400 animate-pulse p-6">Loading Helm releases...</div>;
     }
 
+    const showInstallButton = isAdmin || (namespace && namespace !== 'all' && hasEditPermission(namespace));
+
     return (
         <div className="flex flex-col h-full">
-            {/* Toolbar */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900/50">
-                <div className="flex items-center space-x-4 flex-1">
-                    <div className={`relative transition-all duration-300 ${isSearchFocused ? 'w-96' : 'w-64'}`}>
-                        <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors duration-300 ${isSearchFocused ? 'text-blue-400' : 'text-gray-500'}`} size={16} />
-                        <input
-                            type="text"
-                            placeholder="Filter releases..."
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
-                            onFocus={() => setIsSearchFocused(true)}
-                            onBlur={() => setIsSearchFocused(false)}
-                            className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded-md pl-10 pr-10 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-300"
-                        />
-                        {filter && (
-                            <button
-                                onClick={() => setFilter('')}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
-                                type="button"
-                            >
-                                <X size={16} />
-                            </button>
-                        )}
-                    </div>
-                    <span className="text-sm text-gray-500">
-                        {filteredReleases.length} {filteredReleases.length === 1 ? 'item' : 'items'}
-                    </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                    {(isAdmin || (namespace && namespace !== 'all' && hasEditPermission(namespace))) && (
-                        <button
-                            onClick={() => {
-                                setInstallForm(prev => ({ ...prev, namespace: namespace === 'all' ? '' : namespace }));
-                                setInstallModalOpen(true);
-                            }}
-                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm transition-colors flex items-center"
-                        >
-                            <Download size={14} className="mr-2" />
-                            Install Chart
-                        </button>
-                    )}
-                    <button
-                        onClick={() => refetch()}
-                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
-                        title="Refresh"
-                    >
-                        <RefreshCw size={16} />
-                    </button>
-                </div>
-            </div>
+            <HelmToolbar
+                filter={filter}
+                setFilter={setFilter}
+                count={filteredReleases.length}
+                onRefresh={() => refetch()}
+                onInstallClick={() => {
+                    setInstallNamespace(namespace === 'all' ? '' : namespace);
+                    setInstallModalOpen(true);
+                }}
+                showInstallButton={showInstallButton}
+            />
 
             {/* Table Header */}
             <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-800 bg-gray-900/50 text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -413,12 +268,6 @@ const HelmChartManager = ({ namespace }) => {
                                                             <button
                                                                 onClick={() => {
                                                                     setUpgradeRelease(release);
-                                                                    setUpgradeForm({
-                                                                        chart: release.chart || '',
-                                                                        version: '',
-                                                                        repo: '',
-                                                                        valuesYaml: ''
-                                                                    });
                                                                     setMenuOpen(null);
                                                                 }}
                                                                 className="w-full text-left px-4 py-2 text-sm text-blue-300 hover:bg-blue-900/40 flex items-center"
@@ -526,366 +375,21 @@ const HelmChartManager = ({ namespace }) => {
                 ></div>
             )}
 
-            {upgradeRelease && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                    <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
-                        {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700 bg-gray-800">
-                            <div className="flex items-center space-x-3">
-                                <ArrowUp className="text-blue-400" size={20} />
-                                <div>
-                                    <h3 className="text-lg font-semibold text-white">
-                                        Upgrade Helm Release
-                                    </h3>
-                                    <p className="text-xs text-gray-400 mt-0.5">
-                                        {upgradeRelease.name} <span className="text-gray-500">•</span> {upgradeRelease.namespace}
-                                    </p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => {
-                                    setUpgradeRelease(null);
-                                    setUpgradeForm({ chart: '', version: '', repo: '', valuesYaml: '' });
-                                }}
-                                className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
+            <HelmUpgradeModal
+                release={upgradeRelease}
+                isOpen={!!upgradeRelease}
+                onClose={() => setUpgradeRelease(null)}
+                onSuccess={handleSuccess}
+                currentCluster={currentCluster}
+            />
 
-                        {/* Current Release Info */}
-                        <div className="px-6 py-3 bg-gray-800/50 border-b border-gray-700">
-                            <div className="flex items-start space-x-2">
-                                <Info size={16} className="text-blue-400 mt-0.5 flex-shrink-0" />
-                                <div className="text-xs text-gray-400">
-                                    <span className="text-gray-300 font-medium">Current:</span> Chart: <span className="text-white">{upgradeRelease.chart || 'N/A'}</span>
-                                    {upgradeRelease.version && (
-                                        <> • Version: <span className="text-white">{upgradeRelease.version}</span></>
-                                    )}
-                                    {upgradeRelease.revision && (
-                                        <> • Revision: <span className="text-white">{upgradeRelease.revision}</span></>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-6 overflow-y-auto flex-1">
-                            <div className="space-y-5">
-                                {/* Chart */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Chart Name <span className="text-red-400">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={upgradeForm.chart}
-                                        onChange={(e) => setUpgradeForm({ ...upgradeForm, chart: e.target.value })}
-                                        placeholder="e.g., nginx, vault, prometheus"
-                                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-                                    {upgradeRelease.chart && !upgradeForm.chart && (
-                                        <p className="text-xs text-gray-500 mt-1.5 flex items-center">
-                                            <Info size={12} className="mr-1" />
-                                            Will use current chart: <span className="text-gray-300 ml-1">{upgradeRelease.chart}</span>
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    {/* Version */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                                            Chart Version <span className="text-gray-500 text-xs">(optional)</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={upgradeForm.version}
-                                            onChange={(e) => setUpgradeForm({ ...upgradeForm, version: e.target.value })}
-                                            placeholder="e.g., 1.2.3 (latest if empty)"
-                                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                        {upgradeRelease.version && (
-                                            <p className="text-xs text-gray-500 mt-1.5">Current: {upgradeRelease.version}</p>
-                                        )}
-                                    </div>
-
-                                    {/* Repo */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                                            Repository URL <span className="text-gray-500 text-xs">(optional)</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={upgradeForm.repo}
-                                            onChange={(e) => setUpgradeForm({ ...upgradeForm, repo: e.target.value })}
-                                            placeholder="e.g., https://charts.helm.sh/stable"
-                                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Values YAML */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Values Override (YAML) <span className="text-gray-500 text-xs">(optional)</span>
-                                    </label>
-                                    <div className="border border-gray-700 rounded-md overflow-hidden monaco-editor-container" style={{ height: '300px' }}>
-                                        <Editor
-                                            height="100%"
-                                            defaultLanguage="yaml"
-                                            theme="dkonsole-dark"
-                                            beforeMount={handleEditorWillMount}
-                                            value={upgradeForm.valuesYaml}
-                                            onChange={(value) => setUpgradeForm({ ...upgradeForm, valuesYaml: value || '' })}
-                                            options={{
-                                                minimap: { enabled: false },
-                                                scrollBeyondLastLine: false,
-                                                fontSize: 13,
-                                                automaticLayout: true,
-                                                lineNumbers: 'on',
-                                                wordWrap: 'on',
-                                                tabSize: 2,
-                                                insertSpaces: true,
-                                            }}
-                                        />
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-1.5">
-                                        Override chart values. These will be merged with the default values.
-                                    </p>
-                                </div>
-
-                                {/* Help Hint */}
-                                <div className="mt-4 p-4 bg-blue-900/20 border border-blue-700/50 rounded-md">
-                                    <div className="flex items-start space-x-2">
-                                        <Info size={16} className="text-blue-400 mt-0.5 flex-shrink-0" />
-                                        <div className="text-xs text-blue-300">
-                                            <span className="font-medium">💡 Tip:</span> Para obtener los mejores resultados, es recomendable especificar la <span className="font-semibold text-blue-200">URL del repositorio</span> y la <span className="font-semibold text-blue-200">versión del chart</span>. Si no se especifican, el sistema intentará detectarlos automáticamente, pero puede tomar más tiempo o fallar en algunos casos.
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="px-6 py-4 border-t border-gray-700 bg-gray-800 flex justify-between items-center">
-                            <div className="text-xs text-gray-500">
-                                A Kubernetes Job will be created to execute the upgrade
-                            </div>
-                            <div className="flex space-x-3">
-                                <button
-                                    onClick={() => {
-                                        setUpgradeRelease(null);
-                                        setUpgradeForm({ chart: '', version: '', repo: '', valuesYaml: '' });
-                                    }}
-                                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
-                                    disabled={upgrading}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleUpgrade}
-                                    disabled={upgrading || !upgradeForm.chart}
-                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-md transition-colors flex items-center"
-                                >
-                                    {upgrading ? (
-                                        <>
-                                            <RefreshCw size={16} className="mr-2 animate-spin" />
-                                            Upgrading...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <ArrowUp size={16} className="mr-2" />
-                                            Upgrade Release
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Install Chart Modal */}
-            {installModalOpen && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                    <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
-                        {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700 bg-gray-800">
-                            <div className="flex items-center space-x-3">
-                                <Download className="text-blue-400" size={20} />
-                                <div>
-                                    <h3 className="text-lg font-semibold text-white">
-                                        Install Helm Chart
-                                    </h3>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => {
-                                    setInstallModalOpen(false);
-                                    setInstallForm({ name: '', namespace: '', chart: '', version: '', repo: '', valuesYaml: '' });
-                                }}
-                                className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-6 overflow-y-auto flex-1">
-                            <div className="space-y-5">
-                                {/* Name and Namespace */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                                            Release Name <span className="text-red-400">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={installForm.name}
-                                            onChange={(e) => setInstallForm({ ...installForm, name: e.target.value })}
-                                            placeholder="e.g., my-app, nginx, prometheus"
-                                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                                            Namespace <span className="text-red-400">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={installForm.namespace}
-                                            onChange={(e) => setInstallForm({ ...installForm, namespace: e.target.value })}
-                                            placeholder="e.g., default, production, monitoring"
-                                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Chart */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Chart Name <span className="text-red-400">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={installForm.chart}
-                                        onChange={(e) => setInstallForm({ ...installForm, chart: e.target.value })}
-                                        placeholder="e.g., nginx, vault, prometheus, kube-prometheus-stack"
-                                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    {/* Version */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                                            Chart Version <span className="text-gray-500 text-xs">(optional)</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={installForm.version}
-                                            onChange={(e) => setInstallForm({ ...installForm, version: e.target.value })}
-                                            placeholder="e.g., 1.2.3 (latest if empty)"
-                                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                    </div>
-
-                                    {/* Repo */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                                            Repository URL <span className="text-gray-500 text-xs">(optional)</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={installForm.repo}
-                                            onChange={(e) => setInstallForm({ ...installForm, repo: e.target.value })}
-                                            placeholder="e.g., https://charts.helm.sh/stable"
-                                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Values YAML */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Values Override (YAML) <span className="text-gray-500 text-xs">(optional)</span>
-                                    </label>
-                                    <div className="border border-gray-700 rounded-md overflow-hidden" style={{ height: '300px' }}>
-                                        <Editor
-                                            height="100%"
-                                            defaultLanguage="yaml"
-                                            theme="dkonsole-dark"
-                                            beforeMount={handleEditorWillMount}
-                                            value={installForm.valuesYaml}
-                                            onChange={(value) => setInstallForm({ ...installForm, valuesYaml: value || '' })}
-                                            options={{
-                                                minimap: { enabled: false },
-                                                scrollBeyondLastLine: false,
-                                                fontSize: 13,
-                                                automaticLayout: true,
-                                                lineNumbers: 'on',
-                                                wordWrap: 'on',
-                                                tabSize: 2,
-                                                insertSpaces: true,
-                                            }}
-                                        />
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-1.5">
-                                        Override chart values. These will be merged with the default values.
-                                    </p>
-                                </div>
-
-                                {/* Help Hint */}
-                                <div className="mt-4 p-4 bg-blue-900/20 border border-blue-700/50 rounded-md">
-                                    <div className="flex items-start space-x-2">
-                                        <Info size={16} className="text-blue-400 mt-0.5 flex-shrink-0" />
-                                        <div className="text-xs text-blue-300">
-                                            <span className="font-medium">💡 Tip:</span> Para obtener los mejores resultados, es recomendable especificar la <span className="font-semibold text-blue-200">URL del repositorio</span> y la <span className="font-semibold text-blue-200">versión del chart</span>. Si no se especifican, el sistema intentará detectarlos automáticamente, pero puede tomar más tiempo o fallar en algunos casos.
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="px-6 py-4 border-t border-gray-700 bg-gray-800 flex justify-between items-center">
-                            <div className="text-xs text-gray-500">
-                                A Kubernetes Job will be created to execute the installation
-                            </div>
-                            <div className="flex space-x-3">
-                                <button
-                                    onClick={() => {
-                                        setInstallModalOpen(false);
-                                        setInstallForm({ name: '', namespace: '', chart: '', version: '', repo: '', valuesYaml: '' });
-                                    }}
-                                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
-                                    disabled={installing}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleInstall}
-                                    disabled={installing || !installForm.name || !installForm.namespace || !installForm.chart}
-                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-md transition-colors flex items-center"
-                                >
-                                    {installing ? (
-                                        <>
-                                            <RefreshCw size={16} className="mr-2 animate-spin" />
-                                            Installing...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Download size={16} className="mr-2" />
-                                            Install Chart
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <HelmInstallModal
+                isOpen={installModalOpen}
+                onClose={() => setInstallModalOpen(false)}
+                onSuccess={handleSuccess}
+                currentCluster={currentCluster}
+                prefilledNamespace={installNamespace}
+            />
 
             {confirmAction && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">

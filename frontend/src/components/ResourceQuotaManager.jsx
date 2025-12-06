@@ -3,6 +3,7 @@ import { Activity, RefreshCw, Tag, Plus, MoreVertical, FileText, Trash2, AlertCi
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import QuotaEditor from './QuotaEditor';
 import LimitRangeEditor from './LimitRangeEditor';
 import YamlEditor from './YamlEditor';
@@ -14,6 +15,7 @@ import { DEFAULT_NAMESPACE } from '../config/constants';
 const ResourceQuotaManager = ({ namespace }) => {
     const { currentCluster } = useSettings();
     const { authFetch } = useAuth();
+    const toast = useToast();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -105,7 +107,7 @@ const ResourceQuotaManager = ({ namespace }) => {
                 limitRangesQuery.refetch();
             }
         } catch (err) {
-            alert(`Error deleting ${kind}: ${err.message}`);
+            toast.error(`Error deleting ${kind}: ${err.message}`);
             throw err; // Re-throw to allow caller to handle
         }
     };

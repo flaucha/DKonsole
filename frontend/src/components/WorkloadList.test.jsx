@@ -4,10 +4,11 @@ import { render, screen, within, waitFor, fireEvent } from '@testing-library/rea
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import WorkloadList from './WorkloadList';
+import { ToastProvider } from '../context/ToastContext';
 
 // Mock all dependencies
 vi.mock('../hooks/useWorkloads');
-
+vi.mock('../hooks/useWorkloadColumns');
 vi.mock('../hooks/useColumnOrder'); // Add this
 vi.mock('../context/AuthContext');
 vi.mock('../context/SettingsContext');
@@ -31,6 +32,7 @@ vi.mock('./YamlEditor', () => ({
 }));
 
 import { useWorkloads } from '../hooks/useWorkloads';
+import useWorkloadColumns from '../hooks/useWorkloadColumns';
 import { useColumnOrder } from '../hooks/useColumnOrder'; // Add this
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -67,9 +69,11 @@ const renderWithProviders = (component) => {
     });
     return render(
         <QueryClientProvider client={queryClient}>
-            <BrowserRouter>
-                {component}
-            </BrowserRouter>
+            <ToastProvider>
+                <BrowserRouter>
+                    {component}
+                </BrowserRouter>
+            </ToastProvider>
         </QueryClientProvider>
     );
 };
@@ -95,6 +99,42 @@ const setupMocks = () => {
         hash: '',
         state: null,
         key: 'default',
+    });
+
+    // Mock useWorkloadColumns to return basic column structure
+    vi.mocked(useWorkloadColumns).mockReturnValue({
+        dataColumns: [
+            {
+                id: 'name',
+                label: 'Name',
+                width: 'minmax(220px, 2.2fr)',
+                sortValue: (item) => item.name || '',
+                align: 'left',
+                renderCell: (item) => <span>{item.name}</span>
+            },
+            {
+                id: 'status',
+                label: 'Status',
+                width: 'minmax(120px, 0.9fr)',
+                sortValue: (item) => item.status || '',
+                align: 'center',
+                renderCell: (item) => <span>{item.status}</span>
+            },
+            {
+                id: 'ready',
+                label: 'Ready',
+                width: 'minmax(90px, 0.8fr)',
+                sortValue: (item) => item.details?.ready || '',
+                align: 'center',
+                renderCell: (item) => <span>{item.details?.ready || '-'}</span>
+            }
+        ],
+        ageColumn: {
+            id: 'age',
+            label: 'Age',
+            width: 'minmax(80px, 0.6fr)',
+            renderCell: () => <span>1d</span>
+        }
     });
 
     // Default mock for useColumnOrder to pass through columns
@@ -160,6 +200,14 @@ describe('WorkloadList - Ready Column', () => {
                 isLoading: false,
                 error: null,
                 refetch: vi.fn(),
+            });
+
+            vi.mocked(useWorkloadColumns).mockReturnValue({
+                dataColumns: [
+                    { id: 'name', label: 'Name', renderCell: (r) => <span>{r.name}</span> },
+                    { id: 'status', label: 'Status', renderCell: (r) => <span>{r.status}</span> }
+                ],
+                ageColumn: { id: 'age', label: 'Age', renderCell: () => <span>1d</span> }
             });
 
             renderWithProviders(<WorkloadList namespace="default" kind="Deployment" />);
@@ -492,7 +540,7 @@ describe('Interactions and Actions', () => {
 
         // Let's try to find button inside the row
         const row = screen.getByText('pod-to-delete').closest('.grid');
-        const menuBtn = within(row).getAllByRole('button')[0]; // Assuming it's the first or we check content
+        within(row).getAllByRole('button')[0]; // Trigger search for button
         // Actually deployment has rollout button too. Pod just menu?
         // WorkloadList.jsx: 
         // {kind === 'CronJob' ... }
@@ -519,6 +567,15 @@ describe('Different Kinds', () => {
             isLoading: false, error: null, refetch: vi.fn(),
         });
 
+        vi.mocked(useWorkloadColumns).mockReturnValue({
+            dataColumns: [
+                { id: 'name', label: 'Name', renderCell: (r) => <span>{r.name}</span> },
+                { id: 'tag', label: 'Image Tag', renderCell: (r) => <span>{r.details?.imageTag}</span> },
+                { id: 'requests', label: 'Requests', renderCell: (r) => <span>cpu: {r.details?.requestsCPU}</span> }
+            ],
+            ageColumn: { id: 'age', label: 'Age', renderCell: () => <span>1d</span> }
+        });
+
         renderWithProviders(<WorkloadList namespace="default" kind="Deployment" />);
         expect(screen.getByText('deploy1')).toBeInTheDocument();
         expect(screen.getByText('v1')).toBeInTheDocument(); // Tag
@@ -532,6 +589,15 @@ describe('Different Kinds', () => {
                 details: { clusterIP: '1.2.3.4', ports: ['80', '443'] }
             }],
             isLoading: false, error: null, refetch: vi.fn(),
+        });
+
+        vi.mocked(useWorkloadColumns).mockReturnValue({
+            dataColumns: [
+                { id: 'name', label: 'Name', renderCell: (r) => <span>{r.name}</span> },
+                { id: 'clusterIP', label: 'Cluster IP', renderCell: (r) => <span>{r.details?.clusterIP}</span> },
+                { id: 'ports', label: 'Ports', renderCell: (r) => <span>{r.details?.ports?.join(', ')}</span> }
+            ],
+            ageColumn: { id: 'age', label: 'Age', renderCell: () => <span>1d</span> }
         });
 
         renderWithProviders(<WorkloadList namespace="default" kind="Service" />);

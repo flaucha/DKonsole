@@ -71,6 +71,21 @@ func (s *LogoService) UploadLogo(ctx context.Context, req UploadLogoRequest) err
 	return nil
 }
 
+// DeleteLogo removes the logo of the specified type
+func (s *LogoService) DeleteLogo(ctx context.Context, logoType string) error {
+	// Default to "normal" if not specified
+	if logoType == "" {
+		logoType = "normal"
+	}
+
+	// Remove all logos of this type
+	if err := s.storage.RemoveAll(ctx, logoType); err != nil {
+		return fmt.Errorf("failed to remove logo: %w", err)
+	}
+
+	return nil
+}
+
 // GetLogoPath returns the path to an existing logo file (for filesystem storage)
 // For ConfigMap storage, this returns a special marker
 func (s *LogoService) GetLogoPath(ctx context.Context, logoType string) (string, error) {
