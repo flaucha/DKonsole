@@ -49,7 +49,7 @@ jobs:
           version: latest
           working-directory: ./backend
           install-mode: goinstall
-          args: --timeout=5m
+          args: --timeout=5m --out-format=colored-line-number
 
       - name: Run govulncheck
         working-directory: ./backend

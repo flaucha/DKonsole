@@ -17,7 +17,7 @@ func TestLoggerFunctions(t *testing.T) {
 	Logger.SetFormatter(&logrus.JSONFormatter{
 		DisableTimestamp: true, // easier to test
 	})
-	
+
 	// Reset after test
 	defer func() {
 		Logger.SetOutput(os.Stdout)

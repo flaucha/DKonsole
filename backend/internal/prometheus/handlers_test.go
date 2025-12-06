@@ -238,4 +238,3 @@ func TestHTTPHandler_GetPodMetrics(t *testing.T) {
 		}
 	})
 }
-

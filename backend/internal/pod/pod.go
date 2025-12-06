@@ -339,9 +339,9 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 
 	// Configure WebSocket connection with ping/pong for keep-alive
 	const (
-		pongWait   = 60 * time.Second  // Time allowed to read the next pong message
-		pingPeriod = 30 * time.Second  // Send pings with this period (must be less than pongWait)
-		writeWait  = 10 * time.Second  // Time allowed to write a message
+		pongWait   = 60 * time.Second // Time allowed to read the next pong message
+		pingPeriod = 30 * time.Second // Send pings with this period (must be less than pongWait)
+		writeWait  = 10 * time.Second // Time allowed to write a message
 	)
 
 	// Set initial read deadline

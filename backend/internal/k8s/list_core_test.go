@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
@@ -50,9 +49,9 @@ func TestListPods(t *testing.T) {
 	// However, since they are unexported, we must be in the same package (k8s).
 	// ListResources is the public entry point which calls listPods.
 
-	// Let's test via ListResources to be safe and integration-style, 
+	// Let's test via ListResources to be safe and integration-style,
 	// or call the method directly from this test since it is in package k8s.
-	
+
 	resources, err := service.listPods(context.Background(), client, nil, "default", metav1.ListOptions{})
 	if err != nil {
 		t.Fatalf("listPods failed: %v", err)
@@ -109,7 +108,7 @@ func TestListServices(t *testing.T) {
 	if len(resources) != 1 {
 		t.Fatalf("expected 1 service, got %d", len(resources))
 	}
-	
+
 	r := resources[0]
 	if r.Name != "svc-1" {
 		t.Errorf("expected name svc-1, got %s", r.Name)

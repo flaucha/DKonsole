@@ -258,7 +258,7 @@ func TestAuditLog(t *testing.T) {
 
 	req := httptest.NewRequest("GET", "/test", nil)
 	req.RemoteAddr = "192.168.1.1:8080"
-	
+
 	AuditLog(req, "test-action", "test-resource", "test-name", "default", true, nil, map[string]interface{}{"key": "value"})
 
 	// Verify log output
@@ -312,7 +312,7 @@ func TestLogAuditEntry(t *testing.T) {
 func TestJSONResponse(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := map[string]string{"foo": "bar"}
-	
+
 	JSONResponse(w, http.StatusCreated, data)
 
 	if w.Code != http.StatusCreated {
@@ -367,7 +367,7 @@ func TestSuccessResponse(t *testing.T) {
 	if response["message"] != "created successfully" {
 		t.Errorf("SuccessResponse() message = %v, want created successfully", response["message"])
 	}
-	
+
 	respData, ok := response["data"].(map[string]interface{})
 	if !ok {
 		t.Fatalf("SuccessResponse() data is not a map")

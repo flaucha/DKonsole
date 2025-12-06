@@ -4,12 +4,11 @@ import (
 	"context"
 	"testing"
 
-
+	"github.com/flaucha/DKonsole/backend/internal/models"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
-	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
 func TestListDeployments(t *testing.T) {

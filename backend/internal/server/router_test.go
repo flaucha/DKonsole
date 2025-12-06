@@ -151,12 +151,12 @@ func TestRouter_StaticFiles(t *testing.T) {
 	}
 
 	// Create a dummy index.html
-	if err := os.WriteFile(filepath.Join(staticDir, "index.html"), []byte("<html></html>"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(staticDir, "index.html"), []byte("<html></html>"), 0600); err != nil {
 		t.Fatalf("failed to create index.html: %v", err)
 	}
 
 	// Create a dummy asset
-	if err := os.WriteFile(filepath.Join(staticDir, "assets", "test.js"), []byte("console.log('hi')"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(staticDir, "assets", "test.js"), []byte("console.log('hi')"), 0600); err != nil {
 		t.Fatalf("failed to create test.js: %v", err)
 	}
 
@@ -267,4 +267,3 @@ func TestEnableCors(t *testing.T) {
 		}
 	})
 }
-
