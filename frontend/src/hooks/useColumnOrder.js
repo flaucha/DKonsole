@@ -97,7 +97,8 @@ const readStoredOrder = (storageKeys, fallback) => {
 };
 
 export const useColumnOrder = (columns, storageKey, userId) => {
-    const availableIds = useMemo(() => columns.map((col) => col.id), [columns]);
+    const availableIds = useMemo(() => columns.map((col) => col.id).filter(Boolean), [columns]);
+    const defaultHidden = useMemo(() => columns.filter(col => col.hiddenByDefault && col.id).map(col => col.id), [columns]);
     const baseKey = useMemo(() => storageKey || null, [storageKey]);
     const userKey = useMemo(() => {
         if (!storageKey) return null;
@@ -108,10 +109,12 @@ export const useColumnOrder = (columns, storageKey, userId) => {
 
     const [state, setState] = useState(() => {
         const stored = readStoredOrder(keysToRead, availableIds);
+        // Use stored hidden if available, otherwise use defaultHidden
+        const effectiveHidden = stored.hidden.length > 0 ? stored.hidden : defaultHidden;
         return {
             key: keysToRead.join(','),
             order: stored.order,
-            hidden: stored.hidden
+            hidden: effectiveHidden
         };
     });
 
@@ -175,7 +178,11 @@ export const useColumnOrder = (columns, storageKey, userId) => {
             acc[id] = idx;
             return acc;
         }, {});
-        return [...columns].sort((a, b) => (orderIndex[a.id] ?? columns.length) - (orderIndex[b.id] ?? columns.length));
+        return [...columns].sort((a, b) => {
+            const idxA = a.id ? (orderIndex[a.id] ?? columns.length) : columns.length;
+            const idxB = b.id ? (orderIndex[b.id] ?? columns.length) : columns.length;
+            return idxA - idxB;
+        });
     }, [columns, order, availableIds]);
 
     const visibleColumns = useMemo(() => {

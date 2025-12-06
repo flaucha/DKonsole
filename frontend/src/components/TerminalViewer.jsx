@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { X, Terminal as TerminalIcon } from 'lucide-react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { useSettings } from '../context/SettingsContext';
 import '@xterm/xterm/css/xterm.css';
 
 const TerminalViewer = ({ namespace, pod, container, onClose }) => {
@@ -9,17 +10,28 @@ const TerminalViewer = ({ namespace, pod, container, onClose }) => {
     const termRef = useRef(null);
     const fitAddonRef = useRef(null);
 
+    const { theme } = useSettings();
+
     // Initialize terminal once
     useEffect(() => {
+        const isCream = theme === 'cream';
+        const termTheme = isCream ? {
+            background: '#fdf6e3', // Solarized Light background
+            foreground: '#657b83', // Solarized Light foreground
+            cursor: '#586e75',     // Solarized Light cursor (visible)
+            cursorAccent: '#fdf6e3',
+            selection: '#eee8d5',
+        } : {
+            background: '#000000',
+            foreground: '#e5e7eb',
+        };
+
         const term = new Terminal({
             convertEol: true,
             cursorBlink: true,
             fontSize: 13,
             fontFamily: 'Menlo, Monaco, "Cascadia Mono", "Fira Code", monospace',
-            theme: {
-                background: '#000000',
-                foreground: '#e5e7eb',
-            },
+            theme: termTheme,
         });
 
         const fitAddon = new FitAddon();
@@ -44,7 +56,7 @@ const TerminalViewer = ({ namespace, pod, container, onClose }) => {
             window.removeEventListener('resize', handleResize);
             term.dispose();
         };
-    }, []);
+    }, [theme]);
 
     // Connect WebSocket for the active pod/container
     useEffect(() => {

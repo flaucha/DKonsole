@@ -3,14 +3,13 @@ import { Terminal, PinOff, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import TerminalViewerInline from './details/TerminalViewerInline';
 import { useTerminalDock } from '../context/TerminalDockContext';
 
-const SessionChip = ({ session, isActive, onSelect, onUnpin, onClose }) => (
+const SessionChip = ({ session, isActive, onSelect, onMinimize, onClose }) => (
     <div
         onClick={onSelect}
-        className={`group flex items-center gap-3 px-3 py-2 rounded-lg border cursor-pointer min-w-[200px] transition-all duration-200 ${
-            isActive
-                ? 'bg-gray-800 border-blue-500 shadow-lg shadow-blue-900/30'
-                : 'bg-gray-800/50 border-gray-700 hover:border-gray-500 hover:bg-gray-800/80'
-        }`}
+        className={`group flex items-center gap-3 px-3 py-2 rounded-lg border cursor-pointer min-w-[200px] transition-all duration-200 ${isActive
+            ? 'bg-gray-800 border-blue-500 shadow-lg shadow-blue-900/30'
+            : 'bg-gray-800/50 border-gray-700 hover:border-gray-500 hover:bg-gray-800/80'
+            }`}
     >
         <div className="flex items-center gap-2 truncate">
             <div className="flex flex-col leading-tight truncate">
@@ -25,12 +24,14 @@ const SessionChip = ({ session, isActive, onSelect, onUnpin, onClose }) => (
             <button
                 onClick={(e) => {
                     e.stopPropagation();
-                    onUnpin();
+                    onMinimize();
                 }}
                 className="p-1 rounded-md border text-gray-300 transition-colors bg-gray-800 border-gray-700 hover:border-gray-500 hover:text-white"
-                title="Unpin session"
+                title="Minimize session"
             >
-                <PinOff size={14} />
+                <div className="flex items-center justify-center w-3 h-3">
+                    <span className="mb-2 font-bold">_</span>
+                </div>
             </button>
             <button
                 onClick={(e) => {
@@ -94,9 +95,6 @@ const TerminalDock = () => {
     return (
         <>
             <div className="flex items-center gap-2 w-full min-w-0">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-400 shrink-0">
-                    <Terminal size={14} className="text-gray-300" />
-                </div>
                 <div className="relative flex-1 min-w-0">
                     {canScrollLeft && (
                         <button
@@ -119,7 +117,7 @@ const TerminalDock = () => {
                                 onSelect={() => {
                                     setActiveId(session.id);
                                 }}
-                                onUnpin={() => removeSession(session.id)}
+                                onMinimize={() => setActiveId(null)}
                                 onClose={() => removeSession(session.id)}
                             />
                         ))}

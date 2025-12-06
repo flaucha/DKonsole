@@ -188,7 +188,7 @@ const WorkloadList = ({ namespace, kind }) => {
     const Icon = getIcon(kind);
 
     // Get columns from hook
-    const { dataColumns, ageColumn } = useWorkloadColumns(kind);
+    const { dataColumns } = useWorkloadColumns(kind);
 
     // Actions column definition
     const actionsColumn = useMemo(() => ({
@@ -208,11 +208,11 @@ const WorkloadList = ({ namespace, kind }) => {
                 handleTriggerCronJob={handleTriggerCronJob}
                 triggering={triggering}
                 rollingOut={rollingOut}
-                handleDelete={handleDelete}
+                setConfirmAction={setConfirmAction}
                 setConfirmRollout={setConfirmRollout}
             />
         )
-    }), [kind, user, currentCluster, authFetch, handleTriggerCronJob, triggering, rollingOut, handleDelete, setConfirmRollout]);
+    }), [kind, user, currentCluster, authFetch, handleTriggerCronJob, triggering, rollingOut, setConfirmAction, setConfirmRollout]);
 
     const reorderableColumns = useMemo(
         () => dataColumns.filter((col) => !col.pinned && !col.isAction),
@@ -313,6 +313,27 @@ const WorkloadList = ({ namespace, kind }) => {
         );
     }
 
+    const handleAdd = () => {
+        // Determine the best namespace to use for new resources
+        let targetNs = namespace;
+        if (namespace === 'all') {
+            // When viewing all namespaces, use the first available from resources or fallback to dkonsole
+            const firstResource = allResources.find(r => r.namespace);
+            targetNs = firstResource?.namespace || 'dkonsole';
+        }
+        setEditingResource({
+            kind: kind,
+            namespaced: true,
+            isNew: true,
+            namespace: targetNs,
+            apiVersion: 'v1', // This should technically vary by kind, YamlEditor might handle defaults
+            metadata: {
+                namespace: targetNs,
+                name: `new-${kind.toLowerCase()}`
+            }
+        });
+    };
+
     // Show empty state if no resources and no filter (and not loading)
     if (!loading && resources.length === 0 && !filter) {
         return (
@@ -328,10 +349,11 @@ const WorkloadList = ({ namespace, kind }) => {
                     menuOpen={menuOpen}
                     setMenuOpen={setMenuOpen}
                     orderedDataColumns={orderedDataColumns}
-                    ageColumn={ageColumn}
+
                     hidden={hidden}
                     toggleVisibility={toggleVisibility}
                     resetOrder={resetOrder}
+                    onAdd={handleAdd}
                 />
                 {/* Empty state message */}
                 <div className="flex-1 flex items-center justify-center">
@@ -341,6 +363,18 @@ const WorkloadList = ({ namespace, kind }) => {
                         <p className="text-sm mt-2">Try selecting a different namespace or check if resources exist.</p>
                     </div>
                 </div>
+
+                {/* YAML Editor Modal - also needed in empty state */}
+                {editingResource && (
+                    <YamlEditor
+                        resource={editingResource}
+                        onClose={() => setEditingResource(null)}
+                        onSaved={() => {
+                            setEditingResource(null);
+                            refetch();
+                        }}
+                    />
+                )}
             </div>
         );
     }
@@ -358,10 +392,11 @@ const WorkloadList = ({ namespace, kind }) => {
                 menuOpen={menuOpen}
                 setMenuOpen={setMenuOpen}
                 orderedDataColumns={orderedDataColumns}
-                ageColumn={ageColumn}
+
                 hidden={hidden}
                 toggleVisibility={toggleVisibility}
                 resetOrder={resetOrder}
+                onAdd={handleAdd}
             />
 
             {/* Table Header */}

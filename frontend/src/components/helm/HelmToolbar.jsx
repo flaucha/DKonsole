@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, RefreshCw, Download, X } from 'lucide-react';
+import { Search, RefreshCw, Download, X, Plus } from 'lucide-react';
 
 const HelmToolbar = ({
     filter,
@@ -43,10 +43,10 @@ const HelmToolbar = ({
                 {showInstallButton && (
                     <button
                         onClick={onInstallClick}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm transition-colors flex items-center"
+                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors mr-1"
+                        title="Install Chart"
                     >
-                        <Download size={14} className="mr-2" />
-                        Install Chart
+                        <Plus size={16} />
                     </button>
                 )}
                 <button

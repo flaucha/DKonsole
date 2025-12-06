@@ -289,7 +289,7 @@ const Layout = ({ children, headerContent }) => {
         <div className="flex flex-col h-screen bg-gray-900">
             {/* Header */}
             <header className="bg-gray-900 border-b border-gray-700 flex flex-col shrink-0 z-20 shadow-lg">
-                <div className="h-16 flex items-center gap-4 px-4">
+                <div className="h-12 flex items-center gap-4 px-4">
                     <div className="flex items-center space-x-2 shrink-0">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -306,7 +306,7 @@ const Layout = ({ children, headerContent }) => {
                             <img
                                 src={logoSrc}
                                 alt="Logo"
-                                className="h-12 max-h-12 object-contain"
+                                className="h-9 max-h-9 object-contain"
                                 onError={handleLogoError}
                             />
                         </div>

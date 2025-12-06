@@ -43,11 +43,10 @@ const NamespaceToolbar = ({
                 {isAdmin && (
                     <button
                         onClick={onAdd}
-                        className="flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm transition-colors"
+                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors mr-1"
                         title="Create new namespace"
                     >
-                        <Plus size={16} className="mr-1.5" />
-                        Add
+                        <Plus size={16} />
                     </button>
                 )}
                 <button

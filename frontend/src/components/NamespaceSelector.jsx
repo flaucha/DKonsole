@@ -7,8 +7,10 @@ const NamespaceSelector = ({ selected, onSelect }) => {
     const [namespaces, setNamespaces] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [dropdownWidth, setDropdownWidth] = useState(() => parseInt(localStorage.getItem('ns_selector_width')) || 180);
     const dropdownRef = useRef(null);
     const searchInputRef = useRef(null);
+    const resizeRef = useRef(null);
     const { authFetch } = useAuth();
 
     useEffect(() => {
@@ -41,8 +43,34 @@ const NamespaceSelector = ({ selected, onSelect }) => {
         };
 
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
     }, []);
+
+    const handleMouseMove = (e) => {
+        if (!resizeRef.current) return;
+        const newWidth = Math.max(150, Math.min(600, e.clientX - resizeRef.current.startX + resizeRef.current.startWidth));
+        setDropdownWidth(newWidth);
+        localStorage.setItem('ns_selector_width', newWidth);
+    };
+
+    const handleMouseUp = () => {
+        resizeRef.current = null;
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    const startResize = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        resizeRef.current = {
+            startX: e.clientX,
+            startWidth: dropdownWidth
+        };
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    };
 
     useEffect(() => {
         if (isOpen && searchInputRef.current) {
@@ -59,21 +87,38 @@ const NamespaceSelector = ({ selected, onSelect }) => {
 
     return (
         <div className="flex items-center space-x-2" ref={dropdownRef}>
-            <span className="text-gray-400 text-xs font-medium hidden md:block">Namespace:</span>
-            <div className="relative">
+            <span className="text-gray-400 text-xs font-medium hidden md:block">NS:</span>
+            <div className="relative group">
                 <button
                     onClick={() => setIsOpen(!isOpen)}
-                    className="flex items-center justify-between space-x-2 bg-gray-800 border border-gray-700 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 transition-colors min-w-[180px] text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="flex items-center justify-between space-x-2 bg-gray-800 border border-gray-700 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 transition-colors text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    style={{ width: `${dropdownWidth}px` }}
                 >
-                    <div className="flex items-center space-x-2 overflow-hidden">
+                    <div className="flex items-center space-x-2 overflow-hidden w-full">
                         <Database size={14} className="text-gray-400 flex-shrink-0" />
-                        <span className="truncate">{selected}</span>
+                        <span className="truncate flex-1 text-left">{selected}</span>
                     </div>
-                    <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
+                <div
+                    className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500/50 transition-colors z-10"
+                    onMouseDown={startResize}
+                />
+
+                {/* Visual indicator for resize handle on hover */}
+                {/* Removed ChevronDown as it takes space, or keep it? Original had it. */}
+                {/* Let's keep a chevron but maybe absolutely positioned or just inside. Original had `justify-between`. */}
+                {/* Re-implementing button content to match request but resizable */}
+                {/* Let's try to keep the chevron. */}
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                </div>
+
 
                 {isOpen && (
-                    <div className="absolute top-full right-0 mt-1 w-64 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 flex flex-col">
+                    <div
+                        className="absolute top-full right-0 mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 flex flex-col"
+                        style={{ width: `${Math.max(dropdownWidth, 200)}px` }}
+                    >
                         <div className="p-2 border-b border-gray-700">
                             <div className="relative">
                                 <Search size={14} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500" />

@@ -12,7 +12,7 @@ const ActionsCell = ({
     handleTriggerCronJob,
     triggering,
     rollingOut,
-    handleDelete,
+    setConfirmAction,
     setConfirmRollout
 }) => {
     const [menuOpen, setMenuOpen] = useState(false);
@@ -109,7 +109,7 @@ const ActionsCell = ({
                                     <>
                                         <button
                                             onClick={() => {
-                                                handleDelete(res, false);
+                                                setConfirmAction({ res, force: false });
                                                 setMenuOpen(false);
                                             }}
                                             className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
@@ -119,7 +119,7 @@ const ActionsCell = ({
                                         {res.kind !== 'Node' && (
                                             <button
                                                 onClick={() => {
-                                                    handleDelete(res, true);
+                                                    setConfirmAction({ res, force: true });
                                                     setMenuOpen(false);
                                                 }}
                                                 className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-900/40"

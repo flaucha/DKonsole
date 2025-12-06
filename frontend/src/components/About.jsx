@@ -15,7 +15,7 @@ const About = () => {
                     <Code size={32} className="mr-3 text-blue-400" />
                     <h1 className="text-3xl font-bold text-white">DKonsole</h1>
                 </div>
-                
+
                 <p className="text-gray-300 mb-6 text-lg">
                     A modern, lightweight Kubernetes dashboard built entirely with <strong>Artificial Intelligence</strong>.
                 </p>
@@ -83,10 +83,6 @@ const About = () => {
                         <li className="flex items-start">
                             <span className="text-blue-400 mr-2">•</span>
                             <span>Secure Authentication: Argon2 password hashing and JWT-based sessions</span>
-                        </li>
-                        <li className="flex items-start">
-                            <span className="text-blue-400 mr-2">•</span>
-                            <span>Multi-Cluster Support: Manage multiple Kubernetes clusters from a single interface</span>
                         </li>
                     </ul>
                 </div>

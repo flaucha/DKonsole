@@ -157,6 +157,11 @@ func NewRouter(deps Dependencies) *http.ServeMux {
 	// Swagger documentation - protected with authentication
 	mux.Handle("/swagger/", secureHandler(httpSwagger.WrapHandler))
 
+	// WebSocket endpoint - secure but without CORS/CSRF (handled by Upgrader)
+	secureWS := func(h http.HandlerFunc) http.HandlerFunc {
+		return middleware.SecurityHeadersMiddleware(middleware.RateLimitMiddleware(middleware.AuditMiddleware(authService.AuthMiddleware(h))))
+	}
+
 	// K8s handlers - using services
 	mux.HandleFunc("/api/namespaces", secure(deps.K8sService.GetNamespaces))
 	mux.HandleFunc("/api/resources", secure(deps.K8sService.GetResources))
@@ -213,7 +218,7 @@ func NewRouter(deps Dependencies) *http.ServeMux {
 	// Pod handlers - using services
 	mux.HandleFunc("/api/pods/logs", secure(middleware.WebSocketLimitMiddleware(deps.PodService.StreamPodLogs)))
 	mux.HandleFunc("/api/pods/events", secure(deps.PodService.GetPodEvents))
-	mux.HandleFunc("/api/pods/exec", secure(middleware.WebSocketLimitMiddleware(deps.PodService.ExecIntoPod)))
+	mux.HandleFunc("/api/pods/exec", secureWS(middleware.WebSocketLimitMiddleware(deps.PodService.ExecIntoPod)))
 
 	mux.HandleFunc("/api/resource", secure(deps.K8sService.DeleteResource))
 	mux.HandleFunc("/api/cronjobs/trigger", secure(deps.K8sService.TriggerCronJob))

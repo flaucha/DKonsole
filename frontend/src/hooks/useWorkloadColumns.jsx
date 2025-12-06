@@ -4,7 +4,8 @@ import {
     Cpu,
     Database,
     HardDrive,
-    Network
+    Network,
+    ChevronDown
 } from 'lucide-react';
 
 import {
@@ -30,8 +31,12 @@ const useWorkloadColumns = (kind) => {
                 width: 'minmax(220px, 2.2fr)',
                 sortValue: (item) => item.name || '',
                 align: 'left',
-                renderCell: (item, { isExpanded: _isExpanded }) => (
+                renderCell: (item, { isExpanded }) => (
                     <div className="font-semibold text-gray-200 flex items-center space-x-2 truncate">
+                        <ChevronDown
+                            size={16}
+                            className={`text-gray-500 transition-transform duration-200 flex-shrink-0 ${isExpanded ? 'transform rotate-180' : ''}`}
+                        />
                         <span className="truncate" title={item.name}>{item.name}</span>
                     </div>
                 )
@@ -43,8 +48,36 @@ const useWorkloadColumns = (kind) => {
                 sortValue: (item) => item.status || '',
                 align: 'center',
                 renderCell: (item) => <StatusCell status={item.status} kind={kind} />
+            },
+            {
+                id: 'namespace',
+                label: 'Namespace',
+                width: 'minmax(140px, 1fr)',
+                sortValue: (item) => item.namespace || '',
+                align: 'center',
+                hiddenByDefault: true,
+                renderCell: (item) => (
+                    <span className="text-gray-300 text-sm" title={item.namespace}>
+                        {item.namespace || '-'}
+                    </span>
+                )
+            },
+            {
+                id: 'age',
+                label: 'Age',
+                width: 'minmax(80px, 0.6fr)',
+                sortValue: (item) => parseDateValue(item.created),
+                align: 'center',
+                renderCell: (item) => <AgeCell created={item.created} />
             }
-        ];
+        ].filter(col => {
+            // Exclude namespace column for cluster-scoped resources
+            if (col.id === 'namespace') {
+                const clusterScoped = ['Node', 'PersistentVolume', 'StorageClass', 'ClusterRole', 'ClusterRoleBinding', 'Namespace'];
+                if (clusterScoped.includes(kind)) return false;
+            }
+            return true;
+        });
 
         // Kind-specific columns
         let specificColumns = [];
@@ -132,15 +165,22 @@ const useWorkloadColumns = (kind) => {
                         id: 'tag',
                         label: 'Tag',
                         width: 'minmax(150px, 1.2fr)',
-                        sortValue: (item) => item.details?.images?.[0]?.tag || '',
+                        sortValue: (item) => {
+                            const img = item.details?.images?.[0];
+                            return typeof img === 'string' ? img.split(':').pop() : (img?.tag || '');
+                        },
                         align: 'center',
-                        renderCell: (item) => (
-                            <ResourceCell
-                                value={item.details?.images?.[0]?.tag || '-'}
-                                icon={null}
-                                color="text-gray-400"
-                            />
-                        )
+                        renderCell: (item) => {
+                            const img = item.details?.images?.[0];
+                            const tag = typeof img === 'string' ? img.split(':').pop() : (img?.tag || '-');
+                            return (
+                                <ResourceCell
+                                    value={tag}
+                                    icon={null}
+                                    color="text-gray-400"
+                                />
+                            );
+                        }
                     }
                 ];
                 break;
@@ -385,11 +425,11 @@ const useWorkloadColumns = (kind) => {
                         id: 'size',
                         label: 'Size',
                         width: 'minmax(100px, 0.8fr)',
-                        sortValue: (item) => parseSizeToMi(item.details?.resources?.requests?.storage),
+                        sortValue: (item) => parseSizeToMi(item.details?.resources?.requests?.storage || item.details?.capacity?.storage),
                         align: 'center',
                         renderCell: (item) => (
                             <ResourceCell
-                                value={item.details?.resources?.requests?.storage}
+                                value={item.details?.resources?.requests?.storage || item.details?.capacity?.storage}
                                 icon={HardDrive}
                                 color="text-emerald-400"
                             />
@@ -526,24 +566,19 @@ const useWorkloadColumns = (kind) => {
                                 color="text-blue-300"
                             />
                         )
-                    }
+                    },
                 ];
+                break;
+
+            // Generic fallback
+            default:
                 break;
         }
 
         return [...commonColumns, ...specificColumns];
     }, [kind]);
 
-    const ageColumn = useMemo(() => ({
-        id: 'age',
-        label: 'Age',
-        width: 'minmax(80px, 0.6fr)',
-        sortValue: (item) => parseDateValue(item.created),
-        align: 'center',
-        renderCell: (item) => <AgeCell created={item.created} />
-    }), []);
-
-    return { dataColumns, ageColumn };
+    return { dataColumns };
 };
 
 export default useWorkloadColumns;

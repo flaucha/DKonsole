@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.6] - 2025-12-06
+### Added
+- **UI:** Added minimize (`_`) and close (`x`) buttons to console headers.
+- **UI:** Added "Refresh" toggle and Time Range dropdown to Metrics component.
+- **UI:** Added "Add" buttons to Namespace and Workload lists with template support.
+- **UI:** Resizable Namespace Selector with persistence.
+- **UI:** Reduced header height (64px -> 48px) and logo size (25% reduction) for a more compact interface.
+
+### Changed
+- **UI:** Standardized list views and toolbars across the application.
+- **UI:** Updated Namespace Selector label to "NS:".
+- **Backend:** Restricted WebSocket origins for better security.
+
+### Fixed
+- **Backend:** Added error handling for JSON unmarshalling in ServerSideApply.
+- **UI:** Fixed invisible terminal cursor in Cream theme by applying Solarized Light color scheme.
+- **UI:** Fixed potential crash when opening terminal related to theme settings access.
+- **UI:** Fixed namespace list width inconsistency by removing extra padding.
+- **UI:** Removed "Multi-Cluster Support" from About section (feature not implemented).
+- **UI:** Reduced main logo size by 25% for a thinner header.
+- **Fix:** "Add Resource" button now works correctly in empty namespaces.
+- **Fix:** Restored "Age" column in all resource lists.
+- **Fix:** PVC size column now falls back to capacity if requests are not available.
+- **Fix:** Removed "Namespace" column from cluster-scoped resources (Nodes, StorageClasses, PVs).
+- **Fix:** Corrected Deployment "Tag" column display for object-based image definitions.
+- **UI:** Removed terminal icon from header when console is pinned for cleaner UI.
+- **UI:** Improved resource templates with proper Kubernetes specs for common resources.
+- **UI:** Fixed "Add Resource" button to use current namespace instead of defaulting to 'default'.
+- **Fix:** Fixed WebSocket connection failure for pod exec by bypassing restrictive CORS checks.
+- **Fix:** Silenced "Logo not found" 404 console error by handling 204 No Content response.
+
 ## [1.4.5] - 2025-12-06
 
 ### Added

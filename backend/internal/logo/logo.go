@@ -162,9 +162,9 @@ func (s *Service) GetLogo(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		// Logo not found and no default available - return 404
+		// Logo not found and no default available - return 204 to check logic
 		// Frontend will handle this gracefully and use default logo
-		http.Error(w, "Logo not found", http.StatusNotFound)
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 

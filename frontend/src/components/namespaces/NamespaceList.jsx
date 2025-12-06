@@ -230,7 +230,7 @@ const NamespaceList = ({
                     return (
                         <div
                             key={column.id}
-                            className={`flex items-center ${column.align === 'left' ? 'justify-start' : 'justify-center'} ${column.id === 'name' ? 'pl-[0.5cm]' : ''} gap-2`}
+                            className={`flex items-center ${column.align === 'left' ? 'justify-start' : 'justify-center'} gap-2`}
                             draggable={canDrag}
                             onDragStart={() => {
                                 if (canDrag) setDraggingColumn(column.id);
@@ -249,17 +249,16 @@ const NamespaceList = ({
                             }}
                             onDragEnd={() => setDraggingColumn(null)}
                         >
-                            {canDrag && <GripVertical size={12} className="text-gray-600" />}
                             {isSortable ? (
                                 <button
                                     type="button"
-                                    className="flex items-center gap-1 hover:text-gray-300"
+                                    className="flex items-center gap-1 hover:text-gray-300 uppercase"
                                     onClick={() => handleSort(column.id)}
                                 >
                                     {column.label} {renderSortIndicator(column.id)}
                                 </button>
                             ) : (
-                                <span>{column.label}</span>
+                                <span className="uppercase">{column.label}</span>
                             )}
                         </div>
                     );
@@ -274,13 +273,13 @@ const NamespaceList = ({
                         <div key={ns.name} className="border-b border-gray-800 last:border-0">
                             <div
                                 onClick={() => toggleExpand(ns.name)}
-                                className={`grid gap-4 px-6 py-4 cursor-pointer transition-colors duration-200 items-center ${getExpandableRowRowClasses(isExpanded)}`}
+                                className={`grid gap-4 px-6 py-1.5 cursor-pointer transition-colors duration-200 items-center ${getExpandableRowRowClasses(isExpanded)}`}
                                 style={{ gridTemplateColumns }}
                             >
                                 {columns.map((column) => (
                                     <div
                                         key={`${ns.name}-${column.id}`}
-                                        className={`${column.align === 'left' ? 'justify-start text-left' : 'justify-center text-center'} flex items-center ${column.id === 'name' ? 'pl-[0.5cm]' : ''}`}
+                                        className={`${column.align === 'left' ? 'justify-start text-left' : 'justify-center text-center'} flex items-center`}
                                         onClick={column.isAction ? (e) => e.stopPropagation() : undefined}
                                     >
                                         {column.renderCell(ns, { isExpanded })}

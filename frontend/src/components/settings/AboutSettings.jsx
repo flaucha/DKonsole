@@ -78,10 +78,6 @@ const AboutSettings = () => {
                             <span className="text-blue-400 mr-2">•</span>
                             <span>Secure Authentication: Argon2 password hashing and JWT-based sessions</span>
                         </li>
-                        <li className="flex items-start">
-                            <span className="text-blue-400 mr-2">•</span>
-                            <span>Multi-Cluster Support: Manage multiple Kubernetes clusters from a single interface</span>
-                        </li>
                     </ul>
                 </div>
 

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Terminal, Pin, PinOff, X, Minus } from 'lucide-react';
 import { Terminal as XTerminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { useSettings } from '../../context/SettingsContext';
 import '@xterm/xterm/css/xterm.css';
 
 const TerminalViewerInline = ({
@@ -22,17 +23,28 @@ const TerminalViewerInline = ({
     const containerRef = useRef(null);
     const isActiveRef = useRef(isActive);
 
+    const { theme } = useSettings();
+
     // Initialize terminal once
     useEffect(() => {
+        const isCream = theme === 'cream';
+        const termTheme = isCream ? {
+            background: '#fdf6e3', // Solarized Light background
+            foreground: '#657b83', // Solarized Light foreground
+            cursor: '#586e75',     // Solarized Light cursor (visible)
+            cursorAccent: '#fdf6e3',
+            selection: '#eee8d5',
+        } : {
+            background: '#000000',
+            foreground: '#e5e7eb',
+        };
+
         const term = new XTerminal({
             convertEol: true,
             cursorBlink: true,
             fontSize: 13,
             fontFamily: 'Menlo, Monaco, "Cascadia Mono", "Fira Code", monospace',
-            theme: {
-                background: '#000000',
-                foreground: '#e5e7eb',
-            },
+            theme: termTheme,
         });
 
         const fitAddon = new FitAddon();
@@ -57,7 +69,7 @@ const TerminalViewerInline = ({
             window.removeEventListener('resize', handleResize);
             term.dispose();
         };
-    }, []);
+    }, [theme]);
 
     // Track active state without re-subscribing the websocket
     useEffect(() => {

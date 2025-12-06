@@ -128,8 +128,9 @@ func TestGetLogoHandler_NotFound(t *testing.T) {
 
 	svc.GetLogo(rr, req)
 
-	if rr.Code != http.StatusNotFound {
-		t.Fatalf("expected 404, got %d", rr.Code)
+	if status := rr.Code; status != http.StatusNoContent {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusNoContent)
 	}
 }
 

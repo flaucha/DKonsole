@@ -127,14 +127,14 @@ const setupMocks = () => {
                 sortValue: (item) => item.details?.ready || '',
                 align: 'center',
                 renderCell: (item) => <span>{item.details?.ready || '-'}</span>
+            },
+            {
+                id: 'age',
+                label: 'Age',
+                width: 'minmax(80px, 0.6fr)',
+                renderCell: () => <span>1d</span>
             }
-        ],
-        ageColumn: {
-            id: 'age',
-            label: 'Age',
-            width: 'minmax(80px, 0.6fr)',
-            renderCell: () => <span>1d</span>
-        }
+        ]
     });
 
     // Default mock for useColumnOrder to pass through columns
@@ -205,9 +205,9 @@ describe('WorkloadList - Ready Column', () => {
             vi.mocked(useWorkloadColumns).mockReturnValue({
                 dataColumns: [
                     { id: 'name', label: 'Name', renderCell: (r) => <span>{r.name}</span> },
-                    { id: 'status', label: 'Status', renderCell: (r) => <span>{r.status}</span> }
-                ],
-                ageColumn: { id: 'age', label: 'Age', renderCell: () => <span>1d</span> }
+                    { id: 'status', label: 'Status', renderCell: (r) => <span>{r.status}</span> },
+                    { id: 'age', label: 'Age', renderCell: () => <span>1d</span> }
+                ]
             });
 
             renderWithProviders(<WorkloadList namespace="default" kind="Deployment" />);
@@ -571,9 +571,9 @@ describe('Different Kinds', () => {
             dataColumns: [
                 { id: 'name', label: 'Name', renderCell: (r) => <span>{r.name}</span> },
                 { id: 'tag', label: 'Image Tag', renderCell: (r) => <span>{r.details?.imageTag}</span> },
-                { id: 'requests', label: 'Requests', renderCell: (r) => <span>cpu: {r.details?.requestsCPU}</span> }
-            ],
-            ageColumn: { id: 'age', label: 'Age', renderCell: () => <span>1d</span> }
+                { id: 'requests', label: 'Requests', renderCell: (r) => <span>cpu: {r.details?.requestsCPU}</span> },
+                { id: 'age', label: 'Age', renderCell: () => <span>1d</span> }
+            ]
         });
 
         renderWithProviders(<WorkloadList namespace="default" kind="Deployment" />);
@@ -595,9 +595,9 @@ describe('Different Kinds', () => {
             dataColumns: [
                 { id: 'name', label: 'Name', renderCell: (r) => <span>{r.name}</span> },
                 { id: 'clusterIP', label: 'Cluster IP', renderCell: (r) => <span>{r.details?.clusterIP}</span> },
-                { id: 'ports', label: 'Ports', renderCell: (r) => <span>{r.details?.ports?.join(', ')}</span> }
-            ],
-            ageColumn: { id: 'age', label: 'Age', renderCell: () => <span>1d</span> }
+                { id: 'ports', label: 'Ports', renderCell: (r) => <span>{r.details?.ports?.join(', ')}</span> },
+                { id: 'age', label: 'Age', renderCell: () => <span>1d</span> }
+            ]
         });
 
         renderWithProviders(<WorkloadList namespace="default" kind="Service" />);
