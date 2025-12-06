@@ -159,7 +159,7 @@ func NewRouter(deps Dependencies) *http.ServeMux {
 
 	// WebSocket endpoint - secure but without CSRF (Upgrader already handles origin).
 	secureWS := func(h http.HandlerFunc) http.HandlerFunc {
-		return middleware.SecurityHeadersMiddleware(enableCors(middleware.RateLimitMiddleware(middleware.AuditMiddleware(authService.AuthMiddleware(h)))))
+		return middleware.SecurityHeadersMiddleware(middleware.RateLimitMiddleware(middleware.AuditMiddleware(authService.AuthMiddleware(h))))
 	}
 
 	// K8s handlers - using services

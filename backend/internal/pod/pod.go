@@ -321,6 +321,8 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	setWebSocketCORSHeaders(w, r)
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		utils.LogError(err, "WebSocket upgrade failed", map[string]interface{}{
@@ -445,4 +447,19 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Exec error: %v", err)))
 		writeMu.Unlock()
 	}
+}
+
+// setWebSocketCORSHeaders writes the standard CORS headers for the WebSocket handshake.
+// ExecIntoPod already validates the origin via the Upgrader, so this helper simply mirrors
+// the headers enableCors would emit to satisfy the browser’s credentialed requests.
+func setWebSocketCORSHeaders(w http.ResponseWriter, r *http.Request) {
+	origin := strings.TrimSpace(r.Header.Get("Origin"))
+	if origin == "" {
+		return
+	}
+	w.Header().Set("Access-Control-Allow-Origin", origin)
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Max-Age", "3600")
 }
