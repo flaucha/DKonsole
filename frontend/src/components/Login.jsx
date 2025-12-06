@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, Shield, Users } from 'lucide-react';
-import logoFullDark from '../assets/logo-full-dark.svg';
-import logoFullLight from '../assets/logo-full-light.svg';
+import logoFullDark from '../assets/logo-full-dark.png';
+import logoFullLight from '../assets/logo-full-light.png';
 
 const Login = () => {
     const [username, setUsername] = useState('');
