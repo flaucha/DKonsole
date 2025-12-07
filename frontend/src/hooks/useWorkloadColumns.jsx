@@ -24,7 +24,7 @@ const useWorkloadColumns = (kind) => {
     // Memoize the dataColumns to prevent unnecessary re-renders
     const dataColumns = useMemo(() => {
         // Common columns for all workloads
-        const commonColumns = [
+        const baseColumns = [
             {
                 id: 'name',
                 label: 'Name',
@@ -61,14 +61,6 @@ const useWorkloadColumns = (kind) => {
                         {item.namespace || '-'}
                     </span>
                 )
-            },
-            {
-                id: 'age',
-                label: 'Age',
-                width: 'minmax(80px, 0.6fr)',
-                sortValue: (item) => parseDateValue(item.created),
-                align: 'center',
-                renderCell: (item) => <AgeCell created={item.created} />
             }
         ].filter(col => {
             // Exclude namespace column for cluster-scoped resources
@@ -575,7 +567,16 @@ const useWorkloadColumns = (kind) => {
                 break;
         }
 
-        return [...commonColumns, ...specificColumns];
+        const ageColumn = {
+            id: 'age',
+            label: 'Age',
+            width: 'minmax(80px, 0.6fr)',
+            sortValue: (item) => parseDateValue(item.created),
+            align: 'center',
+            renderCell: (item) => <AgeCell created={item.created} />
+        };
+
+        return [...baseColumns, ...specificColumns, ageColumn];
     }, [kind]);
 
     return { dataColumns };
