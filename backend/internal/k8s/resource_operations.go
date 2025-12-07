@@ -26,23 +26,23 @@ var upgrader = websocket.Upgrader{
 		if origin == "" {
 			return true // No origin header (e.g. non-browser client), allow
 		}
-		
+
 		// Allow localhost and 127.0.0.1 for local development
 		// In a real production env, this should be configurable
 		u, err := url.Parse(origin)
 		if err != nil {
 			return false
 		}
-		
+
 		if u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" {
 			return true
 		}
-		
+
 		// Check against Host header (same origin)
 		if u.Host == r.Host {
 			return true
 		}
-		
+
 		return false
 	},
 }
