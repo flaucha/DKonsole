@@ -164,6 +164,13 @@ The official image is available at:
 
 ## 📝 Changelog
 
+### v1.4.6 (2025-12-06)
+**🖥️ UI polish & WebSocket hardening**
+
+- Compact header, resizable namespace selector, and “Add” buttons across namespaces/workloads.
+- Terminal/Metrics: minimize/close console buttons, metrics refresh toggle/time range dropdown, and cursor/namespace width fixes.
+- Backend: stricter WebSocket origin checks and fixes for exec/CORS, PVC size/tag/namespace column regressions.
+
 ### v1.4.5 (2025-12-06)
 **🔧 WebSocket stability & appearance refactor**
 
@@ -176,13 +183,6 @@ The official image is available at:
 
 - Backend build (go.mod, Docker image, install script) now uses Go 1.25.5 to include the patched crypto/x509 standard library (GO-2025-4175, GO-2025-4155).
 - CI/security workflows pin Go 1.25.5 so govulncheck runs against the fixed toolchain.
-
-### v1.4.3 (2025-12-06)
-**🎨 YAML editor polish & stability**
-
-- Atom One Dark theme applied to the Monaco YAML editor for consistent contrast.
-- Fixed cursor drift/light-mode overrides and locked popup editors to a stable 100% scale.
-- Added backend test coverage for watches, settings, API handlers, and logo storage.
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 
