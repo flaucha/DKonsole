@@ -8,7 +8,7 @@
 
 ## 🤖 Built with AI
 
-This entire project, from backend to frontend and infrastructure code, was generated using advanced AI agents. It demonstrates the power of AI in modern software development.
+Almost all this project, from backend to frontend and infrastructure code, was generated using advanced AI agents. It demonstrates the power of AI in modern software development.
 
 ## ✨ Features
 
@@ -133,17 +133,6 @@ docker build -t dkonsole:test .
 trivy image dkonsole:test
 ```
 
-##### CI/CD
-
-El workflow `.github/workflows/security.yml` ejecuta automáticamente:
-- ✅ Escaneo en cada push/PR
-- ✅ Escaneo diario programado (2 AM)
-- ✅ Generación de SBOM en main
-- ✅ Resultados en GitHub Security tab
-
-#### Reportar Vulnerabilidades
-
-Si encuentras una vulnerabilidad de seguridad, por favor reporta a: security@example.com
 
 ### 5. Docker Image (Optional)
 By default, it uses the official image. You can change tag or repository if needed.
@@ -159,8 +148,6 @@ image:
 The official image is available at:
 
 - **Unified**: `dkonsole/dkonsole:1.4.6`
-
-**Note:** Starting from v1.1.0, DKonsole uses a unified container architecture where the backend serves the frontend static files. This improves security by reducing the attack surface and eliminating inter-container communication.
 
 ## 📝 Changelog
 
