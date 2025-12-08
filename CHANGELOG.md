@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.7] - 2025-12-08
+
+### Fixed
+- **Workload Lists**: Addressed multiple column display issues across workload types.
+  - **Secrets**: Renamed 'Status' column to 'Type'.
+  - **Services**: Renamed 'Status' column to 'Type', fixed duplicate columns, and corrected Ports display.
+  - **Ingress**: Added Annotations to details, fixed Address column, and fixed search placeholder typo.
+  - **Storage**: Fixed PVC/PV Capacity columns display and PV Reclaim Policy (added missing field in backend).
+  - **Actions**: Fixed "Edit in place" functionality availability and icon imports.
+
 ## [1.4.6] - 2025-12-06
 ### Added
 - **UI:** Added minimize (`_`) and close (`x`) buttons to console headers.

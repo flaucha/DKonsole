@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.4.6-green.svg)
+![Version](https://img.shields.io/badge/version-1.4.7-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built entirely with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -30,7 +30,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.4.6
+git checkout v1.4.7
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -140,16 +140,23 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.4.6"
+  tag: "1.4.7"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.4.6`
+- **Unified**: `dkonsole/dkonsole:1.4.7`
 
 ## 📝 Changelog
+
+### v1.4.7 (2025-12-08)
+**🐛 Workload & Storage UI Fixes**
+
+- **Workloads**: Fixed Secrets/Services 'Type' columns, Services Ports display, and Ingress Address/Annotations.
+- **Storage**: Corrected PVC/PV Capacity display and PV Reclaim Policy (backend fix included).
+- **UX**: Fixed search placeholder typos and Actions menu icons.
 
 ### v1.4.6 (2025-12-06)
 **🖥️ UI polish & WebSocket hardening**
@@ -164,12 +171,6 @@ The official image is available at:
 - **WebSocket**: Replaced null char keep-alive with ping/pong protocol; added auto-reconnection with exponential backoff.
 - **Appearance**: Simplified settings with dark/cream toggle, font dropdown, and removed animation type selector.
 - **Cream Theme**: Warmer, less bright colors; fixed metric tooltip contrast.
-
-### v1.4.4 (2025-12-07)
-**🔒 Go toolchain patch**
-
-- Backend build (go.mod, Docker image, install script) now uses Go 1.25.5 to include the patched crypto/x509 standard library (GO-2025-4175, GO-2025-4155).
-- CI/security workflows pin Go 1.25.5 so govulncheck runs against the fixed toolchain.
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 
