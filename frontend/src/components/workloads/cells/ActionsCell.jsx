@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlayCircle, RefreshCw, MoreVertical } from 'lucide-react';
+import { PlayCircle, RefreshCw, MoreVertical, Edit2 } from 'lucide-react';
 import { isAdmin, canEdit } from '../../../utils/permissions';
 import { isMasterNode } from '../../../utils/workloadUtils';
 
@@ -13,7 +13,9 @@ const ActionsCell = ({
     triggering,
     rollingOut,
     setConfirmAction,
-    setConfirmRollout
+    setConfirmRollout,
+    onEditYaml,
+    onEditInPlace
 }) => {
     const [menuOpen, setMenuOpen] = useState(false);
 
@@ -25,7 +27,7 @@ const ActionsCell = ({
             const params = new URLSearchParams();
             if (currentCluster) params.append('cluster', currentCluster);
             const response = await authFetch(
-                `/api/namespaces/${res.namespace}/Deployment/${res.name}?${params.toString()}`
+                `/ api / namespaces / ${res.namespace} /Deployment/${res.name}?${params.toString()} `
             );
             if (response.ok) {
                 const deploymentData = await response.json();
@@ -99,23 +101,76 @@ const ActionsCell = ({
                             className="fixed inset-0 z-40"
                             onClick={() => setMenuOpen(false)}
                         />
-                        <div className="absolute right-0 mt-1 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
+                        <div className="absolute right-0 mt-1 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50 py-1">
                             <div className="flex flex-col">
-                                {res.kind === 'Node' && isMasterNode(res) ? (
-                                    <div className="px-4 py-2 text-xs text-red-400">
-                                        Not Allowed
-                                    </div>
-                                ) : (isAdmin(user) || canEdit(user, res.namespace)) ? (
+                                {(isAdmin(user) || canEdit(user, res.namespace)) && (kind === 'ConfigMap' || kind === 'Secret') && onEditInPlace && (
+                                    <button
+                                        onClick={() => {
+                                            setMenuOpen(false);
+                                            onEditInPlace(res);
+                                        }}
+                                        className="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 w-full text-left"
+                                    >
+                                        <Edit2 size={14} className="mr-2" />
+                                        Edit in place
+                                    </button>
+                                )}
+                                {isAdmin(user) || canEdit(user, res.namespace) ? (
                                     <>
-                                        <button
-                                            onClick={() => {
-                                                setConfirmAction({ res, force: false });
-                                                setMenuOpen(false);
-                                            }}
-                                            className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
-                                        >
-                                            Delete
-                                        </button>
+                                        {/* Unified Actions */}
+                                        {onEditYaml && (
+                                            <button
+                                                onClick={() => {
+                                                    onEditYaml(res);
+                                                    setMenuOpen(false);
+                                                }}
+                                                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-2"
+                                            >
+                                                Edit YAML
+                                            </button>
+                                        )}
+
+                                        {kind === 'Deployment' && (
+                                            <button
+                                                onClick={(e) => {
+                                                    handleRolloutClick(e);
+                                                    setMenuOpen(false);
+                                                }}
+                                                disabled={rollingOut === res.name}
+                                                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-2"
+                                            >
+                                                Restart Rollout
+                                            </button>
+                                        )}
+
+                                        {kind === 'CronJob' && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleTriggerCronJob(res);
+                                                    setMenuOpen(false);
+                                                }}
+                                                disabled={triggering === res.name}
+                                                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-2"
+                                            >
+                                                Trigger Run
+                                            </button>
+                                        )}
+
+                                        <div className="h-px bg-gray-700 my-1 mx-2" />
+
+                                        {res.kind !== 'Node' || (res.kind === 'Node' && !isMasterNode(res)) ? (
+                                            <button
+                                                onClick={() => {
+                                                    setConfirmAction({ res, force: false });
+                                                    setMenuOpen(false);
+                                                }}
+                                                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                                            >
+                                                Delete
+                                            </button>
+                                        ) : null}
+
                                         {res.kind !== 'Node' && (
                                             <button
                                                 onClick={() => {

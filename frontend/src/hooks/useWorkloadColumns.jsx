@@ -43,7 +43,7 @@ const useWorkloadColumns = (kind) => {
             },
             {
                 id: 'status',
-                label: 'Status',
+                label: kind === 'Secret' || kind === 'Service' ? 'Type' : 'Status',
                 width: 'minmax(120px, 0.9fr)',
                 sortValue: (item) => item.status || '',
                 align: 'center',
@@ -179,14 +179,6 @@ const useWorkloadColumns = (kind) => {
             case 'Service':
                 specificColumns = [
                     {
-                        id: 'type',
-                        label: 'Type',
-                        width: 'minmax(120px, 1fr)',
-                        sortValue: (item) => item.details?.type || '',
-                        align: 'center',
-                        renderCell: (item) => <span>{item.details?.type || '-'}</span>
-                    },
-                    {
                         id: 'clusterIP',
                         label: 'Cluster IP',
                         width: 'minmax(140px, 1.2fr)',
@@ -204,18 +196,24 @@ const useWorkloadColumns = (kind) => {
                         id: 'ports',
                         label: 'Ports',
                         width: 'minmax(180px, 1.5fr)',
-                        sortValue: (item) => (item.details?.ports || []).map(p => `${p.port}/${p.protocol}`).join(', '),
+                        sortValue: (item) => (item.details?.ports || []).join(', '),
                         align: 'left',
                         renderCell: (item) => {
                             const ports = item.details?.ports || [];
                             if (ports.length === 0) return <span className="text-gray-500">-</span>;
                             return (
                                 <div className="flex flex-wrap gap-1">
-                                    {ports.slice(0, 2).map((p, i) => (
-                                        <span key={i} className="text-xs bg-gray-800 px-1.5 py-0.5 rounded text-gray-300 border border-gray-700">
-                                            {p.port}/{p.protocol}
-                                        </span>
-                                    ))}
+                                    {ports.slice(0, 2).map((port, i) => {
+                                        // Parse format like "80:30080/TCP" or "80/TCP"
+                                        const parts = (port || '').split('/');
+                                        const protocol = parts[1] || 'TCP';
+                                        const portDisplay = parts[0] || port;
+                                        return (
+                                            <span key={i} className="text-xs bg-gray-800 px-1.5 py-0.5 rounded text-gray-300 border border-gray-700">
+                                                {portDisplay}/{protocol}
+                                            </span>
+                                        );
+                                    })}
                                     {ports.length > 2 && <span className="text-xs text-gray-500">+{ports.length - 2}</span>}
                                 </div>
                             );
@@ -250,12 +248,12 @@ const useWorkloadColumns = (kind) => {
                         id: 'address',
                         label: 'Address',
                         width: 'minmax(140px, 1.2fr)',
-                        sortValue: (item) => (item.details?.loadBalancer?.ingress || []).map(i => i.ip || i.hostname).join(', '),
+                        sortValue: (item) => (item.details?.loadBalancer || []).map(i => i.ip || i.hostname).join(', '),
                         align: 'center',
                         renderCell: (item) => {
-                            const ingress = item.details?.loadBalancer?.ingress || [];
-                            if (ingress.length === 0) return <span className="text-gray-500">-</span>;
-                            return <span className="text-xs">{ingress[0].ip || ingress[0].hostname}</span>;
+                            const loadBalancer = item.details?.loadBalancer || [];
+                            if (loadBalancer.length === 0) return <span className="text-gray-500">-</span>;
+                            return <span className="text-xs">{loadBalancer[0].ip || loadBalancer[0].hostname}</span>;
                         }
                     }
                 ];
@@ -415,13 +413,13 @@ const useWorkloadColumns = (kind) => {
                     },
                     {
                         id: 'size',
-                        label: 'Size',
+                        label: 'Capacity',
                         width: 'minmax(100px, 0.8fr)',
-                        sortValue: (item) => parseSizeToMi(item.details?.resources?.requests?.storage || item.details?.capacity?.storage),
+                        sortValue: (item) => parseSizeToMi(item.details?.capacity),
                         align: 'center',
                         renderCell: (item) => (
                             <ResourceCell
-                                value={item.details?.resources?.requests?.storage || item.details?.capacity?.storage}
+                                value={item.details?.capacity}
                                 icon={HardDrive}
                                 color="text-emerald-400"
                             />
@@ -457,11 +455,11 @@ const useWorkloadColumns = (kind) => {
                         id: 'capacity',
                         label: 'Capacity',
                         width: 'minmax(100px, 0.8fr)',
-                        sortValue: (item) => parseSizeToMi(item.details?.capacity?.storage),
+                        sortValue: (item) => parseSizeToMi(item.details?.capacity),
                         align: 'center',
                         renderCell: (item) => (
                             <ResourceCell
-                                value={item.details?.capacity?.storage}
+                                value={item.details?.capacity}
                                 icon={HardDrive}
                                 color="text-emerald-400"
                             />
@@ -485,9 +483,9 @@ const useWorkloadColumns = (kind) => {
                         id: 'reclaim',
                         label: 'Reclaim',
                         width: 'minmax(110px, 0.8fr)',
-                        sortValue: (item) => item.details?.persistentVolumeReclaimPolicy || '',
+                        sortValue: (item) => item.details?.reclaimPolicy || '',
                         align: 'center',
-                        renderCell: (item) => <span>{item.details?.persistentVolumeReclaimPolicy}</span>
+                        renderCell: (item) => <span>{item.details?.reclaimPolicy || '-'}</span>
                     }
                 ];
                 break;

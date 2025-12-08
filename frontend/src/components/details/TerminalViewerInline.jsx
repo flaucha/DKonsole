@@ -31,8 +31,8 @@ const TerminalViewerInline = ({
         const termTheme = isCream ? {
             background: '#fdf6e3', // Solarized Light background
             foreground: '#657b83', // Solarized Light foreground
-            cursor: '#586e75',     // Solarized Light cursor (visible)
-            cursorAccent: '#fdf6e3',
+            cursor: '#000000',     // Black cursor (maximum contrast on cream)
+            cursorAccent: '#fdf6e3', // Light text inside cursor for contrast
             selection: '#eee8d5',
         } : {
             background: '#000000',
@@ -41,7 +41,8 @@ const TerminalViewerInline = ({
 
         const term = new XTerminal({
             convertEol: true,
-            cursorBlink: true,
+            cursorBlink: false, // Disable blink to ensure visibility stability
+            cursorStyle: 'block',  // Explicitly set cursor style to block for visibility
             fontSize: 13,
             fontFamily: 'Menlo, Monaco, "Cascadia Mono", "Fira Code", monospace',
             theme: termTheme,

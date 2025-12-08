@@ -113,6 +113,23 @@ const IngressDetails = ({ details, onEditYAML, namespace }) => {
                     )}
                 </div>
             </div>
+
+            {/* Annotations Section */}
+            <div>
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Annotations</h4>
+                {details.annotations && Object.keys(details.annotations).length > 0 ? (
+                    <div className="bg-gray-800 rounded border border-gray-700 max-h-48 overflow-y-auto">
+                        {Object.entries(details.annotations).map(([key, value]) => (
+                            <div key={key} className="flex items-start px-3 py-2 border-b border-gray-700/50 last:border-0 hover:bg-gray-700/30">
+                                <span className="text-xs font-mono text-gray-400 mr-2 shrink-0">{key}:</span>
+                                <span className="text-xs text-gray-300 break-all">{value}</span>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-sm text-gray-500 italic">No annotations</div>
+                )}
+            </div>
             <div className="flex justify-end mt-4">
                 <EditYamlButton onClick={onEditYAML} namespace={namespace} />
             </div>

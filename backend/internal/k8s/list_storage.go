@@ -78,6 +78,7 @@ func (s *ResourceListService) listPVs(ctx context.Context, client kubernetes.Int
 				"accessModes":      i.Spec.AccessModes,
 				"capacity":         i.Spec.Capacity.Storage().String(),
 				"storageClassName": i.Spec.StorageClassName,
+				"reclaimPolicy":    string(i.Spec.PersistentVolumeReclaimPolicy),
 				"claimRef":         i.Spec.ClaimRef,
 			},
 		})

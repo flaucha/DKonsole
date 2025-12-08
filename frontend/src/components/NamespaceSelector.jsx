@@ -7,7 +7,7 @@ const NamespaceSelector = ({ selected, onSelect }) => {
     const [namespaces, setNamespaces] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [dropdownWidth, setDropdownWidth] = useState(() => parseInt(localStorage.getItem('ns_selector_width')) || 180);
+    const [dropdownHeight, setDropdownHeight] = useState(() => parseInt(localStorage.getItem('ns_dropdown_height')) || 240);
     const dropdownRef = useRef(null);
     const searchInputRef = useRef(null);
     const resizeRef = useRef(null);
@@ -50,9 +50,9 @@ const NamespaceSelector = ({ selected, onSelect }) => {
 
     const handleMouseMove = (e) => {
         if (!resizeRef.current) return;
-        const newWidth = Math.max(150, Math.min(600, e.clientX - resizeRef.current.startX + resizeRef.current.startWidth));
-        setDropdownWidth(newWidth);
-        localStorage.setItem('ns_selector_width', newWidth);
+        const newHeight = Math.max(200, Math.min(600, e.clientY - resizeRef.current.startY + resizeRef.current.startHeight));
+        setDropdownHeight(newHeight);
+        localStorage.setItem('ns_dropdown_height', newHeight);
     };
 
     const handleMouseUp = () => {
@@ -65,8 +65,8 @@ const NamespaceSelector = ({ selected, onSelect }) => {
         e.preventDefault();
         e.stopPropagation();
         resizeRef.current = {
-            startX: e.clientX,
-            startWidth: dropdownWidth
+            startY: e.clientY,
+            startHeight: dropdownHeight
         };
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
@@ -88,36 +88,21 @@ const NamespaceSelector = ({ selected, onSelect }) => {
     return (
         <div className="flex items-center space-x-2" ref={dropdownRef}>
             <span className="text-gray-400 text-xs font-medium hidden md:block">NS:</span>
-            <div className="relative group">
+            <div className="relative">
                 <button
                     onClick={() => setIsOpen(!isOpen)}
-                    className="flex items-center justify-between space-x-2 bg-gray-800 border border-gray-700 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 transition-colors text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                    style={{ width: `${dropdownWidth}px` }}
+                    className="flex items-center justify-between space-x-2 bg-gray-800 border border-gray-700 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 transition-colors text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-w-[180px]"
                 >
                     <div className="flex items-center space-x-2 overflow-hidden w-full">
                         <Database size={14} className="text-gray-400 flex-shrink-0" />
                         <span className="truncate flex-1 text-left">{selected}</span>
                     </div>
+                    <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
-                <div
-                    className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500/50 transition-colors z-10"
-                    onMouseDown={startResize}
-                />
-
-                {/* Visual indicator for resize handle on hover */}
-                {/* Removed ChevronDown as it takes space, or keep it? Original had it. */}
-                {/* Let's keep a chevron but maybe absolutely positioned or just inside. Original had `justify-between`. */}
-                {/* Re-implementing button content to match request but resizable */}
-                {/* Let's try to keep the chevron. */}
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-                </div>
-
 
                 {isOpen && (
                     <div
-                        className="absolute top-full right-0 mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 flex flex-col"
-                        style={{ width: `${Math.max(dropdownWidth, 200)}px` }}
+                        className="absolute top-full right-0 mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 flex flex-col min-w-[200px]"
                     >
                         <div className="p-2 border-b border-gray-700">
                             <div className="relative">
@@ -141,7 +126,10 @@ const NamespaceSelector = ({ selected, onSelect }) => {
                                 )}
                             </div>
                         </div>
-                        <div className="max-h-60 overflow-y-auto py-1">
+                        <div
+                            className="overflow-y-auto py-1"
+                            style={{ maxHeight: `${dropdownHeight}px` }}
+                        >
                             <button
                                 onClick={() => {
                                     onSelect('all');
@@ -170,6 +158,14 @@ const NamespaceSelector = ({ selected, onSelect }) => {
                                     No namespaces found
                                 </div>
                             )}
+                        </div>
+                        {/* Resize handle at bottom of dropdown */}
+                        <div
+                            className="h-3 cursor-ns-resize border-t border-gray-700 flex items-center justify-center group/resize bg-gray-800 rounded-b-md"
+                            onMouseDown={startResize}
+                            title="Drag to resize list height"
+                        >
+                            <div className="w-8 h-1 rounded-full bg-gray-600 opacity-50 group-hover/resize:opacity-100 transition-opacity" />
                         </div>
                     </div>
                 )}

@@ -25,7 +25,9 @@ import StorageClassDetails from './details/StorageClassDetails';
 import { JobDetails, CronJobDetails, StatefulSetDetails, DaemonSetDetails, HPADetails } from './details/WorkloadDetails';
 import GenericDetails from './details/GenericDetails';
 import { EditYamlButton } from './details/CommonDetails';
+
 import YamlEditor from './YamlEditor';
+import { DataEditor } from './details/DataEditor';
 
 // Cells and Modals
 import ActionsCell from './workloads/cells/ActionsCell';
@@ -44,6 +46,7 @@ const WorkloadList = ({ namespace, kind }) => {
     const [filter, setFilter] = useState('');
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [editingResource, setEditingResource] = useState(null);
+    const [editingDataResource, setEditingDataResource] = useState(null);
     const [menuOpen, setMenuOpen] = useState(null);
     const [draggingColumn, setDraggingColumn] = useState(null);
 
@@ -210,6 +213,8 @@ const WorkloadList = ({ namespace, kind }) => {
                 rollingOut={rollingOut}
                 setConfirmAction={setConfirmAction}
                 setConfirmRollout={setConfirmRollout}
+                onEditYaml={(item) => setEditingResource(item)}
+                onEditInPlace={(item) => setEditingDataResource(item)}
             />
         )
     }), [kind, user, currentCluster, authFetch, handleTriggerCronJob, triggering, rollingOut, setConfirmAction, setConfirmRollout]);
@@ -541,6 +546,20 @@ const WorkloadList = ({ namespace, kind }) => {
                 createdJob={createdJob}
                 setCreatedJob={setCreatedJob}
             />
+
+            {/* Data Editor Modal - Edit In Place */}
+            {editingDataResource && (
+                <DataEditor
+                    resource={editingDataResource}
+                    data={editingDataResource.details?.data || {}}
+                    isSecret={editingDataResource.kind === 'Secret'}
+                    onClose={() => setEditingDataResource(null)}
+                    onSaved={() => {
+                        setEditingDataResource(null);
+                        refetch();
+                    }}
+                />
+            )}
         </div>
     );
 };
