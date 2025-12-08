@@ -205,7 +205,7 @@ const useWorkloadColumns = (kind) => {
                                 <div className="flex flex-wrap gap-1">
                                     {ports.slice(0, 2).map((port, i) => {
                                         // Parse format like "80:30080/TCP" or "80/TCP"
-                                        const parts = (port || '').split('/');
+                                        const parts = String(port || '').split('/');
                                         const protocol = parts[1] || 'TCP';
                                         const portDisplay = parts[0] || port;
                                         return (
