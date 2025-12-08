@@ -13,6 +13,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/flaucha/DKonsole/backend/internal/models"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -44,7 +45,7 @@ type PrometheusInstantQueryResult struct {
 
 // Repository defines the interface for querying Prometheus
 type Repository interface {
-	QueryRange(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error)
+	QueryRange(ctx context.Context, query string, start, end time.Time, step string) ([]models.MetricDataPoint, error)
 	QueryInstant(ctx context.Context, query string) ([]map[string]interface{}, error)
 }
 
@@ -77,7 +78,7 @@ func getPrometheusTimeout() time.Duration {
 }
 
 // QueryRange executes a Prometheus range query with context timeout
-func (r *HTTPPrometheusRepository) QueryRange(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error) {
+func (r *HTTPPrometheusRepository) QueryRange(ctx context.Context, query string, start, end time.Time, step string) ([]models.MetricDataPoint, error) {
 	if step == "" {
 		step = "60s"
 	}
@@ -133,7 +134,7 @@ func (r *HTTPPrometheusRepository) QueryRange(ctx context.Context, query string,
 		return nil, fmt.Errorf("failed to parse Prometheus response: %w", err)
 	}
 
-	var dataPoints []MetricDataPoint
+	var dataPoints []models.MetricDataPoint
 	if len(result.Data.Result) > 0 {
 		for _, value := range result.Data.Result[0].Values {
 			if len(value) >= 2 {
@@ -144,7 +145,7 @@ func (r *HTTPPrometheusRepository) QueryRange(ctx context.Context, query string,
 					var floatValue float64
 					fmt.Sscanf(valueStr, "%f", &floatValue)
 
-					dataPoints = append(dataPoints, MetricDataPoint{
+					dataPoints = append(dataPoints, models.MetricDataPoint{
 						Timestamp: int64(timestamp) * 1000, // Convert to milliseconds
 						Value:     floatValue,
 					})

@@ -136,7 +136,29 @@ func TestJWTService_ExtractToken(t *testing.T) {
 				req := httptest.NewRequest("GET", "/?token="+testToken, nil)
 				return req
 			},
-			wantErr: true,
+			wantErr: false,
+			wantToken: testToken,
+		},
+		{
+			name: "token in access_token query parameter",
+			reqFunc: func() *http.Request {
+				req := httptest.NewRequest("GET", "/?access_token="+testToken, nil)
+				return req
+			},
+			wantErr: false,
+			wantToken: testToken,
+		},
+		{
+			name: "token in Sec-WebSocket-Protocol header",
+			reqFunc: func() *http.Request {
+				req := httptest.NewRequest("GET", "/", nil)
+				// valid pseudo-JWT format (header.payload.signature) length > 20
+				wsToken := "header.payload." + testToken
+				req.Header.Set("Sec-WebSocket-Protocol", "access_token, "+wsToken)
+				return req
+			},
+			wantErr: false,
+			wantToken: "header.payload." + testToken,
 		},
 		{
 			name: "token in cookie",

@@ -1,18 +1,36 @@
-package prometheus
+package models
 
-// MetricDataPoint represents a single data point in a time series
+// PodMetric representa métricas de CPU y memoria de un Pod
+type PodMetric struct {
+	CPU    string `json:"cpu,omitempty"`
+	Memory string `json:"memory,omitempty"`
+}
+
+// PrometheusQueryResult representa el resultado de una consulta a Prometheus
+type PrometheusQueryResult struct {
+	Status string `json:"status"`
+	Data   struct {
+		ResultType string `json:"resultType"`
+		Result     []struct {
+			Metric map[string]string `json:"metric"`
+			Values [][]interface{}   `json:"values"`
+		} `json:"result"`
+	} `json:"data"`
+}
+
+// MetricDataPoint representa un punto de datos de métrica con timestamp y valor
 type MetricDataPoint struct {
 	Timestamp int64   `json:"timestamp"`
 	Value     float64 `json:"value"`
 }
 
-// DeploymentMetricsResponse includes CPU and Memory metrics for a deployment
+// DeploymentMetricsResponse contiene métricas de CPU y memoria de un Deployment
 type DeploymentMetricsResponse struct {
 	CPU    []MetricDataPoint `json:"cpu"`
 	Memory []MetricDataPoint `json:"memory"`
 }
 
-// PodMetricsResponse includes all pod metrics
+// PodMetricsResponse incluye todas las métricas de un Pod
 type PodMetricsResponse struct {
 	CPU       []MetricDataPoint `json:"cpu"`
 	Memory    []MetricDataPoint `json:"memory"`
@@ -21,7 +39,13 @@ type PodMetricsResponse struct {
 	PVCUsage  []MetricDataPoint `json:"pvcUsage"`
 }
 
-// NodeMetric represents metrics for a single node
+// ClusterOverviewResponse incluye métricas a nivel de cluster
+type ClusterOverviewResponse struct {
+	NodeMetrics  []NodeMetric            `json:"nodeMetrics"`
+	ClusterStats *PrometheusClusterStats `json:"clusterStats"`
+}
+
+// NodeMetric representa métricas para un nodo individual
 type NodeMetric struct {
 	Name      string  `json:"name"`
 	Role      string  `json:"role"` // "worker" or "control-plane"
@@ -33,8 +57,8 @@ type NodeMetric struct {
 	Status    string  `json:"status"`
 }
 
-// ClusterStats represents aggregated cluster statistics from Prometheus
-type ClusterStats struct {
+// PrometheusClusterStats representa estadísticas agregadas del cluster desde Prometheus
+type PrometheusClusterStats struct {
 	TotalNodes        int     `json:"totalNodes"`
 	ControlPlaneNodes int     `json:"controlPlaneNodes"`
 	AvgCPUUsage       float64 `json:"avgCpuUsage"`
@@ -44,13 +68,7 @@ type ClusterStats struct {
 	MemoryTrend       float64 `json:"memoryTrend"`
 }
 
-// ClusterOverviewResponse includes cluster-wide metrics
-type ClusterOverviewResponse struct {
-	NodeMetrics  []NodeMetric  `json:"nodeMetrics"`
-	ClusterStats *ClusterStats `json:"clusterStats"`
-}
-
-// StatusResponse represents the Prometheus service status
+// StatusResponse representa el estado del servicio Prometheus
 type StatusResponse struct {
 	Enabled bool   `json:"enabled"`
 	URL     string `json:"url"`

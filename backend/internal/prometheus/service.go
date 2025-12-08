@@ -2,9 +2,11 @@ package prometheus
 
 import (
 	"context"
-	"fmt"
-	"strings"
+	"strings" // added
 
+	"fmt"
+
+	"github.com/flaucha/DKonsole/backend/internal/models"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -17,7 +19,9 @@ type Service struct {
 
 // NewService creates a new Prometheus Service
 func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+	return &Service{
+		repo: repo,
+	}
 }
 
 // GetDeploymentMetricsRequest represents parameters for getting deployment metrics
@@ -27,11 +31,10 @@ type GetDeploymentMetricsRequest struct {
 	Range      string
 }
 
-// GetDeploymentMetrics fetches CPU and Memory metrics for a deployment
-func (s *Service) GetDeploymentMetrics(ctx context.Context, req GetDeploymentMetricsRequest) (*DeploymentMetricsResponse, error) {
+// GetDeploymentMetrics returns metrics for a specific deployment
+func (s *Service) GetDeploymentMetrics(ctx context.Context, req GetDeploymentMetricsRequest) (*models.DeploymentMetricsResponse, error) {
 	startTime, endTime := parseDuration(req.Range)
 
-	// Validate and escape parameters
 	validatedNamespace, err := validatePromQLParam(req.Namespace, "namespace")
 	if err != nil {
 		return nil, err
@@ -64,7 +67,7 @@ func (s *Service) GetDeploymentMetrics(ctx context.Context, req GetDeploymentMet
 		return nil, fmt.Errorf("failed to query memory metrics: %w", err)
 	}
 
-	return &DeploymentMetricsResponse{
+	return &models.DeploymentMetricsResponse{
 		CPU:    cpuData,
 		Memory: memoryData,
 	}, nil
@@ -78,7 +81,7 @@ type GetPodMetricsRequest struct {
 }
 
 // GetPodMetrics fetches all metrics for a specific pod
-func (s *Service) GetPodMetrics(ctx context.Context, req GetPodMetricsRequest) (*PodMetricsResponse, error) {
+func (s *Service) GetPodMetrics(ctx context.Context, req GetPodMetricsRequest) (*models.PodMetricsResponse, error) {
 	startTime, endTime := parseDuration(req.Range)
 
 	// Validate and escape parameters
@@ -128,7 +131,7 @@ func (s *Service) GetPodMetrics(ctx context.Context, req GetPodMetricsRequest) (
 	networkTxData, _ := s.repo.QueryRange(ctx, networkTxQuery, startTime, endTime, "60s")
 	pvcUsageData, _ := s.repo.QueryRange(ctx, pvcUsageQuery, startTime, endTime, "60s")
 
-	return &PodMetricsResponse{
+	return &models.PodMetricsResponse{
 		CPU:       cpuData,
 		Memory:    memoryData,
 		NetworkRx: networkRxData,
@@ -143,7 +146,7 @@ type GetClusterOverviewRequest struct {
 }
 
 // GetClusterOverview fetches cluster-wide metrics including node metrics and cluster stats
-func (s *Service) GetClusterOverview(ctx context.Context, req GetClusterOverviewRequest, client kubernetes.Interface) (*ClusterOverviewResponse, error) {
+func (s *Service) GetClusterOverview(ctx context.Context, req GetClusterOverviewRequest, client kubernetes.Interface) (*models.ClusterOverviewResponse, error) {
 	// Get node metrics
 	nodeMetrics, controlPlaneCount, controlPlaneNodes, err := s.getNodeMetrics(ctx, client)
 	if err != nil {
@@ -153,7 +156,7 @@ func (s *Service) GetClusterOverview(ctx context.Context, req GetClusterOverview
 	// Calculate cluster stats
 	clusterStats := s.calculateClusterStats(nodeMetrics, controlPlaneCount, controlPlaneNodes)
 
-	return &ClusterOverviewResponse{
+	return &models.ClusterOverviewResponse{
 		NodeMetrics:  nodeMetrics,
 		ClusterStats: clusterStats,
 	}, nil
@@ -180,8 +183,8 @@ func isControlPlaneNode(node corev1.Node) bool {
 }
 
 // getNodeMetrics fetches metrics for all nodes
-func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interface) ([]NodeMetric, int, map[string]bool, error) {
-	var nodes []NodeMetric
+func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interface) ([]models.NodeMetric, int, map[string]bool, error) {
+	var nodes []models.NodeMetric
 	controlPlaneCount := 0
 	controlPlaneNodes := make(map[string]bool)
 
@@ -382,7 +385,7 @@ func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interfac
 			role = "control-plane"
 		}
 
-		nodes = append(nodes, NodeMetric{
+		nodes = append(nodes, models.NodeMetric{
 			Name:      nodeName,
 			Role:      role,
 			CPUUsage:  cpuUsage,
@@ -398,9 +401,9 @@ func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interfac
 }
 
 // calculateClusterStats calculates aggregated cluster statistics
-func (s *Service) calculateClusterStats(nodes []NodeMetric, controlPlaneCount int, controlPlaneNodes map[string]bool) *ClusterStats {
+func (s *Service) calculateClusterStats(nodes []models.NodeMetric, controlPlaneCount int, controlPlaneNodes map[string]bool) *models.PrometheusClusterStats {
 	// Separate worker nodes from control plane nodes for stats calculation
-	workerNodes := []NodeMetric{}
+	workerNodes := []models.NodeMetric{}
 	for _, node := range nodes {
 		// Only include worker nodes in stats calculation
 		if !controlPlaneNodes[node.Name] {
@@ -412,7 +415,7 @@ func (s *Service) calculateClusterStats(nodes []NodeMetric, controlPlaneCount in
 	workerNodeCount := len(workerNodes)
 
 	if len(workerNodes) == 0 {
-		return &ClusterStats{
+		return &models.PrometheusClusterStats{
 			TotalNodes:        0,
 			ControlPlaneNodes: controlPlaneCount,
 			AvgCPUUsage:       0.0,
@@ -445,7 +448,7 @@ func (s *Service) calculateClusterStats(nodes []NodeMetric, controlPlaneCount in
 	cpuTrend := 0.0
 	memoryTrend := 0.0
 
-	return &ClusterStats{
+	return &models.PrometheusClusterStats{
 		TotalNodes:        workerNodeCount,
 		ControlPlaneNodes: controlPlaneCount,
 		AvgCPUUsage:       avgCPU,

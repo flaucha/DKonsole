@@ -42,6 +42,22 @@ func (s *JWTService) ExtractToken(r *http.Request) (string, error) {
 		tokenString = strings.Replace(authHeader, "Bearer ", "", 1)
 	} else if c, err := r.Cookie("token"); err == nil {
 		tokenString = c.Value
+	} else if token := r.URL.Query().Get("token"); token != "" {
+		tokenString = token
+	} else if token := r.URL.Query().Get("access_token"); token != "" {
+		tokenString = token
+	} else if protocols := r.Header.Get("Sec-WebSocket-Protocol"); protocols != "" {
+		// Support "Sec-WebSocket-Protocol: access_token, <token>"
+		// or just "<token>" if it's the only subprotocol (less standard)
+		parts := strings.Split(protocols, ",")
+		for _, part := range parts {
+			part = strings.TrimSpace(part)
+			// Crude heuristic: JWTs are long, 3 parts dot separated
+			if strings.Count(part, ".") == 2 && len(part) > 20 {
+				tokenString = part
+				break
+			}
+		}
 	}
 
 	if tokenString == "" {

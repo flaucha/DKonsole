@@ -1,0 +1,119 @@
+?   	github.com/flaucha/DKonsole/backend	[no test files]
+?   	github.com/flaucha/DKonsole/backend/docs	[no test files]
+ok  	github.com/flaucha/DKonsole/backend/internal/api	0.073s
+ok  	github.com/flaucha/DKonsole/backend/internal/auth	2.440s
+ok  	github.com/flaucha/DKonsole/backend/internal/cluster	0.064s
+ok  	github.com/flaucha/DKonsole/backend/internal/health	(cached)
+ok  	github.com/flaucha/DKonsole/backend/internal/helm	0.063s
+ok  	github.com/flaucha/DKonsole/backend/internal/k8s	0.311s
+{"error":"creds error","level":"warning","msg":"Failed to get LDAP service credentials","time":"2025-12-08T18:21:22.400-03:00","type":"warn","username":"user"}
+{"bindDN":"cn=user","level":"info","msg":"Attempting to bind with user credentials","time":"2025-12-08T18:21:22.400-03:00","type":"info","username":"user"}
+{"bindDN":"cn=user","level":"info","msg":"Attempting to bind with user credentials","time":"2025-12-08T18:21:22.401-03:00","type":"info","username":"user"}
+{"bindDN":"cn=user","error":"invalid password","level":"warning","msg":"Failed to bind with user credentials","time":"2025-12-08T18:21:22.401-03:00","type":"warn","username":"user"}
+{"bindDN":"cn=user","level":"info","msg":"Attempting to bind with user credentials","time":"2025-12-08T18:21:22.401-03:00","type":"info","username":"user"}
+{"bindDN":"cn=user","level":"info","msg":"User authenticated successfully","time":"2025-12-08T18:21:22.401-03:00","type":"info","username":"user"}
+{"error":"failed to dial LDAP server: dial fail","level":"warning","msg":"Failed to pre-populate LDAP connection pool","time":"2025-12-08T18:21:22.401-03:00","type":"warn"}
+{"error":"could not determine namespace: service account file not found and POD_NAMESPACE not set","level":"warning","msg":"Failed to get current namespace, using default","time":"2025-12-08T18:21:22.402-03:00","type":"warn"}
+{"error":"could not determine namespace: service account file not found and POD_NAMESPACE not set","level":"warning","msg":"Failed to get current namespace, using default","time":"2025-12-08T18:21:22.402-03:00","type":"warn"}
+{"error":"failed to dial LDAP server: LDAP Result Code 200 \"Network Error\": dial tcp 23.220.75.232:389: i/o timeout","level":"warning","msg":"Failed to pre-populate LDAP connection pool","time":"2025-12-08T18:22:22.412-03:00","type":"warn"}
+{"level":"info","msg":"Username is already a DN","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"uid=test,dc=example,dc=com"}
+{"level":"info","msg":"Searching for user groups","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"uid=test,dc=example,dc=com"}
+{"level":"info","msg":"Searching for memberOf attribute","scope":"base","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"uid=test,dc=example,dc=com"}
+{"attributes":["memberOf"],"level":"info","msg":"User entry attributes","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"uid=test,dc=example,dc=com"}
+{"level":"info","memberOf":["cn=dev,ou=groups"],"memberOf_count":1,"msg":"Found memberOf attributes","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"uid=test,dc=example,dc=com"}
+{"groups":["dev"],"level":"info","msg":"Extracted groups from memberOf","time":"2025-12-08T18:22:22.412-03:00","type":"info","username":"uid=test,dc=example,dc=com"}
+{"level":"info","msg":"Found user DN","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"level":"info","msg":"Searching for user groups","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"level":"info","msg":"Searching for memberOf attribute","scope":"base","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"attributes":["memberOf"],"level":"info","msg":"User entry attributes","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"level":"info","memberOf":["cn=admin,ou=groups","ou=editors,ou=groups","cn=viewers,ou=other"],"memberOf_count":3,"msg":"Found memberOf attributes","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"groups":["admin","editors","viewers"],"level":"info","msg":"Extracted groups from memberOf","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"test"}
+{"level":"info","msg":"Found user DN","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"level":"info","msg":"Searching for user groups","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"level":"info","msg":"Searching for memberOf attribute","scope":"base","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"attributes":["cn"],"level":"info","msg":"User entry attributes","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"level":"info","memberOf":[],"memberOf_count":0,"msg":"Found memberOf attributes","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"available_attributes":["cn"],"level":"warning","msg":"User has no memberOf attributes","time":"2025-12-08T18:22:22.413-03:00","type":"warn","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"groups":[],"level":"info","msg":"Extracted groups from memberOf","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"test"}
+{"level":"warning","msg":"No groups found from memberOf, trying fallback search","time":"2025-12-08T18:22:22.413-03:00","type":"warn","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"groupDN":"ou=groups,dc=example,dc=com","level":"info","msg":"Trying fallback search for groups","searchFilter":"(|(member=uid=test,dc=example,dc=com)(uniqueMember=uid=test,dc=example,dc=com))","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"entry_count":1,"level":"info","msg":"Fallback search completed","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"groups":["dev"],"level":"info","msg":"Groups extracted from fallback search","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"test"}
+{"level":"info","msg":"Found user DN","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"level":"info","msg":"Searching for user groups","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"level":"info","msg":"Searching for memberOf attribute","scope":"base","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"error":"search fail","level":"warning","msg":"Failed to search user for memberOf","time":"2025-12-08T18:22:22.413-03:00","type":"warn","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"level":"warning","msg":"No groups found from memberOf, trying fallback search","time":"2025-12-08T18:22:22.413-03:00","type":"warn","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"groupDN":"ou=groups,dc=example,dc=com","level":"info","msg":"Trying fallback search for groups","searchFilter":"(|(member=uid=test,dc=example,dc=com)(uniqueMember=uid=test,dc=example,dc=com))","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"error":"search fail","level":"warning","msg":"Fallback search failed","time":"2025-12-08T18:22:22.413-03:00","type":"warn","userDN":"uid=test,dc=example,dc=com","username":"test"}
+{"level":"info","msg":"ValidateUserGroup called","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
+{"level":"info","msg":"No required group configured, allowing user","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
+{"level":"info","msg":"ValidateUserGroup called","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
+{"level":"info","msg":"Required group is configured","required_group":"admins","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
+{"level":"info","msg":"GetUserGroups called","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
+{"level":"info","msg":"Got service credentials","service_username":"svc","time":"2025-12-08T18:22:22.413-03:00","type":"info"}
+{"level":"info","msg":"Found user DN","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
+{"level":"info","msg":"Searching for user groups","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
+{"level":"info","msg":"Searching for memberOf attribute","scope":"base","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
+{"attributes":["memberOf"],"level":"info","msg":"User entry attributes","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
+{"level":"info","memberOf":["cn=devs,ou=groups","cn=admins,ou=groups"],"memberOf_count":2,"msg":"Found memberOf attributes","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
+{"groups":["devs","admins"],"level":"info","msg":"Extracted groups from memberOf","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
+{"level":"info","msg":"Validating user group membership","required_group":"admins","time":"2025-12-08T18:22:22.413-03:00","type":"info","user_groups":["devs","admins"],"username":"user"}
+{"level":"info","msg":"User belongs to required group","required_group":"admins","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
+{"level":"info","msg":"ValidateUserGroup called","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
+{"level":"info","msg":"Required group is configured","required_group":"superusers","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
+{"level":"info","msg":"GetUserGroups called","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
+{"level":"info","msg":"Got service credentials","service_username":"svc","time":"2025-12-08T18:22:22.413-03:00","type":"info"}
+{"level":"info","msg":"Found user DN","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
+{"level":"info","msg":"Searching for user groups","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
+{"level":"info","msg":"Searching for memberOf attribute","scope":"base","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
+{"attributes":["memberOf"],"level":"info","msg":"User entry attributes","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
+{"level":"info","memberOf":["cn=devs,ou=groups","cn=admins,ou=groups"],"memberOf_count":2,"msg":"Found memberOf attributes","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
+{"groups":["devs","admins"],"level":"info","msg":"Extracted groups from memberOf","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
+{"level":"info","msg":"Validating user group membership","required_group":"superusers","time":"2025-12-08T18:22:22.413-03:00","type":"info","user_groups":["devs","admins"],"username":"user"}
+{"level":"warning","msg":"User does not belong to required group","required_group":"superusers","time":"2025-12-08T18:22:22.413-03:00","type":"warn","user_groups":["devs","admins"],"username":"user"}
+{"level":"warning","msg":"LDAP InsecureSkipVerify enabled - TLS certificate verification is disabled","time":"2025-12-08T18:22:22.414-03:00","type":"warn","url":"ldap://example.com"}
+{"enabled":true,"hasCACert":false,"insecureSkipVerify":true,"level":"info","msg":"LDAP config updated","time":"2025-12-08T18:22:22.414-03:00","type":"info","url":"ldap://example.com"}
+{"error":"invalid character 'i' looking for beginning of object key string","level":"warning","msg":"Failed to decode LDAP groups request","time":"2025-12-08T18:22:22.414-03:00","type":"warn"}
+{"groups_count":1,"level":"info","msg":"LDAP groups updated","time":"2025-12-08T18:22:22.414-03:00","type":"info"}
+{"level":"info","msg":"LDAP credentials updated","time":"2025-12-08T18:22:22.414-03:00","type":"info","username":"admin"}
+{"error":"failed to dial LDAP server: conn fail","level":"warning","msg":"Failed to pre-populate LDAP connection pool","time":"2025-12-08T18:22:22.414-03:00","type":"warn"}
+{"admin_group":"admin-group","level":"info","msg":"GetUserPermissions: user is admin group member, returning nil permissions","time":"2025-12-08T18:22:22.415-03:00","type":"info"}
+{"level":"info","msg":"Created Secret for LDAP config","namespace":"ns","secret_name":"ldap-config","time":"2025-12-08T18:22:22.415-03:00","type":"info"}
+{"enabled":true,"level":"info","msg":"Updated LDAP config in Secret","namespace":"ns","secret_name":"ldap-config","time":"2025-12-08T18:22:22.415-03:00","type":"info"}
+{"level":"info","msg":"Created Secret for LDAP groups","namespace":"ns","secret_name":"ldap-config","time":"2025-12-08T18:22:22.415-03:00","type":"info"}
+{"level":"info","msg":"Created Secret for LDAP credentials","namespace":"ns","secret_name":"ldap-config","time":"2025-12-08T18:22:22.416-03:00","type":"info"}
+{"error":"failed to rebuild TLS config: failed to parse CA certificate","level":"warning","msg":"Failed to update LDAP client config, recreating","time":"2025-12-08T18:22:22.416-03:00","type":"warn"}
+--- FAIL: TestService_InitializeClient_UpdateError (0.00s)
+panic: close of closed channel [recovered, repanicked]
+
+goroutine 165 [running]:
+testing.tRunner.func1.2({0x1289780, 0x168cb50})
+	/usr/local/go/src/testing/testing.go:1872 +0x237
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1875 +0x35b
+panic({0x1289780?, 0x168cb50?})
+	/usr/local/go/src/runtime/panic.go:783 +0x132
+github.com/flaucha/DKonsole/backend/internal/ldap.(*connectionPool).close(0xc0003bfdc0)
+	/home/flaucha/repos/DKonsole/backend/internal/ldap/client.go:206 +0x77
+github.com/flaucha/DKonsole/backend/internal/ldap.(*LDAPClient).Close(...)
+	/home/flaucha/repos/DKonsole/backend/internal/ldap/client.go:227
+github.com/flaucha/DKonsole/backend/internal/ldap.(*Service).initializeClient(0xc00020d6b0, {0x16a8488, 0x1f22d80})
+	/home/flaucha/repos/DKonsole/backend/internal/ldap/service.go:60 +0x27f
+github.com/flaucha/DKonsole/backend/internal/ldap.TestService_InitializeClient_UpdateError(0xc000309dc0)
+	/home/flaucha/repos/DKonsole/backend/internal/ldap/service_coverage_test.go:84 +0x199
+testing.tRunner(0xc000309dc0, 0x15802b0)
+	/usr/local/go/src/testing/testing.go:1934 +0xea
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:1997 +0x465
+FAIL	github.com/flaucha/DKonsole/backend/internal/ldap	60.084s
+ok  	github.com/flaucha/DKonsole/backend/internal/logo	(cached)
+ok  	github.com/flaucha/DKonsole/backend/internal/middleware	(cached)
+ok  	github.com/flaucha/DKonsole/backend/internal/models	(cached)
+ok  	github.com/flaucha/DKonsole/backend/internal/permissions	0.033s
+ok  	github.com/flaucha/DKonsole/backend/internal/pod	0.031s
+ok  	github.com/flaucha/DKonsole/backend/internal/prometheus	0.055s
+ok  	github.com/flaucha/DKonsole/backend/internal/server	0.085s
+ok  	github.com/flaucha/DKonsole/backend/internal/settings	0.053s
+ok  	github.com/flaucha/DKonsole/backend/internal/utils	(cached)
+FAIL

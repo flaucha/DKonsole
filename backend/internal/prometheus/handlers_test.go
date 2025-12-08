@@ -77,11 +77,11 @@ type mockRepo struct {
 	queryInstantErr error
 }
 
-func (m *mockRepo) QueryRange(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error) {
+func (m *mockRepo) QueryRange(ctx context.Context, query string, start, end time.Time, step string) ([]models.MetricDataPoint, error) {
 	if m.queryRangeErr != nil {
 		return nil, m.queryRangeErr
 	}
-	return []MetricDataPoint{{Timestamp: start.Unix(), Value: 1.23}}, nil
+	return []models.MetricDataPoint{{Timestamp: start.Unix(), Value: 1.23}}, nil
 }
 
 func (m *mockRepo) QueryInstant(ctx context.Context, query string) ([]map[string]interface{}, error) {

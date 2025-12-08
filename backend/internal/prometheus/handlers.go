@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
+	"github.com/flaucha/DKonsole/backend/internal/models"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -41,7 +42,7 @@ func (h *HTTPHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 	url := h.prometheusURL
 	h.mu.RUnlock()
 
-	status := StatusResponse{
+	status := models.StatusResponse{
 		Enabled: url != "",
 		URL:     url,
 	}

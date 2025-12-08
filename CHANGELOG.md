@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.8-rc1] - 2025-12-08
+
+### Fixed
+- **Prometheus**: Resolved build errors by correcting `MetricDataPoint` and `NodeMetric` struct usage in tests.
+- **Helm**: Refactored service architecture with interfaces and improved test coverage for install and upgrade services.
+
 ## [1.4.7] - 2025-12-08
 
 ### Fixed

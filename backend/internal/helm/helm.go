@@ -14,7 +14,7 @@ import (
 type Service struct {
 	handlers       *models.Handlers
 	clusterService *cluster.Service
-	serviceFactory *ServiceFactory
+	serviceFactory ServiceFactoryInterface
 }
 
 // NewService creates a new Helm service with the provided handlers and cluster service.
@@ -23,6 +23,15 @@ func NewService(h *models.Handlers, cs *cluster.Service) *Service {
 		handlers:       h,
 		clusterService: cs,
 		serviceFactory: NewServiceFactory(),
+	}
+}
+
+// NewServiceWithFactory creates a new Helm service with a custom factory (for testing)
+func NewServiceWithFactory(h *models.Handlers, cs *cluster.Service, factory ServiceFactoryInterface) *Service {
+	return &Service{
+		handlers:       h,
+		clusterService: cs,
+		serviceFactory: factory,
 	}
 }
 

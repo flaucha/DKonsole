@@ -1,13 +1,8 @@
 package helm
 
 import (
-	"bytes"
-	"compress/gzip"
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"io"
 	"strconv"
 	"time"
 
@@ -172,160 +167,98 @@ func (s *HelmReleaseService) parseReleaseFromConfigMap(cm corev1.ConfigMap) *Hel
 	}
 }
 
-// DecodeHelmReleaseData decodes and decompresses Helm release data from a Secret (exported for reuse)
-func (s *HelmReleaseService) DecodeHelmReleaseData(releaseData []byte) (map[string]interface{}, error) {
-	decoded := releaseData
+// ChartInfo contains chart information extracted from a Helm release
+type ChartInfo struct {
+	ChartName string
+	Repo      string
+}
 
-	// Try to decode as base64 string first
-	if decodedStr, err := base64.StdEncoding.DecodeString(string(releaseData)); err == nil && len(decodedStr) > 0 {
-		decoded = decodedStr
+// GetChartInfo extracts chart information from an existing Helm release
+func (s *HelmReleaseService) GetChartInfo(ctx context.Context, namespace, releaseName string) (*ChartInfo, error) {
+	secrets, err := s.repo.ListSecretsInNamespace(ctx, namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list secrets: %w", err)
 	}
 
-	// Try to decompress gzip
-	reader := bytes.NewReader(decoded)
-	gzReader, err := gzip.NewReader(reader)
-	if err == nil {
-		decompressed, err := io.ReadAll(gzReader)
-		gzReader.Close()
-		if err == nil {
-			decoded = decompressed
+	// Find the latest revision secret
+	var latestSecret *corev1.Secret
+	latestRevision := 0
+	for i := range secrets {
+		secret := &secrets[i]
+		releaseNameFromAnnotation := secret.Annotations["meta.helm.sh/release-name"]
+
+		if releaseNameFromAnnotation == releaseName {
+			if revStr, ok := secret.Labels["version"]; ok {
+				if rev, err := strconv.Atoi(revStr); err == nil && rev > latestRevision {
+					latestRevision = rev
+					latestSecret = secret
+				}
+			}
 		}
 	}
 
-	// Parse as JSON
+	if latestSecret == nil {
+		return &ChartInfo{}, nil
+	}
+
 	var releaseInfo map[string]interface{}
-	if err := json.Unmarshal(decoded, &releaseInfo); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal release JSON: %w", err)
-	}
-
-	return releaseInfo, nil
-}
-
-// extractChartInfo extracts chart information from release data
-func (s *HelmReleaseService) extractChartInfo(releaseInfo map[string]interface{}) (chartName, chartVersion, appVersion string) {
-	if chart, ok := releaseInfo["chart"].(map[string]interface{}); ok {
-		if metadata, ok := chart["metadata"].(map[string]interface{}); ok {
-			if name, ok := metadata["name"].(string); ok {
-				chartName = name
-			}
-			if version, ok := metadata["version"].(string); ok {
-				chartVersion = version
-			}
-			if av, ok := metadata["appVersion"].(string); ok {
-				appVersion = av
-			}
-		}
-	}
-	return
-}
-
-// extractReleaseInfo extracts release information from release data and secret labels
-func (s *HelmReleaseService) extractReleaseInfo(releaseInfo map[string]interface{}, secret corev1.Secret) (status string, revision int, updated, description string) {
-	// Get status and revision from labels first
-	status = secret.Labels["status"]
-	if status == "" {
-		status = "unknown"
-	}
-
-	if revStr, ok := secret.Labels["version"]; ok {
-		if rev, err := strconv.Atoi(revStr); err == nil {
-			revision = rev
+	
+	if releaseData, ok := latestSecret.Data["release"]; ok {
+		var err error
+		releaseInfo, err = s.DecodeHelmReleaseData(releaseData)
+		if err != nil {
+			// Log error?
+			// Proceed to fallback
 		}
 	}
 
-	// Override from release info if available
-	if info, ok := releaseInfo["info"].(map[string]interface{}); ok {
-		if status == "" || status == "superseded" {
-			if s, ok := info["status"].(string); ok {
-				status = s
+	// Extract chart info
+	chartInfo := &ChartInfo{}
+	
+	if releaseInfo != nil {
+		// This extraction logic ideally should be in extractChartInfo but that returns 3 strings.
+		// We can reuse extractChartInfo partially or duplicate extraction for Repo.
+		// extractChartInfo currently extracts Name, Version, AppVersion. It DOES NOT extract Repo.
+		// So we keep the logic here or enhance extractChartInfo.
+		// Keeping logic here for now.
+		
+		if chart, ok := releaseInfo["chart"].(map[string]interface{}); ok {
+			if metadata, ok := chart["metadata"].(map[string]interface{}); ok {
+				if name, ok := metadata["name"].(string); ok {
+					chartInfo.ChartName = name
+				}
+				// Repository field in metadata is not standard in all helm versions or charts but we check it.
+				// Often repo is not stored in the chart metadata itself if it's from a repo.
+				// But let's keep the existing logic.
+				if repo, ok := metadata["repository"].(string); ok && repo != "" {
+					chartInfo.Repo = repo
+				}
 			}
-		}
-
-		if revision == 0 {
-			if r, ok := info["revision"].(float64); ok {
-				revision = int(r)
-			}
-		}
-
-		if u, ok := info["last_deployed"].(map[string]interface{}); ok {
-			if uStr, ok := u["Time"].(string); ok {
-				updated = uStr
-			} else if uStr, ok := info["last_deployed"].(string); ok {
-				updated = uStr
-			}
-		} else if uStr, ok := info["last_deployed"].(string); ok {
-			updated = uStr
-		}
-
-		if d, ok := info["description"].(string); ok {
-			description = d
-		}
-	}
-
-	return status, revision, updated, description
-}
-
-// DeleteHelmReleaseRequest represents the parameters for deleting a Helm release
-type DeleteHelmReleaseRequest struct {
-	Name      string
-	Namespace string
-}
-
-// DeleteHelmReleaseResponse represents the result of deleting a Helm release
-type DeleteHelmReleaseResponse struct {
-	SecretsDeleted int
-}
-
-// DeleteHelmRelease deletes all Secrets and ConfigMaps related to a Helm release
-func (s *HelmReleaseService) DeleteHelmRelease(ctx context.Context, req DeleteHelmReleaseRequest) (*DeleteHelmReleaseResponse, error) {
-	deletedCount := 0
-
-	// Find and delete Secrets
-	secrets, err := s.repo.ListSecretsInNamespace(ctx, req.Namespace)
-	if err == nil {
-		for _, secret := range secrets {
-			if s.isSecretRelatedToRelease(secret, req.Name, req.Namespace) {
-				if err := s.repo.DeleteSecret(ctx, req.Namespace, secret.Name); err == nil {
-					deletedCount++
+			
+			// Try sources if repository not found
+			if chartInfo.Repo == "" {
+				if sources, ok := chart["sources"].([]interface{}); ok {
+					for _, source := range sources {
+						if sourceStr, ok := source.(string); ok && sourceStr != "" {
+							// Basic heuristic for URL
+							if len(sourceStr) > 4 && (sourceStr[:7] == "http://" || sourceStr[:8] == "https://") {
+								chartInfo.Repo = sourceStr
+								break
+							}
+						}
+					}
 				}
 			}
 		}
 	}
-
-	// Find and delete ConfigMaps
-	configMaps, err := s.repo.ListConfigMapsInNamespace(ctx, req.Namespace)
-	if err == nil {
-		for _, cm := range configMaps {
-			releaseNameFromAnnotation := cm.Annotations["meta.helm.sh/release-name"]
-			releaseNamespaceFromAnnotation := cm.Annotations["meta.helm.sh/release-namespace"]
-
-			if releaseNameFromAnnotation == req.Name && releaseNamespaceFromAnnotation == req.Namespace {
-				if err := s.repo.DeleteConfigMap(ctx, req.Namespace, cm.Name); err == nil {
-					deletedCount++
-				}
-			}
+	
+	// Fallback to label if chart name not found
+	if chartInfo.ChartName == "" {
+		if name, ok := latestSecret.Labels["name"]; ok {
+			chartInfo.ChartName = name
 		}
 	}
 
-	if deletedCount == 0 {
-		return nil, fmt.Errorf("no Helm release secrets found")
-	}
-
-	return &DeleteHelmReleaseResponse{
-		SecretsDeleted: deletedCount,
-	}, nil
+	return chartInfo, nil
 }
 
-// isSecretRelatedToRelease checks if a Secret is related to a Helm release
-func (s *HelmReleaseService) isSecretRelatedToRelease(secret corev1.Secret, releaseName, namespace string) bool {
-	releaseNameFromAnnotation := secret.Annotations["meta.helm.sh/release-name"]
-	releaseNamespaceFromAnnotation := secret.Annotations["meta.helm.sh/release-namespace"]
-
-	secretNameMatches := false
-	if len(secret.Name) > len(releaseName) {
-		prefix := fmt.Sprintf("sh.helm.release.v1.%s.v", releaseName)
-		secretNameMatches = len(secret.Name) >= len(prefix) && secret.Name[:len(prefix)] == prefix
-	}
-
-	return (releaseNameFromAnnotation == releaseName && releaseNamespaceFromAnnotation == namespace) || secretNameMatches
-}

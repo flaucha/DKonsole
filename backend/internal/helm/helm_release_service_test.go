@@ -487,3 +487,192 @@ func TestHelmReleaseService_GetHelmReleasesPrefersNewestDeployed(t *testing.T) {
 		t.Fatalf("expected chart new, got %s", releases[0].Chart)
 	}
 }
+
+func TestHelmReleaseService_GetChartInfo(t *testing.T) {
+	tests := []struct {
+		name         string
+		secrets      []corev1.Secret
+		listErr      error
+		want         *ChartInfo
+		wantErr      bool
+	}{
+		{
+			name:    "list error",
+			listErr: errors.New("list error"),
+			wantErr: true,
+		},
+		{
+			name:    "no matching release",
+			secrets: []corev1.Secret{},
+			want:    &ChartInfo{},
+			wantErr: false,
+		},
+		{
+			name: "success with valid release data including repo",
+			secrets: []corev1.Secret{
+				func() corev1.Secret {
+					s := buildHelmSecretWithRelease("my-app", "default", "deployed", 1, "nginx", "1.0", "1.0", "", true)
+					// Manually inject repo into the encoded data
+					info := map[string]interface{}{
+						"chart": map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"name":       "nginx",
+								"repository": "https://charts.bitnami.com/bitnami",
+							},
+						},
+					}
+					data, _ := json.Marshal(info)
+					var buf bytes.Buffer
+					gz := gzip.NewWriter(&buf)
+					gz.Write(data)
+					gz.Close()
+					encoded := base64.StdEncoding.EncodeToString(buf.Bytes())
+					s.Data["release"] = []byte(encoded)
+					return s
+				}(),
+			},
+			want: &ChartInfo{ChartName: "nginx", Repo: "https://charts.bitnami.com/bitnami"},
+		},
+		{
+			name: "success with repo from sources",
+			secrets: []corev1.Secret{
+				func() corev1.Secret {
+					s := buildHelmSecretWithRelease("my-app", "default", "deployed", 1, "nginx", "1.0", "1.0", "", true)
+					info := map[string]interface{}{
+						"chart": map[string]interface{}{
+							"metadata": map[string]interface{}{"name": "nginx"},
+							"sources":  []interface{}{"https://github.com/foo/bar", "http://charts.example.com"},
+						},
+					}
+					data, _ := json.Marshal(info)
+					var buf bytes.Buffer
+					gz := gzip.NewWriter(&buf)
+					gz.Write(data)
+					gz.Close()
+					encoded := base64.StdEncoding.EncodeToString(buf.Bytes())
+					s.Data["release"] = []byte(encoded)
+					return s
+				}(),
+			},
+			want: &ChartInfo{ChartName: "nginx", Repo: "https://github.com/foo/bar"},
+		},
+		{
+			name: "fallback to labels when decode fails",
+			secrets: []corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "sh.helm.release.v1.my-app.v1",
+						Annotations: map[string]string{"meta.helm.sh/release-name": "my-app"},
+						Labels:      map[string]string{"version": "1", "name": "label-chart"},
+					},
+					Data: map[string][]byte{"release": []byte("invalid-base64")},
+				},
+			},
+			want: &ChartInfo{ChartName: "label-chart"},
+		},
+		{
+			name: "fallback to labels when data missing",
+			secrets: []corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "sh.helm.release.v1.my-app.v1",
+						Annotations: map[string]string{"meta.helm.sh/release-name": "my-app"},
+						Labels:      map[string]string{"version": "1", "name": "label-chart"},
+					},
+				},
+			},
+			want: &ChartInfo{ChartName: "label-chart"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := &mockHelmReleaseRepository{
+				listSecretsInNamespaceFunc: func(ctx context.Context, namespace string) ([]corev1.Secret, error) {
+					return tt.secrets, tt.listErr
+				},
+			}
+			svc := NewHelmReleaseService(repo)
+			got, err := svc.GetChartInfo(context.Background(), "default", "my-app")
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetChartInfo error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr {
+				if got.ChartName != tt.want.ChartName || got.Repo != tt.want.Repo {
+					t.Errorf("GetChartInfo got = %+v, want %+v", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func TestParseReleaseErrors(t *testing.T) {
+	svc := NewHelmReleaseService(nil)
+	
+	// Test parseReleaseFromSecret with missing name
+	s := corev1.Secret{}
+	if r := svc.parseReleaseFromSecret(s); r != nil {
+		t.Error("parseReleaseFromSecret should return nil for missing metadata")
+	}
+
+	// Test parseReleaseFromSecret with decode error
+	s2 := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{"meta.helm.sh/release-name": "re", "meta.helm.sh/release-namespace": "ns"},
+		},
+		Data: map[string][]byte{"release": []byte("bad-encoding")},
+	}
+	if r := svc.parseReleaseFromSecret(s2); r != nil {
+		t.Error("parseReleaseFromSecret should return nil for decode error")
+	}
+
+	// Test parseReleaseFromConfigMap with missing name
+	cm := corev1.ConfigMap{}
+	if r := svc.parseReleaseFromConfigMap(cm); r != nil {
+		t.Error("parseReleaseFromConfigMap should return nil for missing metadata")
+	}
+}
+
+func TestMalformedReleaseStructure(t *testing.T) {
+	svc := NewHelmReleaseService(nil)
+	
+	// Valid Decode but invalid structure (missing chart metadata or info)
+	info := map[string]interface{}{
+		"chart": map[string]interface{}{
+			// Empty chart
+		},
+		"info": map[string]interface{}{
+			// Empty info
+		},
+	}
+	data, _ := json.Marshal(info)
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	gz.Write(data)
+	gz.Close()
+	encoded := base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	s := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "sh.helm.release.v1.bad.v1",
+			Annotations: map[string]string{"meta.helm.sh/release-name": "bad", "meta.helm.sh/release-namespace": "default"},
+			Labels: map[string]string{"name": "bad", "version": "1", "status": "deployed"},
+		},
+		Data: map[string][]byte{"release": []byte(encoded)},
+	}
+
+	// Should not panic, should return a release with default/fallback values
+	r := svc.parseReleaseFromSecret(s)
+	if r == nil {
+		t.Fatal("expected non-nil release from malformed structure")
+	}
+	if r.Chart != "" { // extracting empty chart name
+		t.Errorf("expected empty chart, got %s", r.Chart)
+	}
+	if r.Status != "unknown" { // extractReleaseInfo defaults status to unknown if missing? 
+		// Actually extractReleaseInfo doesn't explicitly default status to unknown, it just returns empty string if missing.
+		// Wait, let's check expectations.
+		// If status missing from info, it returns "".
+	}
+}

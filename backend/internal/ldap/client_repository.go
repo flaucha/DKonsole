@@ -25,7 +25,7 @@ type LDAPClientRepository interface {
 // ldapClientRepository implements LDAPClientRepository using the connection pool
 type ldapClientRepository struct {
 	client *LDAPClient
-	conn   *ldap.Conn
+	conn   LDAPConnection
 }
 
 // NewLDAPClientRepository creates a new LDAP client repository

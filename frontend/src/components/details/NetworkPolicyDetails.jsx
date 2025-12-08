@@ -7,7 +7,7 @@ const NetworkPolicyDetails = ({ details, onEditYAML }) => (
         <DetailRow label="Policy Types" value={details.policyTypes} icon={Tag} />
         <DetailRow
             label="Pod Selector"
-            value={details.podSelector ? Object.entries(details.podSelector).map(([k, v]) => `${k}=${v}`) : []}
+            value={details.podSelector?.matchLabels ? Object.entries(details.podSelector.matchLabels).map(([k, v]) => `${k}=${v}`) : (Object.keys(details.podSelector?.matchLabels || {}).length === 0 ? ['All Pods'] : [])}
             icon={Tag}
         />
         <div className="flex justify-end mt-4">

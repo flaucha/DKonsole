@@ -194,6 +194,96 @@ func TestService_AuthenticateUser_InvalidUsername(t *testing.T) {
 	}
 }
 
+func TestService_AuthenticateUser_FullFlow(t *testing.T) {
+	// Mock repo with valid config and credentials
+	mockRepo := &mockRepository{
+		config: &models.LDAPConfig{
+			Enabled: true,
+			URL:     "ldap://example.com",
+			BaseDN:  "dc=example,dc=com",
+			UserDN:  "uid",
+		},
+		username: "admin",
+		password: "password",
+	}
+	service := NewService(mockRepo)
+	ctx := context.Background()
+
+	// Backup and restore dialer
+	originalDialer := ldapDialer
+	defer func() { ldapDialer = originalDialer }()
+
+	t.Run("Success", func(t *testing.T) {
+		mockConn := &mockLDAPConnection{
+			bindFunc: func(u, p string) error {
+				return nil
+			},
+			searchFunc: func(req *ldap.SearchRequest) (*ldap.SearchResult, error) {
+				// Return user entry
+				return &ldap.SearchResult{
+					Entries: []*ldap.Entry{{DN: "uid=testuser,dc=example,dc=com"}},
+				}, nil
+			},
+		}
+		ldapDialer = func(url string, opts ...ldap.DialOpt) (LDAPConnection, error) {
+			return mockConn, nil
+		}
+
+		if err := service.AuthenticateUser(ctx, "testuser", "password"); err != nil {
+			t.Errorf("AuthenticateUser() unexpected error: %v", err)
+		}
+	})
+
+	t.Run("Service Bind Error", func(t *testing.T) {
+		mockConn := &mockLDAPConnection{
+			bindFunc: func(u, p string) error {
+				return errors.New("bind fail")
+			},
+		}
+		ldapDialer = func(url string, opts ...ldap.DialOpt) (LDAPConnection, error) {
+			return mockConn, nil
+		}
+
+		if err := service.AuthenticateUser(ctx, "testuser", "password"); err == nil {
+			t.Error("expected error on service bind fail")
+		}
+	})
+
+	t.Run("User Bind Error (Invalid Password)", func(t *testing.T) {
+		mockConn := &mockLDAPConnection{
+			bindFunc: func(u, p string) error {
+				if u == "uid=testuser,dc=example,dc=com" {
+					return errors.New("invalid credentials")
+				}
+				return nil // Service bind success
+			},
+			searchFunc: func(req *ldap.SearchRequest) (*ldap.SearchResult, error) {
+				return &ldap.SearchResult{
+					Entries: []*ldap.Entry{{DN: "uid=testuser,dc=example,dc=com"}},
+				}, nil
+			},
+		}
+		ldapDialer = func(url string, opts ...ldap.DialOpt) (LDAPConnection, error) {
+			return mockConn, nil
+		}
+
+		err := service.AuthenticateUser(ctx, "testuser", "wrong")
+		if err == nil {
+			t.Error("expected error on user bind fail")
+		}
+		// Expect exact invalid credentials message if possible, or general error
+	})
+	
+	t.Run("Dial Error", func(t *testing.T) {
+		ldapDialer = func(url string, opts ...ldap.DialOpt) (LDAPConnection, error) {
+			return nil, errors.New("dial fail")
+		}
+		if err := service.AuthenticateUser(ctx, "testuser", "password"); err == nil {
+			t.Error("expected error on dial fail")
+		}
+	})
+}
+
 func TestService_ValidateUserGroup_NoRequiredGroup(t *testing.T) {
 	mockRepo := &mockRepository{
 		config: &models.LDAPConfig{
@@ -709,7 +799,7 @@ func TestService_initializeClient(t *testing.T) {
 
 	t.Run("disabled closes existing client", func(t *testing.T) {
 		pool := &connectionPool{
-			connections: make(chan *ldap.Conn, 1),
+			connections: make(chan LDAPConnection, 1),
 		}
 		service := NewService(&mockRepository{
 			config: &models.LDAPConfig{Enabled: false},

@@ -13,6 +13,14 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
+// LDAPConnection defines the interface for an LDAP connection
+// This allows mocking the underlying ldap.Conn
+type LDAPConnection interface {
+	Bind(username, password string) error
+	Close() error
+	Search(searchRequest *ldap.SearchRequest) (*ldap.SearchResult, error)
+}
+
 // LDAPClient manages LDAP connections with pooling and TLS support
 type LDAPClient struct {
 	config    *models.LDAPConfig
@@ -26,9 +34,10 @@ type connectionPool struct {
 	url         string
 	tlsConfig   *tls.Config
 	timeout     time.Duration
-	connections chan *ldap.Conn
+	connections chan LDAPConnection
 	maxSize     int
 	mu          sync.Mutex
+	closed      bool
 }
 
 // NewLDAPClient creates a new LDAP client with connection pooling
@@ -101,7 +110,7 @@ func newConnectionPool(url string, tlsConfig *tls.Config, timeout time.Duration,
 		url:         url,
 		tlsConfig:   tlsConfig,
 		timeout:     timeout,
-		connections: make(chan *ldap.Conn, maxSize),
+		connections: make(chan LDAPConnection, maxSize),
 		maxSize:     maxSize,
 	}
 
@@ -122,30 +131,45 @@ func newConnectionPool(url string, tlsConfig *tls.Config, timeout time.Duration,
 }
 
 // createConnection creates a new LDAP connection
-func (p *connectionPool) createConnection() (*ldap.Conn, error) {
-	var conn *ldap.Conn
+func (p *connectionPool) createConnection() (LDAPConnection, error) {
+	var conn LDAPConnection
 	var err error
 
+	// We use ldapDialer which supports mocking. 
+	// However, ldapDialer in auth_helpers.go handles just the URL. 
+	// For TLS support in pool, we need to pass config or handle it.
+	// But ldapDialer signature is func(url) (LDAPConnection, error).
+	// To support TLS options, we should update ldapDialer signature or make it flexible.
+	// But simply: update createConnection to use ldap.DialURL (wrapped) OR use the mockable dialer.
+	// Since we want to mock it, we MUST use the variable.
+	// But standard ldap.DialURL supports options.
+	// Let's update `ldapDialer` in `auth_helpers.go` to support options?
+	// It already does! func(url string, opts ...ldap.DialOpt)
+	
+	opts := []ldap.DialOpt{}
 	if p.tlsConfig != nil && (len(p.url) >= 8 && p.url[:8] == "ldaps://") {
-		// Use TLS for ldaps://
-		conn, err = ldap.DialURL(p.url, ldap.DialWithTLSConfig(p.tlsConfig))
-	} else {
-		// Plain connection for ldap://
-		conn, err = ldap.DialURL(p.url)
+		opts = append(opts, ldap.DialWithTLSConfig(p.tlsConfig))
 	}
-
+	
+	conn, err = ldapDialer(p.url, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial LDAP server: %w", err)
 	}
 
-	// Set connection timeout
-	conn.SetTimeout(p.timeout)
+	// Set connection timeout - LDAPConnection interface doesn't have SetTimeout?
+	// We need to add SetTimeout to LDAPConnection interface if we want to use it.
+	// ldap.Conn has SetTimeout.
+	if c, ok := conn.(*ldap.Conn); ok {
+		c.SetTimeout(p.timeout)
+	}
+	// Note: If mock doesn't implement SetTimeout, we skip it or add to interface.
+	// Adding to interface is cleaner.
 
 	return conn, nil
 }
 
 // getConnection gets a connection from the pool or creates a new one
-func (p *connectionPool) getConnection() (*ldap.Conn, error) {
+func (p *connectionPool) getConnection() (LDAPConnection, error) {
 	select {
 	case conn := <-p.connections:
 		// Check if connection is still valid
@@ -160,7 +184,7 @@ func (p *connectionPool) getConnection() (*ldap.Conn, error) {
 }
 
 // returnConnection returns a connection to the pool
-func (p *connectionPool) returnConnection(conn *ldap.Conn) {
+func (p *connectionPool) returnConnection(conn LDAPConnection) {
 	if conn == nil {
 		return
 	}
@@ -180,6 +204,11 @@ func (p *connectionPool) close() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	if p.closed {
+		return
+	}
+	p.closed = true
+
 	close(p.connections)
 	for conn := range p.connections {
 		if conn != nil {
@@ -189,12 +218,12 @@ func (p *connectionPool) close() {
 }
 
 // GetConnection gets a connection from the pool
-func (c *LDAPClient) GetConnection() (*ldap.Conn, error) {
+func (c *LDAPClient) GetConnection() (LDAPConnection, error) {
 	return c.pool.getConnection()
 }
 
 // ReturnConnection returns a connection to the pool
-func (c *LDAPClient) ReturnConnection(conn *ldap.Conn) {
+func (c *LDAPClient) ReturnConnection(conn LDAPConnection) {
 	c.pool.returnConnection(conn)
 }
 

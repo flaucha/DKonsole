@@ -77,3 +77,8 @@ func sanitizeLDAPFilter(input string) string {
 
 	return escaped
 }
+
+// isValidLDAPURL validates LDAP URL format
+func isValidLDAPURL(url string) bool {
+	return len(url) > 0 && (url[:7] == "ldap://" || url[:8] == "ldaps://")
+}

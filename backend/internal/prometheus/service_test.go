@@ -7,21 +7,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/flaucha/DKonsole/backend/internal/models"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // mockRepository is a mock implementation of Repository
 type mockPrometheusRepository struct {
-	queryRangeFunc   func(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error)
+	queryRangeFunc   func(ctx context.Context, query string, start, end time.Time, step string) ([]models.MetricDataPoint, error)
 	queryInstantFunc func(ctx context.Context, query string) ([]map[string]interface{}, error)
 }
 
-func (m *mockPrometheusRepository) QueryRange(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error) {
+func (m *mockPrometheusRepository) QueryRange(ctx context.Context, query string, start, end time.Time, step string) ([]models.MetricDataPoint, error) {
 	if m.queryRangeFunc != nil {
 		return m.queryRangeFunc(ctx, query, start, end, step)
 	}
-	return []MetricDataPoint{}, nil
+	return []models.MetricDataPoint{}, nil
 }
 
 func (m *mockPrometheusRepository) QueryInstant(ctx context.Context, query string) ([]map[string]interface{}, error) {
@@ -137,7 +138,7 @@ func TestService_GetDeploymentMetrics(t *testing.T) {
 	tests := []struct {
 		name           string
 		request        GetDeploymentMetricsRequest
-		queryRangeFunc func(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error)
+		queryRangeFunc func(ctx context.Context, query string, start, end time.Time, step string) ([]models.MetricDataPoint, error)
 		wantErr        bool
 		errMsg         string
 	}{
@@ -148,8 +149,8 @@ func TestService_GetDeploymentMetrics(t *testing.T) {
 				Namespace:  "default",
 				Range:      "1h",
 			},
-			queryRangeFunc: func(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error) {
-				return []MetricDataPoint{
+			queryRangeFunc: func(ctx context.Context, query string, start, end time.Time, step string) ([]models.MetricDataPoint, error) {
+				return []models.MetricDataPoint{
 					{Timestamp: time.Now().Unix() * 1000, Value: 100.0},
 				}, nil
 			},
@@ -182,11 +183,11 @@ func TestService_GetDeploymentMetrics(t *testing.T) {
 				Namespace:  "default",
 				Range:      "1h",
 			},
-			queryRangeFunc: func(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error) {
+			queryRangeFunc: func(ctx context.Context, query string, start, end time.Time, step string) ([]models.MetricDataPoint, error) {
 				if strings.Contains(query, "cpu") {
 					return nil, errors.New("CPU query failed")
 				}
-				return []MetricDataPoint{}, nil
+				return []models.MetricDataPoint{}, nil
 			},
 			wantErr: true,
 			errMsg:  "failed to query CPU metrics",
@@ -198,11 +199,11 @@ func TestService_GetDeploymentMetrics(t *testing.T) {
 				Namespace:  "default",
 				Range:      "1h",
 			},
-			queryRangeFunc: func(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error) {
+			queryRangeFunc: func(ctx context.Context, query string, start, end time.Time, step string) ([]models.MetricDataPoint, error) {
 				if strings.Contains(query, "memory") {
 					return nil, errors.New("Memory query failed")
 				}
-				return []MetricDataPoint{
+				return []models.MetricDataPoint{
 					{Timestamp: time.Now().Unix() * 1000, Value: 100.0},
 				}, nil
 			},
@@ -258,7 +259,7 @@ func TestService_GetPodMetrics(t *testing.T) {
 	tests := []struct {
 		name           string
 		request        GetPodMetricsRequest
-		queryRangeFunc func(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error)
+		queryRangeFunc func(ctx context.Context, query string, start, end time.Time, step string) ([]models.MetricDataPoint, error)
 		wantErr        bool
 		errMsg         string
 	}{
@@ -269,8 +270,8 @@ func TestService_GetPodMetrics(t *testing.T) {
 				Namespace: "default",
 				Range:     "1h",
 			},
-			queryRangeFunc: func(ctx context.Context, query string, start, end time.Time, step string) ([]MetricDataPoint, error) {
-				return []MetricDataPoint{
+			queryRangeFunc: func(ctx context.Context, query string, start, end time.Time, step string) ([]models.MetricDataPoint, error) {
+				return []models.MetricDataPoint{
 					{Timestamp: time.Now().Unix() * 1000, Value: 50.0},
 				}, nil
 			},
@@ -346,7 +347,7 @@ func TestService_CalculateClusterStats(t *testing.T) {
 
 	tests := []struct {
 		name                  string
-		nodes                 []NodeMetric
+		nodes                 []models.NodeMetric
 		controlPlaneCount     int
 		controlPlaneNodes     map[string]bool
 		wantTotalNodes        int
@@ -356,7 +357,7 @@ func TestService_CalculateClusterStats(t *testing.T) {
 	}{
 		{
 			name: "single worker node",
-			nodes: []NodeMetric{
+			nodes: []models.NodeMetric{
 				{
 					Name:      "worker-1",
 					Role:      "worker",
@@ -375,7 +376,7 @@ func TestService_CalculateClusterStats(t *testing.T) {
 		},
 		{
 			name: "multiple worker nodes",
-			nodes: []NodeMetric{
+			nodes: []models.NodeMetric{
 				{
 					Name:      "worker-1",
 					Role:      "worker",
@@ -402,7 +403,7 @@ func TestService_CalculateClusterStats(t *testing.T) {
 		},
 		{
 			name: "worker nodes with control plane excluded from stats",
-			nodes: []NodeMetric{
+			nodes: []models.NodeMetric{
 				{
 					Name:      "worker-1",
 					Role:      "worker",
@@ -429,7 +430,7 @@ func TestService_CalculateClusterStats(t *testing.T) {
 		},
 		{
 			name:                  "empty nodes list",
-			nodes:                 []NodeMetric{},
+			nodes:                 []models.NodeMetric{},
 			controlPlaneCount:     0,
 			controlPlaneNodes:     map[string]bool{},
 			wantTotalNodes:        0,

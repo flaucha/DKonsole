@@ -4,7 +4,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// ServiceFactory provides factory methods for creating business logic services
+// ServiceFactory creates instances of Helm services
 type ServiceFactory struct{}
 
 // NewServiceFactory creates a new ServiceFactory
@@ -12,27 +12,31 @@ func NewServiceFactory() *ServiceFactory {
 	return &ServiceFactory{}
 }
 
-// CreateHelmReleaseService creates a HelmReleaseService with the given client
-func (f *ServiceFactory) CreateHelmReleaseService(client kubernetes.Interface) *HelmReleaseService {
-	helmRepo := NewK8sHelmReleaseRepository(client)
-	return NewHelmReleaseService(helmRepo)
+// Ensure ServiceFactory implements ServiceFactoryInterface
+var _ ServiceFactoryInterface = &ServiceFactory{}
+
+// CreateHelmReleaseService creates a new HelmReleaseService
+func (f *ServiceFactory) CreateHelmReleaseService(client kubernetes.Interface) HelmReleaseServiceInterface {
+	repo := NewK8sHelmReleaseRepository(client)
+	return NewHelmReleaseService(repo)
 }
 
-// CreateHelmJobService creates a HelmJobService with the given client
+// CreateHelmJobService creates a new HelmJobService
+// Note: This is internal dependency, not necessarily exposed via interface but used by others
 func (f *ServiceFactory) CreateHelmJobService(client kubernetes.Interface) *HelmJobService {
-	jobRepo := NewK8sHelmJobRepository(client)
-	return NewHelmJobService(jobRepo)
+	repo := NewK8sHelmJobRepository(client)
+	return NewHelmJobService(repo)
 }
 
-// CreateHelmUpgradeService creates a HelmUpgradeService with the given client
-func (f *ServiceFactory) CreateHelmUpgradeService(client kubernetes.Interface) *HelmUpgradeService {
-	releaseRepo := NewK8sHelmReleaseRepository(client)
+// CreateHelmUpgradeService creates a new HelmUpgradeService
+func (f *ServiceFactory) CreateHelmUpgradeService(client kubernetes.Interface) HelmUpgradeServiceInterface {
+	releaseService := f.CreateHelmReleaseService(client)
 	jobService := f.CreateHelmJobService(client)
-	return NewHelmUpgradeService(releaseRepo, jobService)
+	return NewHelmUpgradeService(releaseService, jobService)
 }
 
-// CreateHelmInstallService creates a HelmInstallService with the given client
-func (f *ServiceFactory) CreateHelmInstallService(client kubernetes.Interface) *HelmInstallService {
+// CreateHelmInstallService creates a new HelmInstallService
+func (f *ServiceFactory) CreateHelmInstallService(client kubernetes.Interface) HelmInstallServiceInterface {
 	jobService := f.CreateHelmJobService(client)
 	return NewHelmInstallService(jobService)
 }
