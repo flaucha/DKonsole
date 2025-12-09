@@ -80,7 +80,7 @@ func TestLDAPClient_UpdateConfig(t *testing.T) {
 	// Setup mock dialer
 	originalDialer := ldapDialer
 	defer func() { ldapDialer = originalDialer }()
-	
+
 	ldapDialer = func(url string, opts ...ldap.DialOpt) (LDAPConnection, error) {
 		return &mockLDAPConnection{}, nil
 	}
@@ -124,13 +124,13 @@ func TestLDAPClient_UpdateConfig_Error(t *testing.T) {
 
 	config := &models.LDAPConfig{URL: "ldap://example.com"}
 	client, _ := NewLDAPClient(config)
-	
+
 	// Try updating with invalid CA cert which causes buildTLSConfig to fail
 	badConfig := &models.LDAPConfig{
-		URL: "ldaps://example.com",
+		URL:    "ldaps://example.com",
 		CACert: "bad",
 	}
-	
+
 	if err := client.UpdateConfig(badConfig); err == nil {
 		t.Error("expected error when updating with invalid config")
 	}
@@ -140,7 +140,7 @@ func TestConnectionPool_ReturnConnection_Full(t *testing.T) {
 	// Setup mock dialer
 	originalDialer := ldapDialer
 	defer func() { ldapDialer = originalDialer }()
-	
+
 	closeCalled := false
 	mockConn := &mockLDAPConnection{
 		closeFunc: func() {
@@ -153,23 +153,23 @@ func TestConnectionPool_ReturnConnection_Full(t *testing.T) {
 
 	// Create pool with size 1
 	pool := newConnectionPool("ldap://example.com", nil, time.Second, 1) // Pre-populates 1 (capped at max 1)
-	
+
 	// Get connection out (channel now empty)
 	conn, _ := pool.getConnection()
-	
+
 	// Return it (channel has 1)
 	pool.returnConnection(conn)
-	
+
 	// Create another mock conn to simulate "extra"
 	extraConn := &mockLDAPConnection{
 		closeFunc: func() {
 			closeCalled = true
 		},
 	}
-	
+
 	// Try to return extra conn (channel full)
 	pool.returnConnection(extraConn)
-	
+
 	if !closeCalled {
 		t.Error("expected connection to be closed when returned to full pool")
 	}
@@ -178,16 +178,16 @@ func TestConnectionPool_ReturnConnection_Full(t *testing.T) {
 func TestConnectionPool_CreateConnection_Error(t *testing.T) {
 	originalDialer := ldapDialer
 	defer func() { ldapDialer = originalDialer }()
-	
+
 	ldapDialer = func(url string, opts ...ldap.DialOpt) (LDAPConnection, error) {
 		return nil, errors.New("dial fail")
 	}
-	
+
 	pool := &connectionPool{
-		url: "ldaps://example.com",
+		url:       "ldaps://example.com",
 		tlsConfig: nil,
 	}
-	
+
 	if _, err := pool.createConnection(); err == nil {
 		t.Error("expected error on dial failure")
 	}
@@ -206,14 +206,14 @@ func TestLDAPClient_Delegation(t *testing.T) {
 	ldapDialer = func(url string, opts ...ldap.DialOpt) (LDAPConnection, error) {
 		return &mockLDAPConnection{}, nil
 	}
-	
+
 	config := &models.LDAPConfig{URL: "ldap://example.com"}
 	client, _ := NewLDAPClient(config)
-	
+
 	conn, err := client.GetConnection()
 	if err != nil {
 		t.Fatalf("GetConnection fail: %v", err)
 	}
-	
+
 	client.ReturnConnection(conn)
 }

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/flaucha/DKonsole/backend/internal/models"
-	
+
 	"github.com/golang-jwt/jwt/v5"
 )
 

@@ -76,12 +76,10 @@ func (s *Service) calculatePermissions(groups []string, config *models.LDAPConfi
 	}
 
 	// Find permissions for user's groups
-	matchedGroups := make([]string, 0)
 	for _, group := range groupsConfig.Groups {
 		// Case-insensitive comparison
 		groupNameLower := strings.ToLower(group.Name)
 		if groupMap[group.Name] || groupMap[groupNameLower] {
-			matchedGroups = append(matchedGroups, group.Name)
 			for _, perm := range group.Permissions {
 				currentLevel := permissionLevel[perm.Permission]
 				existingLevel := 0

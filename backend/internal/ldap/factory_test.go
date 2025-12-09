@@ -30,19 +30,19 @@ func TestConstructors(t *testing.T) {
 		if factory == nil {
 			t.Error("NewServiceFactory returned nil")
 		}
-		
+
 		svc := factory.NewService()
 		if svc == nil {
 			t.Error("factory.NewService returned nil")
 		}
 	})
-	
+
 	t.Run("NewLDAPClient", func(t *testing.T) {
 		// Nil config
 		if _, err := NewLDAPClient(nil); err == nil {
 			t.Error("expected error for nil config")
 		}
-		
+
 		// Valid
 		client, err := NewLDAPClient(&models.LDAPConfig{URL: "ldap://example.com"})
 		if err != nil {

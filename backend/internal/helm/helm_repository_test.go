@@ -113,7 +113,7 @@ func TestK8sHelmReleaseRepository(t *testing.T) {
 			t.Error("ConfigMap should be deleted")
 		}
 	})
-	
+
 	// Test error scenarios using Reactors
 	t.Run("ListHelmSecretsError", func(t *testing.T) {
 		client := fake.NewSimpleClientset()
@@ -162,7 +162,7 @@ func TestK8sHelmReleaseRepository(t *testing.T) {
 			t.Error("expected error listing configmaps in namespace")
 		}
 	})
-	
+
 	t.Run("DeleteConfigMapError", func(t *testing.T) {
 		client := fake.NewSimpleClientset()
 		client.PrependReactor("delete", "configmaps", func(action k8s_testing.Action) (handled bool, ret runtime.Object, err error) {
@@ -242,7 +242,7 @@ func TestK8sHelmJobRepository(t *testing.T) {
 			t.Errorf("expected sa name test-sa, got %s", got.Name)
 		}
 	})
-	
+
 	// Test Error Scenarios
 	t.Run("GetMissingSA", func(t *testing.T) {
 		_, err := repo.GetServiceAccount(ctx, "default", "missing-sa")

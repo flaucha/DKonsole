@@ -272,5 +272,3 @@ func (s *Service) ValidateUserGroup(ctx context.Context, username string) error 
 	})
 	return fmt.Errorf("user is not a member of required group: %s", config.RequiredGroup)
 }
-
-

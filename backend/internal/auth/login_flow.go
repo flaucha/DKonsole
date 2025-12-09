@@ -26,7 +26,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 
 	// Try Core/Admin Auth first (unless IDP is explicitly LDAP)
 	if req.IDP == "" || req.IDP == "core" {
-		authenticated, err = s.checkAdminCredentials(ctx, req.Username, req.Password)
+		authenticated, err = s.checkAdminCredentials(req.Username, req.Password)
 		if err != nil {
 			// If explicitly requested core OR no other option (LDAP missing), return error
 			if req.IDP == "core" || s.ldapAuth == nil {
@@ -134,7 +134,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 		// I didn't store 'perms' in a variable accessible here easily without refactoring more.
 		// But wait, if I fetched them above to check for admin, I should probably use them.
 		// But 'perms' variable scope was local to the block.
-		
+
 		// Let's re-fetch. It's mocked anyway.
 		p, err := s.ldapAuth.GetUserPermissions(ctx, req.Username)
 		if err == nil {
@@ -164,7 +164,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginResult
 	}, nil
 }
 
-func (s *AuthService) checkAdminCredentials(ctx context.Context, username, password string) (bool, error) {
+func (s *AuthService) checkAdminCredentials(username, password string) (bool, error) {
 	// Get admin username from repo
 	adminUser, err := s.userRepo.GetAdminUser()
 	if err != nil {
@@ -189,5 +189,3 @@ func (s *AuthService) checkAdminCredentials(ctx context.Context, username, passw
 	}
 	return match, nil
 }
-
-

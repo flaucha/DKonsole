@@ -202,26 +202,26 @@ func (s *HelmReleaseService) GetChartInfo(ctx context.Context, namespace, releas
 	}
 
 	var releaseInfo map[string]interface{}
-	
+
 	if releaseData, ok := latestSecret.Data["release"]; ok {
 		var err error
 		releaseInfo, err = s.DecodeHelmReleaseData(releaseData)
 		if err != nil {
-			// Log error?
-			// Proceed to fallback
+			// Ignore error and proceed to fallback
+			releaseInfo = nil
 		}
 	}
 
 	// Extract chart info
 	chartInfo := &ChartInfo{}
-	
+
 	if releaseInfo != nil {
 		// This extraction logic ideally should be in extractChartInfo but that returns 3 strings.
 		// We can reuse extractChartInfo partially or duplicate extraction for Repo.
 		// extractChartInfo currently extracts Name, Version, AppVersion. It DOES NOT extract Repo.
 		// So we keep the logic here or enhance extractChartInfo.
 		// Keeping logic here for now.
-		
+
 		if chart, ok := releaseInfo["chart"].(map[string]interface{}); ok {
 			if metadata, ok := chart["metadata"].(map[string]interface{}); ok {
 				if name, ok := metadata["name"].(string); ok {
@@ -234,7 +234,7 @@ func (s *HelmReleaseService) GetChartInfo(ctx context.Context, namespace, releas
 					chartInfo.Repo = repo
 				}
 			}
-			
+
 			// Try sources if repository not found
 			if chartInfo.Repo == "" {
 				if sources, ok := chart["sources"].([]interface{}); ok {
@@ -251,7 +251,7 @@ func (s *HelmReleaseService) GetChartInfo(ctx context.Context, namespace, releas
 			}
 		}
 	}
-	
+
 	// Fallback to label if chart name not found
 	if chartInfo.ChartName == "" {
 		if name, ok := latestSecret.Labels["name"]; ok {
@@ -261,4 +261,3 @@ func (s *HelmReleaseService) GetChartInfo(ctx context.Context, namespace, releas
 
 	return chartInfo, nil
 }
-

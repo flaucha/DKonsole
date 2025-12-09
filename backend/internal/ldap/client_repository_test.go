@@ -38,10 +38,10 @@ func TestNewLDAPClientRepository(t *testing.T) {
 		client, _ := NewLDAPClient(&models.LDAPConfig{URL: "ldap://e.com"})
 		// NewLDAPClient pre-populates, but logs warning if fails.
 		// GetConnection inside NewLDAPClientRepository will try to create new if pool empty logic or if prepopulation failed.
-		
+
 		// If prepopulation failed (it did because we mocked dial fail), pool is empty.
 		// GetConnection triggers createConnection which calls dialer which fails.
-		
+
 		_, err := NewLDAPClientRepository(client)
 		if err == nil {
 			t.Error("expected error when connection fails")
@@ -60,7 +60,9 @@ func TestLDAPClientRepository_Methods(t *testing.T) {
 
 	t.Run("Bind", func(t *testing.T) {
 		mockConn.bindFunc = func(u, p string) error {
-			if u == "u" && p == "p" { return nil }
+			if u == "u" && p == "p" {
+				return nil
+			}
 			return errors.New("fail")
 		}
 		if err := repo.Bind(context.Background(), "u", "p"); err != nil {
@@ -83,7 +85,7 @@ func TestLDAPClientRepository_Methods(t *testing.T) {
 			t.Error("expected 1 result")
 		}
 	})
-	
+
 	t.Run("Close", func(t *testing.T) {
 		// Just ensure it doesn't panic
 		if err := repo.Close(); err != nil {
@@ -91,7 +93,7 @@ func TestLDAPClientRepository_Methods(t *testing.T) {
 		}
 		// Connection should be returned to pool (testable if we inspect pool or mock client better)
 	})
-	
+
 	t.Run("Nil Conn", func(t *testing.T) {
 		nilRepo := &ldapClientRepository{conn: nil}
 		if err := nilRepo.Bind(context.Background(), "u", "p"); err == nil {

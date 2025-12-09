@@ -1,8 +1,8 @@
 package prometheus
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 
 	"github.com/flaucha/DKonsole/backend/internal/models"
 	"k8s.io/client-go/kubernetes"
@@ -176,5 +176,3 @@ func (s *Service) GetClusterOverview(ctx context.Context, req GetClusterOverview
 		ClusterStats: clusterStats,
 	}, nil
 }
-
-

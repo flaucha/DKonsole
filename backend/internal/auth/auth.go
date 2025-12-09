@@ -11,8 +11,6 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
-
-
 // Service provides HTTP handlers for authentication operations.
 // It follows a layered architecture:
 //   - Handler (HTTP): Handles HTTP requests/responses

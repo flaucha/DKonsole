@@ -186,7 +186,6 @@ func (s *APIService) GetResourceYAML(ctx context.Context, req GetResourceYAMLReq
 	return string(yamlData), nil
 }
 
-
 // CRInstance represents an instance of a Custom Resource
 type CRInstance struct {
 	Name      string                 `json:"name"`

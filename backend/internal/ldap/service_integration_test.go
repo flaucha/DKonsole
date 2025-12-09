@@ -92,7 +92,7 @@ func TestService_AuthenticateUser_Integration(t *testing.T) {
 			t.Error("expected error on user bind fail")
 		}
 	})
-	
+
 	t.Run("Dial Error", func(t *testing.T) {
 		ldapDialer = func(url string, opts ...ldap.DialOpt) (LDAPConnection, error) {
 			return nil, errors.New("dial fail")
@@ -105,7 +105,7 @@ func TestService_AuthenticateUser_Integration(t *testing.T) {
 
 func TestTestConnectionHandler_Integration(t *testing.T) {
 	service := NewService(&mockRepository{})
-	
+
 	originalDialer := ldapDialer
 	defer func() { ldapDialer = originalDialer }()
 
@@ -113,7 +113,7 @@ func TestTestConnectionHandler_Integration(t *testing.T) {
 		ldapDialer = func(url string, opts ...ldap.DialOpt) (LDAPConnection, error) {
 			return &mockLDAPConnection{}, nil
 		}
-		
+
 		body := bytes.NewBufferString(`{"config":{"enabled":true,"url":"ldap://example.com","userDN":"uid","baseDN":"dc=com"},"username":"admin","password":"password"}`)
 		rr := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/api/ldap/test-connection", body)
@@ -122,18 +122,18 @@ func TestTestConnectionHandler_Integration(t *testing.T) {
 		if rr.Code != http.StatusOK {
 			t.Fatalf("status = %d, want 200", rr.Code)
 		}
-		
+
 		var resp map[string]interface{}
 		json.Unmarshal(rr.Body.Bytes(), &resp)
 		if msg, ok := resp["message"].(string); !ok || msg != "LDAP connection test successful" {
-				t.Errorf("expected success message, got %v", resp)
+			t.Errorf("expected success message, got %v", resp)
 		}
 	})
 }
 
 func TestService_GetUserGroups_Integration(t *testing.T) {
 	mockRepo := &mockRepository{
-		config: &models.LDAPConfig{Enabled: true, URL: "l://e", BaseDN: "dc=c", UserDN: "uid"},
+		config:   &models.LDAPConfig{Enabled: true, URL: "l://e", BaseDN: "dc=c", UserDN: "uid"},
 		username: "admin", password: "pwd",
 	}
 	service := NewService(mockRepo)
@@ -141,13 +141,13 @@ func TestService_GetUserGroups_Integration(t *testing.T) {
 
 	originalDialer := ldapDialer
 	defer func() { ldapDialer = originalDialer }()
-	
+
 	// Create mock connection for search
 	mockConn := &mockLDAPConnection{
 		searchFunc: func(req *ldap.SearchRequest) (*ldap.SearchResult, error) {
 			// 1. searchUserDN -> returns user entry with memberOf?
 			// 2. searchGroups -> returns groups?
-			
+
 			// If request filter contains (uid=john), return user
 			// We can verify filter string
 			return &ldap.SearchResult{Entries: []*ldap.Entry{
@@ -181,7 +181,7 @@ func TestService_GetUserPermissions_Integration(t *testing.T) {
 			Enabled: true, URL: "l://e", BaseDN: "dc=c", UserDN: "uid",
 			AdminGroups: []string{"admins"},
 		},
-		groups: &models.LDAPGroupsConfig{},
+		groups:   &models.LDAPGroupsConfig{},
 		username: "admin", password: "pwd",
 	}
 	service := NewService(mockRepo)
@@ -189,7 +189,7 @@ func TestService_GetUserPermissions_Integration(t *testing.T) {
 
 	originalDialer := ldapDialer
 	defer func() { ldapDialer = originalDialer }()
-	
+
 	mockConn := &mockLDAPConnection{
 		searchFunc: func(req *ldap.SearchRequest) (*ldap.SearchResult, error) {
 			return &ldap.SearchResult{Entries: []*ldap.Entry{

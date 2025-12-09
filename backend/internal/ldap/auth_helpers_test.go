@@ -106,7 +106,7 @@ func TestVerifyUserPassword(t *testing.T) {
 			t.Error("expected error when dial fails")
 		}
 	})
-	
+
 	t.Run("Bind Error", func(t *testing.T) {
 		service := NewService(&mockRepository{})
 		ldapDialer = func(url string, opts ...ldap.DialOpt) (LDAPConnection, error) {
@@ -162,7 +162,7 @@ func TestFindUserDN(t *testing.T) {
 			t.Errorf("got %s, want cn=john...", dn)
 		}
 	})
-	
+
 	t.Run("Search Fail (Fallback)", func(t *testing.T) {
 		conn := &mockLDAPConnection{
 			searchFunc: func(req *ldap.SearchRequest) (*ldap.SearchResult, error) {

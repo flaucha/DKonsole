@@ -47,15 +47,14 @@ func buildReleaseDataJSON(status string, revision int, chartName, chartVersion, 
 	return data
 }
 
-func buildHelmSecretWithRelease(name, namespace, status string, revision int, chart, version, appVersion, description string, encode bool) corev1.Secret {
+func buildHelmSecretWithRelease(name, namespace, status string, revision int, chart, version, appVersion, description string) corev1.Secret {
 	data := buildReleaseDataJSON(status, revision, chart, version, appVersion, description)
-	if encode {
-		var buf bytes.Buffer
-		gz := gzip.NewWriter(&buf)
-		_, _ = gz.Write(data)
-		gz.Close()
-		data = []byte(base64.StdEncoding.EncodeToString(buf.Bytes()))
-	}
+	// Always encode as this is what tests expect
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	_, _ = gz.Write(data)
+	gz.Close()
+	data = []byte(base64.StdEncoding.EncodeToString(buf.Bytes()))
 
 	return corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -403,7 +402,7 @@ func TestHelmReleaseService_IsSecretRelatedToRelease(t *testing.T) {
 func TestHelmReleaseService_ParseReleaseFromSecretAndConfigMap(t *testing.T) {
 	service := NewHelmReleaseService(nil)
 
-	secret := buildHelmSecretWithRelease("demo", "ns1", "superseded", 2, "chart-demo", "1.2.3", "2.0.0", "first deploy", true)
+	secret := buildHelmSecretWithRelease("demo", "ns1", "superseded", 2, "chart-demo", "1.2.3", "2.0.0", "first deploy")
 	result := service.parseReleaseFromSecret(secret)
 	if result == nil {
 		t.Fatalf("parseReleaseFromSecret returned nil")
@@ -446,8 +445,8 @@ func TestHelmReleaseService_ParseReleaseFromSecretAndConfigMap(t *testing.T) {
 }
 
 func TestHelmReleaseService_GetHelmReleasesPrefersNewestDeployed(t *testing.T) {
-	secretOld := buildHelmSecretWithRelease("app", "ns1", "deployed", 1, "old", "0.1.0", "1.0", "old deploy", true)
-	secretNewSuperseded := buildHelmSecretWithRelease("app", "ns1", "superseded", 3, "new", "0.2.0", "1.1", "new deploy", true)
+	secretOld := buildHelmSecretWithRelease("app", "ns1", "deployed", 1, "old", "0.1.0", "1.0", "old deploy")
+	secretNewSuperseded := buildHelmSecretWithRelease("app", "ns1", "superseded", 3, "new", "0.2.0", "1.1", "new deploy")
 	cm := corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "app.v2",
@@ -490,11 +489,11 @@ func TestHelmReleaseService_GetHelmReleasesPrefersNewestDeployed(t *testing.T) {
 
 func TestHelmReleaseService_GetChartInfo(t *testing.T) {
 	tests := []struct {
-		name         string
-		secrets      []corev1.Secret
-		listErr      error
-		want         *ChartInfo
-		wantErr      bool
+		name    string
+		secrets []corev1.Secret
+		listErr error
+		want    *ChartInfo
+		wantErr bool
 	}{
 		{
 			name:    "list error",
@@ -511,7 +510,7 @@ func TestHelmReleaseService_GetChartInfo(t *testing.T) {
 			name: "success with valid release data including repo",
 			secrets: []corev1.Secret{
 				func() corev1.Secret {
-					s := buildHelmSecretWithRelease("my-app", "default", "deployed", 1, "nginx", "1.0", "1.0", "", true)
+					s := buildHelmSecretWithRelease("my-app", "default", "deployed", 1, "nginx", "1.0", "1.0", "")
 					// Manually inject repo into the encoded data
 					info := map[string]interface{}{
 						"chart": map[string]interface{}{
@@ -537,7 +536,7 @@ func TestHelmReleaseService_GetChartInfo(t *testing.T) {
 			name: "success with repo from sources",
 			secrets: []corev1.Secret{
 				func() corev1.Secret {
-					s := buildHelmSecretWithRelease("my-app", "default", "deployed", 1, "nginx", "1.0", "1.0", "", true)
+					s := buildHelmSecretWithRelease("my-app", "default", "deployed", 1, "nginx", "1.0", "1.0", "")
 					info := map[string]interface{}{
 						"chart": map[string]interface{}{
 							"metadata": map[string]interface{}{"name": "nginx"},
@@ -561,7 +560,7 @@ func TestHelmReleaseService_GetChartInfo(t *testing.T) {
 			secrets: []corev1.Secret{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "sh.helm.release.v1.my-app.v1",
+						Name:        "sh.helm.release.v1.my-app.v1",
 						Annotations: map[string]string{"meta.helm.sh/release-name": "my-app"},
 						Labels:      map[string]string{"version": "1", "name": "label-chart"},
 					},
@@ -575,7 +574,7 @@ func TestHelmReleaseService_GetChartInfo(t *testing.T) {
 			secrets: []corev1.Secret{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "sh.helm.release.v1.my-app.v1",
+						Name:        "sh.helm.release.v1.my-app.v1",
 						Annotations: map[string]string{"meta.helm.sh/release-name": "my-app"},
 						Labels:      map[string]string{"version": "1", "name": "label-chart"},
 					},
@@ -609,7 +608,7 @@ func TestHelmReleaseService_GetChartInfo(t *testing.T) {
 
 func TestParseReleaseErrors(t *testing.T) {
 	svc := NewHelmReleaseService(nil)
-	
+
 	// Test parseReleaseFromSecret with missing name
 	s := corev1.Secret{}
 	if r := svc.parseReleaseFromSecret(s); r != nil {
@@ -636,7 +635,7 @@ func TestParseReleaseErrors(t *testing.T) {
 
 func TestMalformedReleaseStructure(t *testing.T) {
 	svc := NewHelmReleaseService(nil)
-	
+
 	// Valid Decode but invalid structure (missing chart metadata or info)
 	info := map[string]interface{}{
 		"chart": map[string]interface{}{
@@ -655,9 +654,9 @@ func TestMalformedReleaseStructure(t *testing.T) {
 
 	s := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "sh.helm.release.v1.bad.v1",
+			Name:        "sh.helm.release.v1.bad.v1",
 			Annotations: map[string]string{"meta.helm.sh/release-name": "bad", "meta.helm.sh/release-namespace": "default"},
-			Labels: map[string]string{"name": "bad", "version": "1", "status": "deployed"},
+			Labels:      map[string]string{"name": "bad", "version": "1", "status": "deployed"},
 		},
 		Data: map[string][]byte{"release": []byte(encoded)},
 	}
@@ -670,7 +669,7 @@ func TestMalformedReleaseStructure(t *testing.T) {
 	if r.Chart != "" { // extracting empty chart name
 		t.Errorf("expected empty chart, got %s", r.Chart)
 	}
-	if r.Status != "unknown" { // extractReleaseInfo defaults status to unknown if missing? 
+	if r.Status != "unknown" { // extractReleaseInfo defaults status to unknown if missing?
 		// Actually extractReleaseInfo doesn't explicitly default status to unknown, it just returns empty string if missing.
 		// Wait, let's check expectations.
 		// If status missing from info, it returns "".

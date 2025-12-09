@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/flaucha/DKonsole/backend/internal/models"
-	
+
 	"github.com/golang-jwt/jwt/v5"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +22,7 @@ func TestChangePasswordHandler_WithK8s(t *testing.T) {
 	// Setup K8s fake client
 	client := k8sfake.NewSimpleClientset()
 	namespace := "default"
-	secretName := "dkonsole-auth"
+	secretName := "dkonsole-auth" //nolint:gosec // Test secret name
 
 	// Set env for namespace detection
 	os.Setenv("POD_NAMESPACE", namespace)
@@ -31,7 +31,7 @@ func TestChangePasswordHandler_WithK8s(t *testing.T) {
 	// Create initial secret
 	password := "oldpassword123"
 	hash, _ := HashPassword(password)
-	
+
 	client.CoreV1().Secrets(namespace).Create(context.Background(), &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
@@ -128,7 +128,7 @@ func TestChangePasswordHandler_WithK8s(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			body, _ := json.Marshal(tt.reqBody)
 			req := httptest.NewRequest("POST", "/api/change-password", bytes.NewBuffer(body))
-			
+
 			// Inject user into context if token is "valid" (simulating middleware)
 			if tt.token != "" {
 				claims := &AuthClaims{

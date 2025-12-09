@@ -24,8 +24,8 @@ func TestUpdateConfigHandler_Detailed(t *testing.T) {
 			wantStatusCode: http.StatusBadRequest,
 		},
 		{
-			name: "Invalid URL",
-			body: `{"config": {"enabled": true, "url": "invalid://url"}}`,
+			name:           "Invalid URL",
+			body:           `{"config": {"enabled": true, "url": "invalid://url"}}`,
 			wantStatusCode: http.StatusBadRequest,
 		},
 		{
@@ -37,8 +37,8 @@ func TestUpdateConfigHandler_Detailed(t *testing.T) {
 			wantStatusCode: http.StatusInternalServerError,
 		},
 		{
-			name: "Success",
-			body: `{"config": {"enabled": true, "url": "ldap://example.com", "insecureSkipVerify": true}}`,
+			name:     "Success",
+			body:     `{"config": {"enabled": true, "url": "ldap://example.com", "insecureSkipVerify": true}}`,
 			mockRepo: &mockRepository{},
 			setupMockConn: func() {
 				ldapDialer = func(url string, opts ...ldap.DialOpt) (LDAPConnection, error) {
@@ -55,7 +55,7 @@ func TestUpdateConfigHandler_Detailed(t *testing.T) {
 			if repo == nil {
 				repo = &mockRepository{}
 			}
-			
+
 			if tt.setupMockConn != nil {
 				originalDialer := ldapDialer
 				defer func() { ldapDialer = originalDialer }()
@@ -113,9 +113,9 @@ func TestUpdateGroupsHandler_Detailed(t *testing.T) {
 			wantStatusCode: http.StatusInternalServerError,
 		},
 		{
-			name: "Success with filtering empty namespaces",
-			body: `{"groups": {"groups": [{"name": "admins", "permissions": [{"namespace": "", "permission": "view"}, {"namespace": "default", "permission": "edit"}]}]}}`,
-			mockRepo: &mockRepository{},
+			name:           "Success with filtering empty namespaces",
+			body:           `{"groups": {"groups": [{"name": "admins", "permissions": [{"namespace": "", "permission": "view"}, {"namespace": "default", "permission": "edit"}]}]}}`,
+			mockRepo:       &mockRepository{},
 			wantStatusCode: http.StatusOK,
 		},
 	}
@@ -165,9 +165,9 @@ func TestUpdateCredentialsHandler(t *testing.T) {
 			wantStatusCode: http.StatusInternalServerError,
 		},
 		{
-			name: "Success New Password",
-			body: `{"username": "admin", "password": "new"}`,
-			mockRepo: &mockRepository{},
+			name:           "Success New Password",
+			body:           `{"username": "admin", "password": "new"}`,
+			mockRepo:       &mockRepository{},
 			wantStatusCode: http.StatusOK,
 		},
 		{
@@ -241,12 +241,12 @@ func TestTestConnectionHandler_Errors(t *testing.T) {
 			wantStatusCode: http.StatusBadRequest,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			originalDialer := ldapDialer
 			defer func() { ldapDialer = originalDialer }()
-			
+
 			if tt.setupMockConn != nil {
 				tt.setupMockConn()
 			} else {

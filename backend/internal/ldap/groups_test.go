@@ -99,13 +99,13 @@ func TestGetUserGroupsWithRepo(t *testing.T) {
 			}
 		}
 	})
-	
+
 	t.Run("Fallback Search", func(t *testing.T) {
 		repo := &enhancedFakeLDAPClientRepository{
 			searchFunc: func(baseDN, filter string) ([]*ldap.Entry, error) {
 				if baseDN == config.BaseDN {
 					// User search failing to return memberOf attributes or empty
-					return nil, nil 
+					return nil, nil
 				}
 				// Group search
 				return []*ldap.Entry{
@@ -121,7 +121,7 @@ func TestGetUserGroupsWithRepo(t *testing.T) {
 			t.Errorf("got groups %v, want [dev]", groups)
 		}
 	})
-	
+
 	t.Run("Search Error", func(t *testing.T) {
 		repo := &enhancedFakeLDAPClientRepository{
 			searchFunc: func(baseDN, filter string) ([]*ldap.Entry, error) {
@@ -134,7 +134,7 @@ func TestGetUserGroupsWithRepo(t *testing.T) {
 			t.Error("expected error")
 		}
 	})
-	
+
 	t.Run("Bind Error", func(t *testing.T) {
 		repo := &enhancedFakeLDAPClientRepository{
 			bindFunc: func(dn, pass string) error {
@@ -153,10 +153,10 @@ func TestValidateUserGroup(t *testing.T) {
 	defer func() { ldapDialer = originalDialer }()
 
 	tests := []struct {
-		name          string
-		config        *models.LDAPConfig
-		userGroups    []string
-		wantError     bool
+		name       string
+		config     *models.LDAPConfig
+		userGroups []string
+		wantError  bool
 	}{
 		{
 			name:      "No Configured Required Group",
@@ -186,12 +186,12 @@ func TestValidateUserGroup(t *testing.T) {
 				username: "svc",
 				password: "pwd",
 			}
-			
+
 			// Mock LDAP Connection for GetUserGroups
 			setupMockSearch(tt.userGroups)
-			
+
 			service := NewService(repo)
-			
+
 			err := service.ValidateUserGroup(context.Background(), "user")
 			if (err != nil) != tt.wantError {
 				t.Errorf("ValidateUserGroup() error = %v, wantError %v", err, tt.wantError)
@@ -207,7 +207,7 @@ func setupMockSearch(groups []string) {
 			searchFunc: func(req *ldap.SearchRequest) (*ldap.SearchResult, error) {
 				// Very basic mock: if request filter looks like group search or user search
 				// For simple test, we assume fallback search or memberOf return matches
-				
+
 				// Let's assume we return memberOf for user
 				attrs := []*ldap.EntryAttribute{}
 				vals := []string{}
@@ -217,7 +217,7 @@ func setupMockSearch(groups []string) {
 				if len(vals) > 0 {
 					attrs = append(attrs, &ldap.EntryAttribute{Name: "memberOf", Values: vals})
 				}
-				
+
 				return &ldap.SearchResult{
 					Entries: []*ldap.Entry{
 						{DN: "cn=user,dc=example", Attributes: attrs},

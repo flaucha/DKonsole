@@ -89,7 +89,7 @@ func (m *MockHelmUpgradeService) UpgradeHelmRelease(ctx context.Context, req Upg
 	return nil, nil
 }
 
-func setupTestService(t *testing.T) (*Service, *MockServiceFactory, *models.Handlers) {
+func setupTestService() (*Service, *MockServiceFactory, *models.Handlers) {
 	// Setup fake K8s client
 	clientset := fake.NewSimpleClientset()
 	handlers := &models.Handlers{
@@ -121,7 +121,7 @@ func setupTestService(t *testing.T) (*Service, *MockServiceFactory, *models.Hand
 }
 
 func TestGetHelmReleases(t *testing.T) {
-	service, mockFactory, _ := setupTestService(t)
+	service, mockFactory, _ := setupTestService()
 	mockReleaseService := mockFactory.HelmReleaseService.(*MockHelmReleaseService)
 
 	tests := []struct {
@@ -169,7 +169,7 @@ func TestGetHelmReleases(t *testing.T) {
 }
 
 func TestDeleteHelmRelease(t *testing.T) {
-	service, mockFactory, _ := setupTestService(t)
+	service, mockFactory, _ := setupTestService()
 	mockReleaseService := mockFactory.HelmReleaseService.(*MockHelmReleaseService)
 
 	tests := []struct {
@@ -253,7 +253,7 @@ func TestNewService(t *testing.T) {
 }
 
 func TestInstallHelmReleaseHandler(t *testing.T) {
-	service, mockFactory, _ := setupTestService(t)
+	service, mockFactory, _ := setupTestService()
 	mockInstallService := mockFactory.HelmInstallService.(*MockHelmInstallService)
 
 	tests := []struct {
@@ -264,7 +264,7 @@ func TestInstallHelmReleaseHandler(t *testing.T) {
 		mockError      error
 		expectedStatus int
 	}{
-        // ... (body of tests)
+		// ... (body of tests)
 		{
 			name:   "Success",
 			method: "POST",
@@ -336,7 +336,7 @@ func TestInstallHelmReleaseHandler(t *testing.T) {
 }
 
 func TestUpgradeHelmReleaseHandler(t *testing.T) {
-	service, mockFactory, _ := setupTestService(t)
+	service, mockFactory, _ := setupTestService()
 	mockUpgradeService := mockFactory.HelmUpgradeService.(*MockHelmUpgradeService)
 
 	tests := []struct {
@@ -347,7 +347,7 @@ func TestUpgradeHelmReleaseHandler(t *testing.T) {
 		mockError      error
 		expectedStatus int
 	}{
-        // ... (body of tests)
+		// ... (body of tests)
 		{
 			name:   "Success",
 			method: "POST",

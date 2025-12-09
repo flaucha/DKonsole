@@ -57,7 +57,7 @@ func TestCalculatePermissions(t *testing.T) {
 	t.Run("Regular User", func(t *testing.T) {
 		userGroups := []string{"dev-group", "prod-viewers"}
 		perms := service.calculatePermissions(userGroups, config, groupsConfig)
-		
+
 		if perms["dev"] != "edit" {
 			t.Errorf("dev namespace: got %s, want edit", perms["dev"])
 		}
@@ -65,7 +65,7 @@ func TestCalculatePermissions(t *testing.T) {
 			t.Errorf("prod namespace: got %s, want view", perms["prod"])
 		}
 	})
-	
+
 	t.Run("Permission Upgrade", func(t *testing.T) {
 		// Test that higher permission wins
 		groupsConfigWithOverlap := &models.LDAPGroupsConfig{
@@ -90,7 +90,7 @@ func TestCalculatePermissions(t *testing.T) {
 			t.Errorf("shared namespace: got %s, want edit", perms["shared"])
 		}
 	})
-	
+
 	t.Run("No Groups", func(t *testing.T) {
 		perms := service.calculatePermissions([]string{}, config, groupsConfig)
 		if len(perms) != 0 {

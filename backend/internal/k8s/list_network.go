@@ -110,7 +110,12 @@ func (s *ResourceListService) listIngresses(ctx context.Context, client kubernet
 			Created:   item.CreationTimestamp.Format(time.RFC3339),
 			Status:    "Active",
 			Details: map[string]interface{}{
-				"class":        func() string { if item.Spec.IngressClassName != nil { return *item.Spec.IngressClassName }; return "" }(),
+				"class": func() string {
+					if item.Spec.IngressClassName != nil {
+						return *item.Spec.IngressClassName
+					}
+					return ""
+				}(),
 				"rules":        rules,
 				"tls":          tls,
 				"loadBalancer": lb,

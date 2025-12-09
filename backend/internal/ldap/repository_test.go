@@ -118,8 +118,6 @@ func TestK8sRepository_GetConfig(t *testing.T) {
 	})
 }
 
-
-
 func TestK8sRepository_UpdateConfig(t *testing.T) {
 	t.Run("NoClient", func(t *testing.T) {
 		repo := &K8sRepository{}
@@ -165,7 +163,7 @@ func TestK8sRepository_UpdateConfig(t *testing.T) {
 			t.Fatalf("UpdateConfig returned error: %v", err)
 		}
 	})
-	
+
 	t.Run("CreateError", func(t *testing.T) {
 		client := k8sfake.NewSimpleClientset()
 		client.PrependReactor("create", "secrets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -197,7 +195,7 @@ func TestK8sRepository_UpdateConfig(t *testing.T) {
 			t.Error("expected error on update failure")
 		}
 	})
-	
+
 	t.Run("GetError", func(t *testing.T) {
 		client := k8sfake.NewSimpleClientset()
 		client.PrependReactor("get", "secrets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -254,7 +252,7 @@ func TestK8sRepository_GetGroups(t *testing.T) {
 			t.Error("expected 1 group")
 		}
 	})
-	
+
 	t.Run("NoClient", func(t *testing.T) {
 		repo := &K8sRepository{}
 		groups, err := repo.GetGroups(context.Background())
@@ -282,7 +280,7 @@ func TestK8sRepository_GetGroups(t *testing.T) {
 			t.Error("expected error")
 		}
 	})
-	
+
 	t.Run("GetError", func(t *testing.T) {
 		client := k8sfake.NewSimpleClientset()
 		client.PrependReactor("get", "secrets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -321,7 +319,7 @@ func TestK8sRepository_UpdateGroups(t *testing.T) {
 			t.Fatalf("UpdateGroups returned error: %v", err)
 		}
 	})
-	
+
 	t.Run("GetError", func(t *testing.T) {
 		client := k8sfake.NewSimpleClientset()
 		client.PrependReactor("get", "secrets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -336,7 +334,7 @@ func TestK8sRepository_UpdateGroups(t *testing.T) {
 			t.Error("expected error")
 		}
 	})
-	
+
 	t.Run("CreateError", func(t *testing.T) {
 		client := k8sfake.NewSimpleClientset()
 		client.PrependReactor("create", "secrets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -351,7 +349,7 @@ func TestK8sRepository_UpdateGroups(t *testing.T) {
 			t.Error("expected error")
 		}
 	})
-	
+
 	t.Run("UpdateError", func(t *testing.T) {
 		client := k8sfake.NewSimpleClientset(&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "ldap-config", Namespace: "ns"},
@@ -402,7 +400,7 @@ func TestK8sRepository_GetCredentials(t *testing.T) {
 			t.Fatalf("expected error when client is nil")
 		}
 	})
-	
+
 	t.Run("NotFound", func(t *testing.T) {
 		client := k8sfake.NewSimpleClientset()
 		repo := &K8sRepository{client: client, namespace: "ns", secretName: "ldap-config"}
@@ -414,7 +412,7 @@ func TestK8sRepository_GetCredentials(t *testing.T) {
 			t.Error("expected empty credentials")
 		}
 	})
-	
+
 	t.Run("GetError", func(t *testing.T) {
 		client := k8sfake.NewSimpleClientset()
 		client.PrependReactor("get", "secrets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -425,7 +423,7 @@ func TestK8sRepository_GetCredentials(t *testing.T) {
 			t.Error("expected error")
 		}
 	})
-	
+
 	t.Run("MissingFields", func(t *testing.T) {
 		client := k8sfake.NewSimpleClientset(&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "ldap-config", Namespace: "ns"},
@@ -465,7 +463,7 @@ func TestK8sRepository_UpdateCredentials(t *testing.T) {
 			t.Fatalf("expected error when client is nil")
 		}
 	})
-	
+
 	t.Run("CreateError", func(t *testing.T) {
 		client := k8sfake.NewSimpleClientset()
 		client.PrependReactor("create", "secrets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -476,7 +474,7 @@ func TestK8sRepository_UpdateCredentials(t *testing.T) {
 			t.Error("expected error")
 		}
 	})
-	
+
 	t.Run("UpdateError", func(t *testing.T) {
 		client := k8sfake.NewSimpleClientset(&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "ldap-config", Namespace: "ns"},
@@ -489,7 +487,7 @@ func TestK8sRepository_UpdateCredentials(t *testing.T) {
 			t.Error("expected error")
 		}
 	})
-	
+
 	t.Run("GetError", func(t *testing.T) {
 		client := k8sfake.NewSimpleClientset()
 		client.PrependReactor("get", "secrets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {

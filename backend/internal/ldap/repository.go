@@ -164,7 +164,6 @@ func (r *K8sRepository) UpdateConfig(ctx context.Context, config *models.LDAPCon
 	return nil
 }
 
-
 // GetCredentials retrieves LDAP credentials from Secret
 func (r *K8sRepository) GetCredentials(ctx context.Context) (username, password string, err error) {
 	if r.client == nil {

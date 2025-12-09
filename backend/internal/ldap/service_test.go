@@ -273,7 +273,7 @@ func TestService_AuthenticateUser_FullFlow(t *testing.T) {
 		}
 		// Expect exact invalid credentials message if possible, or general error
 	})
-	
+
 	t.Run("Dial Error", func(t *testing.T) {
 		ldapDialer = func(url string, opts ...ldap.DialOpt) (LDAPConnection, error) {
 			return nil, errors.New("dial fail")

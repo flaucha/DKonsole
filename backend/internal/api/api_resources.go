@@ -203,7 +203,7 @@ func (s *Service) GetCRDs(w http.ResponseWriter, r *http.Request) {
 func (s *Service) GetCRDResources(w http.ResponseWriter, r *http.Request) {
 	// Delegate to generic ListAPIResourceObjects but with CRD specific params if needed
 	// Actually GetCRDResources in Service uses APIService.GetCRDResources
-	
+
 	dynamicClient, err := s.clusterService.GetDynamicClient(r)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())

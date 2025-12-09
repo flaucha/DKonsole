@@ -6,8 +6,6 @@ import (
 
 	"sync"
 
-
-
 	"github.com/flaucha/DKonsole/backend/internal/models"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
@@ -169,7 +167,3 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password strin
 
 // Methods GetUserGroups, ValidateUserGroup, GetUserPermissions are in groups.go
 // Helper methods loginAndBindService, findUserDN, verifyUserPassword are in auth_helpers.go
-
-
-
-

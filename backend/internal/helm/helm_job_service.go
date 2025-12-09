@@ -63,4 +63,3 @@ type HelmJobService struct {
 func NewHelmJobService(repo HelmJobRepository) *HelmJobService {
 	return &HelmJobService{repo: repo}
 }
-

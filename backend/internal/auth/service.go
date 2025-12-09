@@ -116,6 +116,7 @@ var (
 	ErrInvalidCredentials = &AuthError{Message: "Invalid credentials"}
 	ErrUnauthorized       = &AuthError{Message: "Unauthorized"}
 )
+
 // generateToken creates a new JWT token for the user
 func (s *AuthService) generateToken(username, role, idp string, permissions map[string]string, expiration time.Time) (string, error) {
 	claims := &AuthClaims{

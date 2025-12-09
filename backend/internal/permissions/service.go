@@ -69,4 +69,3 @@ func GetUserFromContext(ctx context.Context) (*models.Claims, error) {
 
 	return nil, fmt.Errorf("invalid user type in context: %T", userVal)
 }
-

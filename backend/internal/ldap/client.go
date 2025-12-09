@@ -135,8 +135,8 @@ func (p *connectionPool) createConnection() (LDAPConnection, error) {
 	var conn LDAPConnection
 	var err error
 
-	// We use ldapDialer which supports mocking. 
-	// However, ldapDialer in auth_helpers.go handles just the URL. 
+	// We use ldapDialer which supports mocking.
+	// However, ldapDialer in auth_helpers.go handles just the URL.
 	// For TLS support in pool, we need to pass config or handle it.
 	// But ldapDialer signature is func(url) (LDAPConnection, error).
 	// To support TLS options, we should update ldapDialer signature or make it flexible.
@@ -145,12 +145,12 @@ func (p *connectionPool) createConnection() (LDAPConnection, error) {
 	// But standard ldap.DialURL supports options.
 	// Let's update `ldapDialer` in `auth_helpers.go` to support options?
 	// It already does! func(url string, opts ...ldap.DialOpt)
-	
+
 	opts := []ldap.DialOpt{}
 	if p.tlsConfig != nil && (len(p.url) >= 8 && p.url[:8] == "ldaps://") {
 		opts = append(opts, ldap.DialWithTLSConfig(p.tlsConfig))
 	}
-	
+
 	conn, err = ldapDialer(p.url, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial LDAP server: %w", err)

@@ -15,13 +15,13 @@ import (
 )
 
 type RouterConfig struct {
-	Deps Dependencies
-	Mux  *http.ServeMux
-	Secure func(http.HandlerFunc) http.HandlerFunc
-	Public func(http.HandlerFunc) http.HandlerFunc
+	Deps          Dependencies
+	Mux           *http.ServeMux
+	Secure        func(http.HandlerFunc) http.HandlerFunc
+	Public        func(http.HandlerFunc) http.HandlerFunc
 	SecureHandler func(http.Handler) http.Handler
-	SecureWS func(http.HandlerFunc) http.HandlerFunc
-	AdminOnly func(http.HandlerFunc) http.HandlerFunc
+	SecureWS      func(http.HandlerFunc) http.HandlerFunc
+	AdminOnly     func(http.HandlerFunc) http.HandlerFunc
 }
 
 func registerRoutes(c RouterConfig) {

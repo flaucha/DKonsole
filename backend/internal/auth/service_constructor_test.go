@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
-	
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
@@ -14,7 +14,7 @@ func TestNewService(t *testing.T) {
 	// Setup K8s fake client
 	client := k8sfake.NewSimpleClientset()
 	namespace := "default"
-	secretName := "dkonsole-auth"
+	secretName := "dkonsole-auth" //nolint:gosec // Test secret name
 
 	// Set env for namespace detection
 	os.Setenv("POD_NAMESPACE", namespace)
