@@ -9,23 +9,6 @@ import useWorkloadColumns from '../hooks/useWorkloadColumns';
 import { getIcon } from '../utils/workloadUtils';
 import { RefreshCw } from 'lucide-react';
 
-import { getExpandableRowClasses, getExpandableRowRowClasses } from '../utils/expandableRow';
-
-// Detail components
-import NodeDetails from './details/NodeDetails';
-import { ServiceAccountDetails, RoleDetails, BindingDetails } from './details/RbacDetails';
-import DeploymentDetails from './details/DeploymentDetails';
-import ServiceDetails from './details/ServiceDetails';
-import IngressDetails from './details/IngressDetails';
-import PodDetails from './details/PodDetails';
-import { ConfigMapDetails, SecretDetails } from './details/ConfigDetails';
-import NetworkPolicyDetails from './details/NetworkPolicyDetails';
-import StorageDetails from './details/StorageDetails';
-import StorageClassDetails from './details/StorageClassDetails';
-import { JobDetails, CronJobDetails, StatefulSetDetails, DaemonSetDetails, HPADetails } from './details/WorkloadDetails';
-import GenericDetails from './details/GenericDetails';
-import { EditYamlButton } from './details/CommonDetails';
-
 import YamlEditor from './YamlEditor';
 import { DataEditor } from './details/DataEditor';
 
@@ -35,6 +18,7 @@ import DeleteConfirmationModal from './workloads/modals/DeleteConfirmationModal'
 import RolloutConfirmationModal from './workloads/modals/RolloutConfirmationModal';
 import JobCreatedModal from './workloads/modals/JobCreatedModal';
 import WorkloadToolbar from './workloads/WorkloadToolbar';
+import WorkloadTable from './workloads/WorkloadTable';
 
 const WorkloadList = ({ namespace, kind }) => {
     const [expandedId, setExpandedId] = useState(null);
@@ -151,43 +135,6 @@ const WorkloadList = ({ namespace, kind }) => {
         return r.name.toLowerCase().includes(filter.toLowerCase());
     });
 
-    const renderDetails = (res) => {
-        const onEditYAML = () => setEditingResource(res);
-        const onDataSaved = () => {
-            setExpandedId(null);
-            setTimeout(() => refetch(), 300);
-        };
-        if (!res.details) return (
-            <div className="p-4 text-gray-500 italic">
-                No details available.
-            </div>
-        );
-        switch (res.kind) {
-            case 'Node': return <NodeDetails details={res.details} onEditYAML={onEditYAML} />;
-            case 'ServiceAccount': return <ServiceAccountDetails details={res.details} onEditYAML={onEditYAML} />;
-            case 'Role':
-            case 'ClusterRole': return <RoleDetails details={res.details} onEditYAML={onEditYAML} />;
-            case 'RoleBinding':
-            case 'ClusterRoleBinding': return <BindingDetails details={res.details} onEditYAML={onEditYAML} />;
-            case 'Deployment': return <DeploymentDetails details={res.details} onScale={(delta) => handleScale(res, delta)} scaling={scaling === res.name} res={res} onEditYAML={onEditYAML} />;
-            case 'Service': return <ServiceDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} name={res.name} />;
-            case 'Ingress': return <IngressDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
-            case 'Pod': return <PodDetails details={res.details} onEditYAML={onEditYAML} pod={res} />;
-            case 'ConfigMap': return <ConfigMapDetails details={res.details} onEditYAML={onEditYAML} resource={res} onDataSaved={onDataSaved} />;
-            case 'Secret': return <SecretDetails details={res.details} onEditYAML={onEditYAML} resource={res} onDataSaved={onDataSaved} />;
-            case 'NetworkPolicy': return <NetworkPolicyDetails details={res.details} onEditYAML={onEditYAML} />;
-            case 'PersistentVolumeClaim':
-            case 'PersistentVolume': return <StorageDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
-            case 'StorageClass': return <StorageClassDetails details={res.details} onEditYAML={onEditYAML} />;
-            case 'Job': return <JobDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
-            case 'CronJob': return <CronJobDetails details={res.details} onEditYAML={onEditYAML} />;
-            case 'StatefulSet': return <StatefulSetDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
-            case 'DaemonSet': return <DaemonSetDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
-            case 'HPA': return <HPADetails details={res.details} onEditYAML={onEditYAML} />;
-            default: return <GenericDetails details={res.details} onEditYAML={onEditYAML} />;
-        }
-    };
-
     const Icon = getIcon(kind);
 
     // Get columns from hook
@@ -279,11 +226,6 @@ const WorkloadList = ({ namespace, kind }) => {
         () => columns.map((col) => col.width || 'minmax(120px, 1fr)').join(' '),
         [columns]
     );
-
-    const renderSortIndicator = (id) => {
-        if (sortField !== id) return null;
-        return sortDirection === 'asc' ? '↑' : '↓';
-    };
 
     // Show loading state
     if (loading && resources.length === 0) {
@@ -384,6 +326,11 @@ const WorkloadList = ({ namespace, kind }) => {
         );
     }
 
+    const onDetailsSaved = () => {
+        setExpandedId(null);
+        setTimeout(() => refetch(), 300);
+    };
+
     return (
         <div className="flex flex-col h-full">
             <WorkloadToolbar
@@ -404,108 +351,25 @@ const WorkloadList = ({ namespace, kind }) => {
                 onAdd={handleAdd}
             />
 
-            {/* Table Header */}
-            <div
-                className="grid gap-4 px-6 py-3 border-b border-gray-800 bg-gray-900/50 text-xs font-medium text-gray-500 uppercase tracking-wider"
-                style={{ gridTemplateColumns }}
-            >
-                {columns.map((column) => {
-                    const isSortable = typeof column.sortValue === 'function';
-                    const canDrag = !column.pinned && !column.isAction;
-                    const headerLabel = column.label || '';
-                    const dataTestKey = column.label ? `${column.label.replace(/\s+/g, '').toLowerCase()}-header` : undefined;
-                    const alignmentClass = column.align === 'left' ? 'justify-start text-left' : 'justify-center text-center';
-                    return (
-                        <div
-                            key={column.id}
-                            className={`flex items-center ${alignmentClass} ${column.id === 'name' ? 'pl-[0.5cm]' : ''} gap-2 ${isSortable ? 'cursor-pointer' : ''}`}
-                            draggable={canDrag}
-                            onDragStart={() => {
-                                if (canDrag) setDraggingColumn(column.id);
-                            }}
-                            onDragOver={(e) => {
-                                if (canDrag && draggingColumn) {
-                                    e.preventDefault();
-                                }
-                            }}
-                            onDrop={(e) => {
-                                if (canDrag && draggingColumn && draggingColumn !== column.id) {
-                                    e.preventDefault();
-                                    moveColumn(draggingColumn, column.id);
-                                    setDraggingColumn(null);
-                                }
-                            }}
-                            onDragEnd={() => setDraggingColumn(null)}
-                        >
-                            {isSortable ? (
-                                <button
-                                    type="button"
-                                    className={`flex items-center gap-1 hover:text-gray-300 uppercase ${alignmentClass}`}
-                                    onClick={() => handleSort(column.id)}
-                                    data-testid={dataTestKey}
-                                >
-                                    {headerLabel} {renderSortIndicator(column.id)}
-                                </button>
-                            ) : (
-                                <span data-testid={dataTestKey} className={`${alignmentClass} uppercase`}>{headerLabel}</span>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Table Body */}
-            <div className="flex-1 overflow-y-auto">
-                {limitedResources.map((res) => {
-                    const isExpanded = expandedId === res.uid;
-                    return (
-                        <div key={res.uid} className="border-b border-gray-800 last:border-0">
-                            <div
-                                onClick={() => toggleExpand(res.uid)}
-                                className={`grid gap-4 px-6 py-1.5 cursor-pointer transition-colors duration-200 items-center ${getExpandableRowRowClasses(isExpanded)}`}
-                                style={{ gridTemplateColumns }}
-                            >
-                                {columns.map((column) => (
-                                    <div
-                                        key={`${res.uid}-${column.id}`}
-                                        className={`${column.align === 'left' ? 'justify-start text-left' : 'justify-center text-center'} flex items-center ${column.id === 'name' ? 'pl-[0.5cm]' : ''}`}
-                                        onClick={column.isAction ? (e) => e.stopPropagation() : undefined}
-                                    >
-                                        {column.renderCell(res, { isExpanded })}
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Expanded Details */}
-                            <div className={`${getExpandableRowClasses(isExpanded, false)}`}>
-                                {isExpanded && (
-                                    <div className="px-6 py-4 bg-gray-900/30 border-t border-gray-800">
-                                        <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden relative">
-                                            {/* Show Edit YAML button only for resources that don't have it in their detail component */}
-                                            {res.kind !== 'Deployment' && res.kind !== 'Pod' && res.kind !== 'ClusterRole' && res.kind !== 'ClusterRoleBinding' &&
-                                                res.kind !== 'Role' && res.kind !== 'RoleBinding' &&
-                                                res.kind !== 'CronJob' && res.kind !== 'StatefulSet' && res.kind !== 'DaemonSet' && res.kind !== 'HPA' &&
-                                                res.kind !== 'Job' && res.kind !== 'PersistentVolumeClaim' && res.kind !== 'PersistentVolume' && res.kind !== 'StorageClass' &&
-                                                res.kind !== 'ConfigMap' && res.kind !== 'Secret' && res.kind !== 'NetworkPolicy' && res.kind !== 'Service' && res.kind !== 'Ingress' && (
-                                                    <div className="absolute top-4 right-4 z-10">
-                                                        <EditYamlButton onClick={() => setEditingResource(res)} namespace={res.namespace} />
-                                                    </div>
-                                                )}
-                                            {renderDetails(res)}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
-                {limitedResources.length === 0 && filter && (
-                    <div className="p-8 text-center text-gray-500">
-                        No resources match your filter.
-                    </div>
-                )}
-            </div>
-
+            <WorkloadTable
+                kind={kind}
+                resources={limitedResources}
+                columns={columns}
+                gridTemplateColumns={gridTemplateColumns}
+                expandedId={expandedId}
+                toggleExpand={toggleExpand}
+                sortField={sortField}
+                sortDirection={sortDirection}
+                handleSort={handleSort}
+                draggingColumn={draggingColumn}
+                setDraggingColumn={setDraggingColumn}
+                moveColumn={moveColumn}
+                setEditingResource={setEditingResource}
+                handleScale={handleScale}
+                scaling={scaling}
+                onDetailsSaved={onDetailsSaved}
+                filter={filter}
+            />
 
             {/* YAML Editor Modal */}
             {editingResource && (

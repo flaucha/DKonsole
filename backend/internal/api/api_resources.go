@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/flaucha/DKonsole/backend/internal/cluster"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -14,18 +13,6 @@ const (
 	// This prevents OOM issues in large clusters
 	DefaultListLimit = int64(500)
 )
-
-// Service provides API resource and CRD operations
-type Service struct {
-	clusterService *cluster.Service
-}
-
-// NewService creates a new API service
-func NewService(cs *cluster.Service) *Service {
-	return &Service{
-		clusterService: cs,
-	}
-}
 
 // APIResourceInfo represents information about an API resource
 type APIResourceInfo struct {
@@ -44,36 +31,6 @@ type APIResourceObject struct {
 	Status    string      `json:"status,omitempty"`
 	Created   string      `json:"created,omitempty"`
 	Raw       interface{} `json:"raw,omitempty"`
-}
-
-// ListAPIResources lists all available API resources in the cluster
-// Refactored to use layered architecture: Handler -> Service -> Repository
-func (s *Service) ListAPIResources(w http.ResponseWriter, r *http.Request) {
-	client, err := s.clusterService.GetClient(r)
-	if err != nil {
-		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	// Create repository
-	discoveryRepo := NewK8sDiscoveryRepository(client)
-
-	// Create service
-	apiService := NewAPIService(discoveryRepo, nil)
-
-	// Create context
-	ctx, cancel := utils.CreateRequestContext(r)
-	defer cancel()
-
-	// Call service (business logic layer)
-	result, err := apiService.ListAPIResources(ctx)
-	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to discover APIs: %v", err))
-		return
-	}
-
-	// Write JSON response (HTTP layer)
-	utils.JSONResponse(w, http.StatusOK, result)
 }
 
 // ListAPIResourceObjects lists instances of a specific API resource
@@ -306,5 +263,3 @@ func (s *Service) GetCRDYaml(w http.ResponseWriter, r *http.Request) {
 	// Re-use GetAPIResourceYAML
 	s.GetAPIResourceYAML(w, r)
 }
-
-

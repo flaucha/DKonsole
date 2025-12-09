@@ -26,7 +26,8 @@ func (s *ResourceListService) listConfigMaps(ctx context.Context, client kuberne
 			Created:   item.CreationTimestamp.Format(time.RFC3339),
 			Status:    "Active",
 			Details: map[string]interface{}{
-				"Data": len(item.Data),
+				"data":      item.Data,
+				"dataCount": len(item.Data),
 			},
 		})
 	}
@@ -41,16 +42,22 @@ func (s *ResourceListService) listSecrets(ctx context.Context, client kubernetes
 
 	resources := make([]models.Resource, 0, len(list.Items))
 	for _, item := range list.Items {
+		// Convert []byte values to base64 strings for JSON serialization
+		dataMap := make(map[string]string)
+		for k, v := range item.Data {
+			dataMap[k] = string(v)
+		}
 		resources = append(resources, models.Resource{
 			UID:       string(item.UID),
 			Name:      item.Name,
 			Namespace: item.Namespace,
 			Kind:      "Secret",
 			Created:   item.CreationTimestamp.Format(time.RFC3339),
-			Status:    "Active",
+			Status:    string(item.Type),
 			Details: map[string]interface{}{
-				"Type": string(item.Type),
-				"Data": len(item.Data),
+				"Type":      string(item.Type),
+				"data":      dataMap,
+				"dataCount": len(item.Data),
 			},
 		})
 	}

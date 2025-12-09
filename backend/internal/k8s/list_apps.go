@@ -114,18 +114,20 @@ func (s *ResourceListService) listDeployments(ctx context.Context, client kubern
 		}
 
 		details := models.DeploymentDetails{
-			Replicas:    replicas,
-			Ready:       i.Status.ReadyReplicas,
-			Images:      images,
-			ImageTag:    imageTag,
-			Ports:       ports,
-			PVCs:        pvcs,
-			PodLabels:   i.Spec.Selector.MatchLabels,
-			Labels:      i.Labels,
-			RequestsCPU: requestsCPU,
-			RequestsMem: requestsMem,
-			LimitsCPU:   limitsCPU,
-			LimitsMem:   limitsMem,
+			Replicas:          replicas,
+			Ready:             i.Status.ReadyReplicas,
+			UpdatedReplicas:   i.Status.UpdatedReplicas,
+			AvailableReplicas: i.Status.AvailableReplicas,
+			Images:            images,
+			ImageTag:          imageTag,
+			Ports:             ports,
+			PVCs:              pvcs,
+			PodLabels:         i.Spec.Selector.MatchLabels,
+			Labels:            i.Labels,
+			RequestsCPU:       requestsCPU,
+			RequestsMem:       requestsMem,
+			LimitsCPU:         limitsCPU,
+			LimitsMem:         limitsMem,
 		}
 
 		resources = append(resources, models.Resource{

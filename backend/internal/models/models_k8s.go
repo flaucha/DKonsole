@@ -31,18 +31,20 @@ type Resource struct {
 
 // DeploymentDetails contiene detalles específicos de un Deployment
 type DeploymentDetails struct {
-	Replicas    int32             `json:"replicas"`
-	Ready       int32             `json:"ready"`
-	Images      []string          `json:"images"`
-	ImageTag    string            `json:"imageTag,omitempty"`
-	Ports       []int32           `json:"ports"`
-	PVCs        []string          `json:"pvcs"`
-	PodLabels   map[string]string `json:"podLabels"`
-	Labels      map[string]string `json:"labels,omitempty"`
-	RequestsCPU string            `json:"requestsCPU,omitempty"`
-	RequestsMem string            `json:"requestsMem,omitempty"`
-	LimitsCPU   string            `json:"limitsCPU,omitempty"`
-	LimitsMem   string            `json:"limitsMem,omitempty"`
+	Replicas         int32             `json:"replicas"`
+	Ready            int32             `json:"ready"`
+	UpdatedReplicas  int32             `json:"updated"`
+	AvailableReplicas int32            `json:"available"`
+	Images           []string          `json:"images"`
+	ImageTag         string            `json:"imageTag,omitempty"`
+	Ports            []int32           `json:"ports"`
+	PVCs             []string          `json:"pvcs"`
+	PodLabels        map[string]string `json:"podLabels"`
+	Labels           map[string]string `json:"labels,omitempty"`
+	RequestsCPU      string            `json:"requestsCPU,omitempty"`
+	RequestsMem      string            `json:"requestsMem,omitempty"`
+	LimitsCPU        string            `json:"limitsCPU,omitempty"`
+	LimitsMem        string            `json:"limitsMem,omitempty"`
 }
 
 // ResourceMeta contiene metadatos sobre un tipo de recurso de Kubernetes
