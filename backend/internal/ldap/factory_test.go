@@ -3,8 +3,9 @@ package ldap
 import (
 	"testing"
 
-	"github.com/flaucha/DKonsole/backend/internal/models"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
+
+	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
 func TestConstructors(t *testing.T) {

@@ -9,8 +9,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/flaucha/DKonsole/backend/internal/models"
 	"github.com/go-ldap/ldap/v3"
+
+	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
 func TestService_AuthenticateUser_Integration(t *testing.T) {

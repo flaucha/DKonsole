@@ -5,8 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/flaucha/DKonsole/backend/internal/models"
 	"github.com/go-ldap/ldap/v3"
+
+	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
 func TestNewLDAPClientRepository(t *testing.T) {

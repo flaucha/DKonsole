@@ -7,9 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/flaucha/DKonsole/backend/internal/models"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
 // mockRepository is a mock implementation of Repository
