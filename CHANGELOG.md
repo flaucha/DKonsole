@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.4.8-rc1] - 2025-12-08
+## [1.4.8] - 2025-12-08
+
+### Added
+- **LDAP Integration**: Comprehensive LDAP integration with authentication login flow, K8s resource listing and operations.
+- **UI**: Generalized filter input placeholders and updated API Explorer scope filter styling.
 
 ### Fixed
+- **UI**: General UI fixes and improvements.
 - **Prometheus**: Resolved build errors by correcting `MetricDataPoint` and `NodeMetric` struct usage in tests.
 - **Helm**: Refactored service architecture with interfaces and improved test coverage for install and upgrade services.
 
