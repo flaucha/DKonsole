@@ -184,38 +184,35 @@ const ApiExplorer = ({ namespace }) => {
                         <div className="bg-gray-800 border border-gray-700 rounded-md flex overflow-hidden text-sm shrink-0">
                             <button
                                 onClick={() => setScopeFilter('namespaced')}
-                                className={`px-3 py-1.5 flex items-center space-x-1 transition-colors ${
-                                    scopeFilter === 'namespaced'
-                                        ? 'bg-blue-900 text-blue-100'
-                                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                                }`}
+                                className={`px-3 py-1.5 flex items-center space-x-1 ${scopeFilter === 'namespaced'
+                                        ? 'bg-gray-700 text-white'
+                                        : 'text-gray-300 hover:bg-gray-700'
+                                    }`}
                             >
                                 <MapPin size={14} /> <span className="hidden sm:inline">Namespaced</span>
                             </button>
                             <button
                                 onClick={() => setScopeFilter('cluster')}
-                                className={`px-3 py-1.5 flex items-center space-x-1 transition-colors border-l border-gray-700 ${
-                                    scopeFilter === 'cluster'
-                                        ? 'bg-blue-900 text-blue-100'
-                                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                                }`}
+                                className={`px-3 py-1.5 flex items-center space-x-1 ${scopeFilter === 'cluster'
+                                        ? 'bg-gray-700 text-white'
+                                        : 'text-gray-300 hover:bg-gray-700'
+                                    }`}
                             >
                                 <Globe size={14} /> <span className="hidden sm:inline">Cluster</span>
                             </button>
                             <button
                                 onClick={() => setScopeFilter('all')}
-                                className={`px-3 py-1.5 flex items-center space-x-1 transition-colors border-l border-gray-700 ${
-                                    scopeFilter === 'all'
-                                        ? 'bg-blue-900 text-blue-100'
-                                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                                }`}
+                                className={`px-3 py-1.5 flex items-center space-x-1 ${scopeFilter === 'all'
+                                        ? 'bg-gray-700 text-white'
+                                        : 'text-gray-300 hover:bg-gray-700'
+                                    }`}
                             >
                                 <ListTree size={14} /> <span className="hidden sm:inline">All</span>
                             </button>
                         </div>
                     ) : (
                         <div className="bg-gray-800 border border-gray-700 rounded-md flex overflow-hidden text-sm shrink-0">
-                            <div className="px-3 py-1.5 flex items-center space-x-1 bg-blue-900 text-blue-100">
+                            <div className="px-3 py-1.5 flex items-center space-x-1 bg-gray-700 text-white">
                                 <MapPin size={14} /> <span className="hidden sm:inline">Namespaced Only</span>
                             </div>
                         </div>

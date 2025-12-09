@@ -18,7 +18,7 @@ const NamespaceToolbar = ({
                     <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors duration-300 ${isSearchFocused ? 'text-blue-400' : 'text-gray-500'}`} size={16} />
                     <input
                         type="text"
-                        placeholder="Filter namespaces..."
+                        placeholder="Filter..."
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
                         onFocus={() => setIsSearchFocused(true)}
