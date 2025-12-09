@@ -11,6 +11,7 @@ import (
 
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
 	"github.com/flaucha/DKonsole/backend/internal/models"
+	
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -89,7 +90,7 @@ func (m *MockHelmUpgradeService) UpgradeHelmRelease(ctx context.Context, req Upg
 	return nil, nil
 }
 
-func setupTestService() (*Service, *MockServiceFactory, *models.Handlers) {
+func setupTestService() (*Service, *MockServiceFactory) {
 	// Setup fake K8s client
 	clientset := fake.NewSimpleClientset()
 	handlers := &models.Handlers{
@@ -117,11 +118,11 @@ func setupTestService() (*Service, *MockServiceFactory, *models.Handlers) {
 	// Create service with mock factory
 	service := NewServiceWithFactory(handlers, clusterService, mockFactory)
 
-	return service, mockFactory, handlers
+	return service, mockFactory
 }
 
 func TestGetHelmReleases(t *testing.T) {
-	service, mockFactory, _ := setupTestService()
+	service, mockFactory := setupTestService()
 	mockReleaseService := mockFactory.HelmReleaseService.(*MockHelmReleaseService)
 
 	tests := []struct {
@@ -169,7 +170,7 @@ func TestGetHelmReleases(t *testing.T) {
 }
 
 func TestDeleteHelmRelease(t *testing.T) {
-	service, mockFactory, _ := setupTestService()
+	service, mockFactory := setupTestService()
 	mockReleaseService := mockFactory.HelmReleaseService.(*MockHelmReleaseService)
 
 	tests := []struct {
@@ -253,7 +254,7 @@ func TestNewService(t *testing.T) {
 }
 
 func TestInstallHelmReleaseHandler(t *testing.T) {
-	service, mockFactory, _ := setupTestService()
+	service, mockFactory := setupTestService()
 	mockInstallService := mockFactory.HelmInstallService.(*MockHelmInstallService)
 
 	tests := []struct {
@@ -336,7 +337,7 @@ func TestInstallHelmReleaseHandler(t *testing.T) {
 }
 
 func TestUpgradeHelmReleaseHandler(t *testing.T) {
-	service, mockFactory, _ := setupTestService()
+	service, mockFactory := setupTestService()
 	mockUpgradeService := mockFactory.HelmUpgradeService.(*MockHelmUpgradeService)
 
 	tests := []struct {

@@ -3,9 +3,10 @@ package ldap
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/flaucha/DKonsole/backend/internal/models"
 	"github.com/go-ldap/ldap/v3"
-	"testing"
 )
 
 func TestService_InitializeClient_Error(t *testing.T) {
