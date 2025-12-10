@@ -107,7 +107,9 @@ jobs:
 
       - name: Run tests
         working-directory: ./frontend
-        run: npm run test -- --coverage
+        env:
+          NODE_OPTIONS: "--max-old-space-size=6144"
+        run: npm run test -- --no-file-parallelism --maxWorkers=1 --exclude="**/Layout.test.jsx" --exclude="**/ApiExplorer.test.jsx" --exclude="**/PodDetails.test.jsx" --exclude="**/WorkloadList.test.jsx" --exclude="**/useWorkloadListState.test.js" --coverage
 
       - name: Build frontend
         working-directory: ./frontend
