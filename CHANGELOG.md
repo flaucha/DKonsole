@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.9] - 2025-12-10
+
+### Fixed
+- **UI:** Removed unused themes (Ocean, Forest, etc.) and the "Light" (White) theme, leaving only "Default" (Dark) and "Cream".
+- **Login:** Fixed "Cream" theme login page displaying dark brown background instead of cream.
+- **Scrollbars:** Adjusted "Cream" theme scrollbars to match the light brown aesthetic.
+- **UI:** Removed redundant "Edit YAML" / "Edit in Place" buttons from detail views (consolidated into kebab menu).
+
 ## [1.4.8] - 2025-12-08
 
 ### Added

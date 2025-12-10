@@ -16,14 +16,16 @@ const Login = () => {
 
     // Get current theme and determine default logo immediately
     const currentTheme = localStorage.getItem('theme') || 'default';
-    const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
-    const defaultLogoSrc = isLightTheme ? logoFullLight : logoFullDark;
+    const isCreamTheme = currentTheme === 'cream';
+    // Only support Cream or Dark (default). Light theme is removed.
+    const defaultLogoSrc = isCreamTheme ? logoFullLight : logoFullDark;
     const [logoSrc, setLogoSrc] = useState(defaultLogoSrc); // Show default logo immediately
 
     useEffect(() => {
         // Try to load custom logo from API (no auth required for logo endpoint)
         // Check in background, but show default immediately
-        const logoType = isLightTheme ? 'light' : 'normal';
+        // Use 'light' logo type for cream theme as they share similar brightness
+        const logoType = isCreamTheme ? 'light' : 'normal';
         const timestamp = Date.now();
         fetch(`/api/logo?type=${logoType}&t=${timestamp}`)
             .then(res => {
@@ -58,8 +60,8 @@ const Login = () => {
     const handleLogoError = () => {
         // If logo fails to load, fallback to theme-appropriate default logo
         const currentTheme = localStorage.getItem('theme') || 'default';
-        const isLightTheme = currentTheme === 'light' || currentTheme === 'cream';
-        const fallbackLogo = isLightTheme ? logoFullLight : logoFullDark;
+        const isCreamTheme = currentTheme === 'cream';
+        const fallbackLogo = isCreamTheme ? logoFullLight : logoFullDark;
 
         if (logoSrc !== fallbackLogo) {
             setLogoSrc(fallbackLogo);
@@ -79,9 +81,13 @@ const Login = () => {
         }
     };
 
+    // Theme classes - now relying on CSS variables via data-theme
+    // bg-gray-900 adapts: Dark (Dark), Light (White), Cream (Cream)
+    // text-white adapts: Dark (White), Light (Dark), Cream (Brown)
+
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-900">
-            <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md border border-gray-700">
+        <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white" data-theme={currentTheme}>
+            <div className="bg-gray-800 border-gray-700 p-8 rounded-lg shadow-lg w-full max-w-md border">
                 <div className="text-center mb-8 flex justify-center items-center min-h-[80px]">
                     {logoSrc && (
                         <img
@@ -105,14 +111,14 @@ const Login = () => {
                     <div className="flex space-x-1 border-b border-gray-700 mb-6">
                         <button
                             type="button"
-                            className={`flex-1 pb-2 px-4 flex items-center justify-center font-medium transition-colors ${activeTab === 'ldap' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                            className={`flex-1 pb-2 px-4 flex items-center justify-center font-medium transition-colors ${activeTab === 'ldap' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-400 hover:text-gray-300'}`}
                             onClick={() => setActiveTab('ldap')}
                         >
                             <Users size={18} className="mr-2" /> LDAP
                         </button>
                         <button
                             type="button"
-                            className={`flex-1 pb-2 px-4 flex items-center justify-center font-medium transition-colors ${activeTab === 'core' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                            className={`flex-1 pb-2 px-4 flex items-center justify-center font-medium transition-colors ${activeTab === 'core' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-400 hover:text-gray-300'}`}
                             onClick={() => setActiveTab('core')}
                         >
                             <Shield size={18} className="mr-2" /> CORE
@@ -131,7 +137,7 @@ const Login = () => {
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-gray-900 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                                className="block w-full pl-10 pr-3 py-2 border rounded-md leading-5 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm bg-gray-900 text-gray-300 border-gray-700"
                                 placeholder="Enter username"
                                 required
                             />
@@ -148,7 +154,7 @@ const Login = () => {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-gray-900 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                                className="block w-full pl-10 pr-3 py-2 border rounded-md leading-5 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm bg-gray-900 text-gray-300 border-gray-700"
                                 placeholder="Enter password"
                                 required
                             />
