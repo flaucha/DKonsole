@@ -352,17 +352,6 @@ graph TB
 - **`permissions/`**: Servicio de control de acceso basado en roles (RBAC)
 - **`health/`**: Endpoints de health check (liveness/readiness)
 
-## 🛠️ Development
-
-To run locally:
-
-```bash
-# Backend
-cd backend && go run main.go
-
-# Frontend
-cd frontend && npm run dev
-```
 
 ## License
 
