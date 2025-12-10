@@ -152,11 +152,12 @@ The official image is available at:
 ## 📝 Changelog
 
 ### v1.4.9 (2025-12-10)
-**🎨 Theme Cleanup & Login Fixes**
+**🎨 Theme Cleanup, CI Fixes & Backend Refactor**
 
 - **UI**: Removed "Light" and unused themes; only Dark and Cream remain.
 - **Login**: Fixed Cream theme background color issue.
-- **UX**: Consolidated edit buttons and improved scrollbar styling.
+- **CI**: Fixed frontend test OOM errors with optimized memory limits & exclusions.
+- **Backend**: Massive test coverage increase (100% in k8s) and structural refactoring.
 
 ### v1.4.8 (2025-12-08)
 **🚀 LDAP Integration & UI Enhancements**
@@ -227,6 +228,7 @@ graph TB
 
     subgraph "Backend - Services Layer"
         AuthSvc[auth.Service<br/>Login, Logout, Auth]
+        LdapSvc[ldap.Service<br/>LDAP Auth & Groups]
         ClusterSvc[cluster.Service<br/>Cluster Management]
         K8sSvc[k8s.Service<br/>Resources, Namespaces]
         ApiSvc[api.Service<br/>API Resources, CRDs]
@@ -234,7 +236,9 @@ graph TB
         PodSvc[pod.Service<br/>Logs, Exec, Events]
         PromSvc[prometheus.Service<br/>Metrics & Overview]
         LogoSvc[logo.Service<br/>Custom Branding]
+        SettingsSvc[settings.Service<br/>App Config]
         HealthSvc[health.Handler<br/>Health Checks]
+        PermsSvc[permissions.Service<br/>RBAC]
     end
 
     subgraph "Backend - Shared"
@@ -246,6 +250,7 @@ graph TB
         K8s[Kubernetes API]
         Prometheus[Prometheus]
         FileSystem[File System]
+        LDAP[LDAP Server]
     end
 
     UI -->|HTTP Requests| Main
@@ -253,15 +258,18 @@ graph TB
     AuthMW --> RateLimit
     RateLimit --> CORS
     CORS --> AuthSvc
+    CORS --> LdapSvc
     CORS --> K8sSvc
     CORS --> ApiSvc
     CORS --> HelmSvc
     CORS --> PodSvc
     CORS --> PromSvc
     CORS --> LogoSvc
+    CORS --> SettingsSvc
     CORS --> HealthSvc
 
     AuthSvc --> Models
+    LdapSvc --> Models
     ClusterSvc --> Models
     K8sSvc --> Models
     K8sSvc --> ClusterSvc
@@ -274,14 +282,19 @@ graph TB
     PromSvc --> Models
     PromSvc --> ClusterSvc
     LogoSvc --> Models
+    SettingsSvc --> Models
+    PermsSvc --> Models
 
     K8sSvc --> Utils
     ApiSvc --> Utils
     HelmSvc --> Utils
     PodSvc --> Utils
     AuthSvc --> Utils
+    LdapSvc --> Utils
     PromSvc --> Utils
     LogoSvc --> Utils
+    SettingsSvc --> Utils
+    PermsSvc --> Utils
 
     ClusterSvc --> K8s
     K8sSvc --> K8s
@@ -291,9 +304,12 @@ graph TB
     PodSvc --> Prometheus
     PromSvc --> Prometheus
     LogoSvc --> FileSystem
+    LdapSvc --> LDAP
+    SettingsSvc --> K8s
 
     style Main fill:#e1f5ff
     style AuthSvc fill:#fff4e1
+    style LdapSvc fill:#fff4e1
     style ClusterSvc fill:#fff4e1
     style K8sSvc fill:#fff4e1
     style ApiSvc fill:#fff4e1
@@ -301,12 +317,15 @@ graph TB
     style PodSvc fill:#fff4e1
     style PromSvc fill:#fff4e1
     style LogoSvc fill:#fff4e1
+    style SettingsSvc fill:#fff4e1
     style HealthSvc fill:#fff4e1
+    style PermsSvc fill:#fff4e1
     style Models fill:#e8f5e9
     style Utils fill:#e8f5e9
     style K8s fill:#ffebee
     style Prometheus fill:#ffebee
     style FileSystem fill:#ffebee
+    style LDAP fill:#ffebee
 ```
 
 ### Módulos del Backend
@@ -314,6 +333,7 @@ graph TB
 - **`models/`**: Tipos compartidos y estructuras de datos (Handlers, ClusterConfig, Resource, etc.)
 - **`utils/`**: Funciones auxiliares compartidas (manejo de errores, validaciones, contextos)
 - **`auth/`**: Autenticación y autorización (JWT, Argon2, middleware)
+- **`ldap/`**: Integración con servidores LDAP para autenticación y grupos
 - **`cluster/`**: Gestión de múltiples clusters Kubernetes
 - **`k8s/`**: Operaciones con recursos estándar de Kubernetes (Namespaces, Resources, YAML)
 - **`api/`**: Recursos de API genéricos y CRDs (Custom Resource Definitions)
@@ -321,6 +341,8 @@ graph TB
 - **`pod/`**: Operaciones específicas de pods (logs, exec, events, métricas)
 - **`prometheus/`**: Integración con Prometheus para métricas históricas
 - **`logo/`**: Gestión de logos personalizados
+- **`settings/`**: Gestión de configuración de la aplicación (URL de Prometheus, etc.)
+- **`permissions/`**: Servicio de control de acceso basado en roles (RBAC)
 - **`health/`**: Endpoints de health check (liveness/readiness)
 
 ## 🛠️ Development

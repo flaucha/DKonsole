@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.9] - 2025-12-10
 
+### Added
+- **CI**: Implemented OOM prevention in frontend tests (increased memory limit, sequential execution, exclusion of heavy tests).
+- **Backend**: Achieved 100% test coverage for `internal/k8s` and improved coverage for `pod`, `auth`, `server`, and `middleware` packages.
+
+### Changed
+- **Backend Refactoring**: Comprehensive refactoring of `k8s`, `ldap`, and `pod` packages to reduce complexity and improve maintainability.
+
 ### Fixed
 - **UI:** Removed unused themes (Ocean, Forest, etc.) and the "Light" (White) theme, leaving only "Default" (Dark) and "Cream".
 - **Login:** Fixed "Cream" theme login page displaying dark brown background instead of cream.
