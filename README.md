@@ -4,7 +4,7 @@
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
 ![Version](https://img.shields.io/badge/version-1.4.9-green.svg)
 
-**DKonsole** is a modern, lightweight Kubernetes dashboard built entirely with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
+**DKonsole** is a modern, lightweight Kubernetes dashboard built with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
 <img width="1907" height="903" alt="image" src="https://github.com/user-attachments/assets/d9335687-7fed-4c74-bcff-47bdd7a1c9aa" />
 
