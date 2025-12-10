@@ -1,29 +1,28 @@
 import React, { useState } from 'react';
 import { Activity, Check, X, Layers, AlertTriangle, Clock, Pause, Network, Box } from 'lucide-react';
-import { DetailRow, EditYamlButton } from './CommonDetails';
+import { DetailRow } from './CommonDetails';
 import AssociatedPods from './AssociatedPods';
 
 const TabButton = ({ active, label, onClick }) => (
     <button
         onClick={onClick}
-        className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
-            active
+        className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${active
             ? 'bg-gray-700 text-white shadow-sm'
             : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-        }`}
+            }`}
     >
         {label}
     </button>
 );
 
-export const JobDetails = ({ details, onEditYAML, namespace }) => {
+export const JobDetails = ({ details, namespace }) => {
     const [activeTab, setActiveTab] = useState('details');
     // Job selector can be complex, usually MatchLabels is what we want
     const selector = details.podSelector?.matchLabels || details.podSelector;
 
     return (
         <div className="p-4 bg-gray-900/50 rounded-md mt-2">
-             <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-md mb-4 w-fit">
+            <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-md mb-4 w-fit">
                 <TabButton active={activeTab === 'details'} label="Details" onClick={() => setActiveTab('details')} />
                 <TabButton active={activeTab === 'runs'} label="Runs" onClick={() => setActiveTab('runs')} />
             </div>
@@ -38,9 +37,7 @@ export const JobDetails = ({ details, onEditYAML, namespace }) => {
                         <DetailRow label="Completions" value={details.completions} icon={Layers} />
                         <DetailRow label="Backoff Limit" value={details.backoffLimit} icon={AlertTriangle} />
                     </div>
-                    <div className="flex justify-end mt-4">
-                        <EditYamlButton onClick={onEditYAML} namespace={namespace} />
-                    </div>
+
                 </>
             )}
 
@@ -51,7 +48,7 @@ export const JobDetails = ({ details, onEditYAML, namespace }) => {
     );
 };
 
-export const CronJobDetails = ({ details, onEditYAML }) => (
+export const CronJobDetails = ({ details }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <DetailRow label="Schedule" value={details.schedule} icon={Clock} />
@@ -60,13 +57,11 @@ export const CronJobDetails = ({ details, onEditYAML }) => (
             <DetailRow label="Start Deadline" value={details.startingDeadline} icon={Clock} />
             <DetailRow label="Last Schedule" value={details.lastSchedule} icon={Clock} />
         </div>
-        <div className="flex justify-end mt-4">
-            <EditYamlButton onClick={onEditYAML} />
-        </div>
+
     </div>
 );
 
-export const StatefulSetDetails = ({ details, onEditYAML, namespace }) => {
+export const StatefulSetDetails = ({ details, namespace }) => {
     const [activeTab, setActiveTab] = useState('details');
 
     return (
@@ -86,9 +81,7 @@ export const StatefulSetDetails = ({ details, onEditYAML, namespace }) => {
                         <DetailRow label="Pod Mgmt" value={details.podManagement} icon={Box} />
                         <DetailRow label="Update Strategy" value={details.updateStrategy?.type} icon={Layers} />
                     </div>
-                    <div className="flex justify-end mt-4">
-                        <EditYamlButton onClick={onEditYAML} namespace={namespace} />
-                    </div>
+
                 </>
             )}
 
@@ -99,7 +92,7 @@ export const StatefulSetDetails = ({ details, onEditYAML, namespace }) => {
     );
 };
 
-export const DaemonSetDetails = ({ details, onEditYAML, namespace }) => {
+export const DaemonSetDetails = ({ details, namespace }) => {
     const [activeTab, setActiveTab] = useState('details');
 
     return (
@@ -119,20 +112,18 @@ export const DaemonSetDetails = ({ details, onEditYAML, namespace }) => {
                         <DetailRow label="Updated" value={details.updated} icon={Layers} />
                         <DetailRow label="Misscheduled" value={details.misscheduled} icon={AlertTriangle} />
                     </div>
-                    <div className="flex justify-end mt-4">
-                        <EditYamlButton onClick={onEditYAML} namespace={namespace} />
-                    </div>
+
                 </>
             )}
 
             {activeTab === 'pods' && (
-                 <AssociatedPods namespace={namespace} selector={details.selector} />
+                <AssociatedPods namespace={namespace} selector={details.selector} />
             )}
         </div>
     );
 };
 
-export const HPADetails = ({ details, onEditYAML }) => (
+export const HPADetails = ({ details }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <DetailRow label="Min Replicas" value={details.minReplicas} icon={Layers} />
@@ -142,8 +133,6 @@ export const HPADetails = ({ details, onEditYAML }) => (
             <DetailRow label="Metrics" value={details.metrics ? details.metrics.map((m) => m.type).join(', ') : ''} icon={Activity} />
             <DetailRow label="Last Scale" value={details.lastScaleTime} icon={Clock} />
         </div>
-        <div className="flex justify-end mt-4">
-            <EditYamlButton onClick={onEditYAML} />
-        </div>
+
     </div>
 );

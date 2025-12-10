@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/fake"
@@ -31,7 +33,22 @@ import (
 func newTestRouter(t *testing.T) (*http.ServeMux, *models.Handlers) {
 	t.Helper()
 
-	clientset := k8sfake.NewSimpleClientset(&appsv1.Deployment{})
+	// Set POD_NAMESPACE for k8s repository
+	t.Setenv("POD_NAMESPACE", "default")
+
+	// Create secret with test credentials
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-secret",
+			Namespace: "default",
+		},
+		Data: map[string][]byte{
+			"jwt-secret":          []byte("test-secret"),
+			"admin-username":      []byte("admin"),
+			"admin-password-hash": []byte("$argon2id$v=19$m=65536,t=1,p=2$hash$hash"), // Mock hash
+		},
+	}
+	clientset := k8sfake.NewSimpleClientset(&appsv1.Deployment{}, secret)
 	dyn := fake.NewSimpleDynamicClient(runtime.NewScheme())
 
 	handlersModel := &models.Handlers{

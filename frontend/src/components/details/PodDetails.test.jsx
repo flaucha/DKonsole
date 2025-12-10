@@ -90,7 +90,7 @@ describe('PodDetails', () => {
         expect(screen.getByTestId('detail-row-Restarts')).toHaveTextContent('Restarts: 5');
         // Containers might be rendered as joined string or array, check generic content
         expect(screen.getByText(/container-1/)).toBeInTheDocument();
-        expect(screen.getByText('Edit YAML')).toBeInTheDocument();
+
     });
 
     it('should switch to logs tab', async () => {
@@ -218,9 +218,5 @@ describe('PodDetails', () => {
         expect(screen.getByText('CrashLoopBackOff')).toBeInTheDocument();
     });
 
-    it('should allow editing YAML', () => {
-        render(<PodDetails details={mockDetails} onEditYAML={mockOnEditYAML} pod={mockPod} />);
-        fireEvent.click(screen.getByText('Edit YAML'));
-        expect(mockOnEditYAML).toHaveBeenCalled();
-    });
+
 });

@@ -1,119 +1,310 @@
-?   	github.com/flaucha/DKonsole/backend	[no test files]
-?   	github.com/flaucha/DKonsole/backend/docs	[no test files]
-ok  	github.com/flaucha/DKonsole/backend/internal/api	0.073s
-ok  	github.com/flaucha/DKonsole/backend/internal/auth	2.440s
-ok  	github.com/flaucha/DKonsole/backend/internal/cluster	0.064s
-ok  	github.com/flaucha/DKonsole/backend/internal/health	(cached)
-ok  	github.com/flaucha/DKonsole/backend/internal/helm	0.063s
-ok  	github.com/flaucha/DKonsole/backend/internal/k8s	0.311s
-{"error":"creds error","level":"warning","msg":"Failed to get LDAP service credentials","time":"2025-12-08T18:21:22.400-03:00","type":"warn","username":"user"}
-{"bindDN":"cn=user","level":"info","msg":"Attempting to bind with user credentials","time":"2025-12-08T18:21:22.400-03:00","type":"info","username":"user"}
-{"bindDN":"cn=user","level":"info","msg":"Attempting to bind with user credentials","time":"2025-12-08T18:21:22.401-03:00","type":"info","username":"user"}
-{"bindDN":"cn=user","error":"invalid password","level":"warning","msg":"Failed to bind with user credentials","time":"2025-12-08T18:21:22.401-03:00","type":"warn","username":"user"}
-{"bindDN":"cn=user","level":"info","msg":"Attempting to bind with user credentials","time":"2025-12-08T18:21:22.401-03:00","type":"info","username":"user"}
-{"bindDN":"cn=user","level":"info","msg":"User authenticated successfully","time":"2025-12-08T18:21:22.401-03:00","type":"info","username":"user"}
-{"error":"failed to dial LDAP server: dial fail","level":"warning","msg":"Failed to pre-populate LDAP connection pool","time":"2025-12-08T18:21:22.401-03:00","type":"warn"}
-{"error":"could not determine namespace: service account file not found and POD_NAMESPACE not set","level":"warning","msg":"Failed to get current namespace, using default","time":"2025-12-08T18:21:22.402-03:00","type":"warn"}
-{"error":"could not determine namespace: service account file not found and POD_NAMESPACE not set","level":"warning","msg":"Failed to get current namespace, using default","time":"2025-12-08T18:21:22.402-03:00","type":"warn"}
-{"error":"failed to dial LDAP server: LDAP Result Code 200 \"Network Error\": dial tcp 23.220.75.232:389: i/o timeout","level":"warning","msg":"Failed to pre-populate LDAP connection pool","time":"2025-12-08T18:22:22.412-03:00","type":"warn"}
-{"level":"info","msg":"Username is already a DN","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"uid=test,dc=example,dc=com"}
-{"level":"info","msg":"Searching for user groups","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"uid=test,dc=example,dc=com"}
-{"level":"info","msg":"Searching for memberOf attribute","scope":"base","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"uid=test,dc=example,dc=com"}
-{"attributes":["memberOf"],"level":"info","msg":"User entry attributes","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"uid=test,dc=example,dc=com"}
-{"level":"info","memberOf":["cn=dev,ou=groups"],"memberOf_count":1,"msg":"Found memberOf attributes","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"uid=test,dc=example,dc=com"}
-{"groups":["dev"],"level":"info","msg":"Extracted groups from memberOf","time":"2025-12-08T18:22:22.412-03:00","type":"info","username":"uid=test,dc=example,dc=com"}
-{"level":"info","msg":"Found user DN","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"level":"info","msg":"Searching for user groups","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"level":"info","msg":"Searching for memberOf attribute","scope":"base","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"attributes":["memberOf"],"level":"info","msg":"User entry attributes","time":"2025-12-08T18:22:22.412-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"level":"info","memberOf":["cn=admin,ou=groups","ou=editors,ou=groups","cn=viewers,ou=other"],"memberOf_count":3,"msg":"Found memberOf attributes","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"groups":["admin","editors","viewers"],"level":"info","msg":"Extracted groups from memberOf","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"test"}
-{"level":"info","msg":"Found user DN","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"level":"info","msg":"Searching for user groups","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"level":"info","msg":"Searching for memberOf attribute","scope":"base","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"attributes":["cn"],"level":"info","msg":"User entry attributes","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"level":"info","memberOf":[],"memberOf_count":0,"msg":"Found memberOf attributes","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"available_attributes":["cn"],"level":"warning","msg":"User has no memberOf attributes","time":"2025-12-08T18:22:22.413-03:00","type":"warn","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"groups":[],"level":"info","msg":"Extracted groups from memberOf","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"test"}
-{"level":"warning","msg":"No groups found from memberOf, trying fallback search","time":"2025-12-08T18:22:22.413-03:00","type":"warn","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"groupDN":"ou=groups,dc=example,dc=com","level":"info","msg":"Trying fallback search for groups","searchFilter":"(|(member=uid=test,dc=example,dc=com)(uniqueMember=uid=test,dc=example,dc=com))","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"entry_count":1,"level":"info","msg":"Fallback search completed","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"groups":["dev"],"level":"info","msg":"Groups extracted from fallback search","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"test"}
-{"level":"info","msg":"Found user DN","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"level":"info","msg":"Searching for user groups","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"level":"info","msg":"Searching for memberOf attribute","scope":"base","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"error":"search fail","level":"warning","msg":"Failed to search user for memberOf","time":"2025-12-08T18:22:22.413-03:00","type":"warn","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"level":"warning","msg":"No groups found from memberOf, trying fallback search","time":"2025-12-08T18:22:22.413-03:00","type":"warn","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"groupDN":"ou=groups,dc=example,dc=com","level":"info","msg":"Trying fallback search for groups","searchFilter":"(|(member=uid=test,dc=example,dc=com)(uniqueMember=uid=test,dc=example,dc=com))","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"error":"search fail","level":"warning","msg":"Fallback search failed","time":"2025-12-08T18:22:22.413-03:00","type":"warn","userDN":"uid=test,dc=example,dc=com","username":"test"}
-{"level":"info","msg":"ValidateUserGroup called","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
-{"level":"info","msg":"No required group configured, allowing user","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
-{"level":"info","msg":"ValidateUserGroup called","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
-{"level":"info","msg":"Required group is configured","required_group":"admins","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
-{"level":"info","msg":"GetUserGroups called","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
-{"level":"info","msg":"Got service credentials","service_username":"svc","time":"2025-12-08T18:22:22.413-03:00","type":"info"}
-{"level":"info","msg":"Found user DN","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
-{"level":"info","msg":"Searching for user groups","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
-{"level":"info","msg":"Searching for memberOf attribute","scope":"base","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
-{"attributes":["memberOf"],"level":"info","msg":"User entry attributes","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
-{"level":"info","memberOf":["cn=devs,ou=groups","cn=admins,ou=groups"],"memberOf_count":2,"msg":"Found memberOf attributes","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
-{"groups":["devs","admins"],"level":"info","msg":"Extracted groups from memberOf","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
-{"level":"info","msg":"Validating user group membership","required_group":"admins","time":"2025-12-08T18:22:22.413-03:00","type":"info","user_groups":["devs","admins"],"username":"user"}
-{"level":"info","msg":"User belongs to required group","required_group":"admins","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
-{"level":"info","msg":"ValidateUserGroup called","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
-{"level":"info","msg":"Required group is configured","required_group":"superusers","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
-{"level":"info","msg":"GetUserGroups called","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
-{"level":"info","msg":"Got service credentials","service_username":"svc","time":"2025-12-08T18:22:22.413-03:00","type":"info"}
-{"level":"info","msg":"Found user DN","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
-{"level":"info","msg":"Searching for user groups","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
-{"level":"info","msg":"Searching for memberOf attribute","scope":"base","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
-{"attributes":["memberOf"],"level":"info","msg":"User entry attributes","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
-{"level":"info","memberOf":["cn=devs,ou=groups","cn=admins,ou=groups"],"memberOf_count":2,"msg":"Found memberOf attributes","time":"2025-12-08T18:22:22.413-03:00","type":"info","userDN":"cn=user,dc=example","username":"user"}
-{"groups":["devs","admins"],"level":"info","msg":"Extracted groups from memberOf","time":"2025-12-08T18:22:22.413-03:00","type":"info","username":"user"}
-{"level":"info","msg":"Validating user group membership","required_group":"superusers","time":"2025-12-08T18:22:22.413-03:00","type":"info","user_groups":["devs","admins"],"username":"user"}
-{"level":"warning","msg":"User does not belong to required group","required_group":"superusers","time":"2025-12-08T18:22:22.413-03:00","type":"warn","user_groups":["devs","admins"],"username":"user"}
-{"level":"warning","msg":"LDAP InsecureSkipVerify enabled - TLS certificate verification is disabled","time":"2025-12-08T18:22:22.414-03:00","type":"warn","url":"ldap://example.com"}
-{"enabled":true,"hasCACert":false,"insecureSkipVerify":true,"level":"info","msg":"LDAP config updated","time":"2025-12-08T18:22:22.414-03:00","type":"info","url":"ldap://example.com"}
-{"error":"invalid character 'i' looking for beginning of object key string","level":"warning","msg":"Failed to decode LDAP groups request","time":"2025-12-08T18:22:22.414-03:00","type":"warn"}
-{"groups_count":1,"level":"info","msg":"LDAP groups updated","time":"2025-12-08T18:22:22.414-03:00","type":"info"}
-{"level":"info","msg":"LDAP credentials updated","time":"2025-12-08T18:22:22.414-03:00","type":"info","username":"admin"}
-{"error":"failed to dial LDAP server: conn fail","level":"warning","msg":"Failed to pre-populate LDAP connection pool","time":"2025-12-08T18:22:22.414-03:00","type":"warn"}
-{"admin_group":"admin-group","level":"info","msg":"GetUserPermissions: user is admin group member, returning nil permissions","time":"2025-12-08T18:22:22.415-03:00","type":"info"}
-{"level":"info","msg":"Created Secret for LDAP config","namespace":"ns","secret_name":"ldap-config","time":"2025-12-08T18:22:22.415-03:00","type":"info"}
-{"enabled":true,"level":"info","msg":"Updated LDAP config in Secret","namespace":"ns","secret_name":"ldap-config","time":"2025-12-08T18:22:22.415-03:00","type":"info"}
-{"level":"info","msg":"Created Secret for LDAP groups","namespace":"ns","secret_name":"ldap-config","time":"2025-12-08T18:22:22.415-03:00","type":"info"}
-{"level":"info","msg":"Created Secret for LDAP credentials","namespace":"ns","secret_name":"ldap-config","time":"2025-12-08T18:22:22.416-03:00","type":"info"}
-{"error":"failed to rebuild TLS config: failed to parse CA certificate","level":"warning","msg":"Failed to update LDAP client config, recreating","time":"2025-12-08T18:22:22.416-03:00","type":"warn"}
---- FAIL: TestService_InitializeClient_UpdateError (0.00s)
-panic: close of closed channel [recovered, repanicked]
-
-goroutine 165 [running]:
-testing.tRunner.func1.2({0x1289780, 0x168cb50})
-	/usr/local/go/src/testing/testing.go:1872 +0x237
-testing.tRunner.func1()
-	/usr/local/go/src/testing/testing.go:1875 +0x35b
-panic({0x1289780?, 0x168cb50?})
-	/usr/local/go/src/runtime/panic.go:783 +0x132
-github.com/flaucha/DKonsole/backend/internal/ldap.(*connectionPool).close(0xc0003bfdc0)
-	/home/flaucha/repos/DKonsole/backend/internal/ldap/client.go:206 +0x77
-github.com/flaucha/DKonsole/backend/internal/ldap.(*LDAPClient).Close(...)
-	/home/flaucha/repos/DKonsole/backend/internal/ldap/client.go:227
-github.com/flaucha/DKonsole/backend/internal/ldap.(*Service).initializeClient(0xc00020d6b0, {0x16a8488, 0x1f22d80})
-	/home/flaucha/repos/DKonsole/backend/internal/ldap/service.go:60 +0x27f
-github.com/flaucha/DKonsole/backend/internal/ldap.TestService_InitializeClient_UpdateError(0xc000309dc0)
-	/home/flaucha/repos/DKonsole/backend/internal/ldap/service_coverage_test.go:84 +0x199
-testing.tRunner(0xc000309dc0, 0x15802b0)
-	/usr/local/go/src/testing/testing.go:1934 +0xea
-created by testing.(*T).Run in goroutine 1
-	/usr/local/go/src/testing/testing.go:1997 +0x465
-FAIL	github.com/flaucha/DKonsole/backend/internal/ldap	60.084s
-ok  	github.com/flaucha/DKonsole/backend/internal/logo	(cached)
-ok  	github.com/flaucha/DKonsole/backend/internal/middleware	(cached)
-ok  	github.com/flaucha/DKonsole/backend/internal/models	(cached)
-ok  	github.com/flaucha/DKonsole/backend/internal/permissions	0.033s
-ok  	github.com/flaucha/DKonsole/backend/internal/pod	0.031s
-ok  	github.com/flaucha/DKonsole/backend/internal/prometheus	0.055s
-ok  	github.com/flaucha/DKonsole/backend/internal/server	0.085s
-ok  	github.com/flaucha/DKonsole/backend/internal/settings	0.053s
-ok  	github.com/flaucha/DKonsole/backend/internal/utils	(cached)
+{"fields.level":"warning","level":"warning","msg":"Generated random JWT_SECRET for non-production (set JWT_SECRET to persist sessions)","time":"2025-12-09T21:05:15.246-03:00","type":"warn"}
+=== RUN   TestClusterStatsService_GetClusterStats
+=== RUN   TestClusterStatsService_GetClusterStats/successful_stats_retrieval
+=== RUN   TestClusterStatsService_GetClusterStats/partial_errors_-_some_stats_succeed
+{"error":"failed to get pod count","level":"error","message":"Error fetching pod count","msg":"Error fetching pod count","resource":"pods","time":"2025-12-09T21:05:15.246-03:00","type":"error"}
+{"error":"failed to get service count","level":"error","message":"Error fetching service count","msg":"Error fetching service count","resource":"services","time":"2025-12-09T21:05:15.246-03:00","type":"error"}
+=== RUN   TestClusterStatsService_GetClusterStats/all_stats_succeed
+--- PASS: TestClusterStatsService_GetClusterStats (0.00s)
+    --- PASS: TestClusterStatsService_GetClusterStats/successful_stats_retrieval (0.00s)
+    --- PASS: TestClusterStatsService_GetClusterStats/partial_errors_-_some_stats_succeed (0.00s)
+    --- PASS: TestClusterStatsService_GetClusterStats/all_stats_succeed (0.00s)
+=== RUN   TestK8sCronJobRepository
+--- PASS: TestK8sCronJobRepository (0.00s)
+=== RUN   TestService_TriggerCronJobHandler
+--- PASS: TestService_TriggerCronJobHandler (0.00s)
+=== RUN   TestService_TriggerCronJobHandler_Errors
+=== RUN   TestService_TriggerCronJobHandler_Errors/missing_client
+=== RUN   TestService_TriggerCronJobHandler_Errors/invalid_body
+--- PASS: TestService_TriggerCronJobHandler_Errors (0.00s)
+    --- PASS: TestService_TriggerCronJobHandler_Errors/missing_client (0.00s)
+    --- PASS: TestService_TriggerCronJobHandler_Errors/invalid_body (0.00s)
+=== RUN   TestCronJobService_TriggerCronJob
+=== RUN   TestCronJobService_TriggerCronJob/successful_trigger
+=== RUN   TestCronJobService_TriggerCronJob/cronjob_not_found
+=== RUN   TestCronJobService_TriggerCronJob/create_job_fails
+--- PASS: TestCronJobService_TriggerCronJob (0.00s)
+    --- PASS: TestCronJobService_TriggerCronJob/successful_trigger (0.00s)
+    --- PASS: TestCronJobService_TriggerCronJob/cronjob_not_found (0.00s)
+    --- PASS: TestCronJobService_TriggerCronJob/create_job_fails (0.00s)
+=== RUN   TestDeploymentService_ScaleDeployment
+=== RUN   TestDeploymentService_ScaleDeployment/scale_up_successfully
+=== RUN   TestDeploymentService_ScaleDeployment/scale_down_successfully
+=== RUN   TestDeploymentService_ScaleDeployment/scale_to_zero_when_delta_is_negative_enough
+=== RUN   TestDeploymentService_ScaleDeployment/scale_from_zero
+=== RUN   TestDeploymentService_ScaleDeployment/get_scale_error
+=== RUN   TestDeploymentService_ScaleDeployment/update_scale_error
+--- PASS: TestDeploymentService_ScaleDeployment (0.00s)
+    --- PASS: TestDeploymentService_ScaleDeployment/scale_up_successfully (0.00s)
+    --- PASS: TestDeploymentService_ScaleDeployment/scale_down_successfully (0.00s)
+    --- PASS: TestDeploymentService_ScaleDeployment/scale_to_zero_when_delta_is_negative_enough (0.00s)
+    --- PASS: TestDeploymentService_ScaleDeployment/scale_from_zero (0.00s)
+    --- PASS: TestDeploymentService_ScaleDeployment/get_scale_error (0.00s)
+    --- PASS: TestDeploymentService_ScaleDeployment/update_scale_error (0.00s)
+=== RUN   TestDeploymentService_RolloutDeployment
+=== RUN   TestDeploymentService_RolloutDeployment/rollout_successful
+=== RUN   TestDeploymentService_RolloutDeployment/deployment_not_found
+=== RUN   TestDeploymentService_RolloutDeployment/update_deployment_error
+=== RUN   TestDeploymentService_RolloutDeployment/rollout_with_existing_annotations
+--- PASS: TestDeploymentService_RolloutDeployment (0.00s)
+    --- PASS: TestDeploymentService_RolloutDeployment/rollout_successful (0.00s)
+    --- PASS: TestDeploymentService_RolloutDeployment/deployment_not_found (0.00s)
+    --- PASS: TestDeploymentService_RolloutDeployment/update_deployment_error (0.00s)
+    --- PASS: TestDeploymentService_RolloutDeployment/rollout_with_existing_annotations (0.00s)
+=== RUN   TestServiceFactory_CreateServices
+--- PASS: TestServiceFactory_CreateServices (0.00s)
+=== RUN   TestImportService_ImportResources
+=== RUN   TestImportService_ImportResources/empty_YAML
+=== RUN   TestImportService_ImportResources/missing_kind
+=== RUN   TestImportService_ImportResources/system_namespace_blocked
+--- PASS: TestImportService_ImportResources (0.00s)
+    --- PASS: TestImportService_ImportResources/empty_YAML (0.00s)
+    --- PASS: TestImportService_ImportResources/missing_kind (0.00s)
+    --- PASS: TestImportService_ImportResources/system_namespace_blocked (0.00s)
+=== RUN   TestGetResourceYAML_Handler
+--- PASS: TestGetResourceYAML_Handler (0.00s)
+=== RUN   TestGetResourceYAML_Handler_Success
+--- PASS: TestGetResourceYAML_Handler_Success (0.00s)
+=== RUN   TestGetResourceYAML_MissingParams
+--- PASS: TestGetResourceYAML_MissingParams (0.00s)
+=== RUN   TestGetNamespacesHandler_Success
+--- PASS: TestGetNamespacesHandler_Success (0.06s)
+=== RUN   TestGetNamespacesHandler_ClusterNotFound
+--- PASS: TestGetNamespacesHandler_ClusterNotFound (0.00s)
+=== RUN   TestGetNamespacesHandler_ServiceError
+--- PASS: TestGetNamespacesHandler_ServiceError (0.00s)
+=== RUN   TestGetResourcesHandler_Success
+--- PASS: TestGetResourcesHandler_Success (0.00s)
+=== RUN   TestGetResourcesHandler_AccessDenied
+--- PASS: TestGetResourcesHandler_AccessDenied (0.00s)
+=== RUN   TestGetResourcesHandler_MissingKind
+--- PASS: TestGetResourcesHandler_MissingKind (0.00s)
+=== RUN   TestGetResourcesHandler_ClusterNotFound
+--- PASS: TestGetResourcesHandler_ClusterNotFound (0.00s)
+=== RUN   TestGetResourcesHandler_InternalError
+--- PASS: TestGetResourcesHandler_InternalError (0.00s)
+=== RUN   TestScaleResourceHandler_Success
+--- PASS: TestScaleResourceHandler_Success (0.00s)
+=== RUN   TestScaleResourceHandler_InvalidDelta
+--- PASS: TestScaleResourceHandler_InvalidDelta (0.00s)
+=== RUN   TestScaleResourceHandler_Forbidden
+--- PASS: TestScaleResourceHandler_Forbidden (0.00s)
+=== RUN   TestScaleResourceHandler_ValidationErrors
+=== RUN   TestScaleResourceHandler_ValidationErrors/method_not_allowed
+=== RUN   TestScaleResourceHandler_ValidationErrors/unsupported_kind
+=== RUN   TestScaleResourceHandler_ValidationErrors/missing_name
+=== RUN   TestScaleResourceHandler_ValidationErrors/invalid_name
+=== RUN   TestScaleResourceHandler_ValidationErrors/invalid_namespace
+=== RUN   TestScaleResourceHandler_ValidationErrors/missing_delta
+=== RUN   TestScaleResourceHandler_ValidationErrors/zero_delta
+=== RUN   TestScaleResourceHandler_ValidationErrors/cluster_not_found
+--- PASS: TestScaleResourceHandler_ValidationErrors (0.00s)
+    --- PASS: TestScaleResourceHandler_ValidationErrors/method_not_allowed (0.00s)
+    --- PASS: TestScaleResourceHandler_ValidationErrors/unsupported_kind (0.00s)
+    --- PASS: TestScaleResourceHandler_ValidationErrors/missing_name (0.00s)
+    --- PASS: TestScaleResourceHandler_ValidationErrors/invalid_name (0.00s)
+    --- PASS: TestScaleResourceHandler_ValidationErrors/invalid_namespace (0.00s)
+    --- PASS: TestScaleResourceHandler_ValidationErrors/missing_delta (0.00s)
+    --- PASS: TestScaleResourceHandler_ValidationErrors/zero_delta (0.00s)
+    --- PASS: TestScaleResourceHandler_ValidationErrors/cluster_not_found (0.00s)
+=== RUN   TestScaleResourceHandler_ServiceError
+--- PASS: TestScaleResourceHandler_ServiceError (0.00s)
+=== RUN   TestGetClusterStatsHandler_Success
+--- PASS: TestGetClusterStatsHandler_Success (0.00s)
+=== RUN   TestGetClusterStatsHandler_Error
+{"error":"boom","level":"error","message":"Error fetching node count","msg":"Error fetching node count","resource":"nodes","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
+{"error":"boom","level":"error","message":"Error fetching namespace count","msg":"Error fetching namespace count","resource":"namespaces","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
+{"error":"boom","level":"error","message":"Error fetching pod count","msg":"Error fetching pod count","resource":"pods","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
+{"error":"boom","level":"error","message":"Error fetching deployment count","msg":"Error fetching deployment count","resource":"deployments","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
+{"error":"boom","level":"error","message":"Error fetching service count","msg":"Error fetching service count","resource":"services","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
+{"error":"boom","level":"error","message":"Error fetching ingress count","msg":"Error fetching ingress count","resource":"ingresses","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
+{"error":"boom","level":"error","message":"Error fetching PVC count","msg":"Error fetching PVC count","resource":"pvcs","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
+{"error":"boom","level":"error","message":"Error fetching PV count","msg":"Error fetching PV count","resource":"pvs","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
+--- PASS: TestGetClusterStatsHandler_Error (0.00s)
+=== RUN   TestGetClusterStatsHandler_ClusterNotFound
+--- PASS: TestGetClusterStatsHandler_ClusterNotFound (0.00s)
+=== RUN   TestRolloutDeploymentHandler
+=== RUN   TestRolloutDeploymentHandler/success
+=== RUN   TestRolloutDeploymentHandler/method_not_allowed
+=== RUN   TestRolloutDeploymentHandler/invalid_json
+=== RUN   TestRolloutDeploymentHandler/missing_params
+=== RUN   TestRolloutDeploymentHandler/invalid_name
+=== RUN   TestRolloutDeploymentHandler/forbidden
+=== RUN   TestRolloutDeploymentHandler/service_error
+=== RUN   TestRolloutDeploymentHandler/cluster_not_found
+--- PASS: TestRolloutDeploymentHandler (0.00s)
+    --- PASS: TestRolloutDeploymentHandler/success (0.00s)
+    --- PASS: TestRolloutDeploymentHandler/method_not_allowed (0.00s)
+    --- PASS: TestRolloutDeploymentHandler/invalid_json (0.00s)
+    --- PASS: TestRolloutDeploymentHandler/missing_params (0.00s)
+    --- PASS: TestRolloutDeploymentHandler/invalid_name (0.00s)
+    --- PASS: TestRolloutDeploymentHandler/forbidden (0.00s)
+    --- PASS: TestRolloutDeploymentHandler/service_error (0.00s)
+    --- PASS: TestRolloutDeploymentHandler/cluster_not_found (0.00s)
+=== RUN   TestResourceListService_ListPods_WithMetrics
+    list_core_new_test.go:83: expected CPU 100m, got 
+    list_core_new_test.go:88: expected Memory 100.0Mi, got 
+--- FAIL: TestResourceListService_ListPods_WithMetrics (0.00s)
+=== RUN   TestListPods
+--- PASS: TestListPods (0.00s)
+=== RUN   TestListServices
+--- PASS: TestListServices (0.00s)
+=== RUN   TestResourceListService_ListIngresses
+--- PASS: TestResourceListService_ListIngresses (0.00s)
+=== RUN   TestResourceListService_ListServices_ExternalIPs
+--- PASS: TestResourceListService_ListServices_ExternalIPs (0.00s)
+=== RUN   TestListRoles
+--- PASS: TestListRoles (0.00s)
+=== RUN   TestListPVCs
+--- PASS: TestListPVCs (0.00s)
+=== RUN   TestListDeployments
+--- PASS: TestListDeployments (0.00s)
+=== RUN   TestNamespaceService_GetNamespaces
+=== RUN   TestNamespaceService_GetNamespaces/successful_list_all_namespaces_(admin)
+=== RUN   TestNamespaceService_GetNamespaces/repository_error
+=== RUN   TestNamespaceService_GetNamespaces/empty_namespaces_list
+--- PASS: TestNamespaceService_GetNamespaces (0.00s)
+    --- PASS: TestNamespaceService_GetNamespaces/successful_list_all_namespaces_(admin) (0.00s)
+    --- PASS: TestNamespaceService_GetNamespaces/repository_error (0.00s)
+    --- PASS: TestNamespaceService_GetNamespaces/empty_namespaces_list (0.00s)
+=== RUN   TestK8sClusterStatsRepository_Counts
+--- PASS: TestK8sClusterStatsRepository_Counts (0.00s)
+=== RUN   TestK8sDeploymentRepository
+--- PASS: TestK8sDeploymentRepository (0.00s)
+=== RUN   TestResourceListService_ListResources_PermissionDenied
+--- PASS: TestResourceListService_ListResources_PermissionDenied (0.00s)
+=== RUN   TestResourceListService_ListResources_FiltersByPermissions
+--- PASS: TestResourceListService_ListResources_FiltersByPermissions (0.00s)
+=== RUN   TestResourceListService_ListResources_NoUser
+--- PASS: TestResourceListService_ListResources_NoUser (0.00s)
+=== RUN   TestResourceListService_ListResources_ManyKinds
+=== RUN   TestResourceListService_ListResources_ManyKinds/secret
+=== RUN   TestResourceListService_ListResources_ManyKinds/job
+=== RUN   TestResourceListService_ListResources_ManyKinds/cronjob
+=== RUN   TestResourceListService_ListResources_ManyKinds/statefulset
+=== RUN   TestResourceListService_ListResources_ManyKinds/daemonset
+=== RUN   TestResourceListService_ListResources_ManyKinds/hpa
+=== RUN   TestResourceListService_ListResources_ManyKinds/ingress
+=== RUN   TestResourceListService_ListResources_ManyKinds/serviceaccount
+=== RUN   TestResourceListService_ListResources_ManyKinds/role
+=== RUN   TestResourceListService_ListResources_ManyKinds/clusterrole
+=== RUN   TestResourceListService_ListResources_ManyKinds/rolebinding
+=== RUN   TestResourceListService_ListResources_ManyKinds/clusterrolebinding
+=== RUN   TestResourceListService_ListResources_ManyKinds/networkpolicy
+=== RUN   TestResourceListService_ListResources_ManyKinds/pvc
+=== RUN   TestResourceListService_ListResources_ManyKinds/pv
+=== RUN   TestResourceListService_ListResources_ManyKinds/storageclass
+=== RUN   TestResourceListService_ListResources_ManyKinds/resourcequota
+=== RUN   TestResourceListService_ListResources_ManyKinds/limitrange
+--- PASS: TestResourceListService_ListResources_ManyKinds (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/secret (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/job (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/cronjob (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/statefulset (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/daemonset (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/hpa (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/ingress (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/serviceaccount (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/role (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/clusterrole (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/rolebinding (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/clusterrolebinding (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/networkpolicy (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/pvc (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/pv (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/storageclass (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/resourcequota (0.00s)
+    --- PASS: TestResourceListService_ListResources_ManyKinds/limitrange (0.00s)
+=== RUN   TestUpdateResourceYAMLHandler_Success
+--- PASS: TestUpdateResourceYAMLHandler_Success (0.00s)
+=== RUN   TestUpdateResourceYAMLHandler_MissingParams
+--- PASS: TestUpdateResourceYAMLHandler_MissingParams (0.00s)
+=== RUN   TestUpdateResourceYAMLHandler_Forbidden
+--- PASS: TestUpdateResourceYAMLHandler_Forbidden (0.00s)
+=== RUN   TestCreateResourceYAMLHandler_Success
+--- PASS: TestCreateResourceYAMLHandler_Success (0.00s)
+=== RUN   TestCreateResourceYAMLHandler_ClusterNotFound
+--- PASS: TestCreateResourceYAMLHandler_ClusterNotFound (0.00s)
+=== RUN   TestDryRunResourceYAML_InvalidYAML
+--- PASS: TestDryRunResourceYAML_InvalidYAML (0.00s)
+=== RUN   TestDryRunResourceYAML_ClusterNotFound
+--- PASS: TestDryRunResourceYAML_ClusterNotFound (0.00s)
+=== RUN   TestValidateResourceYAML_MissingKind
+--- PASS: TestValidateResourceYAML_MissingKind (0.00s)
+=== RUN   TestServerSideApply_ClusterError
+--- PASS: TestServerSideApply_ClusterError (0.00s)
+=== RUN   TestImportResourceYAMLHandler_Success
+--- PASS: TestImportResourceYAMLHandler_Success (0.00s)
+=== RUN   TestStreamResourceCreation_Success
+--- PASS: TestStreamResourceCreation_Success (0.00s)
+=== RUN   TestStreamResourceCreation_Error
+--- PASS: TestStreamResourceCreation_Error (0.00s)
+=== RUN   TestDeleteResourceHandler_Success
+--- PASS: TestDeleteResourceHandler_Success (0.00s)
+=== RUN   TestDeleteResourceHandler_Forbidden
+--- PASS: TestDeleteResourceHandler_Forbidden (0.00s)
+=== RUN   TestDeleteResourceHandler_MissingParams
+--- PASS: TestDeleteResourceHandler_MissingParams (0.00s)
+=== RUN   TestWatchResources_Success
+--- PASS: TestWatchResources_Success (0.00s)
+=== RUN   TestWatchResources_StartWatchError
+--- PASS: TestWatchResources_StartWatchError (0.00s)
+=== RUN   TestDryRunResourceYAML_Success
+--- PASS: TestDryRunResourceYAML_Success (0.00s)
+=== RUN   TestValidateResourceYAML_Success
+--- PASS: TestValidateResourceYAML_Success (0.00s)
+=== RUN   TestServerSideApply_Success
+--- PASS: TestServerSideApply_Success (0.00s)
+=== RUN   TestK8sResourceRepository_CRUD
+--- PASS: TestK8sResourceRepository_CRUD (0.00s)
+=== RUN   TestK8sResourceRepository_Errors
+--- PASS: TestK8sResourceRepository_Errors (0.00s)
+=== RUN   TestResolveGVR
+--- PASS: TestResolveGVR (0.00s)
+=== RUN   TestNewK8sGVRResolver
+--- PASS: TestNewK8sGVRResolver (0.00s)
+=== RUN   TestResourceService_GetResourceYAML
+--- PASS: TestResourceService_GetResourceYAML (0.00s)
+=== RUN   TestResourceService_UpdateResource_Success
+--- PASS: TestResourceService_UpdateResource_Success (0.00s)
+=== RUN   TestResourceService_UpdateResource_InvalidYAML
+--- PASS: TestResourceService_UpdateResource_InvalidYAML (0.00s)
+=== RUN   TestResourceService_UpdateResource_PermissionDenied
+--- PASS: TestResourceService_UpdateResource_PermissionDenied (0.00s)
+=== RUN   TestResourceService_DeleteResource_RequiresNamespace
+--- PASS: TestResourceService_DeleteResource_RequiresNamespace (0.00s)
+=== RUN   TestResourceService_DeleteResource_Success
+--- PASS: TestResourceService_DeleteResource_Success (0.00s)
+=== RUN   TestResourceService_CreateResource_DefaultNamespace
+--- PASS: TestResourceService_CreateResource_DefaultNamespace (0.00s)
+=== RUN   TestResourceListService_listNodes
+--- PASS: TestResourceListService_listNodes (0.00s)
+=== RUN   TestResourceListService_listPods
+--- PASS: TestResourceListService_listPods (0.00s)
+=== RUN   TestResourceListService_listConfigMaps
+--- PASS: TestResourceListService_listConfigMaps (0.00s)
+=== RUN   TestResourceListService_listServices
+--- PASS: TestResourceListService_listServices (0.00s)
+=== RUN   TestResourceListService_DeniesNamespaceWithoutAccess
+--- PASS: TestResourceListService_DeniesNamespaceWithoutAccess (0.00s)
+=== RUN   TestResourceListService_AllNamespacesFilteredAndSelector
+--- PASS: TestResourceListService_AllNamespacesFilteredAndSelector (0.00s)
+=== RUN   TestResourceListService_FailsWithoutUserContext
+--- PASS: TestResourceListService_FailsWithoutUserContext (0.00s)
+=== RUN   TestWatchService_TransformEvent
+=== RUN   TestWatchService_TransformEvent/valid_ADD_event
+=== RUN   TestWatchService_TransformEvent/valid_MODIFIED_event
+=== RUN   TestWatchService_TransformEvent/valid_DELETED_event
+=== RUN   TestWatchService_TransformEvent/cluster-scoped_resource_(no_namespace)
+=== RUN   TestWatchService_TransformEvent/invalid_object_type
+--- PASS: TestWatchService_TransformEvent (0.00s)
+    --- PASS: TestWatchService_TransformEvent/valid_ADD_event (0.00s)
+    --- PASS: TestWatchService_TransformEvent/valid_MODIFIED_event (0.00s)
+    --- PASS: TestWatchService_TransformEvent/valid_DELETED_event (0.00s)
+    --- PASS: TestWatchService_TransformEvent/cluster-scoped_resource_(no_namespace) (0.00s)
+    --- PASS: TestWatchService_TransformEvent/invalid_object_type (0.00s)
+=== RUN   TestWatchService_StartWatch
+--- PASS: TestWatchService_StartWatch (0.00s)
+FAIL
+FAIL	github.com/flaucha/DKonsole/backend/internal/k8s	0.094s
 FAIL

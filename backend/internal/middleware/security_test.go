@@ -124,3 +124,25 @@ func TestBuildCSP(t *testing.T) {
 		})
 	}
 }
+
+func TestSecurityHeadersHandler(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	handler := SecurityHeadersHandler(mux)
+	req := httptest.NewRequest("GET", "/", nil)
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("SecurityHeadersHandler status = %v, want %v", rr.Code, http.StatusOK)
+	}
+
+	// Verify at least one security header
+	if rr.Header().Get("X-Content-Type-Options") != "nosniff" {
+		t.Error("SecurityHeadersHandler missing security headers")
+	}
+}

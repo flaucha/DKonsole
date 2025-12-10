@@ -2,7 +2,6 @@ import React from 'react';
 import { Search, X, RefreshCw, Columns } from 'lucide-react';
 
 const WorkloadToolbar = ({
-    kind,
     filter,
     setFilter,
     isSearchFocused,

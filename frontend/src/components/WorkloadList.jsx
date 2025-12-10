@@ -1,134 +1,77 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useSettings } from '../context/SettingsContext';
-import { useAuth } from '../context/AuthContext';
-import { useWorkloads } from '../hooks/useWorkloads';
-import { useColumnOrder } from '../hooks/useColumnOrder';
-import { useWorkloadActions } from '../hooks/useWorkloadActions';
+import React, { useMemo } from 'react';
+import { useWorkloadListState } from '../hooks/useWorkloadListState';
 import useWorkloadColumns from '../hooks/useWorkloadColumns';
+import { useColumnOrder } from '../hooks/useColumnOrder';
 import { getIcon } from '../utils/workloadUtils';
 import { RefreshCw } from 'lucide-react';
 
+// Components
 import YamlEditor from './YamlEditor';
-import { DataEditor } from './details/DataEditor';
-
-// Cells and Modals
 import ActionsCell from './workloads/cells/ActionsCell';
-import DeleteConfirmationModal from './workloads/modals/DeleteConfirmationModal';
-import RolloutConfirmationModal from './workloads/modals/RolloutConfirmationModal';
-import JobCreatedModal from './workloads/modals/JobCreatedModal';
 import WorkloadToolbar from './workloads/WorkloadToolbar';
 import WorkloadTable from './workloads/WorkloadTable';
+import WorkloadModals from './WorkloadModals';
 
 const WorkloadList = ({ namespace, kind }) => {
-    const [expandedId, setExpandedId] = useState(null);
-    const [sortField, setSortField] = useState('name');
-    const [sortDirection, setSortDirection] = useState('asc');
-    const { currentCluster } = useSettings();
-    const { authFetch, user } = useAuth();
-    const location = useLocation();
-    const [filter, setFilter] = useState('');
-    const [isSearchFocused, setIsSearchFocused] = useState(false);
-    const [editingResource, setEditingResource] = useState(null);
-    const [editingDataResource, setEditingDataResource] = useState(null);
-    const [menuOpen, setMenuOpen] = useState(null);
-    const [draggingColumn, setDraggingColumn] = useState(null);
-
     // Early return if kind is not provided
     if (!kind) {
         return <div className="text-red-400 p-6">Error: Resource type not specified.</div>;
     }
 
-    // Use React Query hook to fetch all resources
-    const { data: resourcesData, isLoading: loading, error, refetch } = useWorkloads(authFetch, namespace, kind, currentCluster);
+    const {
+        // Data
+        resources,
+        loading,
+        error,
+        refetch,
+        user,
+        currentCluster,
+        authFetch,
+
+        // UI State
+        expandedId,
+        sortField,
+        sortDirection,
+        filter,
+        isSearchFocused,
+        menuOpen,
+        draggingColumn,
+
+        // Setters
+        setFilter,
+        setIsSearchFocused,
+        setMenuOpen,
+        setDraggingColumn,
+        setEditingResource,
+        setEditingDataResource,
+
+        // Modal State
+        editingResource,
+        editingDataResource,
+
+        // Actions
+        actions,
+        toggleExpand,
+        handleSort,
+        handleAdd,
+        onDetailsSaved
+    } = useWorkloadListState(namespace, kind);
 
     const {
-        confirmAction,
         setConfirmAction,
-        confirmRollout,
         setConfirmRollout,
-        scaling,
         triggering,
-        createdJob,
-        setCreatedJob,
         rollingOut,
+        handleTriggerCronJob,
+        scaling,
         handleDelete,
         handleScale,
-        handleTriggerCronJob,
-        handleRolloutDeployment
-    } = useWorkloadActions(authFetch, refetch, currentCluster);
-
-    // Track previous kind to detect changes
-    const prevKindRef = useRef(kind);
-    const prevNamespaceRef = useRef(namespace);
-    const prevClusterRef = useRef(currentCluster);
-
-    // Reset when namespace, kind, or cluster changes
-    const [allResources, setAllResources] = useState([]);
-
-    useEffect(() => {
-        const kindChanged = prevKindRef.current !== kind;
-        const namespaceChanged = prevNamespaceRef.current !== namespace;
-        const clusterChanged = prevClusterRef.current !== currentCluster;
-
-        if (kindChanged || namespaceChanged || clusterChanged) {
-            setAllResources([]);
-            setExpandedId(null);
-            setFilter('');
-            setConfirmAction(null);
-            setConfirmRollout(null);
-
-            prevKindRef.current = kind;
-            prevNamespaceRef.current = namespace;
-            prevClusterRef.current = currentCluster;
-
-            if (namespace && kind) {
-                refetch();
-            }
-        }
-    }, [namespace, kind, currentCluster, refetch, setConfirmAction, setConfirmRollout]);
-
-    // Update resources state
-    useEffect(() => {
-        if (resourcesData) {
-            let data = [];
-            if (Array.isArray(resourcesData)) {
-                data = resourcesData;
-            } else if (resourcesData.resources && Array.isArray(resourcesData.resources)) {
-                data = resourcesData.resources;
-            }
-            setAllResources(data);
-
-            const searchParams = new URLSearchParams(location.search);
-            const search = searchParams.get('search');
-            if (search) {
-                setFilter(search);
-                const found = data.find(r => r.name === search);
-                if (found) {
-                    setExpandedId(found.uid);
-                }
-            }
-        } else if (!loading) {
-            setAllResources([]);
-        }
-    }, [resourcesData, loading, location.search]);
-
-    const resources = allResources;
-
-    const toggleExpand = (uid) => {
-        setExpandedId(current => current === uid ? null : uid);
-    };
-
-    const handleSort = (field) => {
-        setSortField((prevField) => {
-            if (prevField === field) {
-                setSortDirection((prevDir) => (prevDir === 'asc' ? 'desc' : 'asc'));
-                return prevField;
-            }
-            setSortDirection('asc');
-            return field;
-        });
-    };
+        confirmAction,
+        confirmRollout,
+        handleRolloutDeployment,
+        createdJob,
+        setCreatedJob
+    } = actions;
 
     const filteredResources = resources.filter(r => {
         if (!filter) return true;
@@ -188,15 +131,6 @@ const WorkloadList = ({ namespace, kind }) => {
         () => dataColumns.filter((col) => typeof col.sortValue === 'function'),
         [dataColumns]
     );
-
-    useEffect(() => {
-        if (sortableColumns.length === 0) return;
-        const validIds = new Set(sortableColumns.map((col) => col.id));
-        if (!validIds.has(sortField)) {
-            setSortField('name');
-            setSortDirection('asc');
-        }
-    }, [sortableColumns, sortField]);
 
     const sortedResources = useMemo(() => {
         const dir = sortDirection === 'asc' ? 1 : -1;
@@ -260,27 +194,6 @@ const WorkloadList = ({ namespace, kind }) => {
         );
     }
 
-    const handleAdd = () => {
-        // Determine the best namespace to use for new resources
-        let targetNs = namespace;
-        if (namespace === 'all') {
-            // When viewing all namespaces, use the first available from resources or fallback to dkonsole
-            const firstResource = allResources.find(r => r.namespace);
-            targetNs = firstResource?.namespace || 'dkonsole';
-        }
-        setEditingResource({
-            kind: kind,
-            namespaced: true,
-            isNew: true,
-            namespace: targetNs,
-            apiVersion: 'v1', // This should technically vary by kind, YamlEditor might handle defaults
-            metadata: {
-                namespace: targetNs,
-                name: `new-${kind.toLowerCase()}`
-            }
-        });
-    };
-
     // Show empty state if no resources and no filter (and not loading)
     if (!loading && resources.length === 0 && !filter) {
         return (
@@ -326,11 +239,6 @@ const WorkloadList = ({ namespace, kind }) => {
         );
     }
 
-    const onDetailsSaved = () => {
-        setExpandedId(null);
-        setTimeout(() => refetch(), 300);
-    };
-
     return (
         <div className="flex flex-col h-full">
             <WorkloadToolbar
@@ -371,59 +279,23 @@ const WorkloadList = ({ namespace, kind }) => {
                 filter={filter}
             />
 
-            {/* YAML Editor Modal */}
-            {editingResource && (
-                <YamlEditor
-                    resource={editingResource}
-                    onClose={() => setEditingResource(null)}
-                    onSaved={() => {
-                        setEditingResource(null);
-                        refetch();
-                    }}
-                />
-            )}
-
-            {/* Menu overlay */}
-            {menuOpen && (
-                <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setMenuOpen(null)}
-                ></div>
-            )}
-
-            {/* Delete confirmation modal */}
-            <DeleteConfirmationModal
+            <WorkloadModals
+                editingResource={editingResource}
+                setEditingResource={setEditingResource}
+                editingDataResource={editingDataResource}
+                setEditingDataResource={setEditingDataResource}
                 confirmAction={confirmAction}
                 setConfirmAction={setConfirmAction}
-                handleDelete={handleDelete}
-            />
-
-            {/* Rollout confirmation modal */}
-            <RolloutConfirmationModal
                 confirmRollout={confirmRollout}
                 setConfirmRollout={setConfirmRollout}
-                handleRolloutDeployment={handleRolloutDeployment}
-            />
-
-            {/* Job created success modal */}
-            <JobCreatedModal
                 createdJob={createdJob}
                 setCreatedJob={setCreatedJob}
+                handleDelete={handleDelete}
+                handleRolloutDeployment={handleRolloutDeployment}
+                refetch={refetch}
+                menuOpen={menuOpen}
+                setMenuOpen={setMenuOpen}
             />
-
-            {/* Data Editor Modal - Edit In Place */}
-            {editingDataResource && (
-                <DataEditor
-                    resource={editingDataResource}
-                    data={editingDataResource.details?.data || {}}
-                    isSecret={editingDataResource.kind === 'Secret'}
-                    onClose={() => setEditingDataResource(null)}
-                    onSaved={() => {
-                        setEditingDataResource(null);
-                        refetch();
-                    }}
-                />
-            )}
         </div>
     );
 };

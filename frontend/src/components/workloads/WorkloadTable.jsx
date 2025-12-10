@@ -14,10 +14,9 @@ import StorageDetails from '../details/StorageDetails';
 import StorageClassDetails from '../details/StorageClassDetails';
 import { JobDetails, CronJobDetails, StatefulSetDetails, DaemonSetDetails, HPADetails } from '../details/WorkloadDetails';
 import GenericDetails from '../details/GenericDetails';
-import { EditYamlButton } from '../details/CommonDetails';
+
 
 const WorkloadTable = ({
-    kind,
     resources,
     columns,
     gridTemplateColumns,
@@ -154,16 +153,7 @@ const WorkloadTable = ({
                                 {isExpanded && (
                                     <div className="px-6 py-4 bg-gray-900/30 border-t border-gray-800">
                                         <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden relative">
-                                            {/* Show Edit YAML button only for resources that don't have it in their detail component */}
-                                            {res.kind !== 'Deployment' && res.kind !== 'Pod' && res.kind !== 'ClusterRole' && res.kind !== 'ClusterRoleBinding' &&
-                                                res.kind !== 'Role' && res.kind !== 'RoleBinding' &&
-                                                res.kind !== 'CronJob' && res.kind !== 'StatefulSet' && res.kind !== 'DaemonSet' && res.kind !== 'HPA' &&
-                                                res.kind !== 'Job' && res.kind !== 'PersistentVolumeClaim' && res.kind !== 'PersistentVolume' && res.kind !== 'StorageClass' &&
-                                                res.kind !== 'ConfigMap' && res.kind !== 'Secret' && res.kind !== 'NetworkPolicy' && res.kind !== 'Service' && res.kind !== 'Ingress' && (
-                                                    <div className="absolute top-4 right-4 z-10">
-                                                        <EditYamlButton onClick={() => setEditingResource(res)} namespace={res.namespace} />
-                                                    </div>
-                                                )}
+                                            {/* Edit YAML buttons removed as per UI refinement request (redundant with Kebab menu) */}
                                             {renderDetails(res)}
                                         </div>
                                     </div>

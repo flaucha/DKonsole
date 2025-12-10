@@ -1,132 +1,9 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Box, ChevronDown, Network, HardDrive, Shield, Package, X, Siren } from 'lucide-react';
-
-const SidebarItem = ({ icon: Icon, label, to, onClick, hasChildren, expanded }) => {
-    if (hasChildren) {
-        return (
-            <div
-                onClick={onClick}
-                className={`flex items-center justify-between px-4 py-2 cursor-pointer rounded-md transition-all duration-200 text-gray-100 hover:bg-gray-800 hover:text-gray-100 border border-transparent hover:border-gray-700 ${expanded ? 'bg-gray-800/50 border-gray-700' : ''}`}
-            >
-                <div className="flex items-center space-x-3">
-                    <Icon size={20} className="text-gray-300 group-hover:text-blue-400" />
-                    <span className="font-medium whitespace-nowrap">{label}</span>
-                </div>
-                <div className={`transition-transform duration-200 text-gray-400 ${expanded ? 'rotate-0 text-blue-400' : '-rotate-90'}`}>
-                    <ChevronDown size={16} />
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <NavLink
-            to={to}
-            className={({ isActive }) =>
-                `flex items-center justify-between px-4 py-2 cursor-pointer rounded-md transition-all duration-200 border border-transparent ${isActive
-                    ? 'bg-gray-800 text-gray-100 border-l-4 border-l-blue-500 shadow-md'
-                    : 'text-gray-300 hover:bg-gray-800 hover:text-gray-100 hover:border-gray-700'
-                }`
-            }
-        >
-            {({ isActive }) => (
-                <div className="flex items-center space-x-3">
-                    <Icon size={20} className={isActive ? 'text-blue-400' : 'text-gray-400'} />
-                    <span className="font-medium whitespace-nowrap">{label}</span>
-                </div>
-            )}
-        </NavLink>
-    );
-};
-
-const SubItem = ({ label, to }) => (
-    <NavLink
-        to={to}
-        className={({ isActive }) =>
-            `block pl-12 pr-4 py-1.5 cursor-pointer text-xs transition-all duration-200 whitespace-nowrap rounded-md border border-transparent ${isActive
-                ? 'text-gray-100 font-semibold bg-gray-800/60 border-l-4 border-l-blue-500 shadow-sm'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/40 hover:border-gray-700'
-            }`
-        }
-        style={{ fontSize: '0.75rem' }}
-    >
-        {({ isActive }) => (
-            <>
-                <span className={`mr-2 ${isActive ? 'text-blue-400' : 'text-gray-500'}`}>•</span>
-                {label}
-            </>
-        )}
-    </NavLink>
-);
-
-const SubMenu = ({ isOpen, children, animationStyle = 'slide', animationSpeed = 'medium' }) => {
-    const getAnimationClasses = () => {
-        switch (animationStyle) {
-            case 'slide':
-                return isOpen
-                    ? 'max-h-[500px] opacity-100 translate-y-0'
-                    : 'max-h-0 opacity-0 -translate-y-2';
-            case 'fade':
-                return isOpen
-                    ? 'max-h-[500px] opacity-100'
-                    : 'max-h-0 opacity-0';
-            case 'scale':
-                return isOpen
-                    ? 'max-h-[500px] opacity-100 scale-100'
-                    : 'max-h-0 opacity-0 scale-95';
-            case 'rotate':
-                return isOpen
-                    ? 'max-h-[500px] opacity-100 rotate-0'
-                    : 'max-h-0 opacity-0 rotate-[-2deg]';
-            default:
-                return isOpen
-                    ? 'max-h-[500px] opacity-100 translate-y-0'
-                    : 'max-h-0 opacity-0 -translate-y-2';
-        }
-    };
-
-    const getSpeedDuration = () => {
-        switch (animationSpeed) {
-            case 'slow':
-                return 'duration-500';
-            case 'fast':
-                return 'duration-150';
-            case 'medium':
-            default:
-                return 'duration-300';
-        }
-    };
-
-    const getTransitionClasses = () => {
-        const speedClass = getSpeedDuration();
-        switch (animationStyle) {
-            case 'slide':
-                return `transition-all ${speedClass} ease-out`;
-            case 'fade':
-                return `transition-all ${speedClass === 'duration-500' ? 'duration-400' : speedClass === 'duration-150' ? 'duration-200' : 'duration-250'} ease-in-out`;
-            case 'scale':
-                return `transition-all ${speedClass} ease-out transform-gpu`;
-            case 'rotate':
-                return `transition-all ${speedClass} ease-out transform-gpu origin-top-left`;
-            default:
-                return `transition-all ${speedClass} ease-out`;
-        }
-    };
-
-    return (
-        <div
-            className={`overflow-hidden ${getTransitionClasses()} ${getAnimationClasses()}`}
-            style={{
-                transformOrigin: animationStyle === 'scale' ? 'top' : animationStyle === 'rotate' ? 'top left' : 'top'
-            }}
-        >
-            <div className="space-y-1 mb-2">
-                {children}
-            </div>
-        </div>
-    );
-};
+import { LayoutDashboard, Box, Network, HardDrive, Shield, Package, X, Siren } from 'lucide-react';
+import SidebarItem from './sidebar/SidebarItem';
+import SubItem from './sidebar/SubItem';
+import SubMenu from './sidebar/SubMenu';
 
 const Sidebar = ({
     sidebarOpen,
@@ -356,3 +233,4 @@ const Sidebar = ({
 };
 
 export default Sidebar;
+

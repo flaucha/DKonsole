@@ -8,19 +8,18 @@ import (
 	"k8s.io/client-go/kubernetes"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 
-	"github.com/flaucha/DKonsole/backend/internal/cluster"
 	"github.com/flaucha/DKonsole/backend/internal/models"
 	"github.com/flaucha/DKonsole/backend/internal/permissions"
 )
 
 // ResourceListService provides business logic for listing Kubernetes resources
 type ResourceListService struct {
-	clusterService *cluster.Service
+	clusterService ClusterService
 	prometheusURL  string // URL for Prometheus queries (optional)
 }
 
 // NewResourceListService creates a new ResourceListService
-func NewResourceListService(clusterService *cluster.Service, prometheusURL string) *ResourceListService {
+func NewResourceListService(clusterService ClusterService, prometheusURL string) *ResourceListService {
 	return &ResourceListService{
 		clusterService: clusterService,
 		prometheusURL:  prometheusURL,
@@ -34,7 +33,7 @@ type ListResourcesRequest struct {
 	AllNamespaces bool
 	LabelSelector string
 	Client        kubernetes.Interface
-	MetricsClient *metricsv.Clientset
+	MetricsClient metricsv.Interface
 }
 
 // isClusterScoped returns true if the resource kind is not namespaced

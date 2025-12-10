@@ -83,6 +83,32 @@ func newPodServiceForHandlers() *Service {
 	return NewService(handlers, cluster.NewService(handlers))
 }
 
+func TestDefaultFactories(t *testing.T) {
+	// Create service WITH clients for this test only
+	handlers := &models.Handlers{
+		Clients: map[string]kubernetes.Interface{
+			"default": k8sfake.NewSimpleClientset(),
+		},
+		RESTConfigs: map[string]*rest.Config{
+			"default": {},
+		},
+	}
+	service := NewService(handlers, cluster.NewService(handlers))
+
+	// Trigger logRepoFactory
+	client := k8sfake.NewSimpleClientset()
+	repo := service.logRepoFactory(client)
+	if repo == nil {
+		t.Error("logRepoFactory returned nil")
+	}
+
+	// Trigger execFactory
+	exec := service.execFactory()
+	if exec == nil {
+		t.Error("execFactory returned nil")
+	}
+}
+
 func TestStreamPodLogs_InvalidParams(t *testing.T) {
 	service := newPodServiceForHandlers()
 
@@ -332,4 +358,45 @@ func authContext(req *http.Request, claims models.Claims) *http.Request {
 	return req.WithContext(context.WithValue(req.Context(), auth.UserContextKey(), &auth.AuthClaims{
 		Claims: claims,
 	}))
+}
+
+func TestGetPodEvents_InvalidParams(t *testing.T) {
+	service := newPodServiceForHandlers()
+	// Missing pod name param
+	req := httptest.NewRequest(http.MethodGet, "/api/pods/events?namespace=ns1", nil)
+	rr := httptest.NewRecorder()
+	service.GetPodEvents(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400 for missing pod", rr.Code)
+	}
+}
+
+func TestGetPodEvents_ClientError(t *testing.T) {
+	service := newPodServiceForHandlers() // Has NO clients by default
+
+	req := httptest.NewRequest(http.MethodGet, "/api/pods/events?namespace=ns1&pod=pod1", nil)
+	req = authContext(req, models.Claims{
+		Username:    "user",
+		Permissions: map[string]string{"ns1": "view"},
+	})
+
+	rr := httptest.NewRecorder()
+	service.GetPodEvents(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400 when client missing", rr.Code)
+	}
+}
+
+func TestStreamPodLogs_AuthError(t *testing.T) {
+	service := newPodServiceForHandlers()
+	// Request without auth context
+	req := httptest.NewRequest(http.MethodGet, "/api/pods/logs?namespace=ns1&pod=pod1", nil)
+	rr := httptest.NewRecorder()
+
+	service.StreamPodLogs(rr, req)
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500 when auth missing", rr.Code)
+	}
 }

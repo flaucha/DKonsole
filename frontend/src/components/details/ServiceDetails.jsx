@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Tag } from 'lucide-react';
-import { SmartDNS, EditYamlButton } from './CommonDetails';
+import { SmartDNS } from './CommonDetails';
 import AssociatedPods from './AssociatedPods';
 
-const ServiceDetails = ({ details, onEditYAML, namespace, name }) => {
+const ServiceDetails = ({ details, namespace, name }) => {
     const [activeTab, setActiveTab] = useState('details');
     const type = details.type || 'ClusterIP';
     const clusterIP = details.clusterIP;
@@ -24,21 +24,19 @@ const ServiceDetails = ({ details, onEditYAML, namespace, name }) => {
             <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-md mb-4 w-fit">
                 <button
                     onClick={() => setActiveTab('details')}
-                    className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
-                        activeTab === 'details'
+                    className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${activeTab === 'details'
                         ? 'bg-gray-700 text-white shadow-sm'
                         : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-                    }`}
+                        }`}
                 >
                     Details
                 </button>
                 <button
                     onClick={() => setActiveTab('selector')}
-                    className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
-                        activeTab === 'selector'
+                    className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${activeTab === 'selector'
                         ? 'bg-gray-700 text-white shadow-sm'
                         : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-                    }`}
+                        }`}
                 >
                     Selector
                 </button>
@@ -130,9 +128,6 @@ const ServiceDetails = ({ details, onEditYAML, namespace, name }) => {
                                 );
                             })}
                         </div>
-                    </div>
-                    <div className="flex justify-end mt-4">
-                        <EditYamlButton onClick={onEditYAML} namespace={namespace} />
                     </div>
                 </>
             )}

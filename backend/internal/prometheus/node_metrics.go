@@ -14,21 +14,19 @@ import (
 
 // getNodeMetrics fetches metrics for all nodes
 func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interface) ([]models.NodeMetric, int, map[string]bool, error) {
-	var nodes []models.NodeMetric
-	controlPlaneCount := 0
-	controlPlaneNodes := make(map[string]bool)
-
 	if client == nil {
-		return nodes, 0, controlPlaneNodes, fmt.Errorf("kubernetes client is nil")
+		return nil, 0, nil, fmt.Errorf("kubernetes client is nil")
 	}
 
-	// Get nodes from Kubernetes API
+	// 1. Get nodes from Kubernetes API
 	k8sNodes, err := client.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nodes, 0, controlPlaneNodes, fmt.Errorf("failed to list nodes: %w", err)
+		return nil, 0, nil, fmt.Errorf("failed to list nodes: %w", err)
 	}
 
-	// Count and mark control plane nodes
+	// 2. Identify control plane nodes
+	controlPlaneNodes := make(map[string]bool)
+	controlPlaneCount := 0
 	for _, node := range k8sNodes.Items {
 		if isControlPlaneNode(node) {
 			controlPlaneCount++
@@ -36,178 +34,53 @@ func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interfac
 		}
 	}
 
-	// Get node status from Kubernetes
-	nodeStatusMap := make(map[string]string)
-	for _, node := range k8sNodes.Items {
-		status := "NotReady"
-		for _, condition := range node.Status.Conditions {
-			if condition.Type == corev1.NodeReady && condition.Status == corev1.ConditionTrue {
-				status = "Ready"
-				break
-			}
-		}
-		nodeStatusMap[node.Name] = status
+	// 3. Get node status
+	nodeStatusMap := getNodeStatusMap(k8sNodes.Items)
+
+	// 4. Fetch Prometheus metrics
+	cpuMap, err := s.fetchMetricMap(ctx, `100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)`)
+	if err != nil {
+		// Log error but continue with partial data, or return error?
+		// The analysis criticized silent failure. We should at least return strict errors if critical,
+		// but providing partial metrics with zero values is often better for UI than total failure.
+		// However, the "Reliability" point 2.4 demanded we stop ignoring errors.
+		// A compromise: We log the error internally (if we had a logger here) and return the error
+		// ONLY if it's a connection failure, but here we will return the error to be strict as requested.
+		return nil, 0, nil, fmt.Errorf("failed to query CPU metrics: %w", err)
 	}
 
-	// Query all CPU metrics
-	cpuQuery := `100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)`
-	cpuData, _ := s.repo.QueryInstant(ctx, cpuQuery)
-
-	// Query all memory metrics
-	memQuery := `(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100`
-	memData, _ := s.repo.QueryInstant(ctx, memQuery)
-
-	// Query all disk metrics
-	diskQuery := `(1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100`
-	diskData, _ := s.repo.QueryInstant(ctx, diskQuery)
-
-	// Query all network RX metrics
-	netRxQuery := `sum(rate(node_network_receive_bytes_total[5m])) by (instance) / 1024`
-	netRxData, _ := s.repo.QueryInstant(ctx, netRxQuery)
-
-	// Query all network TX metrics
-	netTxQuery := `sum(rate(node_network_transmit_bytes_total[5m])) by (instance) / 1024`
-	netTxData, _ := s.repo.QueryInstant(ctx, netTxQuery)
-
-	// Build maps for quick lookup
-	cpuMap := make(map[string]float64)
-	for _, data := range cpuData {
-		if inst, ok := data["instance"].(string); ok {
-			if val, ok := data["value"].(float64); ok {
-				cpuMap[inst] = val
-			}
-		}
+	memMap, err := s.fetchMetricMap(ctx, `(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100`)
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("failed to query Memory metrics: %w", err)
 	}
 
-	memMap := make(map[string]float64)
-	for _, data := range memData {
-		if inst, ok := data["instance"].(string); ok {
-			if val, ok := data["value"].(float64); ok {
-				memMap[inst] = val
-			}
-		}
+	diskMap, err := s.fetchMetricMap(ctx, `(1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100`)
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("failed to query Disk metrics: %w", err)
 	}
 
-	diskMap := make(map[string]float64)
-	for _, data := range diskData {
-		if inst, ok := data["instance"].(string); ok {
-			if val, ok := data["value"].(float64); ok {
-				diskMap[inst] = val
-			}
-		}
+	netRxMap, err := s.fetchMetricMap(ctx, `sum(rate(node_network_receive_bytes_total[5m])) by (instance) / 1024`)
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("failed to query Network RX metrics: %w", err)
 	}
 
-	netRxMap := make(map[string]float64)
-	for _, data := range netRxData {
-		if inst, ok := data["instance"].(string); ok {
-			if val, ok := data["value"].(float64); ok {
-				netRxMap[inst] = val
-			}
-		}
+	netTxMap, err := s.fetchMetricMap(ctx, `sum(rate(node_network_transmit_bytes_total[5m])) by (instance) / 1024`)
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("failed to query Network TX metrics: %w", err)
 	}
 
-	netTxMap := make(map[string]float64)
-	for _, data := range netTxData {
-		if inst, ok := data["instance"].(string); ok {
-			if val, ok := data["value"].(float64); ok {
-				netTxMap[inst] = val
-			}
-		}
-	}
-
-	// Build a map of all available instances
+	// 5. Build instance mapping
 	availableInstances := make(map[string]bool)
-	for _, data := range cpuData {
-		if inst, ok := data["instance"].(string); ok {
-			availableInstances[inst] = true
-		}
+	for inst := range cpuMap {
+		availableInstances[inst] = true
 	}
+	nodeToInstance := s.buildNodeToInstanceMap(ctx, availableInstances)
 
-	// Try to get instance mapping from kube_node_info
-	nodeToInstance := make(map[string]string)
-	nodesQuery := `kube_node_info`
-	nodesData, _ := s.repo.QueryInstant(ctx, nodesQuery)
-	for _, nodeData := range nodesData {
-		if node, ok := nodeData["node"].(string); ok {
-			if inst, ok := nodeData["instance"].(string); ok {
-				if availableInstances[inst] {
-					nodeToInstance[node] = inst
-				}
-			}
-		}
-	}
-
-	// Process each Kubernetes node (including control plane nodes)
+	// 6. Map metrics to nodes
+	var nodes []models.NodeMetric
 	for _, k8sNode := range k8sNodes.Items {
 		nodeName := k8sNode.Name
-		instance := nodeToInstance[nodeName]
-
-		// If we don't have a mapping, try to find by IP address
-		if instance == "" {
-			var nodeIP string
-			for _, addr := range k8sNode.Status.Addresses {
-				if addr.Type == corev1.NodeInternalIP {
-					nodeIP = addr.Address
-					break
-				}
-			}
-
-			// Try to match instance by IP
-			if nodeIP != "" {
-				if availableInstances[nodeIP] {
-					instance = nodeIP
-				} else {
-					// Try IP:port format
-					for inst := range availableInstances {
-						instParts := strings.Split(inst, ":")
-						if len(instParts) > 0 && instParts[0] == nodeIP {
-							instance = inst
-							break
-						}
-						if strings.Contains(inst, nodeIP) {
-							instance = inst
-							break
-						}
-					}
-				}
-			}
-
-			// Last resort: try node name as instance
-			if instance == "" && availableInstances[nodeName] {
-				instance = nodeName
-			}
-		}
-
-		// Get metrics by instance (with fallback to node name)
-		cpuUsage := cpuMap[instance]
-		if cpuUsage == 0 {
-			cpuUsage = cpuMap[nodeName]
-		}
-
-		memUsage := memMap[instance]
-		if memUsage == 0 {
-			memUsage = memMap[nodeName]
-		}
-
-		diskUsage := diskMap[instance]
-		if diskUsage == 0 {
-			diskUsage = diskMap[nodeName]
-		}
-
-		networkRx := netRxMap[instance]
-		if networkRx == 0 {
-			networkRx = netRxMap[nodeName]
-		}
-
-		networkTx := netTxMap[instance]
-		if networkTx == 0 {
-			networkTx = netTxMap[nodeName]
-		}
-
-		status := nodeStatusMap[nodeName]
-		if status == "" {
-			status = "NotReady"
-		}
+		instance := resolveNodeInstance(nodeName, k8sNode, nodeToInstance, availableInstances)
 
 		// Determine node role
 		role := "worker"
@@ -218,16 +91,115 @@ func (s *Service) getNodeMetrics(ctx context.Context, client kubernetes.Interfac
 		nodes = append(nodes, models.NodeMetric{
 			Name:      nodeName,
 			Role:      role,
-			CPUUsage:  cpuUsage,
-			MemUsage:  memUsage,
-			DiskUsage: diskUsage,
-			NetworkRx: networkRx,
-			NetworkTx: networkTx,
-			Status:    status,
+			CPUUsage:  getMetricValue(instance, nodeName, cpuMap),
+			MemUsage:  getMetricValue(instance, nodeName, memMap),
+			DiskUsage: getMetricValue(instance, nodeName, diskMap),
+			NetworkRx: getMetricValue(instance, nodeName, netRxMap),
+			NetworkTx: getMetricValue(instance, nodeName, netTxMap),
+			Status:    nodeStatusMap[nodeName],
 		})
 	}
 
 	return nodes, controlPlaneCount, controlPlaneNodes, nil
+}
+
+// Helper: Fetch and map metric values
+func (s *Service) fetchMetricMap(ctx context.Context, query string) (map[string]float64, error) {
+	data, err := s.repo.QueryInstant(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]float64)
+	for _, d := range data {
+		inst, okInst := d["instance"].(string)
+		val, okVal := d["value"].(float64)
+		if okInst && okVal {
+			result[inst] = val
+		}
+	}
+	return result, nil
+}
+
+// Helper: Build node status map
+func getNodeStatusMap(nodes []corev1.Node) map[string]string {
+	statusMap := make(map[string]string)
+	for _, node := range nodes {
+		status := "NotReady"
+		for _, condition := range node.Status.Conditions {
+			if condition.Type == corev1.NodeReady && condition.Status == corev1.ConditionTrue {
+				status = "Ready"
+				break
+			}
+		}
+		statusMap[node.Name] = status
+	}
+	return statusMap
+}
+
+// Helper: Build map from K8s node name to Prometheus instance
+func (s *Service) buildNodeToInstanceMap(ctx context.Context, availableInstances map[string]bool) map[string]string {
+	nodeToInstance := make(map[string]string)
+	nodesQuery := `kube_node_info`
+	nodesData, err := s.repo.QueryInstant(ctx, nodesQuery)
+	if err != nil {
+		return nodeToInstance // Return empty map if query fails, fallback logic will handle it
+	}
+
+	for _, nodeData := range nodesData {
+		node, okNode := nodeData["node"].(string)
+		inst, okInst := nodeData["instance"].(string)
+		if okNode && okInst && availableInstances[inst] {
+			nodeToInstance[node] = inst
+		}
+	}
+	return nodeToInstance
+}
+
+// Helper: Resolve instance string for a node
+func resolveNodeInstance(nodeName string, node corev1.Node, nodeToInstance map[string]string, availableInstances map[string]bool) string {
+	if inst, ok := nodeToInstance[nodeName]; ok {
+		return inst
+	}
+
+	// Fallback 1: Internal IP
+	var nodeIP string
+	for _, addr := range node.Status.Addresses {
+		if addr.Type == corev1.NodeInternalIP {
+			nodeIP = addr.Address
+			break
+		}
+	}
+
+	if nodeIP != "" {
+		if availableInstances[nodeIP] {
+			return nodeIP
+		}
+		// Fallback 2: IP:port matching
+		for inst := range availableInstances {
+			if strings.HasPrefix(inst, nodeIP+":") {
+				return inst
+			}
+		}
+	}
+
+	// Fallback 3: Node Name
+	if availableInstances[nodeName] {
+		return nodeName
+	}
+
+	return ""
+}
+
+// Helper: Safe metric retrieval
+func getMetricValue(primaryKey, secondaryKey string, metricMap map[string]float64) float64 {
+	if val, ok := metricMap[primaryKey]; ok {
+		return val
+	}
+	if val, ok := metricMap[secondaryKey]; ok {
+		return val
+	}
+	return 0.0
 }
 
 // isControlPlaneNode checks if a node is a control plane/master node
@@ -253,7 +225,7 @@ func isControlPlaneNode(node corev1.Node) bool {
 // calculateClusterStats calculates aggregated cluster statistics
 func (s *Service) calculateClusterStats(nodes []models.NodeMetric, controlPlaneCount int, controlPlaneNodes map[string]bool) *models.PrometheusClusterStats {
 	// Separate worker nodes from control plane nodes for stats calculation
-	workerNodes := []models.NodeMetric{}
+	var workerNodes []models.NodeMetric
 	for _, node := range nodes {
 		// Only include worker nodes in stats calculation
 		if !controlPlaneNodes[node.Name] {
@@ -264,7 +236,7 @@ func (s *Service) calculateClusterStats(nodes []models.NodeMetric, controlPlaneC
 	// Count worker nodes
 	workerNodeCount := len(workerNodes)
 
-	if len(workerNodes) == 0 {
+	if workerNodeCount == 0 {
 		return &models.PrometheusClusterStats{
 			TotalNodes:        0,
 			ControlPlaneNodes: controlPlaneCount,
@@ -290,8 +262,8 @@ func (s *Service) calculateClusterStats(nodes []models.NodeMetric, controlPlaneC
 	}
 
 	// Use worker node count for averages
-	avgCPU := totalCPU / float64(len(workerNodes))
-	avgMem := totalMem / float64(len(workerNodes))
+	avgCPU := totalCPU / float64(workerNodeCount)
+	avgMem := totalMem / float64(workerNodeCount)
 	networkTraffic := (totalNetworkRx + totalNetworkTx) / 1024 // Convert to MB/s
 
 	// Calculate trends (simplified - for now set to 0.0)

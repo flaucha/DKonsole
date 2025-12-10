@@ -1,6 +1,6 @@
 import React from 'react';
 import { Key, Database, Lock } from 'lucide-react';
-import { EditYamlButton } from './CommonDetails';
+
 
 export const ServiceAccountDetails = ({ details }) => {
     const secrets = details.secrets || [];
@@ -40,14 +40,14 @@ export const ServiceAccountDetails = ({ details }) => {
     );
 };
 
-export const RoleDetails = ({ details, onEditYAML }) => {
+export const RoleDetails = ({ details }) => {
     const rules = details.rules || [];
 
     return (
         <div className="p-4 bg-gray-900/50 rounded-md mt-2">
             <div className="flex items-center justify-between mb-4">
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Policy Rules</h4>
-                <EditYamlButton onClick={onEditYAML} />
+
             </div>
             <div className="overflow-x-auto">
                 <table className="min-w-full text-xs text-left">
@@ -79,7 +79,7 @@ export const RoleDetails = ({ details, onEditYAML }) => {
     );
 };
 
-export const BindingDetails = ({ details, onEditYAML }) => {
+export const BindingDetails = ({ details }) => {
     const subjects = details.subjects || [];
     const roleRef = details.roleRef || {};
 
@@ -87,7 +87,7 @@ export const BindingDetails = ({ details, onEditYAML }) => {
         <div className="p-4 bg-gray-900/50 rounded-md mt-2 space-y-4">
             <div className="flex items-center justify-between mb-4">
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Details</h4>
-                <EditYamlButton onClick={onEditYAML} />
+
             </div>
             <div>
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Role Reference</h4>

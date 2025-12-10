@@ -72,7 +72,7 @@ func (s *ResourceListService) listNodes(ctx context.Context, client kubernetes.I
 	return resources, nil
 }
 
-func (s *ResourceListService) listPods(ctx context.Context, client kubernetes.Interface, metricsClient *metricsv.Clientset, namespace string, opts metav1.ListOptions) ([]models.Resource, error) {
+func (s *ResourceListService) listPods(ctx context.Context, client kubernetes.Interface, metricsClient metricsv.Interface, namespace string, opts metav1.ListOptions) ([]models.Resource, error) {
 	list, err := client.CoreV1().Pods(namespace).List(ctx, opts)
 	if err != nil {
 		return nil, err

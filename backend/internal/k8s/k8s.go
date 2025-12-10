@@ -5,22 +5,34 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/flaucha/DKonsole/backend/internal/cluster"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
+
 	"github.com/flaucha/DKonsole/backend/internal/models"
 	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
+// ClusterService defines the interface for cluster operations
+type ClusterService interface {
+	GetClient(r *http.Request) (kubernetes.Interface, error)
+	GetDynamicClient(r *http.Request) (dynamic.Interface, error)
+	GetMetricsClient(r *http.Request) *metricsv.Clientset
+	GetRESTConfig(r *http.Request) (*rest.Config, error)
+}
+
 // Service provides HTTP handlers for Kubernetes resource operations.
 // It follows a layered architecture pattern with dependency injection via ServiceFactory.
 type Service struct {
 	handlers       *models.Handlers
-	clusterService *cluster.Service
+	clusterService ClusterService
 	serviceFactory Factory
 }
 
 // NewService creates a new Kubernetes service with the provided handlers and cluster service.
-func NewService(h *models.Handlers, cs *cluster.Service) *Service {
+func NewService(h *models.Handlers, cs ClusterService) *Service {
 	return &Service{
 		handlers:       h,
 		clusterService: cs,

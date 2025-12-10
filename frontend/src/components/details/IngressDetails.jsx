@@ -1,9 +1,9 @@
 import React from 'react';
 import { Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { EditYamlButton } from './CommonDetails';
 
-const IngressDetails = ({ details, onEditYAML, namespace }) => {
+
+const IngressDetails = ({ details }) => {
     const rules = details.rules || [];
     const tls = details.tls || [];
     const loadBalancer = details.loadBalancer || [];
@@ -130,9 +130,7 @@ const IngressDetails = ({ details, onEditYAML, namespace }) => {
                     <div className="text-sm text-gray-500 italic">No annotations</div>
                 )}
             </div>
-            <div className="flex justify-end mt-4">
-                <EditYamlButton onClick={onEditYAML} namespace={namespace} />
-            </div>
+
         </div>
     );
 };

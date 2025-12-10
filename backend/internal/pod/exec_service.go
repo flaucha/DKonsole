@@ -11,6 +11,9 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
+// spdyExecutorFunc is a variable to allow mocking remotecommand.NewSPDYExecutor in tests
+var spdyExecutorFunc = remotecommand.NewSPDYExecutor
+
 // ExecService provides business logic for pod exec operations.
 // It creates executors for executing commands in pod containers via the Kubernetes API.
 type ExecService struct{}
@@ -54,7 +57,7 @@ func (s *ExecService) CreateExecutor(client kubernetes.Interface, config *rest.C
 	url := execReq.URL()
 
 	// Create executor
-	executor, err := remotecommand.NewSPDYExecutor(config, "POST", url)
+	executor, err := spdyExecutorFunc(config, "POST", url)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to create executor: %w", err)
 	}

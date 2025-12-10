@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Server, Network, Activity, Box, HardDrive, Clock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { DetailRow, EditYamlButton } from './CommonDetails';
+import { DetailRow } from './CommonDetails';
 import LogViewerInline from './LogViewerInline';
 import TerminalViewerInline from './TerminalViewerInline';
 import PodMetrics from '../PodMetrics';
@@ -12,17 +12,16 @@ import { useTerminalDock } from '../../context/TerminalDockContext';
 const TabButton = ({ active, label, onClick }) => (
     <button
         onClick={onClick}
-        className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
-            active
+        className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${active
             ? 'bg-gray-700 text-white shadow-sm'
             : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-        }`}
+            }`}
     >
         {label}
     </button>
 );
 
-const PodDetails = ({ details, onEditYAML, pod }) => {
+const PodDetails = ({ details, pod }) => {
     const { authFetch } = useAuth();
     const { addSession } = useTerminalDock();
     const [activeTab, setActiveTab] = useState('details');
@@ -106,10 +105,8 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                                 {metrics.memory && <DetailRow label="Memory" value={metrics.memory} icon={HardDrive} />}
                             </div>
                         </div>
-                        <div className="flex justify-end mt-4">
-                            <EditYamlButton onClick={onEditYAML} namespace={pod?.namespace} />
-                        </div>
                     </div>
+
                 ) : activeTab === 'logs' ? (
                     <div ref={logsContainerRef} className="animate-fadeIn flex-1 flex flex-col min-h-0">
                         {containers.length > 1 && (
@@ -251,9 +248,9 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                                                             {containerStatus.ready ? 'Ready' : 'Not Ready'}
                                                         </span>
                                                         <span className={`px-2 py-0.5 text-xs rounded ${containerStatus.state === 'Running' ? 'bg-blue-900/30 text-blue-400' :
-                                                                containerStatus.state === 'Waiting' ? 'bg-yellow-900/30 text-yellow-400' :
-                                                                    containerStatus.state === 'Terminated' ? 'bg-gray-700 text-gray-400' :
-                                                                        'bg-gray-700 text-gray-400'
+                                                            containerStatus.state === 'Waiting' ? 'bg-yellow-900/30 text-yellow-400' :
+                                                                containerStatus.state === 'Terminated' ? 'bg-gray-700 text-gray-400' :
+                                                                    'bg-gray-700 text-gray-400'
                                                             }`}>
                                                             {containerStatus.state || 'Unknown'}
                                                         </span>
@@ -319,7 +316,7 @@ const PodDetails = ({ details, onEditYAML, pod }) => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

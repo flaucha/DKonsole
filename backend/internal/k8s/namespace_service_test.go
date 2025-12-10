@@ -109,6 +109,37 @@ func TestNamespaceService_GetNamespaces(t *testing.T) {
 			wantErr:   false,
 			wantCount: 0,
 		},
+		{
+			name: "restricted user sees only allowed namespaces",
+			repoFunc: func(ctx context.Context) ([]corev1.Namespace, error) {
+				return []corev1.Namespace{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "default"},
+						Status:     corev1.NamespaceStatus{Phase: corev1.NamespaceActive},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "secret-ns"},
+						Status:     corev1.NamespaceStatus{Phase: corev1.NamespaceActive},
+					},
+				}, nil
+			},
+			ctx: context.WithValue(
+				context.Background(),
+				auth.UserContextKey(),
+				&auth.AuthClaims{
+					Claims: models.Claims{
+						Username: "user",
+						Role:     "user",
+						Permissions: map[string]string{
+							"default": "view",
+						},
+					},
+				},
+			),
+			wantErr:       false,
+			wantCount:     1,
+			expectedNames: []string{"default"},
+		},
 	}
 
 	for _, tt := range tests {

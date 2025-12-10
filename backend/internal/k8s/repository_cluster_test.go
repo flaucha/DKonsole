@@ -17,6 +17,9 @@ import (
 func TestK8sClusterStatsRepository_Counts(t *testing.T) {
 	client := k8sfake.NewSimpleClientset(
 		&corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: "cp", Labels: map[string]string{"node-role.kubernetes.io/control-plane": "true"}}},
+		&corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: "master", Labels: map[string]string{"node-role.kubernetes.io/master": "true"}}},
+		&corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: "cp-taint"}, Spec: corev1.NodeSpec{Taints: []corev1.Taint{{Key: "node-role.kubernetes.io/control-plane"}}}},
+		&corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: "master-taint"}, Spec: corev1.NodeSpec{Taints: []corev1.Taint{{Key: "node-role.kubernetes.io/master"}}}},
 		&corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: "worker"}},
 		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}},
 		&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: "default"}},

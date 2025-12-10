@@ -1,8 +1,8 @@
 import React from 'react';
 import { Tag, Layers, HardDrive, FileText } from 'lucide-react';
-import { DetailRow, EditYamlButton } from './CommonDetails';
+import { DetailRow } from './CommonDetails';
 
-const StorageDetails = ({ details, onEditYAML, namespace }) => (
+const StorageDetails = ({ details }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <DetailRow label="Access Modes" value={details.accessModes} icon={Tag} />
@@ -21,9 +21,6 @@ const StorageDetails = ({ details, onEditYAML, namespace }) => (
                     icon={FileText}
                 />
             )}
-        </div>
-        <div className="flex justify-end mt-4">
-            <EditYamlButton onClick={onEditYAML} namespace={namespace} />
         </div>
     </div>
 );

@@ -1,8 +1,8 @@
 import React from 'react';
 import { HardDrive, Activity, Network, Layers, Tag } from 'lucide-react';
-import { DetailRow, EditYamlButton } from './CommonDetails';
+import { DetailRow } from './CommonDetails';
 
-const StorageClassDetails = ({ details, onEditYAML }) => (
+const StorageClassDetails = ({ details }) => (
     <div className="p-4 bg-gray-900/50 rounded-md mt-2">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <DetailRow label="Provisioner" value={details.provisioner} icon={HardDrive} />
@@ -16,9 +16,7 @@ const StorageClassDetails = ({ details, onEditYAML }) => (
             />
             <DetailRow label="Mount Options" value={details.mountOptions} icon={HardDrive} />
         </div>
-        <div className="flex justify-end mt-4">
-            <EditYamlButton onClick={onEditYAML} />
-        </div>
+
     </div>
 );
 

@@ -1,11 +1,17 @@
 package k8s
 
 import (
+	"context"
+	"fmt"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
 
 func TestWatchService_TransformEvent(t *testing.T) {
@@ -131,4 +137,47 @@ func TestWatchService_TransformEvent(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestWatchService_StartWatch(t *testing.T) {
+	service := NewWatchService(nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	scheme := runtime.NewScheme()
+	client := dynamicfake.NewSimpleDynamicClient(scheme)
+
+	// Case 1: Success (Pod - namespaced)
+	req := WatchRequest{Kind: "Pod", Namespace: "default"}
+	w, err := service.StartWatch(ctx, client, req)
+	assert.NoError(t, err)
+	assert.NotNil(t, w)
+	if w != nil {
+		w.Stop()
+	}
+
+	// Case 2: Success (Node - cluster scoped)
+	req = WatchRequest{Kind: "Node"}
+	w, err = service.StartWatch(ctx, client, req)
+	assert.NoError(t, err)
+	assert.NotNil(t, w)
+	if w != nil {
+		w.Stop()
+	}
+
+	// Case 3: Unsupported Kind
+	req = WatchRequest{Kind: "UnknownKind"}
+	_, err = service.StartWatch(ctx, client, req)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported kind")
+
+	// Case 4: Watch Error
+	// Mock reactor to fail Watch
+	client.PrependWatchReactor("*", func(action k8stesting.Action) (handled bool, ret watch.Interface, err error) {
+		return true, nil, fmt.Errorf("simulated watch error")
+	})
+	req = WatchRequest{Kind: "Pod", Namespace: "default"}
+	_, err = service.StartWatch(ctx, client, req)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "simulated watch error")
 }

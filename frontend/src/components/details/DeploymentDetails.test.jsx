@@ -71,7 +71,7 @@ describe('DeploymentDetails', () => {
         expect(screen.getByTestId('detail-row-Ports')).toHaveTextContent('Ports: 8080');
         expect(screen.getByTestId('detail-row-PVCs')).toHaveTextContent('PVCs: pvc-1');
         expect(screen.getByTestId('detail-row-Labels')).toHaveTextContent('Labels: app=test-app');
-        expect(screen.getByText('Edit YAML')).toBeInTheDocument();
+
     });
 
     it('should switch to Pod List tab', () => {

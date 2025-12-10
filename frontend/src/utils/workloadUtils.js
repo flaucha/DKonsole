@@ -115,13 +115,15 @@ export const isMasterNode = (res) => {
         // Check labels if available
         if (res.details.labels) {
             const labels = res.details.labels;
-            if ((labels['node-role.kubernetes.io/control-plane'] &&
-                labels['node-role.kubernetes.io/control-plane'] !== '' &&
-                labels['node-role.kubernetes.io/control-plane'] !== 'false') ||
-                (labels['node-role.kubernetes.io/master'] &&
-                    labels['node-role.kubernetes.io/master'] !== '' &&
-                    labels['node-role.kubernetes.io/master'] !== 'false')) {
-                return true;
+            // distinct check for existence (key present) vs value
+            const cpKey = 'node-role.kubernetes.io/control-plane';
+            const masterKey = 'node-role.kubernetes.io/master';
+
+            if (Object.prototype.hasOwnProperty.call(labels, cpKey)) {
+                if (labels[cpKey] !== 'false') return true;
+            }
+            if (Object.prototype.hasOwnProperty.call(labels, masterKey)) {
+                if (labels[masterKey] !== 'false') return true;
             }
         }
 

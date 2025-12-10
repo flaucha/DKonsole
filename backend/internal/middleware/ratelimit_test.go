@@ -6,6 +6,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
 func TestRateLimitMiddleware(t *testing.T) {
@@ -270,5 +272,40 @@ func TestGetClientIP(t *testing.T) {
 				t.Errorf("getClientIP() = %v, want %v", gotIP, tt.wantClientIP)
 			}
 		})
+	}
+}
+
+func TestRateLimiterMap_CleanupInactive(t *testing.T) {
+	// Setup
+	rlm := &RateLimiterMap{
+		limiters: make(map[string]*rateLimiterEntry),
+	}
+
+	// Add an old entry (20 minutes ago)
+	rlm.mu.Lock()
+	rlm.limiters["old-ip"] = &rateLimiterEntry{
+		limiter:  rate.NewLimiter(1, 1),
+		lastSeen: time.Now().Add(-20 * time.Minute),
+	}
+	// Add a new entry (1 minute ago)
+	rlm.limiters["new-ip"] = &rateLimiterEntry{
+		limiter:  rate.NewLimiter(1, 1),
+		lastSeen: time.Now().Add(-1 * time.Minute),
+	}
+	rlm.mu.Unlock()
+
+	// Run cleanup
+	rlm.cleanupInactive()
+
+	// Verify
+	rlm.mu.RLock()
+	defer rlm.mu.RUnlock()
+
+	if _, exists := rlm.limiters["old-ip"]; exists {
+		t.Error("cleanupInactive() failed to remove old entry")
+	}
+
+	if _, exists := rlm.limiters["new-ip"]; !exists {
+		t.Error("cleanupInactive() incorrectly removed new entry")
 	}
 }

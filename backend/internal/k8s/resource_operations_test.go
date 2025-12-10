@@ -19,6 +19,7 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/flaucha/DKonsole/backend/internal/auth"
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
@@ -444,5 +445,141 @@ func TestWatchResources_StartWatchError(t *testing.T) {
 	}
 	if !strings.Contains(string(msg), "watch failed") {
 		t.Fatalf("expected error message, got %s", string(msg))
+	}
+}
+
+func TestDryRunResourceYAML_Success(t *testing.T) {
+	handlers := newHandlersWithDynamic()
+	clusterService := cluster.NewService(handlers)
+	service := NewService(handlers, clusterService)
+
+	body := bytes.NewBufferString("apiVersion: v1\nkind: Pod\nmetadata:\n  name: dry-pod\n  namespace: default\n")
+	req := adminCtx(httptest.NewRequest(http.MethodPost, "/api/resource/dry-run", body))
+	rr := httptest.NewRecorder()
+
+	// Mock dynamic client behaviors (create returns object)
+	// We need to inject reactor for Create to return the object
+	dyn := handlers.Dynamics["default"].(*dynamicfake.FakeDynamicClient)
+	dyn.PrependReactor("create", "pods", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		createAction := action.(k8stesting.CreateAction)
+		return true, createAction.GetObject(), nil
+	})
+
+	service.DryRunResourceYAML(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "Dry run successful") {
+		t.Fatalf("expected success message, got %s", rr.Body.String())
+	}
+}
+
+func TestValidateResourceYAML_Success(t *testing.T) {
+	handlers := newHandlersWithDynamic()
+	clusterService := cluster.NewService(handlers)
+	service := NewService(handlers, clusterService)
+
+	body := bytes.NewBufferString("apiVersion: v1\nkind: Pod\nmetadata:\n  name: val-pod\n")
+	req := adminCtx(httptest.NewRequest(http.MethodPost, "/api/resource/validate", body))
+	rr := httptest.NewRecorder()
+
+	service.ValidateResourceYAML(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "YAML is valid") {
+		t.Fatalf("expected valid message, got %s", rr.Body.String())
+	}
+}
+
+func TestServerSideApply_Success(t *testing.T) {
+	handlers := newHandlersWithDynamic()
+	clusterService := cluster.NewService(handlers)
+	service := NewService(handlers, clusterService)
+
+	body := bytes.NewBufferString("apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: apply-cm\n  namespace: default\n")
+	req := adminCtx(httptest.NewRequest(http.MethodPost, "/api/resource/apply", body))
+	rr := httptest.NewRecorder()
+
+	// Mock dynamic client behaviors (patch returns object)
+	dyn := handlers.Dynamics["default"].(*dynamicfake.FakeDynamicClient)
+	dyn.PrependReactor("patch", "configmaps", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		// Return some object
+		return true, &unstructured.Unstructured{Object: map[string]interface{}{"metadata": map[string]interface{}{"name": "apply-cm"}}}, nil
+	})
+
+	service.ServerSideApply(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	// Check streaming response
+	resp := rr.Body.String()
+	if !strings.Contains(resp, "Starting Server-Side Apply") {
+		t.Fatalf("expected starting message")
+	}
+	if !strings.Contains(resp, "event: success") {
+		t.Fatalf("expected success event")
+	}
+}
+
+func TestImportResourceYAMLHandler_ClusterError(t *testing.T) {
+	handlers := &models.Handlers{
+		Clients:  map[string]kubernetes.Interface{},
+		Dynamics: map[string]dynamic.Interface{},
+	}
+	clusterService := cluster.NewService(handlers)
+	service := NewService(handlers, clusterService)
+
+	req := adminCtx(httptest.NewRequest(http.MethodPost, "/api/resource/import?cluster=ghost", bytes.NewBufferString("kind: ConfigMap")))
+	rr := httptest.NewRecorder()
+
+	service.ImportResourceYAML(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", rr.Code)
+	}
+}
+
+func TestImportResourceYAMLHandler_ImportError(t *testing.T) {
+	handlers := newHandlersWithDynamic()
+	clusterService := cluster.NewService(handlers)
+	service := NewService(handlers, clusterService)
+
+	// Mock import failing by ensuring resolve fails or similar?
+	// ImportService calls ResolveGVR then Patch/Create.
+	// If ResolveGVR fails, ImportResources fails.
+	// We can't inject mock ImportService easily into Service unless we replace factory.
+
+	// Better: Use mock factory and return error from ImportSvc.
+	// We need to implement a MockImportService or fake it.
+	// ImportService is a struct, not interface in factory.
+	// But factory returns *ImportService.
+	// So we need to control ImportService dependency.
+
+	// ImportService uses ResourceRepository and GVRResolver.
+	// Make resolver fail.
+
+	failingResolver := &fakeGVRResolver{err: errors.New("resolve failure")}
+	repo := &fakeResourceRepo{}
+	importSvc := NewImportService(repo, failingResolver, handlers.Clients["default"])
+
+	mockFactory := newMockServiceFactory()
+	mockFactory.importSvc = importSvc
+	service.serviceFactory = mockFactory
+
+	body := bytes.NewBufferString("---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: p\n")
+	req := adminCtx(httptest.NewRequest(http.MethodPost, "/api/resource/import", body))
+	rr := httptest.NewRecorder()
+
+	service.ImportResourceYAML(rr, req)
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "resolve failure") {
+		t.Fatalf("expected resolve failure, got %s", rr.Body.String())
 	}
 }
