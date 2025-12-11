@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.10] - 2025-12-11
+
+### Added
+- **ReplicaSets**: Added full support for ReplicaSets.
+  - New "ReplicaSets" submenu under "Workloads".
+  - Dedicated list view with columns for Ready, Available, and Images.
+  - Detailed view with tabs for general information (Images, Replicas, Labels) and associated Pods.
+  - Shortened image tags with copy-on-click functionality in both list and detail views.
+
+### Changed
+- **UI:** Improved Deployment list view to display shortened image tags (hash only) with copy-on-click functionality, matching the Details view behavior.
+- **Frontend Architecture:** Refactored workload details rendering to be more modular and consistent across different resource types.
+
+### Fixed
+- **Backend Linting:** Resolved `gofmt` formatting issues in `list_replicasets.go`.
+
+
 ## [1.4.9] - 2025-12-10
 
 ### Added
