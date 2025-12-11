@@ -5,6 +5,7 @@ import { getExpandableRowClasses, getExpandableRowRowClasses } from '../../utils
 import NodeDetails from '../details/NodeDetails';
 import { ServiceAccountDetails, RoleDetails, BindingDetails } from '../details/RbacDetails';
 import DeploymentDetails from '../details/DeploymentDetails';
+import ReplicaSetDetails from '../details/ReplicaSetDetails';
 import ServiceDetails from '../details/ServiceDetails';
 import IngressDetails from '../details/IngressDetails';
 import PodDetails from '../details/PodDetails';
@@ -56,6 +57,7 @@ const WorkloadTable = ({
             case 'RoleBinding':
             case 'ClusterRoleBinding': return <BindingDetails details={res.details} onEditYAML={onEditYAML} />;
             case 'Deployment': return <DeploymentDetails details={res.details} onScale={(delta) => handleScale(res, delta)} scaling={scaling === res.name} res={res} onEditYAML={onEditYAML} />;
+            case 'ReplicaSet': return <ReplicaSetDetails details={res.details} res={res} />;
             case 'Service': return <ServiceDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} name={res.name} />;
             case 'Ingress': return <IngressDetails details={res.details} onEditYAML={onEditYAML} namespace={res.namespace} />;
             case 'Pod': return <PodDetails details={res.details} onEditYAML={onEditYAML} pod={res} />;

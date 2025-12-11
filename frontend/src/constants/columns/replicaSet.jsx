@@ -3,7 +3,7 @@ import ResourceCell from '../../components/workloads/cells/ResourceCell';
 import { SmartImage } from '../../components/details/CommonDetails';
 import { parseReadyRatio } from '../../utils/workloadUtils';
 
-export const deploymentColumns = [
+export const replicaSetColumns = [
     {
         id: 'ready',
         label: 'Ready',
@@ -15,14 +15,6 @@ export const deploymentColumns = [
                 {item.details?.ready || 0}/{item.details?.replicas || 0}
             </span>
         )
-    },
-    {
-        id: 'upToDate',
-        label: 'Up-to-Date',
-        width: 'minmax(110px, 0.8fr)',
-        sortValue: (item) => item.details?.updated || 0,
-        align: 'center',
-        renderCell: (item) => <span>{item.details?.updated || 0}</span>
     },
     {
         id: 'available',

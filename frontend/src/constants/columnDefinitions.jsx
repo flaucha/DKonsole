@@ -13,6 +13,7 @@ import {
 } from './columns/storage';
 import { configColumns } from './columns/config';
 import { networkPolicyColumns } from './columns/networkPolicy';
+import { replicaSetColumns } from './columns/replicaSet';
 
 export const getWorkloadColumns = (kind) => {
     // Common columns
@@ -58,6 +59,9 @@ export const getWorkloadColumns = (kind) => {
             break;
         case 'NetworkPolicy':
             specificColumns = networkPolicyColumns;
+            break;
+        case 'ReplicaSet':
+            specificColumns = replicaSetColumns;
             break;
         default:
             specificColumns = [];

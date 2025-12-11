@@ -146,6 +146,9 @@ func (s *ResourceListService) fetchResourcesByKind(ctx context.Context, req List
 		resources, listErr = s.listResourceQuotas(ctx, req.Client, namespace, listOpts)
 	case "LimitRange":
 		resources, listErr = s.listLimitRanges(ctx, req.Client, namespace, listOpts)
+
+	case "ReplicaSet":
+		resources, listErr = s.listReplicaSets(ctx, req.Client, namespace, listOpts)
 	default:
 		// Return empty list for unknown kinds
 		resources = []models.Resource{}

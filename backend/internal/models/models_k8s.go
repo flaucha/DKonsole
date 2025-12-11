@@ -47,6 +47,17 @@ type DeploymentDetails struct {
 	LimitsMem         string            `json:"limitsMem,omitempty"`
 }
 
+// ReplicaSetDetails contiene detalles específicos de un ReplicaSet
+type ReplicaSetDetails struct {
+	Replicas          int32             `json:"replicas"`
+	Ready             int32             `json:"ready"`
+	AvailableReplicas int32             `json:"available"`
+	Images            []string          `json:"images"`
+	ImageTag          string            `json:"imageTag,omitempty"`
+	Labels            map[string]string `json:"labels,omitempty"`
+	PodLabels         map[string]string `json:"podLabels"`
+}
+
 // ResourceMeta contiene metadatos sobre un tipo de recurso de Kubernetes
 type ResourceMeta struct {
 	Group      string
@@ -83,6 +94,7 @@ type HelmRelease struct {
 // ResourceMetaMap contiene el mapeo de tipos de recursos a sus metadatos
 var ResourceMetaMap = map[string]ResourceMeta{
 	"Deployment":              {Group: "apps", Version: "v1", Resource: "deployments", Namespaced: true},
+	"ReplicaSet":              {Group: "apps", Version: "v1", Resource: "replicasets", Namespaced: true},
 	"Node":                    {Group: "", Version: "v1", Resource: "nodes", Namespaced: false},
 	"Namespace":               {Group: "", Version: "v1", Resource: "namespaces", Namespaced: false},
 	"Pod":                     {Group: "", Version: "v1", Resource: "pods", Namespaced: true},
@@ -112,6 +124,7 @@ var ResourceMetaMap = map[string]ResourceMeta{
 var KindAliases = map[string]string{
 	"HPA": "HorizontalPodAutoscaler",
 	"PVC": "PersistentVolumeClaim",
+	"RS":  "ReplicaSet",
 	"PV":  "PersistentVolume",
 	"SC":  "StorageClass",
 	"SA":  "ServiceAccount",

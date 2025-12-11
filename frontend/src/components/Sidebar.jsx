@@ -21,6 +21,7 @@ const Sidebar = ({
     const getPath = (view) => {
         const kindMap = {
             'Deployments': 'Deployment',
+            'ReplicaSets': 'ReplicaSet',
             'Pods': 'Pod',
             'ConfigMaps': 'ConfigMap',
             'Secrets': 'Secret',
@@ -104,7 +105,7 @@ const Sidebar = ({
                             onClick={() => toggleMenu('workloads')}
                         />
                         <SubMenu isOpen={expandedMenus.workloads} animationStyle={menuAnimation} animationSpeed={menuAnimationSpeed}>
-                            {['Deployments', 'Pods', 'ConfigMaps', 'Secrets', 'Jobs', 'CronJobs', 'StatefulSets', 'DaemonSets', 'HPA'].map(item => (
+                            {['Deployments', 'ReplicaSets', 'Pods', 'ConfigMaps', 'Secrets', 'Jobs', 'CronJobs', 'StatefulSets', 'DaemonSets', 'HPA'].map(item => (
                                 <SubItem
                                     key={item}
                                     label={item}
