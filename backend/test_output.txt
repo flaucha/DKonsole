@@ -1,310 +1,224 @@
-{"fields.level":"warning","level":"warning","msg":"Generated random JWT_SECRET for non-production (set JWT_SECRET to persist sessions)","time":"2025-12-09T21:05:15.246-03:00","type":"warn"}
-=== RUN   TestClusterStatsService_GetClusterStats
-=== RUN   TestClusterStatsService_GetClusterStats/successful_stats_retrieval
-=== RUN   TestClusterStatsService_GetClusterStats/partial_errors_-_some_stats_succeed
-{"error":"failed to get pod count","level":"error","message":"Error fetching pod count","msg":"Error fetching pod count","resource":"pods","time":"2025-12-09T21:05:15.246-03:00","type":"error"}
-{"error":"failed to get service count","level":"error","message":"Error fetching service count","msg":"Error fetching service count","resource":"services","time":"2025-12-09T21:05:15.246-03:00","type":"error"}
-=== RUN   TestClusterStatsService_GetClusterStats/all_stats_succeed
---- PASS: TestClusterStatsService_GetClusterStats (0.00s)
-    --- PASS: TestClusterStatsService_GetClusterStats/successful_stats_retrieval (0.00s)
-    --- PASS: TestClusterStatsService_GetClusterStats/partial_errors_-_some_stats_succeed (0.00s)
-    --- PASS: TestClusterStatsService_GetClusterStats/all_stats_succeed (0.00s)
-=== RUN   TestK8sCronJobRepository
---- PASS: TestK8sCronJobRepository (0.00s)
-=== RUN   TestService_TriggerCronJobHandler
---- PASS: TestService_TriggerCronJobHandler (0.00s)
-=== RUN   TestService_TriggerCronJobHandler_Errors
-=== RUN   TestService_TriggerCronJobHandler_Errors/missing_client
-=== RUN   TestService_TriggerCronJobHandler_Errors/invalid_body
---- PASS: TestService_TriggerCronJobHandler_Errors (0.00s)
-    --- PASS: TestService_TriggerCronJobHandler_Errors/missing_client (0.00s)
-    --- PASS: TestService_TriggerCronJobHandler_Errors/invalid_body (0.00s)
-=== RUN   TestCronJobService_TriggerCronJob
-=== RUN   TestCronJobService_TriggerCronJob/successful_trigger
-=== RUN   TestCronJobService_TriggerCronJob/cronjob_not_found
-=== RUN   TestCronJobService_TriggerCronJob/create_job_fails
---- PASS: TestCronJobService_TriggerCronJob (0.00s)
-    --- PASS: TestCronJobService_TriggerCronJob/successful_trigger (0.00s)
-    --- PASS: TestCronJobService_TriggerCronJob/cronjob_not_found (0.00s)
-    --- PASS: TestCronJobService_TriggerCronJob/create_job_fails (0.00s)
-=== RUN   TestDeploymentService_ScaleDeployment
-=== RUN   TestDeploymentService_ScaleDeployment/scale_up_successfully
-=== RUN   TestDeploymentService_ScaleDeployment/scale_down_successfully
-=== RUN   TestDeploymentService_ScaleDeployment/scale_to_zero_when_delta_is_negative_enough
-=== RUN   TestDeploymentService_ScaleDeployment/scale_from_zero
-=== RUN   TestDeploymentService_ScaleDeployment/get_scale_error
-=== RUN   TestDeploymentService_ScaleDeployment/update_scale_error
---- PASS: TestDeploymentService_ScaleDeployment (0.00s)
-    --- PASS: TestDeploymentService_ScaleDeployment/scale_up_successfully (0.00s)
-    --- PASS: TestDeploymentService_ScaleDeployment/scale_down_successfully (0.00s)
-    --- PASS: TestDeploymentService_ScaleDeployment/scale_to_zero_when_delta_is_negative_enough (0.00s)
-    --- PASS: TestDeploymentService_ScaleDeployment/scale_from_zero (0.00s)
-    --- PASS: TestDeploymentService_ScaleDeployment/get_scale_error (0.00s)
-    --- PASS: TestDeploymentService_ScaleDeployment/update_scale_error (0.00s)
-=== RUN   TestDeploymentService_RolloutDeployment
-=== RUN   TestDeploymentService_RolloutDeployment/rollout_successful
-=== RUN   TestDeploymentService_RolloutDeployment/deployment_not_found
-=== RUN   TestDeploymentService_RolloutDeployment/update_deployment_error
-=== RUN   TestDeploymentService_RolloutDeployment/rollout_with_existing_annotations
---- PASS: TestDeploymentService_RolloutDeployment (0.00s)
-    --- PASS: TestDeploymentService_RolloutDeployment/rollout_successful (0.00s)
-    --- PASS: TestDeploymentService_RolloutDeployment/deployment_not_found (0.00s)
-    --- PASS: TestDeploymentService_RolloutDeployment/update_deployment_error (0.00s)
-    --- PASS: TestDeploymentService_RolloutDeployment/rollout_with_existing_annotations (0.00s)
-=== RUN   TestServiceFactory_CreateServices
---- PASS: TestServiceFactory_CreateServices (0.00s)
-=== RUN   TestImportService_ImportResources
-=== RUN   TestImportService_ImportResources/empty_YAML
-=== RUN   TestImportService_ImportResources/missing_kind
-=== RUN   TestImportService_ImportResources/system_namespace_blocked
---- PASS: TestImportService_ImportResources (0.00s)
-    --- PASS: TestImportService_ImportResources/empty_YAML (0.00s)
-    --- PASS: TestImportService_ImportResources/missing_kind (0.00s)
-    --- PASS: TestImportService_ImportResources/system_namespace_blocked (0.00s)
-=== RUN   TestGetResourceYAML_Handler
---- PASS: TestGetResourceYAML_Handler (0.00s)
-=== RUN   TestGetResourceYAML_Handler_Success
---- PASS: TestGetResourceYAML_Handler_Success (0.00s)
-=== RUN   TestGetResourceYAML_MissingParams
---- PASS: TestGetResourceYAML_MissingParams (0.00s)
-=== RUN   TestGetNamespacesHandler_Success
---- PASS: TestGetNamespacesHandler_Success (0.06s)
-=== RUN   TestGetNamespacesHandler_ClusterNotFound
---- PASS: TestGetNamespacesHandler_ClusterNotFound (0.00s)
-=== RUN   TestGetNamespacesHandler_ServiceError
---- PASS: TestGetNamespacesHandler_ServiceError (0.00s)
-=== RUN   TestGetResourcesHandler_Success
---- PASS: TestGetResourcesHandler_Success (0.00s)
-=== RUN   TestGetResourcesHandler_AccessDenied
---- PASS: TestGetResourcesHandler_AccessDenied (0.00s)
-=== RUN   TestGetResourcesHandler_MissingKind
---- PASS: TestGetResourcesHandler_MissingKind (0.00s)
-=== RUN   TestGetResourcesHandler_ClusterNotFound
---- PASS: TestGetResourcesHandler_ClusterNotFound (0.00s)
-=== RUN   TestGetResourcesHandler_InternalError
---- PASS: TestGetResourcesHandler_InternalError (0.00s)
-=== RUN   TestScaleResourceHandler_Success
---- PASS: TestScaleResourceHandler_Success (0.00s)
-=== RUN   TestScaleResourceHandler_InvalidDelta
---- PASS: TestScaleResourceHandler_InvalidDelta (0.00s)
-=== RUN   TestScaleResourceHandler_Forbidden
---- PASS: TestScaleResourceHandler_Forbidden (0.00s)
-=== RUN   TestScaleResourceHandler_ValidationErrors
-=== RUN   TestScaleResourceHandler_ValidationErrors/method_not_allowed
-=== RUN   TestScaleResourceHandler_ValidationErrors/unsupported_kind
-=== RUN   TestScaleResourceHandler_ValidationErrors/missing_name
-=== RUN   TestScaleResourceHandler_ValidationErrors/invalid_name
-=== RUN   TestScaleResourceHandler_ValidationErrors/invalid_namespace
-=== RUN   TestScaleResourceHandler_ValidationErrors/missing_delta
-=== RUN   TestScaleResourceHandler_ValidationErrors/zero_delta
-=== RUN   TestScaleResourceHandler_ValidationErrors/cluster_not_found
---- PASS: TestScaleResourceHandler_ValidationErrors (0.00s)
-    --- PASS: TestScaleResourceHandler_ValidationErrors/method_not_allowed (0.00s)
-    --- PASS: TestScaleResourceHandler_ValidationErrors/unsupported_kind (0.00s)
-    --- PASS: TestScaleResourceHandler_ValidationErrors/missing_name (0.00s)
-    --- PASS: TestScaleResourceHandler_ValidationErrors/invalid_name (0.00s)
-    --- PASS: TestScaleResourceHandler_ValidationErrors/invalid_namespace (0.00s)
-    --- PASS: TestScaleResourceHandler_ValidationErrors/missing_delta (0.00s)
-    --- PASS: TestScaleResourceHandler_ValidationErrors/zero_delta (0.00s)
-    --- PASS: TestScaleResourceHandler_ValidationErrors/cluster_not_found (0.00s)
-=== RUN   TestScaleResourceHandler_ServiceError
---- PASS: TestScaleResourceHandler_ServiceError (0.00s)
-=== RUN   TestGetClusterStatsHandler_Success
---- PASS: TestGetClusterStatsHandler_Success (0.00s)
-=== RUN   TestGetClusterStatsHandler_Error
-{"error":"boom","level":"error","message":"Error fetching node count","msg":"Error fetching node count","resource":"nodes","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
-{"error":"boom","level":"error","message":"Error fetching namespace count","msg":"Error fetching namespace count","resource":"namespaces","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
-{"error":"boom","level":"error","message":"Error fetching pod count","msg":"Error fetching pod count","resource":"pods","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
-{"error":"boom","level":"error","message":"Error fetching deployment count","msg":"Error fetching deployment count","resource":"deployments","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
-{"error":"boom","level":"error","message":"Error fetching service count","msg":"Error fetching service count","resource":"services","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
-{"error":"boom","level":"error","message":"Error fetching ingress count","msg":"Error fetching ingress count","resource":"ingresses","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
-{"error":"boom","level":"error","message":"Error fetching PVC count","msg":"Error fetching PVC count","resource":"pvcs","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
-{"error":"boom","level":"error","message":"Error fetching PV count","msg":"Error fetching PV count","resource":"pvs","time":"2025-12-09T21:05:15.311-03:00","type":"error"}
---- PASS: TestGetClusterStatsHandler_Error (0.00s)
-=== RUN   TestGetClusterStatsHandler_ClusterNotFound
---- PASS: TestGetClusterStatsHandler_ClusterNotFound (0.00s)
-=== RUN   TestRolloutDeploymentHandler
-=== RUN   TestRolloutDeploymentHandler/success
-=== RUN   TestRolloutDeploymentHandler/method_not_allowed
-=== RUN   TestRolloutDeploymentHandler/invalid_json
-=== RUN   TestRolloutDeploymentHandler/missing_params
-=== RUN   TestRolloutDeploymentHandler/invalid_name
-=== RUN   TestRolloutDeploymentHandler/forbidden
-=== RUN   TestRolloutDeploymentHandler/service_error
-=== RUN   TestRolloutDeploymentHandler/cluster_not_found
---- PASS: TestRolloutDeploymentHandler (0.00s)
-    --- PASS: TestRolloutDeploymentHandler/success (0.00s)
-    --- PASS: TestRolloutDeploymentHandler/method_not_allowed (0.00s)
-    --- PASS: TestRolloutDeploymentHandler/invalid_json (0.00s)
-    --- PASS: TestRolloutDeploymentHandler/missing_params (0.00s)
-    --- PASS: TestRolloutDeploymentHandler/invalid_name (0.00s)
-    --- PASS: TestRolloutDeploymentHandler/forbidden (0.00s)
-    --- PASS: TestRolloutDeploymentHandler/service_error (0.00s)
-    --- PASS: TestRolloutDeploymentHandler/cluster_not_found (0.00s)
-=== RUN   TestResourceListService_ListPods_WithMetrics
-    list_core_new_test.go:83: expected CPU 100m, got 
-    list_core_new_test.go:88: expected Memory 100.0Mi, got 
---- FAIL: TestResourceListService_ListPods_WithMetrics (0.00s)
-=== RUN   TestListPods
---- PASS: TestListPods (0.00s)
-=== RUN   TestListServices
---- PASS: TestListServices (0.00s)
-=== RUN   TestResourceListService_ListIngresses
---- PASS: TestResourceListService_ListIngresses (0.00s)
-=== RUN   TestResourceListService_ListServices_ExternalIPs
---- PASS: TestResourceListService_ListServices_ExternalIPs (0.00s)
-=== RUN   TestListRoles
---- PASS: TestListRoles (0.00s)
-=== RUN   TestListPVCs
---- PASS: TestListPVCs (0.00s)
-=== RUN   TestListDeployments
---- PASS: TestListDeployments (0.00s)
-=== RUN   TestNamespaceService_GetNamespaces
-=== RUN   TestNamespaceService_GetNamespaces/successful_list_all_namespaces_(admin)
-=== RUN   TestNamespaceService_GetNamespaces/repository_error
-=== RUN   TestNamespaceService_GetNamespaces/empty_namespaces_list
---- PASS: TestNamespaceService_GetNamespaces (0.00s)
-    --- PASS: TestNamespaceService_GetNamespaces/successful_list_all_namespaces_(admin) (0.00s)
-    --- PASS: TestNamespaceService_GetNamespaces/repository_error (0.00s)
-    --- PASS: TestNamespaceService_GetNamespaces/empty_namespaces_list (0.00s)
-=== RUN   TestK8sClusterStatsRepository_Counts
---- PASS: TestK8sClusterStatsRepository_Counts (0.00s)
-=== RUN   TestK8sDeploymentRepository
---- PASS: TestK8sDeploymentRepository (0.00s)
-=== RUN   TestResourceListService_ListResources_PermissionDenied
---- PASS: TestResourceListService_ListResources_PermissionDenied (0.00s)
-=== RUN   TestResourceListService_ListResources_FiltersByPermissions
---- PASS: TestResourceListService_ListResources_FiltersByPermissions (0.00s)
-=== RUN   TestResourceListService_ListResources_NoUser
---- PASS: TestResourceListService_ListResources_NoUser (0.00s)
-=== RUN   TestResourceListService_ListResources_ManyKinds
-=== RUN   TestResourceListService_ListResources_ManyKinds/secret
-=== RUN   TestResourceListService_ListResources_ManyKinds/job
-=== RUN   TestResourceListService_ListResources_ManyKinds/cronjob
-=== RUN   TestResourceListService_ListResources_ManyKinds/statefulset
-=== RUN   TestResourceListService_ListResources_ManyKinds/daemonset
-=== RUN   TestResourceListService_ListResources_ManyKinds/hpa
-=== RUN   TestResourceListService_ListResources_ManyKinds/ingress
-=== RUN   TestResourceListService_ListResources_ManyKinds/serviceaccount
-=== RUN   TestResourceListService_ListResources_ManyKinds/role
-=== RUN   TestResourceListService_ListResources_ManyKinds/clusterrole
-=== RUN   TestResourceListService_ListResources_ManyKinds/rolebinding
-=== RUN   TestResourceListService_ListResources_ManyKinds/clusterrolebinding
-=== RUN   TestResourceListService_ListResources_ManyKinds/networkpolicy
-=== RUN   TestResourceListService_ListResources_ManyKinds/pvc
-=== RUN   TestResourceListService_ListResources_ManyKinds/pv
-=== RUN   TestResourceListService_ListResources_ManyKinds/storageclass
-=== RUN   TestResourceListService_ListResources_ManyKinds/resourcequota
-=== RUN   TestResourceListService_ListResources_ManyKinds/limitrange
---- PASS: TestResourceListService_ListResources_ManyKinds (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/secret (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/job (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/cronjob (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/statefulset (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/daemonset (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/hpa (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/ingress (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/serviceaccount (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/role (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/clusterrole (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/rolebinding (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/clusterrolebinding (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/networkpolicy (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/pvc (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/pv (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/storageclass (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/resourcequota (0.00s)
-    --- PASS: TestResourceListService_ListResources_ManyKinds/limitrange (0.00s)
-=== RUN   TestUpdateResourceYAMLHandler_Success
---- PASS: TestUpdateResourceYAMLHandler_Success (0.00s)
-=== RUN   TestUpdateResourceYAMLHandler_MissingParams
---- PASS: TestUpdateResourceYAMLHandler_MissingParams (0.00s)
-=== RUN   TestUpdateResourceYAMLHandler_Forbidden
---- PASS: TestUpdateResourceYAMLHandler_Forbidden (0.00s)
-=== RUN   TestCreateResourceYAMLHandler_Success
---- PASS: TestCreateResourceYAMLHandler_Success (0.00s)
-=== RUN   TestCreateResourceYAMLHandler_ClusterNotFound
---- PASS: TestCreateResourceYAMLHandler_ClusterNotFound (0.00s)
-=== RUN   TestDryRunResourceYAML_InvalidYAML
---- PASS: TestDryRunResourceYAML_InvalidYAML (0.00s)
-=== RUN   TestDryRunResourceYAML_ClusterNotFound
---- PASS: TestDryRunResourceYAML_ClusterNotFound (0.00s)
-=== RUN   TestValidateResourceYAML_MissingKind
---- PASS: TestValidateResourceYAML_MissingKind (0.00s)
-=== RUN   TestServerSideApply_ClusterError
---- PASS: TestServerSideApply_ClusterError (0.00s)
-=== RUN   TestImportResourceYAMLHandler_Success
---- PASS: TestImportResourceYAMLHandler_Success (0.00s)
-=== RUN   TestStreamResourceCreation_Success
---- PASS: TestStreamResourceCreation_Success (0.00s)
-=== RUN   TestStreamResourceCreation_Error
---- PASS: TestStreamResourceCreation_Error (0.00s)
-=== RUN   TestDeleteResourceHandler_Success
---- PASS: TestDeleteResourceHandler_Success (0.00s)
-=== RUN   TestDeleteResourceHandler_Forbidden
---- PASS: TestDeleteResourceHandler_Forbidden (0.00s)
-=== RUN   TestDeleteResourceHandler_MissingParams
---- PASS: TestDeleteResourceHandler_MissingParams (0.00s)
-=== RUN   TestWatchResources_Success
---- PASS: TestWatchResources_Success (0.00s)
-=== RUN   TestWatchResources_StartWatchError
---- PASS: TestWatchResources_StartWatchError (0.00s)
-=== RUN   TestDryRunResourceYAML_Success
---- PASS: TestDryRunResourceYAML_Success (0.00s)
-=== RUN   TestValidateResourceYAML_Success
---- PASS: TestValidateResourceYAML_Success (0.00s)
-=== RUN   TestServerSideApply_Success
---- PASS: TestServerSideApply_Success (0.00s)
-=== RUN   TestK8sResourceRepository_CRUD
---- PASS: TestK8sResourceRepository_CRUD (0.00s)
-=== RUN   TestK8sResourceRepository_Errors
---- PASS: TestK8sResourceRepository_Errors (0.00s)
-=== RUN   TestResolveGVR
---- PASS: TestResolveGVR (0.00s)
-=== RUN   TestNewK8sGVRResolver
---- PASS: TestNewK8sGVRResolver (0.00s)
-=== RUN   TestResourceService_GetResourceYAML
---- PASS: TestResourceService_GetResourceYAML (0.00s)
-=== RUN   TestResourceService_UpdateResource_Success
---- PASS: TestResourceService_UpdateResource_Success (0.00s)
-=== RUN   TestResourceService_UpdateResource_InvalidYAML
---- PASS: TestResourceService_UpdateResource_InvalidYAML (0.00s)
-=== RUN   TestResourceService_UpdateResource_PermissionDenied
---- PASS: TestResourceService_UpdateResource_PermissionDenied (0.00s)
-=== RUN   TestResourceService_DeleteResource_RequiresNamespace
---- PASS: TestResourceService_DeleteResource_RequiresNamespace (0.00s)
-=== RUN   TestResourceService_DeleteResource_Success
---- PASS: TestResourceService_DeleteResource_Success (0.00s)
-=== RUN   TestResourceService_CreateResource_DefaultNamespace
---- PASS: TestResourceService_CreateResource_DefaultNamespace (0.00s)
-=== RUN   TestResourceListService_listNodes
---- PASS: TestResourceListService_listNodes (0.00s)
-=== RUN   TestResourceListService_listPods
---- PASS: TestResourceListService_listPods (0.00s)
-=== RUN   TestResourceListService_listConfigMaps
---- PASS: TestResourceListService_listConfigMaps (0.00s)
-=== RUN   TestResourceListService_listServices
---- PASS: TestResourceListService_listServices (0.00s)
-=== RUN   TestResourceListService_DeniesNamespaceWithoutAccess
---- PASS: TestResourceListService_DeniesNamespaceWithoutAccess (0.00s)
-=== RUN   TestResourceListService_AllNamespacesFilteredAndSelector
---- PASS: TestResourceListService_AllNamespacesFilteredAndSelector (0.00s)
-=== RUN   TestResourceListService_FailsWithoutUserContext
---- PASS: TestResourceListService_FailsWithoutUserContext (0.00s)
-=== RUN   TestWatchService_TransformEvent
-=== RUN   TestWatchService_TransformEvent/valid_ADD_event
-=== RUN   TestWatchService_TransformEvent/valid_MODIFIED_event
-=== RUN   TestWatchService_TransformEvent/valid_DELETED_event
-=== RUN   TestWatchService_TransformEvent/cluster-scoped_resource_(no_namespace)
-=== RUN   TestWatchService_TransformEvent/invalid_object_type
---- PASS: TestWatchService_TransformEvent (0.00s)
-    --- PASS: TestWatchService_TransformEvent/valid_ADD_event (0.00s)
-    --- PASS: TestWatchService_TransformEvent/valid_MODIFIED_event (0.00s)
-    --- PASS: TestWatchService_TransformEvent/valid_DELETED_event (0.00s)
-    --- PASS: TestWatchService_TransformEvent/cluster-scoped_resource_(no_namespace) (0.00s)
-    --- PASS: TestWatchService_TransformEvent/invalid_object_type (0.00s)
-=== RUN   TestWatchService_StartWatch
---- PASS: TestWatchService_StartWatch (0.00s)
+{"fields.level":"warning","level":"warning","msg":"Generated random JWT_SECRET for non-production (set JWT_SECRET to persist sessions)","time":"2025-12-13T11:56:56.392-03:00","type":"warn"}
+=== RUN   TestLoginHandler
+=== RUN   TestLoginHandler/successful_login
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:56.493-03:00","type":"info","username":"admin"}
+{"idp":"core","level":"info","msg":"Login successful","role":"admin","time":"2025-12-13T11:56:56.595-03:00","type":"info","username":"admin"}
+=== RUN   TestLoginHandler/invalid_JSON_body
+=== RUN   TestLoginHandler/invalid_credentials
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:56.595-03:00","type":"info","username":"admin"}
+=== RUN   TestLoginHandler/setup_mode_blocks_login
+=== RUN   TestLoginHandler/auth_service_not_initialized
+--- PASS: TestLoginHandler (0.27s)
+    --- PASS: TestLoginHandler/successful_login (0.10s)
+    --- PASS: TestLoginHandler/invalid_JSON_body (0.00s)
+    --- PASS: TestLoginHandler/invalid_credentials (0.07s)
+    --- PASS: TestLoginHandler/setup_mode_blocks_login (0.00s)
+    --- PASS: TestLoginHandler/auth_service_not_initialized (0.00s)
+=== RUN   TestLogoutHandler
+--- PASS: TestLogoutHandler (0.00s)
+=== RUN   TestMeHandler
+=== RUN   TestMeHandler/authenticated_user
+{"level":"info","msg":"GetCurrentUser: extracted from AuthClaims","permissions":null,"role":"admin","time":"2025-12-13T11:56:56.733-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"GetCurrentUser: returning claims","permissions":null,"role":"admin","time":"2025-12-13T11:56:56.734-03:00","type":"info","username":"admin"}
+{"idp":"","level":"info","msg":"MeHandler: returning user info","permissions":{},"role":"admin","time":"2025-12-13T11:56:56.734-03:00","type":"info","username":"admin"}
+=== RUN   TestMeHandler/no_user_in_context
+=== RUN   TestMeHandler/setup_mode_blocks_access
+=== RUN   TestMeHandler/auth_service_not_initialized
+--- PASS: TestMeHandler (0.07s)
+    --- PASS: TestMeHandler/authenticated_user (0.00s)
+    --- PASS: TestMeHandler/no_user_in_context (0.00s)
+    --- PASS: TestMeHandler/setup_mode_blocks_access (0.00s)
+    --- PASS: TestMeHandler/auth_service_not_initialized (0.00s)
+=== RUN   TestChangePasswordHandler
+=== RUN   TestChangePasswordHandler/setup_mode_blocks_access
+=== RUN   TestChangePasswordHandler/K8s_repo_not_available
+=== RUN   TestChangePasswordHandler/unauthorized_user_-_K8s_repo_checked_first
+--- PASS: TestChangePasswordHandler (0.07s)
+    --- PASS: TestChangePasswordHandler/setup_mode_blocks_access (0.00s)
+    --- PASS: TestChangePasswordHandler/K8s_repo_not_available (0.00s)
+    --- PASS: TestChangePasswordHandler/unauthorized_user_-_K8s_repo_checked_first (0.00s)
+=== RUN   TestChangePasswordHandler_WithK8s
+=== RUN   TestChangePasswordHandler_WithK8s/Success
+{"level":"info","msg":"GetCurrentUser: extracted from AuthClaims","permissions":null,"role":"admin","time":"2025-12-13T11:56:56.822-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"GetCurrentUser: returning claims","permissions":null,"role":"admin","time":"2025-12-13T11:56:56.822-03:00","type":"info","username":"admin"}
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:56.822-03:00","type":"info","username":"admin"}
+{"idp":"core","level":"info","msg":"Login successful","role":"admin","time":"2025-12-13T11:56:56.841-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"Password updated in Kubernetes secret","namespace":"default","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:56.861-03:00","type":"info"}
+{"level":"info","msg":"Password changed successfully","time":"2025-12-13T11:56:56.861-03:00","type":"info","username":"admin"}
+=== RUN   TestChangePasswordHandler_WithK8s/Wrong_Current_Password
+{"level":"info","msg":"GetCurrentUser: extracted from AuthClaims","permissions":null,"role":"admin","time":"2025-12-13T11:56:56.861-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"GetCurrentUser: returning claims","permissions":null,"role":"admin","time":"2025-12-13T11:56:56.861-03:00","type":"info","username":"admin"}
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:56.861-03:00","type":"info","username":"admin"}
+=== RUN   TestChangePasswordHandler_WithK8s/Short_New_Password
+=== RUN   TestChangePasswordHandler_WithK8s/No_Token
+--- PASS: TestChangePasswordHandler_WithK8s (0.07s)
+    --- PASS: TestChangePasswordHandler_WithK8s/Success (0.04s)
+    --- PASS: TestChangePasswordHandler_WithK8s/Wrong_Current_Password (0.02s)
+    --- PASS: TestChangePasswordHandler_WithK8s/Short_New_Password (0.00s)
+    --- PASS: TestChangePasswordHandler_WithK8s/No_Token (0.00s)
+=== RUN   TestJWTService_ValidateToken
+=== RUN   TestJWTService_ValidateToken/valid_token
+=== RUN   TestJWTService_ValidateToken/expired_token
+=== RUN   TestJWTService_ValidateToken/invalid_signature
+=== RUN   TestJWTService_ValidateToken/malformed_token
+=== RUN   TestJWTService_ValidateToken/empty_token
+--- PASS: TestJWTService_ValidateToken (0.00s)
+    --- PASS: TestJWTService_ValidateToken/valid_token (0.00s)
+    --- PASS: TestJWTService_ValidateToken/expired_token (0.00s)
+    --- PASS: TestJWTService_ValidateToken/invalid_signature (0.00s)
+    --- PASS: TestJWTService_ValidateToken/malformed_token (0.00s)
+    --- PASS: TestJWTService_ValidateToken/empty_token (0.00s)
+=== RUN   TestJWTService_ExtractToken
+=== RUN   TestJWTService_ExtractToken/token_in_Authorization_header
+=== RUN   TestJWTService_ExtractToken/token_in_query_parameter
+    jwt_test.go:188: ExtractToken() error = authorization token required, wantErr false
+=== RUN   TestJWTService_ExtractToken/token_in_access_token_query_parameter
+    jwt_test.go:188: ExtractToken() error = authorization token required, wantErr false
+=== RUN   TestJWTService_ExtractToken/token_in_Sec-WebSocket-Protocol_header
+=== RUN   TestJWTService_ExtractToken/token_in_cookie
+=== RUN   TestJWTService_ExtractToken/no_token
+--- FAIL: TestJWTService_ExtractToken (0.00s)
+    --- PASS: TestJWTService_ExtractToken/token_in_Authorization_header (0.00s)
+    --- FAIL: TestJWTService_ExtractToken/token_in_query_parameter (0.00s)
+    --- FAIL: TestJWTService_ExtractToken/token_in_access_token_query_parameter (0.00s)
+    --- PASS: TestJWTService_ExtractToken/token_in_Sec-WebSocket-Protocol_header (0.00s)
+    --- PASS: TestJWTService_ExtractToken/token_in_cookie (0.00s)
+    --- PASS: TestJWTService_ExtractToken/no_token (0.00s)
+=== RUN   TestJWTService_AuthenticateRequest
+=== RUN   TestJWTService_AuthenticateRequest/valid_token_in_header
+=== RUN   TestJWTService_AuthenticateRequest/no_token
+=== RUN   TestJWTService_AuthenticateRequest/invalid_token
+--- PASS: TestJWTService_AuthenticateRequest (0.00s)
+    --- PASS: TestJWTService_AuthenticateRequest/valid_token_in_header (0.00s)
+    --- PASS: TestJWTService_AuthenticateRequest/no_token (0.00s)
+    --- PASS: TestJWTService_AuthenticateRequest/invalid_token (0.00s)
+=== RUN   TestK8sUserRepository_GetAdminUserAndPassword
+--- PASS: TestK8sUserRepository_GetAdminUserAndPassword (0.00s)
+=== RUN   TestK8sUserRepository_SecretExistsAndCreateSecret
+{"level":"info","msg":"Creating Kubernetes secret","namespace":"ns-create","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:56.879-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"Secret created successfully","namespace":"ns-create","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:56.879-03:00","type":"info"}
+--- PASS: TestK8sUserRepository_SecretExistsAndCreateSecret (0.00s)
+=== RUN   TestEnvUserRepository
+--- PASS: TestEnvUserRepository (0.00s)
+=== RUN   TestUserContextKey
+--- PASS: TestUserContextKey (0.00s)
+=== RUN   TestAuthMiddleware
+=== RUN   TestAuthMiddleware/Setup_Mode_Active
+=== RUN   TestAuthMiddleware/JWT_Service_Not_Initialized
+=== RUN   TestAuthMiddleware/OPTIONS_Request
+=== RUN   TestAuthMiddleware/No_Token
+=== RUN   TestAuthMiddleware/Invalid_Token
+=== RUN   TestAuthMiddleware/Valid_Admin_Token
+{"level":"info","msg":"AuthMiddleware: extracted claims from JWT","permissions":null,"role":"admin","time":"2025-12-13T11:56:56.880-03:00","type":"info","username":"admin"}
+--- PASS: TestAuthMiddleware (0.00s)
+    --- PASS: TestAuthMiddleware/Setup_Mode_Active (0.00s)
+    --- PASS: TestAuthMiddleware/JWT_Service_Not_Initialized (0.00s)
+    --- PASS: TestAuthMiddleware/OPTIONS_Request (0.00s)
+    --- PASS: TestAuthMiddleware/No_Token (0.00s)
+    --- PASS: TestAuthMiddleware/Invalid_Token (0.00s)
+    --- PASS: TestAuthMiddleware/Valid_Admin_Token (0.00s)
+=== RUN   TestVerifyPassword
+=== RUN   TestVerifyPassword/correct_password
+=== RUN   TestVerifyPassword/wrong_password
+=== RUN   TestVerifyPassword/invalid_hash_format_-_too_few_parts
+=== RUN   TestVerifyPassword/unsupported_variant
+=== RUN   TestVerifyPassword/incompatible_version
+=== RUN   TestVerifyPassword/invalid_base64_salt
+=== RUN   TestVerifyPassword/invalid_base64_hash
+--- PASS: TestVerifyPassword (0.20s)
+    --- PASS: TestVerifyPassword/correct_password (0.06s)
+    --- PASS: TestVerifyPassword/wrong_password (0.07s)
+    --- PASS: TestVerifyPassword/invalid_hash_format_-_too_few_parts (0.00s)
+    --- PASS: TestVerifyPassword/unsupported_variant (0.00s)
+    --- PASS: TestVerifyPassword/incompatible_version (0.00s)
+    --- PASS: TestVerifyPassword/invalid_base64_salt (0.00s)
+    --- PASS: TestVerifyPassword/invalid_base64_hash (0.00s)
+=== RUN   TestNewService
+=== RUN   TestNewService/Initialize_with_K8s_client_-_Secret_Missing_(Setup_Mode)
+{"level":"info","msg":"Running in setup mode - secret does not exist","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:57.081-03:00","type":"info"}
+=== RUN   TestNewService/Initialize_with_K8s_client_-_Secret_Exists
+=== RUN   TestNewService/Initialize_without_K8s_client_(Env_Fallback)
+--- PASS: TestNewService (0.00s)
+    --- PASS: TestNewService/Initialize_with_K8s_client_-_Secret_Missing_(Setup_Mode) (0.00s)
+    --- PASS: TestNewService/Initialize_with_K8s_client_-_Secret_Exists (0.00s)
+    --- PASS: TestNewService/Initialize_without_K8s_client_(Env_Fallback) (0.00s)
+=== RUN   TestAuthService_Login
+=== RUN   TestAuthService_Login/successful_login
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.143-03:00","type":"info","username":"admin"}
+{"idp":"core","level":"info","msg":"Login successful","role":"admin","time":"2025-12-13T11:56:57.207-03:00","type":"info","username":"admin"}
+=== RUN   TestAuthService_Login/invalid_username
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.207-03:00","type":"info","username":"wronguser"}
+=== RUN   TestAuthService_Login/invalid_password
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.207-03:00","type":"info","username":"admin"}
+=== RUN   TestAuthService_Login/missing_admin_user
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.271-03:00","type":"info","username":"admin"}
+=== RUN   TestAuthService_Login/missing_admin_password
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"admin"}
+--- PASS: TestAuthService_Login (0.19s)
+    --- PASS: TestAuthService_Login/successful_login (0.06s)
+    --- PASS: TestAuthService_Login/invalid_username (0.00s)
+    --- PASS: TestAuthService_Login/invalid_password (0.06s)
+    --- PASS: TestAuthService_Login/missing_admin_user (0.00s)
+    --- PASS: TestAuthService_Login/missing_admin_password (0.00s)
+=== RUN   TestAuthService_GetCurrentUser
+=== RUN   TestAuthService_GetCurrentUser/valid_user_in_context
+{"level":"info","msg":"GetCurrentUser: extracted from AuthClaims","permissions":null,"role":"admin","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"GetCurrentUser: returning claims","permissions":null,"role":"admin","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"admin"}
+=== RUN   TestAuthService_GetCurrentUser/no_user_in_context
+=== RUN   TestAuthService_GetCurrentUser/invalid_user_type_in_context
+--- PASS: TestAuthService_GetCurrentUser (0.00s)
+    --- PASS: TestAuthService_GetCurrentUser/valid_user_in_context (0.00s)
+    --- PASS: TestAuthService_GetCurrentUser/no_user_in_context (0.00s)
+    --- PASS: TestAuthService_GetCurrentUser/invalid_user_type_in_context (0.00s)
+=== RUN   TestAuthService_LoginWithLDAP
+=== RUN   TestAuthService_LoginWithLDAP/successful_LDAP_login_with_no_permissions_(empty_map)
+{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login successful","role":"user","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+=== RUN   TestAuthService_LoginWithLDAP/successful_LDAP_login_with_admin_permissions_(nil)
+{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login successful","role":"admin","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+=== RUN   TestAuthService_LoginWithLDAP/successful_LDAP_login_with_user_permissions
+{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login successful","role":"user","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+=== RUN   TestAuthService_LoginWithLDAP/LDAP_authentication_failed
+{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+{"error":"invalid credentials","level":"warning","msg":"LDAP authentication failed","time":"2025-12-13T11:56:57.272-03:00","type":"warn","username":"ldapuser"}
+=== RUN   TestAuthService_LoginWithLDAP/LDAP_disabled
+{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+=== RUN   TestAuthService_LoginWithLDAP/user_not_in_required_group
+{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+{"error":"user not in required group","level":"warning","msg":"LDAP user validation failed","time":"2025-12-13T11:56:57.272-03:00","type":"warn","username":"ldapuser"}
+=== RUN   TestAuthService_LoginWithLDAP/failed_to_get_permissions,_continues_as_user
+{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+{"error":"failed to get permissions","level":"warning","msg":"Failed to get user permissions","time":"2025-12-13T11:56:57.272-03:00","type":"warn","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login successful","role":"user","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+--- PASS: TestAuthService_LoginWithLDAP (0.00s)
+    --- PASS: TestAuthService_LoginWithLDAP/successful_LDAP_login_with_no_permissions_(empty_map) (0.00s)
+    --- PASS: TestAuthService_LoginWithLDAP/successful_LDAP_login_with_admin_permissions_(nil) (0.00s)
+    --- PASS: TestAuthService_LoginWithLDAP/successful_LDAP_login_with_user_permissions (0.00s)
+    --- PASS: TestAuthService_LoginWithLDAP/LDAP_authentication_failed (0.00s)
+    --- PASS: TestAuthService_LoginWithLDAP/LDAP_disabled (0.00s)
+    --- PASS: TestAuthService_LoginWithLDAP/user_not_in_required_group (0.00s)
+    --- PASS: TestAuthService_LoginWithLDAP/failed_to_get_permissions,_continues_as_user (0.00s)
+=== RUN   TestSetupStatusHandler
+--- PASS: TestSetupStatusHandler (0.00s)
+=== RUN   TestSetupCompleteHandler_Success
+{"ip":"192.0.2.1:1234","level":"info","method":"POST","msg":"SetupCompleteHandler called","path":"/api/setup/complete","time":"2025-12-13T11:56:57.272-03:00","type":"info"}
+{"endpoint":"/api/setup/complete","level":"info","msg":"Checking if secret exists before setup","time":"2025-12-13T11:56:57.272-03:00","type":"info"}
+{"exists":false,"level":"info","msg":"Secret existence check completed","time":"2025-12-13T11:56:57.272-03:00","type":"info"}
+{"level":"info","msg":"Attempting to create secret","namespace":"setup-ns","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:57.288-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"Creating Kubernetes secret","namespace":"setup-ns","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:57.288-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"Secret created successfully","namespace":"setup-ns","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:57.288-03:00","type":"info"}
+{"level":"info","msg":"Setup completed successfully, attempting to reload service","time":"2025-12-13T11:56:57.288-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"Reloading auth service - secret now exists","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:57.288-03:00","type":"info"}
+{"error":"jwt-secret key not found in secret during reload","level":"error","message":"Failed to reload service after setup","msg":"Failed to reload service after setup","time":"2025-12-13T11:56:57.288-03:00","type":"error","username":"admin"}
+--- PASS: TestSetupCompleteHandler_Success (0.02s)
+=== RUN   TestSetupCompleteHandler_ForbiddenWhenExists
+{"ip":"192.0.2.1:1234","level":"info","method":"POST","msg":"SetupCompleteHandler called","path":"/api/setup/complete","time":"2025-12-13T11:56:57.288-03:00","type":"info"}
+{"endpoint":"/api/setup/complete","level":"info","msg":"Checking if secret exists before setup","time":"2025-12-13T11:56:57.288-03:00","type":"info"}
+{"exists":true,"level":"info","msg":"Secret existence check completed","time":"2025-12-13T11:56:57.288-03:00","type":"info"}
+{"endpoint":"/api/setup/complete","level":"warning","msg":"Setup attempted but secret already exists","time":"2025-12-13T11:56:57.288-03:00","type":"warn"}
+--- PASS: TestSetupCompleteHandler_ForbiddenWhenExists (0.00s)
 FAIL
-FAIL	github.com/flaucha/DKonsole/backend/internal/k8s	0.094s
+FAIL	github.com/flaucha/DKonsole/backend/internal/auth	0.921s
 FAIL

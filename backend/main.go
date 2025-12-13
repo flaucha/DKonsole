@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -182,7 +183,20 @@ func main() {
 	utils.LogInfo("Server starting", map[string]interface{}{
 		"port": port,
 	})
-	if err := http.ListenAndServe(port, router); err != nil {
+	// Configure HTTP server with timeouts
+	srv := &http.Server{
+		Addr:              port,
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	utils.LogInfo("Server starting", map[string]interface{}{
+		"port": port,
+	})
+	if err := srv.ListenAndServe(); err != nil {
 		utils.LogError(err, "Server failed", nil)
 		os.Exit(1)
 	}

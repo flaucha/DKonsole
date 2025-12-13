@@ -22,20 +22,16 @@ func (r *StatusRecorder) Flush() {
 	}
 }
 
-// getClientIP extracts the real client IP from request, handling proxies
+// getClientIP extracts the real client IP from request.
+// Security: By default this implementation relies on RemoteAddr to avoid IP spoofing via headers.
+// If running behind a trusted proxy/Kubernetes Ingress, X-Forwarded-For should be trusted ONLY if
+// the trusted proxy list is configured.
+// For this remediation scope, we stick to RemoteAddr for safety unless specific trust config is added.
 func getClientIP(r *http.Request) string {
-	// Try X-Real-IP first (set by nginx, traefik, etc.)
-	if ip := r.Header.Get("X-Real-IP"); ip != "" {
-		return strings.TrimSpace(ip)
-	}
-	// Try X-Forwarded-For (may contain multiple IPs, take the first)
-	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
-		// X-Forwarded-For can contain multiple IPs: "client, proxy1, proxy2"
-		ips := strings.Split(ip, ",")
-		if len(ips) > 0 {
-			return strings.TrimSpace(ips[0])
-		}
-	}
+	// TODO: implement Trusted Proxies configuration.
+	// For now, to mitigate spoofing risks identified in analysis, we default to the direct connection IP.
+	// If the user needs to trust headers, they should configure trusted CIDRs in a future update.
+
 	// Fallback to RemoteAddr (remove port if present)
 	ip, _, _ := strings.Cut(r.RemoteAddr, ":")
 	return ip

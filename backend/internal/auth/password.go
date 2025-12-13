@@ -102,9 +102,9 @@ func VerifyPassword(password, encodedHash string) (bool, error) {
 	return subtle.ConstantTimeCompare(decodedHash, comparisonHash) == 1, nil
 }
 
-// HashPassword generates an Argon2i hash for a password.
-// Uses the same parameters as the generate-password-hash script for compatibility.
-// Returns a hash in the format: $argon2i$v=19$m=4096,t=3,p=1$salt$hash
+// HashPassword generates an Argon2id hash for a password.
+// Uses increased parameters for better security: 64MB memory, 1 iteration, 4 threads.
+// Returns a hash in the format: $argon2id$v=19$m=65536,t=1,p=4$salt$hash
 func HashPassword(password string) (string, error) {
 	// Generate random 16-byte salt
 	salt := make([]byte, 16)
@@ -112,18 +112,17 @@ func HashPassword(password string) (string, error) {
 		return "", fmt.Errorf("failed to generate salt: %w", err)
 	}
 
-	// Parameters that work with version 1.2.2
-	// These match the working hash format: $argon2i$v=19$m=4096,t=3,p=1$salt$hash
-	memory := uint32(4096) // 4 MB in KB (matches working version)
-	time := uint32(3)      // 3 iterations
-	threads := uint8(1)    // 1 thread (matches working version)
-	keyLen := uint32(32)   // 32 bytes output
+	// Parameters for Argon2id
+	memory := uint32(64 * 1024) // 64 MB
+	time := uint32(1)           // 1 iteration
+	threads := uint8(4)         // 4 threads
+	keyLen := uint32(32)        // 32 bytes output
 
-	// Generate Argon2i hash (matches working version)
-	hash := argon2.Key([]byte(password), salt, time, memory, threads, keyLen)
+	// Generate Argon2id hash
+	hash := argon2.IDKey([]byte(password), salt, time, memory, threads, keyLen)
 
-	// Format: $argon2i$v=19$m=4096,t=3,p=1$salt$hash
-	encodedHash := fmt.Sprintf("$argon2i$v=%d$m=%d,t=%d,p=%d$%s$%s",
+	// Format: $argon2id$v=19$m=65536,t=1,p=4$salt$hash
+	encodedHash := fmt.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s",
 		argon2.Version,
 		memory,
 		time,

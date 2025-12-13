@@ -42,13 +42,9 @@ func (s *JWTService) ExtractToken(r *http.Request) (string, error) {
 		tokenString = strings.Replace(authHeader, "Bearer ", "", 1)
 	} else if c, err := r.Cookie("token"); err == nil {
 		tokenString = c.Value
-	} else if token := r.URL.Query().Get("token"); token != "" {
-		tokenString = token
-	} else if token := r.URL.Query().Get("access_token"); token != "" {
-		tokenString = token
 	} else if protocols := r.Header.Get("Sec-WebSocket-Protocol"); protocols != "" {
 		// Support "Sec-WebSocket-Protocol: access_token, <token>"
-		// or just "<token>" if it's the only subprotocol (less standard)
+		// we expect the client to send the token as a subprotocol
 		parts := strings.Split(protocols, ",")
 		for _, part := range parts {
 			part = strings.TrimSpace(part)
@@ -75,6 +71,9 @@ func (s *JWTService) ValidateToken(tokenString string) (*AuthClaims, error) {
 	claims := &AuthClaims{}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
 		return s.jwtSecret, nil
 	})
 
