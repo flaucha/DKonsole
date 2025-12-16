@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/flaucha/DKonsole/backend/internal/cluster"
 	"github.com/flaucha/DKonsole/backend/internal/models"
+	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -13,12 +13,12 @@ import (
 // It manages Helm releases by interacting with Kubernetes Secrets that store Helm release metadata.
 type Service struct {
 	handlers       *models.Handlers
-	clusterService *cluster.Service
+	clusterService ClusterServiceInterface
 	serviceFactory ServiceFactoryInterface
 }
 
 // NewService creates a new Helm service with the provided handlers and cluster service.
-func NewService(h *models.Handlers, cs *cluster.Service) *Service {
+func NewService(h *models.Handlers, cs ClusterServiceInterface) *Service {
 	return &Service{
 		handlers:       h,
 		clusterService: cs,
@@ -27,7 +27,7 @@ func NewService(h *models.Handlers, cs *cluster.Service) *Service {
 }
 
 // NewServiceWithFactory creates a new Helm service with a custom factory (for testing)
-func NewServiceWithFactory(h *models.Handlers, cs *cluster.Service, factory ServiceFactoryInterface) *Service {
+func NewServiceWithFactory(h *models.Handlers, cs ClusterServiceInterface, factory ServiceFactoryInterface) *Service {
 	return &Service{
 		handlers:       h,
 		clusterService: cs,
@@ -59,8 +59,18 @@ func (s *Service) GetHelmReleases(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Filter releases based on user permissions
+	// Get user from request context (passed by middleware)
+	visibleReleases := make([]HelmRelease, 0)
+	for _, release := range releases {
+		hasAccess, err := permissions.HasNamespaceAccess(r.Context(), release.Namespace)
+		if err == nil && hasAccess {
+			visibleReleases = append(visibleReleases, release)
+		}
+	}
+
 	// Write JSON response (HTTP layer)
-	utils.JSONResponse(w, http.StatusOK, releases)
+	utils.JSONResponse(w, http.StatusOK, visibleReleases)
 }
 
 // DeleteHelmRelease handles HTTP DELETE requests to uninstall a Helm release.
@@ -93,6 +103,12 @@ func (s *Service) DeleteHelmRelease(w http.ResponseWriter, r *http.Request) {
 
 	if err := utils.ValidateK8sName(namespace, "namespace"); err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Validate user has edit permission on the namespace
+	if err := permissions.ValidateAction(r.Context(), namespace, "edit"); err != nil {
+		utils.ErrorResponse(w, http.StatusForbidden, err.Error())
 		return
 	}
 

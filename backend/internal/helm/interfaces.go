@@ -3,8 +3,15 @@ package helm
 import (
 	"context"
 
+	"net/http"
+
 	"k8s.io/client-go/kubernetes"
 )
+
+// ClusterServiceInterface defines the interface for cluster operations
+type ClusterServiceInterface interface {
+	GetClient(r *http.Request) (kubernetes.Interface, error)
+}
 
 // HelmReleaseServiceInterface defines the interface for Helm release operations
 type HelmReleaseServiceInterface interface {

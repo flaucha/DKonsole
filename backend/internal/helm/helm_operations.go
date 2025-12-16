@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -45,6 +46,12 @@ func (s *Service) UpgradeHelmRelease(w http.ResponseWriter, r *http.Request) {
 
 	if err := utils.ValidateK8sName(req.Namespace, "namespace"); err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Validate user has edit permission on the namespace
+	if err := permissions.ValidateAction(r.Context(), req.Namespace, "edit"); err != nil {
+		utils.ErrorResponse(w, http.StatusForbidden, err.Error())
 		return
 	}
 
@@ -142,6 +149,12 @@ func (s *Service) InstallHelmRelease(w http.ResponseWriter, r *http.Request) {
 
 	if err := utils.ValidateK8sName(req.Namespace, "namespace"); err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Validate user has edit permission on the namespace
+	if err := permissions.ValidateAction(r.Context(), req.Namespace, "edit"); err != nil {
+		utils.ErrorResponse(w, http.StatusForbidden, err.Error())
 		return
 	}
 

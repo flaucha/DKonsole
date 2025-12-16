@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -24,6 +25,13 @@ func (s *Service) TriggerCronJob(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Validate user has edit permission on the namespace
+	// We use r.Context() before creating the timeout context to access user claims
+	if err := permissions.ValidateAction(r.Context(), req.Namespace, "edit"); err != nil {
+		utils.ErrorResponse(w, http.StatusForbidden, err.Error())
 		return
 	}
 

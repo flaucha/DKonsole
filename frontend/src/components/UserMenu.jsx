@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTerminalDock } from '../context/TerminalDockContext';
 
 const UserMenu = () => {
     const { user, logout } = useAuth();
+    const { clearSessions } = useTerminalDock();
     const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef(null);
@@ -52,6 +54,7 @@ const UserMenu = () => {
 
     const handleLogout = () => {
         setMenuOpen(false);
+        clearSessions();
         logout();
     };
 

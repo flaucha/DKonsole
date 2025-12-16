@@ -256,12 +256,15 @@ func buildKubeConfig(kubeconfigPath, overrideToken string) (*rest.Config, error)
 		config := &rest.Config{
 			Host:            host,
 			BearerToken:     overrideToken,
-			TLSClientConfig: rest.TLSClientConfig{Insecure: true},
+			TLSClientConfig: rest.TLSClientConfig{Insecure: false},
 		}
 		// Try to read CA cert
 		if caData, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"); err == nil {
 			config.TLSClientConfig.CAData = caData
-			config.TLSClientConfig.Insecure = false
+		} else {
+			utils.LogWarn("Could not load CA certificate, connection might fail if self-signed", map[string]interface{}{
+				"error": err.Error(),
+			})
 		}
 		return config, nil
 	}
@@ -280,11 +283,14 @@ func buildKubeConfig(kubeconfigPath, overrideToken string) (*rest.Config, error)
 		config := &rest.Config{
 			Host:            "https://" + os.Getenv("KUBERNETES_SERVICE_HOST") + ":" + os.Getenv("KUBERNETES_SERVICE_PORT"),
 			BearerToken:     token,
-			TLSClientConfig: rest.TLSClientConfig{Insecure: true},
+			TLSClientConfig: rest.TLSClientConfig{Insecure: false},
 		}
 		if caData, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"); err == nil {
 			config.TLSClientConfig.CAData = caData
-			config.TLSClientConfig.Insecure = false
+		} else {
+			utils.LogWarn("Could not load CA certificate for token auth, connection might fail if self-signed", map[string]interface{}{
+				"error": err.Error(),
+			})
 		}
 		utils.LogInfo("Authenticated using service account token from volume", nil)
 		return config, nil

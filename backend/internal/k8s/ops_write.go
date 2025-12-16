@@ -9,6 +9,11 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
+const (
+	// MaxBodySize limits the size of request bodies to 1MB to prevent DoS
+	MaxBodySize = 1048576
+)
+
 // UpdateResourceYAML handles HTTP PUT requests to update a Kubernetes resource from YAML.
 func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 	// Parse HTTP parameters
@@ -39,6 +44,8 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Read YAML from request body
+	// Limit request body size to prevent DoS
+	r.Body = http.MaxBytesReader(w, r.Body, MaxBodySize)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Failed to read request body: %v", err))
@@ -91,6 +98,8 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 // CreateResourceYAML handles HTTP POST requests to create a Kubernetes resource from YAML.
 func (s *Service) CreateResourceYAML(w http.ResponseWriter, r *http.Request) {
 	// Read YAML from request body
+	// Limit request body size to prevent DoS
+	r.Body = http.MaxBytesReader(w, r.Body, MaxBodySize)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Failed to read request body: %v", err))
@@ -135,6 +144,8 @@ func (s *Service) CreateResourceYAML(w http.ResponseWriter, r *http.Request) {
 // ImportResourceYAML handles HTTP POST requests to import multiple Kubernetes resources from YAML.
 func (s *Service) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 	// Read YAML from request body
+	// Limit request body size to prevent DoS
+	r.Body = http.MaxBytesReader(w, r.Body, MaxBodySize)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Failed to read request body: %v", err))

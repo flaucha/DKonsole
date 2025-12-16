@@ -131,8 +131,8 @@ func TestLoginHandler(t *testing.T) {
 						if !cookie.HttpOnly {
 							t.Errorf("LoginHandler() token cookie should be HttpOnly")
 						}
-						if cookie.SameSite != http.SameSiteLaxMode {
-							t.Errorf("LoginHandler() token cookie should be SameSiteLaxMode, got %v", cookie.SameSite)
+						if cookie.SameSite != http.SameSiteNoneMode {
+							t.Errorf("LoginHandler() token cookie should be SameSiteNoneMode, got %v", cookie.SameSite)
 						}
 						break
 					}

@@ -17,6 +17,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
+
+	"github.com/flaucha/DKonsole/backend/internal/auth"
 )
 
 // MockServiceFactory implements ServiceFactoryInterface
@@ -224,6 +226,22 @@ func TestDeleteHelmRelease(t *testing.T) {
 			}
 
 			req := httptest.NewRequest(tt.method, "/api/helm/releases"+tt.params, nil)
+
+			// Add user to context for success case and service error case
+			if tt.name == "Success" || tt.name == "Service Error" {
+				claims := &auth.AuthClaims{
+					Claims: models.Claims{
+						Username: "admin",
+						Role:     "admin",
+						Permissions: map[string]string{
+							"default": "edit",
+						},
+					},
+				}
+				ctx := context.WithValue(req.Context(), auth.UserContextKey(), claims)
+				req = req.WithContext(ctx)
+			}
+
 			w := httptest.NewRecorder()
 
 			service.DeleteHelmRelease(w, req)
@@ -324,6 +342,35 @@ func TestInstallHelmReleaseHandler(t *testing.T) {
 
 			bodyBytes, _ := json.Marshal(tt.body)
 			req := httptest.NewRequest(tt.method, "/api/helm/install", bytes.NewBuffer(bodyBytes))
+
+			// Add user to context for success case
+			if tt.name == "Success" {
+				claims := &auth.AuthClaims{
+					Claims: models.Claims{
+						Username: "admin",
+						Role:     "admin",
+						Permissions: map[string]string{
+							"default": "edit",
+						},
+					},
+				}
+				ctx := context.WithValue(req.Context(), auth.UserContextKey(), claims)
+				req = req.WithContext(ctx)
+			} else if tt.name == "Service Error" {
+				// Also add context for Service Error as it passes validation but fails later
+				claims := &auth.AuthClaims{
+					Claims: models.Claims{
+						Username: "admin",
+						Role:     "admin",
+						Permissions: map[string]string{
+							"default": "edit",
+						},
+					},
+				}
+				ctx := context.WithValue(req.Context(), auth.UserContextKey(), claims)
+				req = req.WithContext(ctx)
+			}
+
 			w := httptest.NewRecorder()
 
 			service.InstallHelmRelease(w, req)
@@ -406,6 +453,35 @@ func TestUpgradeHelmReleaseHandler(t *testing.T) {
 
 			bodyBytes, _ := json.Marshal(tt.body)
 			req := httptest.NewRequest(tt.method, "/api/helm/upgrade", bytes.NewBuffer(bodyBytes))
+
+			// Add user to context for success case
+			if tt.name == "Success" {
+				claims := &auth.AuthClaims{
+					Claims: models.Claims{
+						Username: "admin",
+						Role:     "admin",
+						Permissions: map[string]string{
+							"default": "edit",
+						},
+					},
+				}
+				ctx := context.WithValue(req.Context(), auth.UserContextKey(), claims)
+				req = req.WithContext(ctx)
+			} else if tt.name == "Service Error" {
+				// Also add context for Service Error as it passes validation but fails later
+				claims := &auth.AuthClaims{
+					Claims: models.Claims{
+						Username: "admin",
+						Role:     "admin",
+						Permissions: map[string]string{
+							"default": "edit",
+						},
+					},
+				}
+				ctx := context.WithValue(req.Context(), auth.UserContextKey(), claims)
+				req = req.WithContext(ctx)
+			}
+
 			w := httptest.NewRecorder()
 
 			service.UpgradeHelmRelease(w, req)
