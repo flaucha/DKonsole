@@ -1,0 +1,5 @@
+# github.com/flaucha/DKonsole/backend/internal/auth
+internal/auth/k8s_repository_test.go:12:2: no required module provides package k8s.sio/client-go/kubernetes/fake; to add it:
+	go get k8s.sio/client-go/kubernetes/fake
+FAIL	github.com/flaucha/DKonsole/backend/internal/auth [setup failed]
+FAIL

@@ -9,6 +9,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
@@ -16,9 +17,10 @@ import (
 // K8sUserRepository implements UserRepository using Kubernetes secrets.
 // It reads credentials from the "dkonsole-auth" secret in the current namespace.
 type K8sUserRepository struct {
-	client     kubernetes.Interface
-	namespace  string
-	secretName string
+	client        kubernetes.Interface
+	namespace     string
+	secretName    string
+	ClientFactory func(token string) (kubernetes.Interface, error) // Optional factory for tests
 }
 
 // NewK8sUserRepository creates a new K8sUserRepository instance.
@@ -93,6 +95,10 @@ func (r *K8sUserRepository) GetAdminPasswordHash() (string, error) {
 // Returns (false, nil) if secret doesn't exist (NotFound error)
 // Returns (false, error) if there's a permission error or other API error
 func (r *K8sUserRepository) SecretExists(ctx context.Context) (bool, error) {
+	if r.client == nil {
+		// No client means we haven't authenticated yet, so secret "doesn't exist" from our perspective
+		return false, nil
+	}
 	_, err := r.client.CoreV1().Secrets(r.namespace).Get(ctx, r.secretName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -109,9 +115,35 @@ func (r *K8sUserRepository) SecretExists(ctx context.Context) (bool, error) {
 // username: admin username
 // passwordHash: Argon2 password hash
 // jwtSecret: JWT secret key (must be at least 32 characters)
-func (r *K8sUserRepository) CreateSecret(ctx context.Context, username, passwordHash, jwtSecret string) error {
+// token: Service Account Token for K8s authentication
+func (r *K8sUserRepository) CreateSecret(ctx context.Context, username, passwordHash, jwtSecret, token string) error {
 	if len(jwtSecret) < 32 {
 		return fmt.Errorf("JWT secret must be at least 32 characters long")
+	}
+
+	// Determine which client to use
+	var client kubernetes.Interface
+	if token != "" {
+		if r.ClientFactory != nil {
+			// Use injected factory (for tests)
+			c, err := r.ClientFactory(token)
+			if err != nil {
+				return fmt.Errorf("failed to create ephemeral client from factory: %w", err)
+			}
+			client = c
+		} else {
+			// Create real ephemeral client
+			c, err := createEphemeralClient(token)
+			if err != nil {
+				return fmt.Errorf("failed to create ephemeral client: %w", err)
+			}
+			client = c
+		}
+	} else {
+		if r.client == nil {
+			return fmt.Errorf("K8s repository not initialized")
+		}
+		client = r.client
 	}
 
 	secret := &corev1.Secret{
@@ -120,10 +152,11 @@ func (r *K8sUserRepository) CreateSecret(ctx context.Context, username, password
 			Namespace: r.namespace,
 		},
 		Type: corev1.SecretTypeOpaque,
-		StringData: map[string]string{
-			"admin-username":      username,
-			"admin-password-hash": passwordHash,
-			"jwt-secret":          jwtSecret,
+		Data: map[string][]byte{
+			"admin-username":        []byte(username),
+			"admin-password-hash":   []byte(passwordHash),
+			"jwt-secret":            []byte(jwtSecret),
+			"service-account-token": []byte(token),
 		},
 	}
 
@@ -131,15 +164,19 @@ func (r *K8sUserRepository) CreateSecret(ctx context.Context, username, password
 		"secret_name": r.secretName,
 		"namespace":   r.namespace,
 		"username":    username,
+		"using_token": token != "",
 	})
 
-	_, err := r.client.CoreV1().Secrets(r.namespace).Create(ctx, secret, metav1.CreateOptions{})
+	_, err := client.CoreV1().Secrets(r.namespace).Create(ctx, secret, metav1.CreateOptions{})
 	if err != nil {
 		// Check if it's a specific Kubernetes API error
 		if apierrors.IsForbidden(err) {
 			return fmt.Errorf("forbidden: %w (check RBAC permissions for creating secrets)", err)
 		}
 		if apierrors.IsAlreadyExists(err) {
+			// If it exists, try to update it? Or return error?
+			// The original code returned error. But now with token, we might want to update.
+			// However, SetupCompleteHandler checks if secret exists beforehand.
 			return fmt.Errorf("secret already exists: %w", err)
 		}
 		return fmt.Errorf("failed to create secret: %w", err)
@@ -162,10 +199,11 @@ func (r *K8sUserRepository) UpdatePassword(ctx context.Context, passwordHash str
 	}
 
 	// Update password hash
-	if secret.StringData == nil {
-		secret.StringData = make(map[string]string)
+	if secret.Data == nil {
+		secret.Data = make(map[string][]byte)
 	}
-	secret.StringData["admin-password-hash"] = passwordHash
+	secret.Data["admin-password-hash"] = []byte(passwordHash)
+	secret.StringData = nil
 
 	// Update secret
 	_, err = r.client.CoreV1().Secrets(r.namespace).Update(ctx, secret, metav1.UpdateOptions{})
@@ -177,6 +215,147 @@ func (r *K8sUserRepository) UpdatePassword(ctx context.Context, passwordHash str
 		"secret_name": r.secretName,
 		"namespace":   r.namespace,
 	})
+
+	return nil
+}
+
+// UpdateSecretToken updates the service account token in the secret.
+// uses the NEW token to perform the update (validating it and ensuring permission).
+func (r *K8sUserRepository) UpdateSecretToken(ctx context.Context, newToken string) error {
+	var client kubernetes.Interface
+	var err error
+
+	if r.ClientFactory != nil {
+		client, err = r.ClientFactory(newToken)
+	} else {
+		client, err = createEphemeralClient(newToken)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to create client with new token: %w", err)
+	}
+
+	// Get existing secret
+	secret, err := client.CoreV1().Secrets(r.namespace).Get(ctx, r.secretName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get secret (using new token): %w", err)
+	}
+
+	// Update token
+	if secret.Data == nil {
+		secret.Data = make(map[string][]byte)
+	}
+	secret.Data["service-account-token"] = []byte(newToken)
+	// Clear StringData to avoid confusion if it was set
+	secret.StringData = nil
+
+	// Update secret
+	_, err = client.CoreV1().Secrets(r.namespace).Update(ctx, secret, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to update secret with new token: %w", err)
+	}
+
+	utils.LogInfo("Token updated in Kubernetes secret", map[string]interface{}{
+		"secret_name": r.secretName,
+		"namespace":   r.namespace,
+	})
+
+	return nil
+}
+
+// createEphemeralClient creates a K8s client using the provided token.
+func createEphemeralClient(token string) (kubernetes.Interface, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		// If InClusterConfig fails (e.g. no SA mounted), manually construct config
+		config = &rest.Config{
+			Host:            "https://" + os.Getenv("KUBERNETES_SERVICE_HOST") + ":" + os.Getenv("KUBERNETES_SERVICE_PORT"),
+			BearerToken:     token,
+			TLSClientConfig: rest.TLSClientConfig{Insecure: true},
+		}
+		// Try to read CA cert if available
+		if caData, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"); err == nil {
+			config.TLSClientConfig.CAData = caData
+			config.TLSClientConfig.Insecure = false
+		}
+	} else {
+		config.BearerToken = token
+		config.BearerTokenFile = ""
+	}
+
+	return kubernetes.NewForConfig(config)
+}
+
+// CreateOrUpdateSecret creates or updates the dkonsole-auth secret with the provided credentials.
+func (r *K8sUserRepository) CreateOrUpdateSecret(ctx context.Context, username, passwordHash, jwtSecret, token string) error {
+	if len(jwtSecret) < 32 {
+		return fmt.Errorf("JWT secret must be at least 32 characters long")
+	}
+
+	// Determine which client to use
+	var client kubernetes.Interface
+	if token != "" {
+		if r.ClientFactory != nil {
+			// Use injected factory (for tests)
+			c, err := r.ClientFactory(token)
+			if err != nil {
+				return fmt.Errorf("failed to create ephemeral client from factory: %w", err)
+			}
+			client = c
+		} else {
+			// Create real ephemeral client
+			c, err := createEphemeralClient(token)
+			if err != nil {
+				return fmt.Errorf("failed to create ephemeral client: %w", err)
+			}
+			client = c
+		}
+	} else {
+		if r.client == nil {
+			return fmt.Errorf("K8s repository not initialized")
+		}
+		client = r.client
+	}
+
+	// Prepare secret data
+	secretData := map[string][]byte{
+		"admin-username":        []byte(username),
+		"admin-password-hash":   []byte(passwordHash),
+		"jwt-secret":            []byte(jwtSecret),
+		"service-account-token": []byte(token),
+	}
+
+	// Try to get existing secret
+	existingSecret, err := client.CoreV1().Secrets(r.namespace).Get(ctx, r.secretName, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			// Create new secret
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      r.secretName,
+					Namespace: r.namespace,
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: secretData,
+			}
+
+			_, err := client.CoreV1().Secrets(r.namespace).Create(ctx, secret, metav1.CreateOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to create secret: %w", err)
+			}
+			return nil
+		}
+		return fmt.Errorf("failed to check secret existence: %w", err)
+	}
+
+	// Update existing secret
+	existingSecret.Data = secretData
+	existingSecret.StringData = nil // Clear StringData
+
+	_, err = client.CoreV1().Secrets(r.namespace).Update(ctx, existingSecret, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to update secret: %w", err)
+	}
 
 	return nil
 }

@@ -1,30 +1,36 @@
-{"fields.level":"warning","level":"warning","msg":"Generated random JWT_SECRET for non-production (set JWT_SECRET to persist sessions)","time":"2025-12-13T11:56:56.392-03:00","type":"warn"}
+{"fields.level":"warning","level":"warning","msg":"Generated random JWT_SECRET for non-production (set JWT_SECRET to persist sessions)","time":"2025-12-15T12:36:17.706-03:00","type":"warn"}
 === RUN   TestLoginHandler
 === RUN   TestLoginHandler/successful_login
-{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:56.493-03:00","type":"info","username":"admin"}
-{"idp":"core","level":"info","msg":"Login successful","role":"admin","time":"2025-12-13T11:56:56.595-03:00","type":"info","username":"admin"}
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:17.793-03:00","type":"info","username":"admin"}
+{"idp":"core","level":"info","msg":"Login successful","role":"admin","time":"2025-12-15T12:36:17.877-03:00","type":"info","username":"admin"}
 === RUN   TestLoginHandler/invalid_JSON_body
 === RUN   TestLoginHandler/invalid_credentials
-{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:56.595-03:00","type":"info","username":"admin"}
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:17.877-03:00","type":"info","username":"admin"}
 === RUN   TestLoginHandler/setup_mode_blocks_login
 === RUN   TestLoginHandler/auth_service_not_initialized
---- PASS: TestLoginHandler (0.27s)
-    --- PASS: TestLoginHandler/successful_login (0.10s)
+--- PASS: TestLoginHandler (0.22s)
+    --- PASS: TestLoginHandler/successful_login (0.08s)
     --- PASS: TestLoginHandler/invalid_JSON_body (0.00s)
-    --- PASS: TestLoginHandler/invalid_credentials (0.07s)
+    --- PASS: TestLoginHandler/invalid_credentials (0.05s)
     --- PASS: TestLoginHandler/setup_mode_blocks_login (0.00s)
     --- PASS: TestLoginHandler/auth_service_not_initialized (0.00s)
 === RUN   TestLogoutHandler
+=== RUN   TestLogoutHandler/successful_logout_with_POST
+=== RUN   TestLogoutHandler/invalid_method_GET
+=== RUN   TestLogoutHandler/invalid_method_PUT
 --- PASS: TestLogoutHandler (0.00s)
+    --- PASS: TestLogoutHandler/successful_logout_with_POST (0.00s)
+    --- PASS: TestLogoutHandler/invalid_method_GET (0.00s)
+    --- PASS: TestLogoutHandler/invalid_method_PUT (0.00s)
 === RUN   TestMeHandler
 === RUN   TestMeHandler/authenticated_user
-{"level":"info","msg":"GetCurrentUser: extracted from AuthClaims","permissions":null,"role":"admin","time":"2025-12-13T11:56:56.733-03:00","type":"info","username":"admin"}
-{"level":"info","msg":"GetCurrentUser: returning claims","permissions":null,"role":"admin","time":"2025-12-13T11:56:56.734-03:00","type":"info","username":"admin"}
-{"idp":"","level":"info","msg":"MeHandler: returning user info","permissions":{},"role":"admin","time":"2025-12-13T11:56:56.734-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"GetCurrentUser: extracted from AuthClaims","permissions":null,"role":"admin","time":"2025-12-15T12:36:17.984-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"GetCurrentUser: returning claims","permissions":null,"role":"admin","time":"2025-12-15T12:36:17.984-03:00","type":"info","username":"admin"}
+{"idp":"","level":"info","msg":"MeHandler: returning user info","permissions":{},"role":"admin","time":"2025-12-15T12:36:17.984-03:00","type":"info","username":"admin"}
 === RUN   TestMeHandler/no_user_in_context
 === RUN   TestMeHandler/setup_mode_blocks_access
 === RUN   TestMeHandler/auth_service_not_initialized
---- PASS: TestMeHandler (0.07s)
+--- PASS: TestMeHandler (0.05s)
     --- PASS: TestMeHandler/authenticated_user (0.00s)
     --- PASS: TestMeHandler/no_user_in_context (0.00s)
     --- PASS: TestMeHandler/setup_mode_blocks_access (0.00s)
@@ -33,27 +39,27 @@
 === RUN   TestChangePasswordHandler/setup_mode_blocks_access
 === RUN   TestChangePasswordHandler/K8s_repo_not_available
 === RUN   TestChangePasswordHandler/unauthorized_user_-_K8s_repo_checked_first
---- PASS: TestChangePasswordHandler (0.07s)
+--- PASS: TestChangePasswordHandler (0.06s)
     --- PASS: TestChangePasswordHandler/setup_mode_blocks_access (0.00s)
     --- PASS: TestChangePasswordHandler/K8s_repo_not_available (0.00s)
     --- PASS: TestChangePasswordHandler/unauthorized_user_-_K8s_repo_checked_first (0.00s)
 === RUN   TestChangePasswordHandler_WithK8s
 === RUN   TestChangePasswordHandler_WithK8s/Success
-{"level":"info","msg":"GetCurrentUser: extracted from AuthClaims","permissions":null,"role":"admin","time":"2025-12-13T11:56:56.822-03:00","type":"info","username":"admin"}
-{"level":"info","msg":"GetCurrentUser: returning claims","permissions":null,"role":"admin","time":"2025-12-13T11:56:56.822-03:00","type":"info","username":"admin"}
-{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:56.822-03:00","type":"info","username":"admin"}
-{"idp":"core","level":"info","msg":"Login successful","role":"admin","time":"2025-12-13T11:56:56.841-03:00","type":"info","username":"admin"}
-{"level":"info","msg":"Password updated in Kubernetes secret","namespace":"default","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:56.861-03:00","type":"info"}
-{"level":"info","msg":"Password changed successfully","time":"2025-12-13T11:56:56.861-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"GetCurrentUser: extracted from AuthClaims","permissions":null,"role":"admin","time":"2025-12-15T12:36:18.053-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"GetCurrentUser: returning claims","permissions":null,"role":"admin","time":"2025-12-15T12:36:18.053-03:00","type":"info","username":"admin"}
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:18.053-03:00","type":"info","username":"admin"}
+{"idp":"core","level":"info","msg":"Login successful","role":"admin","time":"2025-12-15T12:36:18.068-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"Password updated in Kubernetes secret","namespace":"default","secret_name":"dkonsole-auth","time":"2025-12-15T12:36:18.081-03:00","type":"info"}
+{"level":"info","msg":"Password changed successfully","time":"2025-12-15T12:36:18.081-03:00","type":"info","username":"admin"}
 === RUN   TestChangePasswordHandler_WithK8s/Wrong_Current_Password
-{"level":"info","msg":"GetCurrentUser: extracted from AuthClaims","permissions":null,"role":"admin","time":"2025-12-13T11:56:56.861-03:00","type":"info","username":"admin"}
-{"level":"info","msg":"GetCurrentUser: returning claims","permissions":null,"role":"admin","time":"2025-12-13T11:56:56.861-03:00","type":"info","username":"admin"}
-{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:56.861-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"GetCurrentUser: extracted from AuthClaims","permissions":null,"role":"admin","time":"2025-12-15T12:36:18.081-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"GetCurrentUser: returning claims","permissions":null,"role":"admin","time":"2025-12-15T12:36:18.081-03:00","type":"info","username":"admin"}
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:18.081-03:00","type":"info","username":"admin"}
 === RUN   TestChangePasswordHandler_WithK8s/Short_New_Password
 === RUN   TestChangePasswordHandler_WithK8s/No_Token
---- PASS: TestChangePasswordHandler_WithK8s (0.07s)
-    --- PASS: TestChangePasswordHandler_WithK8s/Success (0.04s)
-    --- PASS: TestChangePasswordHandler_WithK8s/Wrong_Current_Password (0.02s)
+--- PASS: TestChangePasswordHandler_WithK8s (0.06s)
+    --- PASS: TestChangePasswordHandler_WithK8s/Success (0.03s)
+    --- PASS: TestChangePasswordHandler_WithK8s/Wrong_Current_Password (0.01s)
     --- PASS: TestChangePasswordHandler_WithK8s/Short_New_Password (0.00s)
     --- PASS: TestChangePasswordHandler_WithK8s/No_Token (0.00s)
 === RUN   TestJWTService_ValidateToken
@@ -71,16 +77,14 @@
 === RUN   TestJWTService_ExtractToken
 === RUN   TestJWTService_ExtractToken/token_in_Authorization_header
 === RUN   TestJWTService_ExtractToken/token_in_query_parameter
-    jwt_test.go:188: ExtractToken() error = authorization token required, wantErr false
 === RUN   TestJWTService_ExtractToken/token_in_access_token_query_parameter
-    jwt_test.go:188: ExtractToken() error = authorization token required, wantErr false
 === RUN   TestJWTService_ExtractToken/token_in_Sec-WebSocket-Protocol_header
 === RUN   TestJWTService_ExtractToken/token_in_cookie
 === RUN   TestJWTService_ExtractToken/no_token
---- FAIL: TestJWTService_ExtractToken (0.00s)
+--- PASS: TestJWTService_ExtractToken (0.00s)
     --- PASS: TestJWTService_ExtractToken/token_in_Authorization_header (0.00s)
-    --- FAIL: TestJWTService_ExtractToken/token_in_query_parameter (0.00s)
-    --- FAIL: TestJWTService_ExtractToken/token_in_access_token_query_parameter (0.00s)
+    --- PASS: TestJWTService_ExtractToken/token_in_query_parameter (0.00s)
+    --- PASS: TestJWTService_ExtractToken/token_in_access_token_query_parameter (0.00s)
     --- PASS: TestJWTService_ExtractToken/token_in_Sec-WebSocket-Protocol_header (0.00s)
     --- PASS: TestJWTService_ExtractToken/token_in_cookie (0.00s)
     --- PASS: TestJWTService_ExtractToken/no_token (0.00s)
@@ -92,11 +96,13 @@
     --- PASS: TestJWTService_AuthenticateRequest/valid_token_in_header (0.00s)
     --- PASS: TestJWTService_AuthenticateRequest/no_token (0.00s)
     --- PASS: TestJWTService_AuthenticateRequest/invalid_token (0.00s)
+=== RUN   TestK8sUserRepository_UpdateSecretToken
+--- PASS: TestK8sUserRepository_UpdateSecretToken (0.00s)
 === RUN   TestK8sUserRepository_GetAdminUserAndPassword
 --- PASS: TestK8sUserRepository_GetAdminUserAndPassword (0.00s)
 === RUN   TestK8sUserRepository_SecretExistsAndCreateSecret
-{"level":"info","msg":"Creating Kubernetes secret","namespace":"ns-create","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:56.879-03:00","type":"info","username":"admin"}
-{"level":"info","msg":"Secret created successfully","namespace":"ns-create","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:56.879-03:00","type":"info"}
+{"level":"info","msg":"Creating Kubernetes secret","namespace":"ns-create","secret_name":"dkonsole-auth","time":"2025-12-15T12:36:18.097-03:00","type":"info","username":"admin","using_token":true}
+{"level":"info","msg":"Secret created successfully","namespace":"ns-create","secret_name":"dkonsole-auth","time":"2025-12-15T12:36:18.097-03:00","type":"info"}
 --- PASS: TestK8sUserRepository_SecretExistsAndCreateSecret (0.00s)
 === RUN   TestEnvUserRepository
 --- PASS: TestEnvUserRepository (0.00s)
@@ -109,7 +115,7 @@
 === RUN   TestAuthMiddleware/No_Token
 === RUN   TestAuthMiddleware/Invalid_Token
 === RUN   TestAuthMiddleware/Valid_Admin_Token
-{"level":"info","msg":"AuthMiddleware: extracted claims from JWT","permissions":null,"role":"admin","time":"2025-12-13T11:56:56.880-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"AuthMiddleware: extracted claims from JWT","permissions":null,"role":"admin","time":"2025-12-15T12:36:18.097-03:00","type":"info","username":"admin"}
 --- PASS: TestAuthMiddleware (0.00s)
     --- PASS: TestAuthMiddleware/Setup_Mode_Active (0.00s)
     --- PASS: TestAuthMiddleware/JWT_Service_Not_Initialized (0.00s)
@@ -125,9 +131,9 @@
 === RUN   TestVerifyPassword/incompatible_version
 === RUN   TestVerifyPassword/invalid_base64_salt
 === RUN   TestVerifyPassword/invalid_base64_hash
---- PASS: TestVerifyPassword (0.20s)
-    --- PASS: TestVerifyPassword/correct_password (0.06s)
-    --- PASS: TestVerifyPassword/wrong_password (0.07s)
+--- PASS: TestVerifyPassword (0.16s)
+    --- PASS: TestVerifyPassword/correct_password (0.05s)
+    --- PASS: TestVerifyPassword/wrong_password (0.05s)
     --- PASS: TestVerifyPassword/invalid_hash_format_-_too_few_parts (0.00s)
     --- PASS: TestVerifyPassword/unsupported_variant (0.00s)
     --- PASS: TestVerifyPassword/incompatible_version (0.00s)
@@ -135,7 +141,7 @@
     --- PASS: TestVerifyPassword/invalid_base64_hash (0.00s)
 === RUN   TestNewService
 === RUN   TestNewService/Initialize_with_K8s_client_-_Secret_Missing_(Setup_Mode)
-{"level":"info","msg":"Running in setup mode - secret does not exist","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:57.081-03:00","type":"info"}
+{"level":"info","msg":"Running in setup mode - secret does not exist","secret_name":"dkonsole-auth","time":"2025-12-15T12:36:18.259-03:00","type":"info"}
 === RUN   TestNewService/Initialize_with_K8s_client_-_Secret_Exists
 === RUN   TestNewService/Initialize_without_K8s_client_(Env_Fallback)
 --- PASS: TestNewService (0.00s)
@@ -144,26 +150,26 @@
     --- PASS: TestNewService/Initialize_without_K8s_client_(Env_Fallback) (0.00s)
 === RUN   TestAuthService_Login
 === RUN   TestAuthService_Login/successful_login
-{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.143-03:00","type":"info","username":"admin"}
-{"idp":"core","level":"info","msg":"Login successful","role":"admin","time":"2025-12-13T11:56:57.207-03:00","type":"info","username":"admin"}
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:18.317-03:00","type":"info","username":"admin"}
+{"idp":"core","level":"info","msg":"Login successful","role":"admin","time":"2025-12-15T12:36:18.374-03:00","type":"info","username":"admin"}
 === RUN   TestAuthService_Login/invalid_username
-{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.207-03:00","type":"info","username":"wronguser"}
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:18.374-03:00","type":"info","username":"wronguser"}
 === RUN   TestAuthService_Login/invalid_password
-{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.207-03:00","type":"info","username":"admin"}
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:18.374-03:00","type":"info","username":"admin"}
 === RUN   TestAuthService_Login/missing_admin_user
-{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.271-03:00","type":"info","username":"admin"}
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"admin"}
 === RUN   TestAuthService_Login/missing_admin_password
-{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"admin"}
---- PASS: TestAuthService_Login (0.19s)
+{"idp":"","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"admin"}
+--- PASS: TestAuthService_Login (0.17s)
     --- PASS: TestAuthService_Login/successful_login (0.06s)
     --- PASS: TestAuthService_Login/invalid_username (0.00s)
-    --- PASS: TestAuthService_Login/invalid_password (0.06s)
+    --- PASS: TestAuthService_Login/invalid_password (0.05s)
     --- PASS: TestAuthService_Login/missing_admin_user (0.00s)
     --- PASS: TestAuthService_Login/missing_admin_password (0.00s)
 === RUN   TestAuthService_GetCurrentUser
 === RUN   TestAuthService_GetCurrentUser/valid_user_in_context
-{"level":"info","msg":"GetCurrentUser: extracted from AuthClaims","permissions":null,"role":"admin","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"admin"}
-{"level":"info","msg":"GetCurrentUser: returning claims","permissions":null,"role":"admin","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"GetCurrentUser: extracted from AuthClaims","permissions":null,"role":"admin","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"GetCurrentUser: returning claims","permissions":null,"role":"admin","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"admin"}
 === RUN   TestAuthService_GetCurrentUser/no_user_in_context
 === RUN   TestAuthService_GetCurrentUser/invalid_user_type_in_context
 --- PASS: TestAuthService_GetCurrentUser (0.00s)
@@ -172,26 +178,26 @@
     --- PASS: TestAuthService_GetCurrentUser/invalid_user_type_in_context (0.00s)
 === RUN   TestAuthService_LoginWithLDAP
 === RUN   TestAuthService_LoginWithLDAP/successful_LDAP_login_with_no_permissions_(empty_map)
-{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
-{"idp":"ldap","level":"info","msg":"Login successful","role":"user","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login successful","role":"user","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"ldapuser"}
 === RUN   TestAuthService_LoginWithLDAP/successful_LDAP_login_with_admin_permissions_(nil)
-{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
-{"idp":"ldap","level":"info","msg":"Login successful","role":"admin","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login successful","role":"admin","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"ldapuser"}
 === RUN   TestAuthService_LoginWithLDAP/successful_LDAP_login_with_user_permissions
-{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
-{"idp":"ldap","level":"info","msg":"Login successful","role":"user","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login successful","role":"user","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"ldapuser"}
 === RUN   TestAuthService_LoginWithLDAP/LDAP_authentication_failed
-{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
-{"error":"invalid credentials","level":"warning","msg":"LDAP authentication failed","time":"2025-12-13T11:56:57.272-03:00","type":"warn","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"ldapuser"}
+{"error":"invalid credentials","level":"warning","msg":"LDAP authentication failed","time":"2025-12-15T12:36:18.427-03:00","type":"warn","username":"ldapuser"}
 === RUN   TestAuthService_LoginWithLDAP/LDAP_disabled
-{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"ldapuser"}
 === RUN   TestAuthService_LoginWithLDAP/user_not_in_required_group
-{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
-{"error":"user not in required group","level":"warning","msg":"LDAP user validation failed","time":"2025-12-13T11:56:57.272-03:00","type":"warn","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"ldapuser"}
+{"error":"user not in required group","level":"warning","msg":"LDAP user validation failed","time":"2025-12-15T12:36:18.427-03:00","type":"warn","username":"ldapuser"}
 === RUN   TestAuthService_LoginWithLDAP/failed_to_get_permissions,_continues_as_user
-{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
-{"error":"failed to get permissions","level":"warning","msg":"Failed to get user permissions","time":"2025-12-13T11:56:57.272-03:00","type":"warn","username":"ldapuser"}
-{"idp":"ldap","level":"info","msg":"Login successful","role":"user","time":"2025-12-13T11:56:57.272-03:00","type":"info","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login attempt","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"ldapuser"}
+{"error":"failed to get permissions","level":"warning","msg":"Failed to get user permissions","time":"2025-12-15T12:36:18.427-03:00","type":"warn","username":"ldapuser"}
+{"idp":"ldap","level":"info","msg":"Login successful","role":"user","time":"2025-12-15T12:36:18.427-03:00","type":"info","username":"ldapuser"}
 --- PASS: TestAuthService_LoginWithLDAP (0.00s)
     --- PASS: TestAuthService_LoginWithLDAP/successful_LDAP_login_with_no_permissions_(empty_map) (0.00s)
     --- PASS: TestAuthService_LoginWithLDAP/successful_LDAP_login_with_admin_permissions_(nil) (0.00s)
@@ -203,22 +209,33 @@
 === RUN   TestSetupStatusHandler
 --- PASS: TestSetupStatusHandler (0.00s)
 === RUN   TestSetupCompleteHandler_Success
-{"ip":"192.0.2.1:1234","level":"info","method":"POST","msg":"SetupCompleteHandler called","path":"/api/setup/complete","time":"2025-12-13T11:56:57.272-03:00","type":"info"}
-{"endpoint":"/api/setup/complete","level":"info","msg":"Checking if secret exists before setup","time":"2025-12-13T11:56:57.272-03:00","type":"info"}
-{"exists":false,"level":"info","msg":"Secret existence check completed","time":"2025-12-13T11:56:57.272-03:00","type":"info"}
-{"level":"info","msg":"Attempting to create secret","namespace":"setup-ns","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:57.288-03:00","type":"info","username":"admin"}
-{"level":"info","msg":"Creating Kubernetes secret","namespace":"setup-ns","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:57.288-03:00","type":"info","username":"admin"}
-{"level":"info","msg":"Secret created successfully","namespace":"setup-ns","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:57.288-03:00","type":"info"}
-{"level":"info","msg":"Setup completed successfully, attempting to reload service","time":"2025-12-13T11:56:57.288-03:00","type":"info","username":"admin"}
-{"level":"info","msg":"Reloading auth service - secret now exists","secret_name":"dkonsole-auth","time":"2025-12-13T11:56:57.288-03:00","type":"info"}
-{"error":"jwt-secret key not found in secret during reload","level":"error","message":"Failed to reload service after setup","msg":"Failed to reload service after setup","time":"2025-12-13T11:56:57.288-03:00","type":"error","username":"admin"}
+{"ip":"192.0.2.1:1234","level":"info","method":"POST","msg":"SetupCompleteHandler called","path":"/api/setup/complete","time":"2025-12-15T12:36:18.427-03:00","type":"info"}
+{"endpoint":"/api/setup/complete","level":"info","msg":"Checking if secret exists before setup","time":"2025-12-15T12:36:18.427-03:00","type":"info"}
+{"exists":false,"level":"info","msg":"Secret existence check completed","time":"2025-12-15T12:36:18.427-03:00","type":"info"}
+{"level":"info","msg":"Attempting to create/update secret","namespace":"setup-ns","secret_name":"dkonsole-auth","time":"2025-12-15T12:36:18.443-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"Setup completed successfully, attempting to reload service","time":"2025-12-15T12:36:18.443-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"Reloading auth service - secret now exists","secret_name":"dkonsole-auth","time":"2025-12-15T12:36:18.443-03:00","type":"info"}
+{"level":"info","msg":"Auth service reloaded successfully","secret_name":"dkonsole-auth","time":"2025-12-15T12:36:18.443-03:00","type":"info"}
+{"level":"info","msg":"Service reloaded successfully after setup","time":"2025-12-15T12:36:18.443-03:00","type":"info","username":"admin"}
 --- PASS: TestSetupCompleteHandler_Success (0.02s)
 === RUN   TestSetupCompleteHandler_ForbiddenWhenExists
-{"ip":"192.0.2.1:1234","level":"info","method":"POST","msg":"SetupCompleteHandler called","path":"/api/setup/complete","time":"2025-12-13T11:56:57.288-03:00","type":"info"}
-{"endpoint":"/api/setup/complete","level":"info","msg":"Checking if secret exists before setup","time":"2025-12-13T11:56:57.288-03:00","type":"info"}
-{"exists":true,"level":"info","msg":"Secret existence check completed","time":"2025-12-13T11:56:57.288-03:00","type":"info"}
-{"endpoint":"/api/setup/complete","level":"warning","msg":"Setup attempted but secret already exists","time":"2025-12-13T11:56:57.288-03:00","type":"warn"}
+{"ip":"192.0.2.1:1234","level":"info","method":"POST","msg":"SetupCompleteHandler called","path":"/api/setup/complete","time":"2025-12-15T12:36:18.443-03:00","type":"info"}
+{"endpoint":"/api/setup/complete","level":"info","msg":"Checking if secret exists before setup","time":"2025-12-15T12:36:18.443-03:00","type":"info"}
+{"exists":true,"level":"info","msg":"Secret existence check completed","time":"2025-12-15T12:36:18.443-03:00","type":"info"}
+{"endpoint":"/api/setup/complete","level":"warning","msg":"Setup attempted but secret allready exists and has admin user","time":"2025-12-15T12:36:18.443-03:00","type":"warn"}
 --- PASS: TestSetupCompleteHandler_ForbiddenWhenExists (0.00s)
-FAIL
-FAIL	github.com/flaucha/DKonsole/backend/internal/auth	0.921s
-FAIL
+=== RUN   TestUpdateTokenHandler
+{"level":"info","msg":"Token updated in Kubernetes secret","namespace":"setup-ns","secret_name":"dkonsole-auth","time":"2025-12-15T12:36:18.443-03:00","type":"info"}
+{"level":"info","msg":"Token updated successfully, attempting to reload service","time":"2025-12-15T12:36:18.443-03:00","type":"info"}
+--- PASS: TestUpdateTokenHandler (0.00s)
+=== RUN   TestSetupIncompleteSecret
+{"ip":"192.0.2.1:1234","level":"info","method":"POST","msg":"SetupCompleteHandler called","path":"/api/setup/complete","time":"2025-12-15T12:36:18.443-03:00","type":"info"}
+{"endpoint":"/api/setup/complete","level":"info","msg":"Checking if secret exists before setup","time":"2025-12-15T12:36:18.443-03:00","type":"info"}
+{"exists":true,"level":"info","msg":"Secret existence check completed","time":"2025-12-15T12:36:18.443-03:00","type":"info"}
+{"level":"info","msg":"Secret exists but is incomplete (no admin user), proceeding to update","time":"2025-12-15T12:36:18.443-03:00","type":"info"}
+{"level":"info","msg":"Attempting to create/update secret","namespace":"setup-ns","secret_name":"dkonsole-auth","time":"2025-12-15T12:36:18.458-03:00","type":"info","username":"admin"}
+{"level":"info","msg":"Setup completed successfully, attempting to reload service","time":"2025-12-15T12:36:18.458-03:00","type":"info","username":"admin"}
+{"level":"warning","msg":"Service reload returned false after setup","time":"2025-12-15T12:36:18.458-03:00","type":"warn","username":"admin"}
+--- PASS: TestSetupIncompleteSecret (0.01s)
+PASS
+ok  	github.com/flaucha/DKonsole/backend/internal/auth	0.769s

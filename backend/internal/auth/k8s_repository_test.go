@@ -8,8 +8,26 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 )
+
+func TestK8sUserRepository_UpdateSecretToken(t *testing.T) {
+	client := k8sfake.NewSimpleClientset()
+	repo := &K8sUserRepository{
+		client:     client,
+		namespace:  "testns",
+		secretName: "dkonsole-auth",
+		ClientFactory: func(token string) (kubernetes.Interface, error) {
+			return client, nil
+		},
+	}
+
+	// Secret missing
+	if _, err := repo.GetAdminUser(); err == nil {
+		t.Fatalf("expected error when secret missing")
+	}
+}
 
 func TestK8sUserRepository_GetAdminUserAndPassword(t *testing.T) {
 	client := k8sfake.NewSimpleClientset()
@@ -67,7 +85,14 @@ func TestK8sUserRepository_GetAdminUserAndPassword(t *testing.T) {
 
 func TestK8sUserRepository_SecretExistsAndCreateSecret(t *testing.T) {
 	client := k8sfake.NewSimpleClientset()
-	repo := &K8sUserRepository{client: client, namespace: "ns-create", secretName: "dkonsole-auth"}
+	repo := &K8sUserRepository{
+		client:     client,
+		namespace:  "ns-create",
+		secretName: "dkonsole-auth",
+		ClientFactory: func(token string) (kubernetes.Interface, error) {
+			return client, nil
+		},
+	}
 
 	exists, err := repo.SecretExists(context.Background())
 	if err != nil {
@@ -77,11 +102,11 @@ func TestK8sUserRepository_SecretExistsAndCreateSecret(t *testing.T) {
 		t.Fatalf("expected secret to not exist")
 	}
 
-	if err := repo.CreateSecret(context.Background(), "admin", "hash", "short"); err == nil {
+	if err := repo.CreateSecret(context.Background(), "admin", "hash", "short", "dummy-token"); err == nil {
 		t.Fatalf("expected error for short JWT secret")
 	}
 
-	if err := repo.CreateSecret(context.Background(), "admin", "hash", strings.Repeat("a", 32)); err != nil {
+	if err := repo.CreateSecret(context.Background(), "admin", "hash", strings.Repeat("a", 32), "dummy-token"); err != nil {
 		t.Fatalf("CreateSecret returned error: %v", err)
 	}
 

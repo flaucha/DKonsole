@@ -9,11 +9,13 @@ export const useSetupLogic = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [jwtSecret, setJwtSecret] = useState('');
+    const [serviceAccountToken, setServiceAccountToken] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
     const [reloading, setReloading] = useState(false);
     const [setupCompleted, setSetupCompleted] = useState(false);
+    const [tokenOnlyMode, setTokenOnlyMode] = useState(false);
     const [checkingStatus, setCheckingStatus] = useState(true);
     const navigate = useNavigate();
 
@@ -30,7 +32,10 @@ export const useSetupLogic = () => {
                 const res = await fetch('/api/setup/status');
                 if (res.ok) {
                     const data = await res.json();
-                    if (!data.setupRequired) {
+                    if (data.tokenUpdateRequired) {
+                        setTokenOnlyMode(true);
+                        // treat as setup required
+                    } else if (!data.setupRequired) {
                         // Setup is already completed
                         setSetupCompleted(true);
                     }
@@ -74,6 +79,15 @@ export const useSetupLogic = () => {
     };
 
     const validateForm = () => {
+        if (!serviceAccountToken.trim()) {
+            setError('Service Account Token is required');
+            return false;
+        }
+
+        if (tokenOnlyMode) {
+            return true;
+        }
+
         if (!username.trim()) {
             setError('Username is required');
             return false;
@@ -99,6 +113,11 @@ export const useSetupLogic = () => {
             return false;
         }
 
+        if (!serviceAccountToken.trim()) {
+            setError('Service Account Token is required');
+            return false;
+        }
+
         return true;
     };
 
@@ -114,14 +133,25 @@ export const useSetupLogic = () => {
         setLoading(true);
 
         try {
-            const response = await fetch('/api/setup/complete', {
+            let url = '/api/setup/complete';
+            let body = {
+                username,
+                password,
+                jwtSecret: jwtSecret || undefined, // Send undefined if empty to trigger auto-generation
+                serviceAccountToken: serviceAccountToken.trim(),
+            };
+
+            if (tokenOnlyMode) {
+                url = '/api/setup/token';
+                body = {
+                    serviceAccountToken: serviceAccountToken.trim(),
+                };
+            }
+
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username,
-                    password,
-                    jwtSecret: jwtSecret || undefined, // Send undefined if empty to trigger auto-generation
-                }),
+                body: JSON.stringify(body),
             });
 
             const data = await response.json();
@@ -152,8 +182,9 @@ export const useSetupLogic = () => {
         password, setPassword,
         confirmPassword, setConfirmPassword,
         jwtSecret, setJwtSecret,
+        serviceAccountToken, setServiceAccountToken,
         error, success, loading, reloading,
-        setupCompleted, checkingStatus,
+        setupCompleted, checkingStatus, tokenOnlyMode,
         logoSrc, handleLogoError,
 
         // Handlers

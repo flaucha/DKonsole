@@ -14,14 +14,16 @@ import (
 
 // SetupStatusResponse represents the response for setup status check.
 type SetupStatusResponse struct {
-	SetupRequired bool `json:"setupRequired"` // true if secret doesn't exist and setup is needed
+	SetupRequired       bool `json:"setupRequired"`       // true if secret doesn't exist and setup is needed
+	TokenUpdateRequired bool `json:"tokenUpdateRequired"` // true if k8s authentication failed (token expired/invalid)
 }
 
 // SetupCompleteRequest represents the request to complete setup.
 type SetupCompleteRequest struct {
-	Username  string `json:"username"`  // Admin username
-	Password  string `json:"password"`  // Plain password (will be hashed)
-	JWTSecret string `json:"jwtSecret"` // JWT secret (optional, will be auto-generated if empty)
+	Username            string `json:"username"`            // Admin username
+	Password            string `json:"password"`            // Plain password (will be hashed)
+	JWTSecret           string `json:"jwtSecret"`           // JWT secret (optional, will be auto-generated if empty)
+	ServiceAccountToken string `json:"serviceAccountToken"` // Token for K8s authentication
 }
 
 // SetupStatusHandler handles GET requests to check if setup is required.
@@ -36,16 +38,47 @@ func (s *Service) SetupStatusHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Check if secret exists
 	exists, err := s.checkSecretExists(ctx)
+	tokenUpdateRequired := false
+
 	if err != nil {
-		utils.LogError(err, "Failed to check secret existence", map[string]interface{}{
-			"endpoint": "/api/setup/status",
-		})
-		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to check setup status")
-		return
+		errStr := err.Error()
+		// Check for auth errors which indicate token invalidity
+		if strings.Contains(errStr, "Unauthorized") || strings.Contains(errStr, "Forbidden") ||
+			strings.Contains(errStr, "unauthorized") || strings.Contains(errStr, "forbidden") {
+			// Do NOT set tokenUpdateRequired = true.
+			// If we can't read the secret, we don't know if it's a valid completed setup or an incomplete one.
+			// Forcing "SetupRequired" (Full Setup) allows the user to Provide Token + Admin Credentials.
+			// This covers:
+			// 1. Initial Setup on restricted cluster (can't read secret to verify if it exists)
+			// 2. Recovery from expired token (resets admin password)
+			// 3. Fixing incomplete secrets (like Helm deploy with missing JWT)
+			utils.LogWarn("Setup status check failed with auth error, defaulting to Full Setup mode", map[string]interface{}{
+				"error":     errStr,
+				"namespace": s.k8sRepo.namespace,
+				"client_ok": s.k8sClient != nil,
+			})
+			// tokenUpdateRequired remains false. !exists (which is true because err != nil) will trigger SetupRequired.
+		} else {
+			utils.LogError(err, "Failed to check secret existence", map[string]interface{}{
+				"endpoint": "/api/setup/status",
+			})
+			utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to check setup status")
+			return
+		}
 	}
 
+	// Logic update: Even if secret exists, we must check if Admin User is set.
+	// If secret exists but no admin user, it's NOT a completed setup (e.g. Helm created secret with token only).
+	adminUser, _ := s.k8sRepo.GetAdminUser()
+
+	// Setup is required if:
+	// 1. Secret doesn't exist (!exists)
+	// 2. Secret exists but Admin User is missing (adminUser == "")
+	setupRequired := !exists || adminUser == ""
+
 	response := SetupStatusResponse{
-		SetupRequired: !exists,
+		SetupRequired:       setupRequired,
+		TokenUpdateRequired: tokenUpdateRequired,
 	}
 
 	utils.JSONResponse(w, http.StatusOK, response)
@@ -79,12 +112,18 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		// Check if it's a permission error
 		errStr := err.Error()
-		if strings.Contains(errStr, "Forbidden") || strings.Contains(errStr, "permission") || strings.Contains(errStr, "forbidden") {
-			utils.ErrorResponse(w, http.StatusForbidden, "Permission denied: Unable to check secret existence. Please verify RBAC permissions allow reading secrets in this namespace.")
+		if strings.Contains(errStr, "Forbidden") || strings.Contains(errStr, "permission") || strings.Contains(errStr, "forbidden") || strings.Contains(errStr, "Unauthorized") {
+			// If we can't check if secret exists due to permissions, we assume we are in a restricted environment
+			// and proceed to try creating/updating it using the *provided* token in the request.
+			// The CreateOrUpdateSecret function will use the new token to perform the check/update.
+			utils.LogWarn("Could not check secret existence due to permissions, proceeding with provided token", map[string]interface{}{
+				"error": errStr,
+			})
+			exists = false // Treat as not found (or unknown) so we fall through to CreateOrUpdate
 		} else {
 			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check setup status: %v", err))
+			return
 		}
-		return
 	}
 
 	utils.LogInfo("Secret existence check completed", map[string]interface{}{
@@ -92,11 +131,17 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if exists {
-		utils.LogWarn("Setup attempted but secret already exists", map[string]interface{}{
-			"endpoint": "/api/setup/complete",
-		})
-		utils.ErrorResponse(w, http.StatusForbidden, "Setup already completed. Secret already exists.")
-		return
+		// Check if it really is a complete setup (has admin user)
+		adminUser, _ := s.k8sRepo.GetAdminUser()
+		if adminUser != "" {
+			utils.LogWarn("Setup attempted but secret already exists and has admin user", map[string]interface{}{
+				"endpoint": "/api/setup/complete",
+			})
+			utils.ErrorResponse(w, http.StatusForbidden, "Setup already completed. Secret already exists.")
+			return
+		}
+		// If adminUser is empty, we allow proceeding to UPDATE the secret
+		utils.LogInfo("Secret exists but is incomplete (no admin user), proceeding to update", nil)
 	}
 
 	// Parse request body
@@ -149,24 +194,31 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create secret using repository
-	utils.LogInfo("Attempting to create secret", map[string]interface{}{
+	// Validate Service Account Token
+	if req.ServiceAccountToken == "" {
+		utils.ErrorResponse(w, http.StatusBadRequest, "Service Account Token is required")
+		return
+	}
+
+	// Create or Update secret using repository
+	utils.LogInfo("Attempting to create/update secret", map[string]interface{}{
 		"username":    req.Username,
 		"secret_name": s.k8sRepo.secretName,
 		"namespace":   s.k8sRepo.namespace,
 	})
-	if err := s.createSecret(ctx, req.Username, passwordHash, jwtSecret); err != nil {
+
+	if err := s.k8sRepo.CreateOrUpdateSecret(ctx, req.Username, passwordHash, jwtSecret, req.ServiceAccountToken); err != nil {
 		errStr := err.Error()
-		utils.LogError(err, "Failed to create secret", map[string]interface{}{
+		utils.LogError(err, "Failed to create/update secret", map[string]interface{}{
 			"username":      req.Username,
 			"error_type":    fmt.Sprintf("%T", err),
 			"error_message": errStr,
 		})
 		// Check if it's a permission error
 		if strings.Contains(errStr, "Forbidden") || strings.Contains(errStr, "permission") || strings.Contains(errStr, "forbidden") {
-			utils.ErrorResponse(w, http.StatusForbidden, "Permission denied: Unable to create secret. Please verify RBAC permissions allow creating secrets in this namespace.")
+			utils.ErrorResponse(w, http.StatusForbidden, "Permission denied: Unable to create/update secret. Please verify RBAC permissions allow creating secrets in this namespace.")
 		} else {
-			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create secret: %v", err))
+			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create/update secret: %v", err))
 		}
 		return
 	}
@@ -176,15 +228,12 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Attempt to reload the service configuration
-	reloaded, err := s.Reload(ctx)
+	reloaded, err := s.Reload(ctx, req.ServiceAccountToken)
 	if err != nil {
 		utils.LogError(err, "Failed to reload service after setup", map[string]interface{}{
 			"username": req.Username,
 		})
-		// Still return success, but warn that restart may be needed
-		utils.JSONResponse(w, http.StatusOK, map[string]string{
-			"message": "Setup completed successfully. The service will reload automatically. If you encounter issues, you may need to restart the pod.",
-		})
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Setup completed, but failed to reload service: %v", err))
 		return
 	}
 
@@ -214,14 +263,6 @@ func (s *Service) checkSecretExists(ctx context.Context) (bool, error) {
 	return s.k8sRepo.SecretExists(ctx)
 }
 
-// createSecret creates the dkonsole-auth secret.
-func (s *Service) createSecret(ctx context.Context, username, passwordHash, jwtSecret string) error {
-	if s.k8sRepo == nil {
-		return fmt.Errorf("K8s repository not initialized")
-	}
-	return s.k8sRepo.CreateSecret(ctx, username, passwordHash, jwtSecret)
-}
-
 // generateJWTSecret generates a secure random JWT secret (32 bytes, base64 encoded = 44 characters).
 func generateJWTSecret() (string, error) {
 	bytes := make([]byte, 32)
@@ -229,4 +270,52 @@ func generateJWTSecret() (string, error) {
 		return "", fmt.Errorf("failed to generate random bytes: %w", err)
 	}
 	return base64.URLEncoding.EncodeToString(bytes), nil
+}
+
+// UpdateTokenRequest represents the request to update the service account token.
+type UpdateTokenRequest struct {
+	ServiceAccountToken string `json:"serviceAccountToken"`
+}
+
+// UpdateTokenHandler handles POST requests to update only the service account token.
+func (s *Service) UpdateTokenHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		utils.ErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx := r.Context()
+
+	// Parse request
+	var req UpdateTokenRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if req.ServiceAccountToken == "" {
+		utils.ErrorResponse(w, http.StatusBadRequest, "Service Account Token is required")
+		return
+	}
+
+	// Update token using repository
+	// This will use the NEW token to create a client and update the secret
+	if err := s.k8sRepo.UpdateSecretToken(ctx, req.ServiceAccountToken); err != nil {
+		utils.LogError(err, "Failed to update token", nil)
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to update token: %v", err))
+		return
+	}
+
+	utils.LogInfo("Token updated successfully, attempting to reload service", nil)
+
+	// Attempt reload
+	if _, err := s.Reload(ctx, req.ServiceAccountToken); err != nil {
+		utils.LogError(err, "Failed to reload service after token update", nil)
+		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Token updated, but failed to reload service: %v", err))
+		return
+	}
+
+	utils.JSONResponse(w, http.StatusOK, map[string]string{
+		"message": "Token updated successfully",
+	})
 }

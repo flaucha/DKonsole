@@ -1,0 +1,113 @@
+=== RUN   TestAuditMiddleware
+=== RUN   TestAuditMiddleware/GET_request_without_user
+{"action":"http_request","duration":"1.36µs","ip":"192.0.2.1","level":"info","method":"GET","msg":"audit log","path":"/api/test","status":200,"success":true,"time":"2025-12-14T08:44:27.849-03:00","type":"audit","user":"anonymous","user_agent":""}
+=== RUN   TestAuditMiddleware/POST_request_with_user_in_context_(map_format)
+{"action":"http_request","duration":"410ns","ip":"192.0.2.1","level":"info","method":"POST","msg":"audit log","path":"/api/resources","status":200,"success":true,"time":"2025-12-14T08:44:27.849-03:00","type":"audit","user":"admin","user_agent":""}
+=== RUN   TestAuditMiddleware/request_with_404_status
+{"action":"http_request","duration":"270ns","ip":"192.0.2.1","level":"info","method":"GET","msg":"audit log","path":"/api/notfound","status":404,"success":false,"time":"2025-12-14T08:44:27.849-03:00","type":"audit","user":"anonymous","user_agent":""}
+=== RUN   TestAuditMiddleware/request_with_500_status
+{"action":"http_request","duration":"220ns","ip":"192.0.2.1","level":"info","method":"POST","msg":"audit log","path":"/api/error","status":500,"success":false,"time":"2025-12-14T08:44:27.850-03:00","type":"audit","user":"anonymous","user_agent":""}
+=== RUN   TestAuditMiddleware/websocket_request_should_pass
+{"action":"http_request","duration":"300ns","ip":"192.0.2.1","level":"info","method":"GET","msg":"audit log","path":"/ws/pods","status":101,"success":true,"time":"2025-12-14T08:44:27.850-03:00","type":"audit","user":"anonymous","user_agent":""}
+--- PASS: TestAuditMiddleware (0.00s)
+    --- PASS: TestAuditMiddleware/GET_request_without_user (0.00s)
+    --- PASS: TestAuditMiddleware/POST_request_with_user_in_context_(map_format) (0.00s)
+    --- PASS: TestAuditMiddleware/request_with_404_status (0.00s)
+    --- PASS: TestAuditMiddleware/request_with_500_status (0.00s)
+    --- PASS: TestAuditMiddleware/websocket_request_should_pass (0.00s)
+=== RUN   TestAuditMiddleware_UserExtraction
+=== RUN   TestAuditMiddleware_UserExtraction/user_as_map[string]interface{}
+{"action":"http_request","duration":"320ns","ip":"192.0.2.1","level":"info","method":"GET","msg":"audit log","path":"/api/test","status":200,"success":true,"time":"2025-12-14T08:44:27.850-03:00","type":"audit","user":"admin","user_agent":""}
+=== RUN   TestAuditMiddleware_UserExtraction/no_user_in_context
+{"action":"http_request","duration":"140ns","ip":"192.0.2.1","level":"info","method":"GET","msg":"audit log","path":"/api/test","status":200,"success":true,"time":"2025-12-14T08:44:27.850-03:00","type":"audit","user":"anonymous","user_agent":""}
+--- PASS: TestAuditMiddleware_UserExtraction (0.00s)
+    --- PASS: TestAuditMiddleware_UserExtraction/user_as_map[string]interface{} (0.00s)
+    --- PASS: TestAuditMiddleware_UserExtraction/no_user_in_context (0.00s)
+=== RUN   TestStatusRecorder
+=== RUN   TestStatusRecorder/record_200_status
+=== RUN   TestStatusRecorder/record_404_status
+=== RUN   TestStatusRecorder/record_500_status
+--- PASS: TestStatusRecorder (0.00s)
+    --- PASS: TestStatusRecorder/record_200_status (0.00s)
+    --- PASS: TestStatusRecorder/record_404_status (0.00s)
+    --- PASS: TestStatusRecorder/record_500_status (0.00s)
+=== RUN   TestStatusRecorder_Flush
+--- PASS: TestStatusRecorder_Flush (0.00s)
+=== RUN   TestChain
+--- PASS: TestChain (0.00s)
+=== RUN   TestCSRFMiddleware
+=== RUN   TestCSRFMiddleware/GET_request_should_pass_(safe_method)
+=== RUN   TestCSRFMiddleware/HEAD_request_should_pass_(safe_method)
+=== RUN   TestCSRFMiddleware/OPTIONS_request_should_pass_(safe_method)
+=== RUN   TestCSRFMiddleware/POST_with_Origin_header_should_pass
+=== RUN   TestCSRFMiddleware/POST_with_Referer_header_should_pass
+=== RUN   TestCSRFMiddleware/POST_with_both_Origin_and_Referer_should_pass
+=== RUN   TestCSRFMiddleware/POST_without_Origin_or_Referer_should_be_rejected
+=== RUN   TestCSRFMiddleware/PUT_without_Origin_or_Referer_should_be_rejected
+=== RUN   TestCSRFMiddleware/DELETE_without_Origin_or_Referer_should_be_rejected
+=== RUN   TestCSRFMiddleware/PATCH_with_Origin_should_pass
+--- PASS: TestCSRFMiddleware (0.00s)
+    --- PASS: TestCSRFMiddleware/GET_request_should_pass_(safe_method) (0.00s)
+    --- PASS: TestCSRFMiddleware/HEAD_request_should_pass_(safe_method) (0.00s)
+    --- PASS: TestCSRFMiddleware/OPTIONS_request_should_pass_(safe_method) (0.00s)
+    --- PASS: TestCSRFMiddleware/POST_with_Origin_header_should_pass (0.00s)
+    --- PASS: TestCSRFMiddleware/POST_with_Referer_header_should_pass (0.00s)
+    --- PASS: TestCSRFMiddleware/POST_with_both_Origin_and_Referer_should_pass (0.00s)
+    --- PASS: TestCSRFMiddleware/POST_without_Origin_or_Referer_should_be_rejected (0.00s)
+    --- PASS: TestCSRFMiddleware/PUT_without_Origin_or_Referer_should_be_rejected (0.00s)
+    --- PASS: TestCSRFMiddleware/DELETE_without_Origin_or_Referer_should_be_rejected (0.00s)
+    --- PASS: TestCSRFMiddleware/PATCH_with_Origin_should_pass (0.00s)
+=== RUN   TestRateLimitMiddleware
+=== RUN   TestRateLimitMiddleware/single_request_should_pass
+=== RUN   TestRateLimitMiddleware/multiple_requests_under_limit_should_pass
+=== RUN   TestRateLimitMiddleware/websocket_request_should_bypass_rate_limit
+--- PASS: TestRateLimitMiddleware (0.01s)
+    --- PASS: TestRateLimitMiddleware/single_request_should_pass (0.00s)
+    --- PASS: TestRateLimitMiddleware/multiple_requests_under_limit_should_pass (0.01s)
+    --- PASS: TestRateLimitMiddleware/websocket_request_should_bypass_rate_limit (0.00s)
+=== RUN   TestRateLimitMiddleware_Headers
+--- PASS: TestRateLimitMiddleware_Headers (0.00s)
+=== RUN   TestLoginRateLimitMiddleware
+=== RUN   TestLoginRateLimitMiddleware/single_login_request_should_pass
+=== RUN   TestLoginRateLimitMiddleware/multiple_rapid_login_requests_should_hit_limit
+--- PASS: TestLoginRateLimitMiddleware (0.00s)
+    --- PASS: TestLoginRateLimitMiddleware/single_login_request_should_pass (0.00s)
+    --- PASS: TestLoginRateLimitMiddleware/multiple_rapid_login_requests_should_hit_limit (0.00s)
+=== RUN   TestGetClientIP
+=== RUN   TestGetClientIP/X-Real-IP_header_should_be_ignored_(spoofing_protection)
+=== RUN   TestGetClientIP/X-Forwarded-For_should_be_ignored_(spoofing_protection)
+=== RUN   TestGetClientIP/X-Forwarded-For_with_multiple_IPs_should_be_ignored
+=== RUN   TestGetClientIP/RemoteAddr_should_be_used
+--- PASS: TestGetClientIP (0.00s)
+    --- PASS: TestGetClientIP/X-Real-IP_header_should_be_ignored_(spoofing_protection) (0.00s)
+    --- PASS: TestGetClientIP/X-Forwarded-For_should_be_ignored_(spoofing_protection) (0.00s)
+    --- PASS: TestGetClientIP/X-Forwarded-For_with_multiple_IPs_should_be_ignored (0.00s)
+    --- PASS: TestGetClientIP/RemoteAddr_should_be_used (0.00s)
+=== RUN   TestRateLimiterMap_CleanupInactive
+--- PASS: TestRateLimiterMap_CleanupInactive (0.00s)
+=== RUN   TestSecurityHeadersMiddleware
+=== RUN   TestSecurityHeadersMiddleware/API_route_with_HTTP
+=== RUN   TestSecurityHeadersMiddleware/API_route_with_HTTPS
+=== RUN   TestSecurityHeadersMiddleware/Static_route
+--- PASS: TestSecurityHeadersMiddleware (0.00s)
+    --- PASS: TestSecurityHeadersMiddleware/API_route_with_HTTP (0.00s)
+    --- PASS: TestSecurityHeadersMiddleware/API_route_with_HTTPS (0.00s)
+    --- PASS: TestSecurityHeadersMiddleware/Static_route (0.00s)
+=== RUN   TestBuildCSP
+=== RUN   TestBuildCSP/API_route
+=== RUN   TestBuildCSP/Static_route
+=== RUN   TestBuildCSP/Assets_route
+--- PASS: TestBuildCSP (0.00s)
+    --- PASS: TestBuildCSP/API_route (0.00s)
+    --- PASS: TestBuildCSP/Static_route (0.00s)
+    --- PASS: TestBuildCSP/Assets_route (0.00s)
+=== RUN   TestSecurityHeadersHandler
+--- PASS: TestSecurityHeadersHandler (0.00s)
+=== RUN   TestWebSocketConnectionLimiter_Cleanup
+--- PASS: TestWebSocketConnectionLimiter_Cleanup (0.00s)
+=== RUN   TestWebSocketLimitMiddleware
+--- PASS: TestWebSocketLimitMiddleware (0.00s)
+=== RUN   TestWebSocketConnectionLimiter_Decrement
+--- PASS: TestWebSocketConnectionLimiter_Decrement (0.00s)
+PASS
+ok  	github.com/flaucha/DKonsole/backend/internal/middleware	0.015s

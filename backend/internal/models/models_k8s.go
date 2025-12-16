@@ -78,6 +78,12 @@ type ClusterStats struct {
 	PVs         int `json:"pvs"`
 }
 
+// NodeUsage representa métricas simples de uso de recursos (CPU/Memoria)
+type NodeUsage struct {
+	CPU    string `json:"cpu,omitempty"`
+	Memory string `json:"memory,omitempty"`
+}
+
 // HelmRelease representa un release de Helm
 type HelmRelease struct {
 	Name        string `json:"name"`

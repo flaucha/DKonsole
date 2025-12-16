@@ -15,6 +15,10 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 		origin := r.Header.Get("Origin")
 		allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
 
+		if strings.Contains(allowedOrigins, "*") {
+			utils.LogWarn("Security Warning: ALLOWED_ORIGINS contains wildcard '*'. This is insecure for authenticated sessions.", nil)
+		}
+
 		if origin == "" && r.Method != "OPTIONS" {
 			next(w, r)
 			return

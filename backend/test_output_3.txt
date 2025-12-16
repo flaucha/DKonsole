@@ -1,0 +1,1 @@
+stat ./internal/auth/handler.go: no such file or directory

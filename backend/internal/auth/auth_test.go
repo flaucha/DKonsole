@@ -131,8 +131,8 @@ func TestLoginHandler(t *testing.T) {
 						if !cookie.HttpOnly {
 							t.Errorf("LoginHandler() token cookie should be HttpOnly")
 						}
-						if cookie.Secure {
-							// Secure is fine in tests
+						if cookie.SameSite != http.SameSiteLaxMode {
+							t.Errorf("LoginHandler() token cookie should be SameSiteLaxMode, got %v", cookie.SameSite)
 						}
 						break
 					}
@@ -160,43 +160,72 @@ func TestLoginHandler(t *testing.T) {
 func TestLogoutHandler(t *testing.T) {
 	service := &Service{}
 
-	req := httptest.NewRequest("POST", "/api/logout", nil)
-	rr := httptest.NewRecorder()
-
-	service.LogoutHandler(rr, req)
-
-	// Check status code
-	if rr.Code != http.StatusOK {
-		t.Errorf("LogoutHandler() status code = %v, want %v", rr.Code, http.StatusOK)
+	tests := []struct {
+		name           string
+		method         string
+		wantStatusCode int
+	}{
+		{
+			name:           "successful logout with POST",
+			method:         "POST",
+			wantStatusCode: http.StatusOK,
+		},
+		{
+			name:           "invalid method GET",
+			method:         "GET",
+			wantStatusCode: http.StatusMethodNotAllowed,
+		},
+		{
+			name:           "invalid method PUT",
+			method:         "PUT",
+			wantStatusCode: http.StatusMethodNotAllowed,
+		},
 	}
 
-	// Check cookie is cleared
-	cookies := rr.Result().Cookies()
-	found := false
-	for _, cookie := range cookies {
-		if cookie.Name == "token" {
-			found = true
-			if cookie.Value != "" {
-				t.Errorf("LogoutHandler() token cookie should be empty, got %v", cookie.Value)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(tt.method, "/api/logout", nil)
+			rr := httptest.NewRecorder()
+
+			service.LogoutHandler(rr, req)
+
+			// Check status code
+			if rr.Code != tt.wantStatusCode {
+				t.Errorf("LogoutHandler() status code = %v, want %v", rr.Code, tt.wantStatusCode)
 			}
-			if cookie.MaxAge != -1 && !cookie.Expires.Before(time.Now()) {
-				t.Errorf("LogoutHandler() token cookie should be expired")
-			}
-			break
-		}
-	}
-	if !found {
-		t.Errorf("LogoutHandler() token cookie not found")
-	}
 
-	// Check response
-	var response map[string]string
-	if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
-		t.Errorf("LogoutHandler() failed to unmarshal response: %v", err)
-	} else {
-		if message, ok := response["message"]; !ok || message != "Logged out" {
-			t.Errorf("LogoutHandler() message = %v, want 'Logged out'", response)
-		}
+			// For successful logout, check cookie and response
+			if tt.wantStatusCode == http.StatusOK {
+				// Check cookie is cleared
+				cookies := rr.Result().Cookies()
+				found := false
+				for _, cookie := range cookies {
+					if cookie.Name == "token" {
+						found = true
+						if cookie.Value != "" {
+							t.Errorf("LogoutHandler() token cookie should be empty, got %v", cookie.Value)
+						}
+						if cookie.MaxAge != -1 && !cookie.Expires.Before(time.Now()) {
+							t.Errorf("LogoutHandler() token cookie should be expired")
+						}
+						break
+					}
+				}
+				if !found {
+					t.Errorf("LogoutHandler() token cookie not found")
+				}
+
+				// Check response
+				var response map[string]string
+				if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+					t.Errorf("LogoutHandler() failed to unmarshal response: %v", err)
+				} else {
+					if message, ok := response["message"]; !ok || message != "Logged out" {
+						t.Errorf("LogoutHandler() message = %v, want 'Logged out'", response)
+					}
+				}
+			}
+		})
 	}
 }
 

@@ -26,21 +26,15 @@ type RouterConfig struct {
 
 func registerRoutes(c RouterConfig) {
 	// Setup endpoints
-	setupCompleteHandler := func(w http.ResponseWriter, r *http.Request) {
-		utils.LogInfo("Request received for /api/setup/complete", map[string]interface{}{
-			"method":  r.Method,
-			"ip":      r.RemoteAddr,
-			"origin":  r.Header.Get("Origin"),
-			"referer": r.Header.Get("Referer"),
-		})
-		c.Deps.AuthService.SetupCompleteHandler(w, r)
-	}
+
+	// Public setup routes
 	c.Mux.HandleFunc("/api/setup/status", c.Public(c.Deps.AuthService.SetupStatusHandler))
-	c.Mux.HandleFunc("/api/setup/complete", c.Public(setupCompleteHandler))
+	c.Mux.HandleFunc("/api/setup/complete", c.Public(c.Deps.AuthService.SetupCompleteHandler))
+	c.Mux.HandleFunc("/api/setup/token", c.Public(c.Deps.AuthService.UpdateTokenHandler))
 
 	// Auth endpoints
 	c.Mux.HandleFunc("/api/login", middleware.SecurityHeadersMiddleware(enableCors(middleware.LoginRateLimitMiddleware(middleware.AuditMiddleware(c.Deps.AuthService.LoginHandler)))))
-	c.Mux.HandleFunc("/api/logout", c.Public(c.Deps.AuthService.LogoutHandler))
+	c.Mux.HandleFunc("/api/logout", c.Secure(c.Deps.AuthService.LogoutHandler))
 	c.Mux.HandleFunc("/api/me", c.Secure(c.Deps.AuthService.MeHandler))
 	c.Mux.HandleFunc("/api/auth/change-password", c.Secure(c.Deps.AuthService.ChangePasswordHandler))
 

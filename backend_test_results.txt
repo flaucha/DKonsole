@@ -1,0 +1,4 @@
+# ./backend/internal/auth/...
+pattern ./backend/internal/auth/...: directory prefix backend/internal/auth does not contain main module or its selected dependencies
+FAIL	./backend/internal/auth/... [setup failed]
+FAIL

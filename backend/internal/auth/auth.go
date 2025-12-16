@@ -17,13 +17,15 @@ import (
 //   - Service (Business Logic): AuthService and JWTService
 //   - Repository (Data Access): UserRepository for credential retrieval
 type Service struct {
-	authService *AuthService
-	jwtService  *JWTService
-	k8sRepo     *K8sUserRepository // K8s repository for secret management (may be nil if not using K8s)
-	setupMode   bool               // true if running in setup mode (secret doesn't exist)
-	mu          sync.RWMutex       // Mutex for thread-safe reload
-	k8sClient   kubernetes.Interface
-	secretName  string
+	authService   *AuthService
+	jwtService    *JWTService
+	k8sRepo       *K8sUserRepository // K8s repository for secret management (may be nil if not using K8s)
+	setupMode     bool               // true if running in setup mode (secret doesn't exist)
+	mu            sync.RWMutex       // Mutex for thread-safe reload
+	k8sClient     kubernetes.Interface
+	secretName    string
+	ClientFactory func(token string) (kubernetes.Interface, error) // Factory for creating K8s clients
+	OnReload      func(token string)                               // Callback to notify about reload (e.g. to update global clients)
 }
 
 // SetLDAPAuthenticator sets the LDAP authenticator for the auth service
@@ -115,25 +117,59 @@ func NewService(k8sClient kubernetes.Interface, secretName string) (*Service, er
 	jwtService := NewJWTService(jwtSecret)
 
 	return &Service{
-		authService: authService,
-		jwtService:  jwtService,
-		k8sRepo:     k8sRepo,
-		setupMode:   setupMode,
-		k8sClient:   k8sClient,
-		secretName:  secretName,
+		authService:   authService,
+		jwtService:    jwtService,
+		k8sRepo:       k8sRepo,
+		setupMode:     setupMode,
+		k8sClient:     k8sClient,
+		secretName:    secretName,
+		ClientFactory: createEphemeralClient,
 	}, nil
 }
 
 // Reload attempts to reload the service configuration if the secret now exists.
 // This allows the service to transition from setup mode to normal mode without restarting.
+// tokenOverride: Optional token to use for creating the K8s client (e.g. from setup/token update)
 // Returns true if reload was successful, false otherwise.
-func (s *Service) Reload(ctx context.Context) (bool, error) {
+func (s *Service) Reload(ctx context.Context, tokenOverride string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Only reload if we're in setup mode and have K8s client
-	if !s.setupMode || s.k8sClient == nil || s.k8sRepo == nil {
+	// Only reload if we're in setup mode and have K8s client OR if we have a token override
+	if (!s.setupMode || s.k8sClient == nil || s.k8sRepo == nil) && tokenOverride == "" {
 		return false, nil
+	}
+
+	// Update K8s Client if token is provided
+	if tokenOverride != "" {
+		utils.LogInfo("Reloading with new token", nil)
+		var newClient kubernetes.Interface
+		var err error
+		if s.ClientFactory != nil {
+			newClient, err = s.ClientFactory(tokenOverride)
+		} else {
+			newClient, err = createEphemeralClient(tokenOverride)
+		}
+
+		if err != nil {
+			return false, fmt.Errorf("failed to create client from token: %w", err)
+		}
+
+		s.k8sClient = newClient
+		// Re-initialize repo with new client
+		repo, err := NewK8sUserRepository(s.k8sClient, s.secretName)
+		if err != nil {
+			return false, fmt.Errorf("failed to recreate repo with new client: %w", err)
+		}
+		// Preserve the factory in the repo if needed for internal updates (k8sRepo has its own factory field)
+		// We could try to copy it if K8sUserRepository exposed it, but NewK8sUserRepository creates a fresh one.
+		// If we are in tests, we might lose the mock factory inside k8sRepo?
+		// K8sUserRepository struct has ClientFactory field. NewK8sUserRepository does NOT set it (it stays nil).
+		// We should probably propagate our factory if possible, but K8sUserRepository field is exported?
+		// Yes ClientFactory in K8sUserRepository is exported.
+		repo.ClientFactory = s.ClientFactory
+
+		s.k8sRepo = repo
 	}
 
 	// Check if secret now exists
@@ -178,6 +214,26 @@ func (s *Service) Reload(ctx context.Context) (bool, error) {
 	utils.LogInfo("Auth service reloaded successfully", map[string]interface{}{
 		"secret_name": s.secretName,
 	})
+
+	// Notify listeners about reload
+	if s.OnReload != nil {
+		// We need to pass the token that is currently effective.
+		// If we used tokenOverride, it's that.
+		// If not, we need to extract it from the secret we just read?
+		// Actually, standard Reload (without override) reads secret from disk/api.
+		// But in this specific setup flow, we usually rely on tokenOverride.
+		// If we reloaded from Secret, we can get the token from the secret data.
+		tokenToBroadcast := tokenOverride
+		if tokenToBroadcast == "" {
+			// Extract from secret
+			if tokenBytes, ok := secret.Data["service-account-token"]; ok {
+				tokenToBroadcast = string(tokenBytes)
+			}
+		}
+		if tokenToBroadcast != "" {
+			s.OnReload(tokenToBroadcast)
+		}
+	}
 
 	return true, nil
 }

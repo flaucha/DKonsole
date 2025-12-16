@@ -59,8 +59,15 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get Client (for discovery)
+	client, err := s.clusterService.GetClient(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	// Create Resource Service
-	resourceService := s.serviceFactory.CreateResourceService(dynamicClient)
+	resourceService := s.serviceFactory.CreateResourceService(dynamicClient, client)
 
 	// Update the resource
 	req := UpdateResourceRequest{
@@ -104,8 +111,15 @@ func (s *Service) CreateResourceYAML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get Client (for discovery)
+	client, err := s.clusterService.GetClient(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	// Create Resource Service
-	resourceService := s.serviceFactory.CreateResourceService(dynamicClient)
+	resourceService := s.serviceFactory.CreateResourceService(dynamicClient, client)
 
 	// Create the resource
 	result, err := resourceService.CreateResource(ctx, yamlData)
@@ -206,8 +220,15 @@ func (s *Service) DeleteResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get Client (for discovery)
+	client, err := s.clusterService.GetClient(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	// Create Resource Service
-	resourceService := s.serviceFactory.CreateResourceService(dynamicClient)
+	resourceService := s.serviceFactory.CreateResourceService(dynamicClient, client)
 
 	// Delete resource
 	req := DeleteResourceRequest{

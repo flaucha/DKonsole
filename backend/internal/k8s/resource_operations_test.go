@@ -246,7 +246,7 @@ func TestImportResourceYAMLHandler_Success(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", rr.Code)
 	}
-	if !repo.patchCalled {
+	if repo.patchCalls == 0 {
 		t.Fatalf("expected patch to be called during import")
 	}
 }

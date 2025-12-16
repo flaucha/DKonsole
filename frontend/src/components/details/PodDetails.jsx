@@ -143,7 +143,7 @@ const PodDetails = ({ details, pod }) => {
                                     onChange={(e) => setSelectedContainer(e.target.value)}
                                     className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none focus:border-blue-500"
                                 >
-                                    {containers.map(c => (
+                                    {containers.filter(c => !details.initContainers?.includes(c)).map(c => (
                                         <option key={c} value={c}>{c}</option>
                                     ))}
                                 </select>

@@ -84,8 +84,17 @@ func (s *Service) StreamResourceCreation(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Get Client (for discovery)
+	client, err := s.clusterService.GetClient(r)
+	if err != nil {
+		errorData, _ := json.Marshal(map[string]string{"message": err.Error()})
+		fmt.Fprintf(w, "event: error\ndata: %s\n\n", errorData)
+		flusher.Flush()
+		return
+	}
+
 	// Create Resource Service
-	resourceService := s.serviceFactory.CreateResourceService(dynamicClient)
+	resourceService := s.serviceFactory.CreateResourceService(dynamicClient, client)
 
 	// Attempt creation
 	result, err := resourceService.CreateResource(ctx, yamlData)

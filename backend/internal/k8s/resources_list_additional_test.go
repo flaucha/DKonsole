@@ -43,7 +43,7 @@ func TestResourceListService_listNodes(t *testing.T) {
 	client := k8sfake.NewSimpleClientset(readyNode, notReadyNode)
 	service := NewResourceListService(nil, "")
 
-	resources, err := service.listNodes(context.Background(), client, metav1.ListOptions{})
+	resources, err := service.listNodes(context.Background(), client, nil, metav1.ListOptions{})
 	if err != nil {
 		t.Fatalf("listNodes returned error: %v", err)
 	}

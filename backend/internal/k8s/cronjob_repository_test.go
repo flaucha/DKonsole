@@ -43,7 +43,9 @@ type stubFactory struct {
 	cronService *CronJobService
 }
 
-func (f *stubFactory) CreateResourceService(dynamic.Interface) *ResourceService { return nil }
+func (f *stubFactory) CreateResourceService(dynamic.Interface, kubernetes.Interface) *ResourceService {
+	return nil
+}
 func (f *stubFactory) CreateImportService(dynamic.Interface, kubernetes.Interface) *ImportService {
 	return nil
 }

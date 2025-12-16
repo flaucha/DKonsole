@@ -13,7 +13,7 @@ func TestServiceFactory_CreateServices(t *testing.T) {
 	dynamicClient := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
 	k8sClient := k8sfake.NewSimpleClientset()
 
-	if svc := factory.CreateResourceService(dynamicClient); svc == nil {
+	if svc := factory.CreateResourceService(dynamicClient, k8sClient); svc == nil {
 		t.Fatalf("CreateResourceService returned nil")
 	}
 	if svc := factory.CreateImportService(dynamicClient, k8sClient); svc == nil {
