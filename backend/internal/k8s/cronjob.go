@@ -2,9 +2,9 @@ package k8s
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
+	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -27,6 +27,13 @@ func (s *Service) TriggerCronJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate user has edit permission on the namespace
+	// We use r.Context() before creating the timeout context to access user claims
+	if err := permissions.ValidateAction(r.Context(), req.Namespace, "edit"); err != nil {
+		utils.ErrorResponse(w, http.StatusForbidden, err.Error())
+		return
+	}
+
 	// Create service using factory (dependency injection)
 	cronJobService := s.serviceFactory.CreateCronJobService(client)
 
@@ -37,7 +44,10 @@ func (s *Service) TriggerCronJob(w http.ResponseWriter, r *http.Request) {
 	// Call service to trigger cronjob (business logic layer)
 	jobName, err := cronJobService.TriggerCronJob(ctx, req.Namespace, req.Name)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to trigger cronjob: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to trigger cronjob", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": req.Namespace,
+			"name":      req.Name,
+		})
 		return
 	}
 

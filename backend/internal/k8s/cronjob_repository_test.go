@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 
+	"github.com/flaucha/DKonsole/backend/internal/auth"
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
 	"github.com/flaucha/DKonsole/backend/internal/models"
 )
@@ -43,7 +44,9 @@ type stubFactory struct {
 	cronService *CronJobService
 }
 
-func (f *stubFactory) CreateResourceService(dynamic.Interface) *ResourceService { return nil }
+func (f *stubFactory) CreateResourceService(dynamic.Interface, kubernetes.Interface) *ResourceService {
+	return nil
+}
 func (f *stubFactory) CreateImportService(dynamic.Interface, kubernetes.Interface) *ImportService {
 	return nil
 }
@@ -107,6 +110,16 @@ func TestService_TriggerCronJobHandler(t *testing.T) {
 	body := bytes.NewBufferString(`{"namespace":"default","name":"my-cron"}`)
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/cron", body)
+
+	// Add user to context
+	claims := &auth.AuthClaims{
+		Claims: models.Claims{
+			Username: "admin",
+			Role:     "admin",
+		},
+	}
+	ctx := context.WithValue(req.Context(), auth.UserContextKey(), claims)
+	req = req.WithContext(ctx)
 
 	svc.TriggerCronJob(rr, req)
 

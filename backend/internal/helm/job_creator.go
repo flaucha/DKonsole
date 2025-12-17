@@ -10,6 +10,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const helmJobImage = "alpine/helm:3.14.4@sha256:31ce11c4ee98c5e1e13628ead9212e665f32c3277cae63bd55ced32989089f3e"
+
 // CreateHelmJobRequest represents parameters for creating a Helm Job
 type CreateHelmJobRequest struct {
 	Operation          string // "install" or "upgrade"
@@ -69,7 +71,7 @@ func (s *HelmJobService) CreateHelmJob(ctx context.Context, req CreateHelmJobReq
 	jobName := fmt.Sprintf("helm-%s-%s-%d", req.Operation, req.ReleaseName, time.Now().Unix())
 
 	// Build Helm command
-	helmCmd := s.BuildHelmCommand(HelmCommandRequest{
+	helmCmd, err := s.BuildHelmCommand(HelmCommandRequest{
 		Operation:    req.Operation,
 		ReleaseName:  req.ReleaseName,
 		Namespace:    req.Namespace,
@@ -79,6 +81,12 @@ func (s *HelmJobService) CreateHelmJob(ctx context.Context, req CreateHelmJobReq
 		ValuesYAML:   req.ValuesYAML,
 		ValuesCMName: req.ValuesCMName,
 	})
+	if err != nil {
+		return "", err
+	}
+	if len(helmCmd) == 0 {
+		return "", fmt.Errorf("failed to build helm command")
+	}
 
 	// Create Job
 	job := &batchv1.Job{
@@ -95,7 +103,7 @@ func (s *HelmJobService) CreateHelmJob(ctx context.Context, req CreateHelmJobReq
 					Containers: []corev1.Container{
 						{
 							Name:  "helm",
-							Image: "alpine/helm:latest",
+							Image: helmJobImage,
 						},
 					},
 				},
@@ -104,16 +112,9 @@ func (s *HelmJobService) CreateHelmJob(ctx context.Context, req CreateHelmJobReq
 	}
 
 	// Set command and args
-	if len(helmCmd) == 3 && helmCmd[0] == "/bin/sh" && helmCmd[1] == "-c" {
-		job.Spec.Template.Spec.Containers[0].Command = []string{"/bin/sh", "-c"}
-		job.Spec.Template.Spec.Containers[0].Args = []string{helmCmd[2]}
-	} else {
-		if len(helmCmd) > 0 {
-			job.Spec.Template.Spec.Containers[0].Command = helmCmd[0:1]
-		}
-		if len(helmCmd) > 1 {
-			job.Spec.Template.Spec.Containers[0].Args = helmCmd[1:]
-		}
+	job.Spec.Template.Spec.Containers[0].Command = helmCmd[0:1]
+	if len(helmCmd) > 1 {
+		job.Spec.Template.Spec.Containers[0].Args = helmCmd[1:]
 	}
 
 	// Add volume for values if needed

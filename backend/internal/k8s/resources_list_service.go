@@ -103,7 +103,7 @@ func (s *ResourceListService) fetchResourcesByKind(ctx context.Context, req List
 	case "Deployment":
 		resources, listErr = s.listDeployments(ctx, req.Client, namespace, listOpts)
 	case "Node":
-		resources, listErr = s.listNodes(ctx, req.Client, listOpts)
+		resources, listErr = s.listNodes(ctx, req.Client, req.MetricsClient, listOpts)
 	case "Pod":
 		resources, listErr = s.listPods(ctx, req.Client, req.MetricsClient, namespace, listOpts)
 	case "ConfigMap":

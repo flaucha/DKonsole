@@ -15,98 +15,6 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
-type fakeGVRResolver struct {
-	gvr        schema.GroupVersionResource
-	meta       models.ResourceMeta
-	err        error
-	resolveLog []struct {
-		kind       string
-		api        string
-		namespaced string
-	}
-}
-
-func (f *fakeGVRResolver) ResolveGVR(_ context.Context, kind, apiVersion, namespacedParam string) (schema.GroupVersionResource, models.ResourceMeta, error) {
-	f.resolveLog = append(f.resolveLog, struct {
-		kind       string
-		api        string
-		namespaced string
-	}{kind: kind, api: apiVersion, namespaced: namespacedParam})
-	if f.err != nil {
-		return schema.GroupVersionResource{}, models.ResourceMeta{}, f.err
-	}
-	return f.gvr, f.meta, nil
-}
-
-type fakeResourceRepo struct {
-	patchCalled     bool
-	patchName       string
-	patchNamespace  string
-	patchNamespaced bool
-	patchData       []byte
-	patchType       types.PatchType
-
-	deleteCalled     bool
-	deleteOptions    metav1.DeleteOptions
-	deleteNamespace  string
-	deleteNamespaced bool
-	deleteName       string
-
-	createNamespace  string
-	createNamespaced bool
-	createObj        *unstructured.Unstructured
-	createResult     *unstructured.Unstructured
-
-	getObj *unstructured.Unstructured
-
-	err error
-}
-
-func (f *fakeResourceRepo) Get(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, namespaced bool) (*unstructured.Unstructured, error) {
-	if f.err != nil {
-		return nil, f.err
-	}
-	if f.getObj != nil {
-		return f.getObj.DeepCopy(), nil
-	}
-	return nil, errors.New("not implemented: Get")
-}
-
-func (f *fakeResourceRepo) Create(_ context.Context, _ schema.GroupVersionResource, namespace string, namespaced bool, obj *unstructured.Unstructured, _ metav1.CreateOptions) (*unstructured.Unstructured, error) {
-	f.createNamespace = namespace
-	f.createNamespaced = namespaced
-	f.createObj = obj
-	if f.err != nil {
-		return nil, f.err
-	}
-	if f.createResult != nil {
-		return f.createResult, nil
-	}
-	return obj, nil
-}
-
-func (f *fakeResourceRepo) Patch(_ context.Context, _ schema.GroupVersionResource, name, namespace string, namespaced bool, patchData []byte, patchType types.PatchType, _ metav1.PatchOptions) (*unstructured.Unstructured, error) {
-	f.patchCalled = true
-	f.patchName = name
-	f.patchNamespace = namespace
-	f.patchNamespaced = namespaced
-	f.patchData = patchData
-	f.patchType = patchType
-	if f.err != nil {
-		return nil, f.err
-	}
-	return &unstructured.Unstructured{}, nil
-}
-
-func (f *fakeResourceRepo) Delete(_ context.Context, _ schema.GroupVersionResource, name, namespace string, namespaced bool, options metav1.DeleteOptions) error {
-	f.deleteCalled = true
-	f.deleteName = name
-	f.deleteNamespace = namespace
-	f.deleteNamespaced = namespaced
-	f.deleteOptions = options
-	return f.err
-}
-
 func ctxWithPermissions(perms map[string]string) context.Context {
 	return context.WithValue(context.Background(), auth.UserContextKey(), &models.Claims{
 		Role:        "user",
@@ -168,7 +76,7 @@ func TestResourceService_UpdateResource_Success(t *testing.T) {
 		t.Fatalf("expected success, got error: %v", err)
 	}
 
-	if !repo.patchCalled {
+	if repo.patchCalls == 0 {
 		t.Fatalf("expected Patch to be called")
 	}
 	if repo.patchName != "my-dep" {
@@ -199,7 +107,7 @@ func TestResourceService_UpdateResource_InvalidYAML(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "invalid YAML") {
 		t.Fatalf("expected invalid YAML error, got: %v", err)
 	}
-	if repo.patchCalled {
+	if repo.patchCalls > 0 {
 		t.Fatalf("expected no patch call on invalid YAML")
 	}
 }
@@ -218,11 +126,94 @@ func TestResourceService_UpdateResource_PermissionDenied(t *testing.T) {
 	}
 
 	err := svc.UpdateResource(ctx, req)
-	if err == nil || !strings.Contains(err.Error(), "failed to check permissions") {
-		t.Fatalf("expected permission error, got: %v", err)
+	if err == nil || !errors.Is(err, ErrForbidden) {
+		t.Fatalf("expected forbidden error, got: %v", err)
 	}
-	if repo.patchCalled {
+	if repo.patchCalls > 0 {
 		t.Fatalf("expected no patch call on permission failure")
+	}
+}
+
+func TestResourceService_UpdateResource_NamespaceMismatch(t *testing.T) {
+	resolver := &fakeGVRResolver{meta: models.ResourceMeta{Namespaced: true}}
+	repo := &fakeResourceRepo{}
+	svc := NewResourceService(repo, resolver)
+
+	ctx := ctxWithPermissions(map[string]string{"nsA": "edit", "nsB": "edit"})
+	req := UpdateResourceRequest{
+		YAMLContent: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: cm\n  namespace: nsB\ndata:\n  k: v",
+		Kind:        "ConfigMap",
+		Namespace:   "nsA",
+	}
+
+	err := svc.UpdateResource(ctx, req)
+	if err == nil || !errors.Is(err, ErrNamespaceMismatch) {
+		t.Fatalf("expected namespace mismatch error, got: %v", err)
+	}
+	if repo.patchCalls > 0 {
+		t.Fatalf("expected no patch call on namespace mismatch")
+	}
+}
+
+func TestResourceService_UpdateResource_UsesYAMLNamespaceForAuth(t *testing.T) {
+	resolver := &fakeGVRResolver{meta: models.ResourceMeta{Namespaced: true}}
+	repo := &fakeResourceRepo{}
+	svc := NewResourceService(repo, resolver)
+
+	// Only has edit in nsA; YAML targets nsB -> must be forbidden even if query namespace is empty.
+	ctx := ctxWithPermissions(map[string]string{"nsA": "edit"})
+	req := UpdateResourceRequest{
+		YAMLContent: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: cm\n  namespace: nsB\ndata:\n  k: v",
+		Kind:        "ConfigMap",
+	}
+
+	err := svc.UpdateResource(ctx, req)
+	if err == nil || !errors.Is(err, ErrForbidden) {
+		t.Fatalf("expected forbidden error, got: %v", err)
+	}
+	if repo.patchCalls > 0 {
+		t.Fatalf("expected no patch call on forbidden")
+	}
+}
+
+func TestResourceService_UpdateResource_RequiresNamespaceForNamespacedResource(t *testing.T) {
+	resolver := &fakeGVRResolver{meta: models.ResourceMeta{Namespaced: true}}
+	repo := &fakeResourceRepo{}
+	svc := NewResourceService(repo, resolver)
+
+	ctx := ctxWithPermissions(map[string]string{"default": "edit"})
+	req := UpdateResourceRequest{
+		YAMLContent: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: cm\ndata:\n  k: v",
+		Kind:        "ConfigMap",
+	}
+
+	err := svc.UpdateResource(ctx, req)
+	if err == nil || !errors.Is(err, ErrNamespaceRequired) {
+		t.Fatalf("expected namespace required error, got: %v", err)
+	}
+	if repo.patchCalls > 0 {
+		t.Fatalf("expected no patch call without namespace")
+	}
+}
+
+func TestResourceService_UpdateResource_ClusterScopedRequiresAdmin(t *testing.T) {
+	resolver := &fakeGVRResolver{meta: models.ResourceMeta{Namespaced: false}}
+	repo := &fakeResourceRepo{}
+	svc := NewResourceService(repo, resolver)
+
+	ctx := ctxWithPermissions(map[string]string{"default": "edit"})
+	req := UpdateResourceRequest{
+		YAMLContent: "apiVersion: rbac.authorization.k8s.io/v1\nkind: ClusterRole\nmetadata:\n  name: cr\nrules: []",
+		Kind:        "ClusterRole",
+		Namespaced:  false,
+	}
+
+	err := svc.UpdateResource(ctx, req)
+	if err == nil || !errors.Is(err, ErrAdminRequired) {
+		t.Fatalf("expected admin required error, got: %v", err)
+	}
+	if repo.patchCalls > 0 {
+		t.Fatalf("expected no patch call without admin")
 	}
 }
 

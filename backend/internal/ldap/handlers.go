@@ -38,7 +38,7 @@ type UpdateCredentialsRequest struct {
 func (s *Service) GetConfigHandler(w http.ResponseWriter, r *http.Request) {
 	config, err := s.repo.GetConfig(r.Context())
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to get LDAP config: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to get LDAP config", http.StatusInternalServerError, nil)
 		return
 	}
 
@@ -87,7 +87,9 @@ func (s *Service) UpdateConfigHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Update in repository
 	if err := s.repo.UpdateConfig(r.Context(), &req.Config); err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to update LDAP config: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to update LDAP config", http.StatusInternalServerError, map[string]interface{}{
+			"enabled": req.Config.Enabled,
+		})
 		return
 	}
 
@@ -115,7 +117,7 @@ func (s *Service) UpdateConfigHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Service) GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 	groups, err := s.repo.GetGroups(r.Context())
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to get LDAP groups: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to get LDAP groups", http.StatusInternalServerError, nil)
 		return
 	}
 
@@ -160,7 +162,9 @@ func (s *Service) UpdateGroupsHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Update in repository
 	if err := s.repo.UpdateGroups(r.Context(), &req.Groups); err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to update LDAP groups: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to update LDAP groups", http.StatusInternalServerError, map[string]interface{}{
+			"groups_count": len(req.Groups.Groups),
+		})
 		return
 	}
 
@@ -177,7 +181,7 @@ func (s *Service) UpdateGroupsHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Service) GetCredentialsHandler(w http.ResponseWriter, r *http.Request) {
 	username, _, err := s.repo.GetCredentials(r.Context())
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to get LDAP credentials: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to get LDAP credentials", http.StatusInternalServerError, nil)
 		return
 	}
 
@@ -204,7 +208,7 @@ func (s *Service) UpdateCredentialsHandler(w http.ResponseWriter, r *http.Reques
 	if req.Password == "" {
 		existingUsername, existingPassword, err := s.repo.GetCredentials(r.Context())
 		if err != nil {
-			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to get existing credentials: %v", err))
+			utils.HandleErrorJSON(w, err, "Failed to get LDAP credentials", http.StatusInternalServerError, nil)
 			return
 		}
 
@@ -226,7 +230,9 @@ func (s *Service) UpdateCredentialsHandler(w http.ResponseWriter, r *http.Reques
 
 	// Update in repository
 	if err := s.repo.UpdateCredentials(r.Context(), req.Username, req.Password); err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to update LDAP credentials: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to update LDAP credentials", http.StatusInternalServerError, map[string]interface{}{
+			"username": req.Username,
+		})
 		return
 	}
 

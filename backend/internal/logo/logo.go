@@ -53,7 +53,9 @@ func (s *Service) DeleteLogo(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	if err := s.logoService.DeleteLogo(ctx, logoType); err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		utils.HandleErrorJSON(w, err, "Failed to delete logo", http.StatusInternalServerError, map[string]interface{}{
+			"type": logoType,
+		})
 		return
 	}
 

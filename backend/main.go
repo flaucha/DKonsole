@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -61,37 +62,41 @@ func main() {
 	}
 	flag.Parse()
 
-	// use the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	// Initial config build
+	config, err := buildKubeConfig(*kubeconfig, "")
 	if err != nil {
-		utils.LogWarn("Error building kubeconfig from flags, falling back to in-cluster config", map[string]interface{}{
+		// Log warning but proceed (might be setup mode)
+		utils.LogWarn("Failed to build initial kubeconfig (Setup Mode likely required)", map[string]interface{}{
 			"error": err.Error(),
 		})
-		config, err = rest.InClusterConfig()
-		if err != nil {
-			utils.LogError(err, "Failed to get in-cluster config", nil)
-			os.Exit(1)
-		}
 	}
 
 	// create the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		utils.LogError(err, "Failed to create clientset", nil)
-		os.Exit(1)
-	}
+	var clientset *kubernetes.Clientset
+	var metricsClient *metricsv.Clientset
+	var dynamicClient *dynamic.DynamicClient
 
-	metricsClient, err := metricsv.NewForConfig(config)
-	if err != nil {
-		utils.LogWarn("Failed to create metrics client; metrics endpoints will be disabled", map[string]interface{}{
-			"error": err.Error(),
-		})
-	}
+	if config != nil {
+		clientset, err = kubernetes.NewForConfig(config)
+		if err != nil {
+			utils.LogError(err, "Failed to create clientset", nil)
+			os.Exit(1)
+		}
 
-	dynamicClient, err := dynamic.NewForConfig(config)
-	if err != nil {
-		utils.LogError(err, "Failed to create dynamic client", nil)
-		os.Exit(1)
+		metricsClient, err = metricsv.NewForConfig(config)
+		if err != nil {
+			utils.LogWarn("Failed to create metrics client; metrics endpoints will be disabled", map[string]interface{}{
+				"error": err.Error(),
+			})
+		}
+
+		dynamicClient, err = dynamic.NewForConfig(config)
+		if err != nil {
+			utils.LogError(err, "Failed to create dynamic client", nil)
+			os.Exit(1)
+		}
+	} else {
+		utils.LogInfo("Starting in Setup Mode (no K8s client available)", nil)
 	}
 
 	// Initialize auth service with Kubernetes client
@@ -130,6 +135,47 @@ func main() {
 	if err != nil {
 		utils.LogError(err, "Failed to initialize auth service", nil)
 		os.Exit(1)
+	}
+
+	// Register callback to update global clients on reload
+	authService.OnReload = func(token string) {
+		utils.LogInfo("Reloading global K8s clients with new token", nil)
+		newConfig, err := buildKubeConfig(*kubeconfig, token)
+		if err != nil {
+			utils.LogError(err, "Failed to build new config during reload", nil)
+			return
+		}
+
+		newClientset, err := kubernetes.NewForConfig(newConfig)
+		if err != nil {
+			utils.LogError(err, "Failed to create new clientset during reload", nil)
+			return
+		}
+
+		newMetricsClient, err := metricsv.NewForConfig(newConfig)
+		if err != nil {
+			utils.LogWarn("Failed to create new metrics client during reload", map[string]interface{}{
+				"error": err.Error(),
+			})
+		}
+
+		newDynamicClient, err := dynamic.NewForConfig(newConfig)
+		if err != nil {
+			utils.LogError(err, "Failed to create new dynamic client during reload", nil)
+			return
+		}
+
+		// Update global handlers model with thread safety
+		handlersModel.Lock()
+		handlersModel.Clients["default"] = newClientset
+		handlersModel.Dynamics["default"] = newDynamicClient
+		handlersModel.RESTConfigs["default"] = newConfig
+		if newMetricsClient != nil {
+			handlersModel.Metrics["default"] = newMetricsClient
+		}
+		handlersModel.Unlock()
+
+		utils.LogInfo("Global K8s clients updated successfully", nil)
 	}
 
 	// Initialize LDAP service (non-blocking - will work even if LDAP is not configured)
@@ -182,8 +228,75 @@ func main() {
 	utils.LogInfo("Server starting", map[string]interface{}{
 		"port": port,
 	})
-	if err := http.ListenAndServe(port, router); err != nil {
+	// Configure HTTP server with timeouts
+	srv := &http.Server{
+		Addr:              port,
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	utils.LogInfo("Server starting", map[string]interface{}{
+		"port": port,
+	})
+	if err := srv.ListenAndServe(); err != nil {
 		utils.LogError(err, "Server failed", nil)
 		os.Exit(1)
 	}
+}
+
+// buildKubeConfig constructs a kubernetes rest.Config based on flags, environment, or override token.
+func buildKubeConfig(kubeconfigPath, overrideToken string) (*rest.Config, error) {
+	// 1. If override token is provided, stick to InCluster-like manual config
+	if overrideToken != "" {
+		host := "https://" + os.Getenv("KUBERNETES_SERVICE_HOST") + ":" + os.Getenv("KUBERNETES_SERVICE_PORT")
+
+		config := &rest.Config{
+			Host:            host,
+			BearerToken:     overrideToken,
+			TLSClientConfig: rest.TLSClientConfig{Insecure: false},
+		}
+		// Try to read CA cert
+		if caData, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"); err == nil {
+			config.TLSClientConfig.CAData = caData
+		} else {
+			utils.LogWarn("Could not load CA certificate, connection might fail if self-signed", map[string]interface{}{
+				"error": err.Error(),
+			})
+		}
+		return config, nil
+	}
+
+	// 2. Try kubeconfig from flags
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	if err == nil {
+		return config, nil
+	}
+
+	// 3. Try to read token from volume mount (Secret)
+	tokenPath := "/etc/dkonsole/auth/service-account-token" //nolint:gosec // Path to file not credential
+	tokenData, readErr := os.ReadFile(tokenPath)
+	if readErr == nil && len(tokenData) > 0 {
+		token := string(tokenData)
+		config := &rest.Config{
+			Host:            "https://" + os.Getenv("KUBERNETES_SERVICE_HOST") + ":" + os.Getenv("KUBERNETES_SERVICE_PORT"),
+			BearerToken:     token,
+			TLSClientConfig: rest.TLSClientConfig{Insecure: false},
+		}
+		if caData, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"); err == nil {
+			config.TLSClientConfig.CAData = caData
+		} else {
+			utils.LogWarn("Could not load CA certificate for token auth, connection might fail if self-signed", map[string]interface{}{
+				"error": err.Error(),
+			})
+		}
+		utils.LogInfo("Authenticated using service account token from volume", nil)
+		return config, nil
+	}
+
+	// 4. Fallback to InClusterConfig
+	// Note: InClusterConfig fails if not in cluster.
+	return rest.InClusterConfig()
 }

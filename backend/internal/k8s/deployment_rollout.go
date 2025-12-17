@@ -42,7 +42,10 @@ func (s *Service) RolloutDeployment(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	canEdit, err := permissions.CanPerformAction(ctx, req.Namespace, "edit")
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to check permissions", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": req.Namespace,
+			"action":    "edit",
+		})
 		return
 	}
 	if !canEdit {
@@ -70,7 +73,10 @@ func (s *Service) RolloutDeployment(w http.ResponseWriter, r *http.Request) {
 	// Call service to rollout deployment (business logic layer)
 	err = deploymentService.RolloutDeployment(ctx, req.Namespace, req.Name)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to rollout deployment: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to rollout deployment", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": req.Namespace,
+			"name":      req.Name,
+		})
 		return
 	}
 

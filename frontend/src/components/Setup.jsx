@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lock, User, Key, RefreshCw, Loader2 } from 'lucide-react';
+import { Lock, User, Key, RefreshCw, Loader2, Shield } from 'lucide-react';
 import { useSetupLogic } from '../hooks/useSetupLogic';
 
 const Setup = () => {
@@ -8,8 +8,9 @@ const Setup = () => {
         password, setPassword,
         confirmPassword, setConfirmPassword,
         jwtSecret, setJwtSecret,
+        serviceAccountToken, setServiceAccountToken,
         error, success, loading, reloading,
-        setupCompleted, checkingStatus,
+        setupCompleted, checkingStatus, tokenOnlyMode,
         logoSrc, handleLogoError,
         generateJWTSecret,
         handleSubmit,
@@ -94,9 +95,13 @@ const Setup = () => {
                     )}
                 </div>
 
-                <h2 className="text-2xl font-bold text-white mb-2 text-center">Initial Setup</h2>
+                <h2 className="text-2xl font-bold text-white mb-2 text-center">
+                    {tokenOnlyMode ? 'Update Token' : 'Initial Setup'}
+                </h2>
                 <p className="text-sm text-gray-400 mb-6 text-center">
-                    Configure your DKonsole administrator account
+                    {tokenOnlyMode
+                        ? 'Your Service Account Token has expired or is invalid. Please provide a new token.'
+                        : 'Configure your DKonsole administrator account'}
                 </p>
 
                 {error && (
@@ -112,98 +117,126 @@ const Setup = () => {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {!tokenOnlyMode && (
+                        <>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Username</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <User size={18} className="text-gray-500" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-gray-900 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                                        placeholder="Enter admin username"
+                                        required
+                                        disabled={loading}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Password</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Lock size={18} className="text-gray-500" />
+                                    </div>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-gray-900 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                                        placeholder="Enter password (min. 8 characters)"
+                                        required
+                                        disabled={loading}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Confirm Password</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Lock size={18} className="text-gray-500" />
+                                    </div>
+                                    <input
+                                        type="password"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-gray-900 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                                        placeholder="Confirm password"
+                                        required
+                                        disabled={loading}
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    )}
+
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">Username</label>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Service Account Token</label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <User size={18} className="text-gray-500" />
+                                <Shield size={18} className="text-gray-500" />
                             </div>
-                            <input
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-gray-900 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
-                                placeholder="Enter admin username"
+                            <textarea
+                                value={serviceAccountToken}
+                                onChange={(e) => setServiceAccountToken(e.target.value)}
+                                className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-gray-900 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm h-24 font-mono text-xs"
+                                placeholder="Paste your Kubernetes Service Account Token here..."
                                 required
                                 disabled={loading}
                             />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">Password</label>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Lock size={18} className="text-gray-500" />
-                            </div>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-gray-900 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
-                                placeholder="Enter password (min. 8 characters)"
-                                required
-                                disabled={loading}
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">Confirm Password</label>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Lock size={18} className="text-gray-500" />
-                            </div>
-                            <input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-gray-900 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
-                                placeholder="Confirm password"
-                                required
-                                disabled={loading}
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">
-                            JWT Secret (optional)
-                            <span className="text-xs text-gray-500 ml-2">Leave empty to auto-generate</span>
-                        </label>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Key size={18} className="text-gray-500" />
-                            </div>
-                            <input
-                                type="text"
-                                value={jwtSecret}
-                                onChange={(e) => setJwtSecret(e.target.value)}
-                                className="block w-full pl-10 pr-12 py-2 border border-gray-700 rounded-md leading-5 bg-gray-900 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
-                                placeholder="Auto-generated if empty"
-                                disabled={loading}
-                            />
-                            <button
-                                type="button"
-                                onClick={generateJWTSecret}
-                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-blue-500 hover:text-blue-400 transition-colors"
-                                title="Generate random JWT secret"
-                                disabled={loading}
-                            >
-                                <RefreshCw size={18} />
-                            </button>
                         </div>
                         <p className="mt-1 text-xs text-gray-500">
-                            Must be at least 32 characters long if provided manually
+                            Create a ServiceAccount with cluster-admin permissions and generate a token using kubectl.
                         </p>
                     </div>
+
+                    {!tokenOnlyMode && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-2">
+                                JWT Secret (optional)
+                                <span className="text-xs text-gray-500 ml-2">Leave empty to auto-generate</span>
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Key size={18} className="text-gray-500" />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={jwtSecret}
+                                    onChange={(e) => setJwtSecret(e.target.value)}
+                                    className="block w-full pl-10 pr-12 py-2 border border-gray-700 rounded-md leading-5 bg-gray-900 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                                    placeholder="Auto-generated if empty"
+                                    disabled={loading}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={generateJWTSecret}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-blue-500 hover:text-blue-400 transition-colors"
+                                    title="Generate random JWT secret"
+                                    disabled={loading}
+                                >
+                                    <RefreshCw size={18} />
+                                </button>
+                            </div>
+                            <p className="mt-1 text-xs text-gray-500">
+                                Must be at least 32 characters long if provided manually
+                            </p>
+                        </div>
+                    )}
 
                     <button
                         type="submit"
                         disabled={loading}
                         className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {loading ? 'Completing Setup...' : 'Complete Setup'}
+                        {loading
+                            ? (tokenOnlyMode ? 'Updating Token...' : 'Completing Setup...')
+                            : (tokenOnlyMode ? 'Update Token' : 'Complete Setup')}
                     </button>
                 </form>
             </div>

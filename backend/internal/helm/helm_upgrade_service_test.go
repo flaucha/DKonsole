@@ -46,7 +46,7 @@ func TestUpgradeHelmRelease(t *testing.T) {
 				Name:       "test-release",
 				Namespace:  "default",
 				Chart:      "nginx", // Explicit
-				Repo:       "my-repo",
+				Repo:       "https://charts.bitnami.com/bitnami",
 				DkonsoleNS: "dkonsole",
 			},
 			wantErr: false,
@@ -62,7 +62,7 @@ func TestUpgradeHelmRelease(t *testing.T) {
 			wantErr: false,
 			mockSetup: func() {
 				mockReleaseService.GetChartInfoFunc = func(ctx context.Context, ns, name string) (*ChartInfo, error) {
-					return &ChartInfo{ChartName: "inferred-nginx", Repo: "inferred-repo"}, nil
+					return &ChartInfo{ChartName: "inferred-nginx", Repo: "https://charts.example.com"}, nil
 				}
 			},
 		},
@@ -78,7 +78,7 @@ func TestUpgradeHelmRelease(t *testing.T) {
 			wantErr: false,
 			mockSetup: func() {
 				mockReleaseService.GetChartInfoFunc = func(ctx context.Context, ns, name string) (*ChartInfo, error) {
-					return &ChartInfo{ChartName: "nginx", Repo: "inferred-repo"}, nil
+					return &ChartInfo{ChartName: "nginx", Repo: "https://charts.example.com"}, nil
 				}
 			},
 		},
@@ -118,6 +118,7 @@ func TestUpgradeHelmRelease(t *testing.T) {
 				Name:       "test-release",
 				Namespace:  "default",
 				Chart:      "nginx",
+				Repo:       "https://charts.bitnami.com/bitnami",
 				ValuesYAML: "foo: bar",
 				DkonsoleNS: "dkonsole",
 			},
@@ -134,6 +135,7 @@ func TestUpgradeHelmRelease(t *testing.T) {
 				Name:       "test-release",
 				Namespace:  "default",
 				Chart:      "nginx",
+				Repo:       "https://charts.bitnami.com/bitnami",
 				DkonsoleNS: "dkonsole",
 			},
 			wantErr: true,

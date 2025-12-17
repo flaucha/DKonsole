@@ -7,7 +7,7 @@ import (
 
 // Factory defines the service factory contract to allow test doubles.
 type Factory interface {
-	CreateResourceService(dynamicClient dynamic.Interface) *ResourceService
+	CreateResourceService(dynamicClient dynamic.Interface, client kubernetes.Interface) *ResourceService
 	CreateImportService(dynamicClient dynamic.Interface, client kubernetes.Interface) *ImportService
 	CreateNamespaceService(client kubernetes.Interface) *NamespaceService
 	CreateClusterStatsService(client kubernetes.Interface) *ClusterStatsService
@@ -24,17 +24,18 @@ func NewServiceFactory() *ServiceFactory {
 	return &ServiceFactory{}
 }
 
-// CreateResourceService creates a ResourceService with the given dynamic client
-func (f *ServiceFactory) CreateResourceService(dynamicClient dynamic.Interface) *ResourceService {
+// CreateResourceService creates a ResourceService with the given dynamic client and discovery client
+func (f *ServiceFactory) CreateResourceService(dynamicClient dynamic.Interface, client kubernetes.Interface) *ResourceService {
 	resourceRepo := NewK8sResourceRepository(dynamicClient)
-	gvrResolver := NewK8sGVRResolver()
+	// Use discovery client to ensure GVR resolution works for all resources
+	gvrResolver := NewK8sGVRResolverWithDiscovery(client)
 	return NewResourceService(resourceRepo, gvrResolver)
 }
 
 // CreateImportService creates an ImportService with the given clients
 func (f *ServiceFactory) CreateImportService(dynamicClient dynamic.Interface, client kubernetes.Interface) *ImportService {
 	resourceRepo := NewK8sResourceRepository(dynamicClient)
-	gvrResolver := NewK8sGVRResolver()
+	gvrResolver := NewK8sGVRResolverWithDiscovery(client)
 	return NewImportService(resourceRepo, gvrResolver, client)
 }
 

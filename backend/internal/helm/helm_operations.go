@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -48,6 +49,12 @@ func (s *Service) UpgradeHelmRelease(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate user has edit permission on the namespace
+	if err := permissions.ValidateAction(r.Context(), req.Namespace, "edit"); err != nil {
+		utils.ErrorResponse(w, http.StatusForbidden, err.Error())
+		return
+	}
+
 	// Get Kubernetes clients
 	client, err := s.clusterService.GetClient(r)
 	if err != nil {
@@ -86,7 +93,12 @@ func (s *Service) UpgradeHelmRelease(w http.ResponseWriter, r *http.Request) {
 	// Call service to upgrade Helm release (business logic layer)
 	result, err := upgradeService.UpgradeHelmRelease(ctx, upgradeReq)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to upgrade Helm release: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to upgrade Helm release", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": req.Namespace,
+			"name":      req.Name,
+			"chart":     req.Chart,
+			"version":   req.Version,
+		})
 		return
 	}
 
@@ -145,6 +157,12 @@ func (s *Service) InstallHelmRelease(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate user has edit permission on the namespace
+	if err := permissions.ValidateAction(r.Context(), req.Namespace, "edit"); err != nil {
+		utils.ErrorResponse(w, http.StatusForbidden, err.Error())
+		return
+	}
+
 	// Get Kubernetes client
 	client, err := s.clusterService.GetClient(r)
 	if err != nil {
@@ -177,7 +195,12 @@ func (s *Service) InstallHelmRelease(w http.ResponseWriter, r *http.Request) {
 	// Call service to install Helm release (business logic layer)
 	result, err := installService.InstallHelmRelease(ctx, installReq)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to install Helm release: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to install Helm release", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": req.Namespace,
+			"name":      req.Name,
+			"chart":     req.Chart,
+			"version":   req.Version,
+		})
 		return
 	}
 

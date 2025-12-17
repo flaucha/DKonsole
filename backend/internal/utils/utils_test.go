@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -152,6 +153,38 @@ func TestHandleError(t *testing.T) {
 				t.Errorf("HandleError() body = %q, want %q", rr.Body.String(), tt.userMessage+"\n")
 			}
 		})
+	}
+}
+
+func TestHandleErrorJSON(t *testing.T) {
+	var buf bytes.Buffer
+	Logger.SetOutput(&buf)
+	defer Logger.SetOutput(os.Stdout)
+	Logger.SetFormatter(&logrus.JSONFormatter{})
+
+	rr := httptest.NewRecorder()
+	HandleErrorJSON(rr, errors.New("internal details"), "Internal server error", http.StatusInternalServerError, map[string]interface{}{
+		"endpoint": "/api/test",
+	})
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Fatalf("HandleErrorJSON() status code = %v, want %v", rr.Code, http.StatusInternalServerError)
+	}
+
+	var body map[string]string
+	if err := json.NewDecoder(rr.Body).Decode(&body); err != nil {
+		t.Fatalf("HandleErrorJSON() failed to decode body: %v", err)
+	}
+	if body["error"] != "Internal server error" {
+		t.Fatalf("HandleErrorJSON() body.error = %q, want %q", body["error"], "Internal server error")
+	}
+
+	var logEntry map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &logEntry); err != nil {
+		t.Fatalf("HandleErrorJSON() failed to parse log entry: %v", err)
+	}
+	if logEntry["endpoint"] != "/api/test" {
+		t.Fatalf("HandleErrorJSON() log endpoint = %v, want %v", logEntry["endpoint"], "/api/test")
 	}
 }
 

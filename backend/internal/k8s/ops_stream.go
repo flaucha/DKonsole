@@ -6,40 +6,18 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
+	"strings"
 
 	"github.com/gorilla/websocket"
 
+	"github.com/flaucha/DKonsole/backend/internal/middleware"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		origin := r.Header.Get("Origin")
-		if origin == "" {
-			return true // No origin header (e.g. non-browser client), allow
-		}
-
-		// Allow localhost and 127.0.0.1 for local development
-		// In a real production env, this should be configurable
-		u, err := url.Parse(origin)
-		if err != nil {
-			return false
-		}
-
-		if u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" {
-			return true
-		}
-
-		// Check against Host header (same origin)
-		if u.Host == r.Host {
-			return true
-		}
-
-		return false
-	},
+	CheckOrigin:     middleware.IsRequestOriginAllowed,
 }
 
 // StreamResourceCreation handles SSE for resource creation feedback
@@ -48,7 +26,15 @@ func (s *Service) StreamResourceCreation(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	origin := strings.TrimSpace(r.Header.Get("Origin"))
+	if origin != "" && !middleware.IsRequestOriginAllowed(r) {
+		http.Error(w, "Origin not allowed", http.StatusForbidden)
+		return
+	}
+	if origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	}
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -84,8 +70,17 @@ func (s *Service) StreamResourceCreation(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Get Client (for discovery)
+	client, err := s.clusterService.GetClient(r)
+	if err != nil {
+		errorData, _ := json.Marshal(map[string]string{"message": err.Error()})
+		fmt.Fprintf(w, "event: error\ndata: %s\n\n", errorData)
+		flusher.Flush()
+		return
+	}
+
 	// Create Resource Service
-	resourceService := s.serviceFactory.CreateResourceService(dynamicClient)
+	resourceService := s.serviceFactory.CreateResourceService(dynamicClient, client)
 
 	// Attempt creation
 	result, err := resourceService.CreateResource(ctx, yamlData)

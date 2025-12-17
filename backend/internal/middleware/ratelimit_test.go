@@ -227,28 +227,28 @@ func TestGetClientIP(t *testing.T) {
 		wantClientIP  string
 	}{
 		{
-			name:          "X-Real-IP header should be used first",
+			name:          "X-Real-IP header should be ignored (spoofing protection)",
 			remoteAddr:    "192.168.1.1:12345",
 			xRealIP:       "10.0.0.1",
 			xForwardedFor: "192.168.1.2",
-			wantClientIP:  "10.0.0.1",
+			wantClientIP:  "192.168.1.1",
 		},
 		{
-			name:          "X-Forwarded-For should be used if X-Real-IP not present",
+			name:          "X-Forwarded-For should be ignored (spoofing protection)",
 			remoteAddr:    "192.168.1.1:12345",
 			xRealIP:       "",
 			xForwardedFor: "10.0.0.2",
-			wantClientIP:  "10.0.0.2",
+			wantClientIP:  "192.168.1.1",
 		},
 		{
-			name:          "X-Forwarded-For with multiple IPs should use first",
+			name:          "X-Forwarded-For with multiple IPs should be ignored",
 			remoteAddr:    "192.168.1.1:12345",
 			xRealIP:       "",
 			xForwardedFor: "10.0.0.3, 192.168.1.3, 10.0.0.4",
-			wantClientIP:  "10.0.0.3",
+			wantClientIP:  "192.168.1.1",
 		},
 		{
-			name:          "RemoteAddr should be used as fallback",
+			name:          "RemoteAddr should be used",
 			remoteAddr:    "192.168.1.4:12345",
 			xRealIP:       "",
 			xForwardedFor: "",

@@ -48,13 +48,4 @@ app.kubernetes.io/name: {{ include "dkonsole.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
-{{/*
-Create the name of the service account to use
-*/}}
-{{- define "dkonsole.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "dkonsole.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
-{{- end }}
-{{- end }}
+

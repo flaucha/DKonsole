@@ -34,11 +34,13 @@ const PodDetails = ({ details, pod }) => {
     const logsContainerRef = useRef(null);
 
     // Set default container when component mounts or containers change
+    // Set default container when component mounts or containers change
     useEffect(() => {
-        if (containers.length > 0 && (!selectedContainer || !containers.includes(selectedContainer))) {
-            setSelectedContainer(containers[0]);
+        const validContainers = containers.filter(c => !details.initContainers?.includes(c));
+        if (validContainers.length > 0 && (!selectedContainer || !validContainers.includes(selectedContainer))) {
+            setSelectedContainer(validContainers[0]);
         }
-    }, [containers, selectedContainer]);
+    }, [containers, selectedContainer, details.initContainers]);
 
     // Scroll into view when terminal or logs tab is activated
     useEffect(() => {
@@ -143,7 +145,7 @@ const PodDetails = ({ details, pod }) => {
                                     onChange={(e) => setSelectedContainer(e.target.value)}
                                     className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none focus:border-blue-500"
                                 >
-                                    {containers.map(c => (
+                                    {containers.filter(c => !details.initContainers?.includes(c)).map(c => (
                                         <option key={c} value={c}>{c}</option>
                                     ))}
                                 </select>

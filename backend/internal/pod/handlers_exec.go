@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 
+	"github.com/flaucha/DKonsole/backend/internal/middleware"
 	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
@@ -21,129 +22,84 @@ import (
 // ExecIntoPod provides WebSocket-based terminal access to a pod
 // Refactored to use layered architecture:
 // Handler (HTTP/WebSocket) -> Service (Business Logic) -> Repository (Data Access)
+// ExecIntoPod provides WebSocket-based terminal access to a pod
+// Refactored to use helper functions for better maintainability and testing
 func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
-	// Parse and validate HTTP parameters
+	// 1. Validation & Setup
 	params, err := utils.ParsePodParams(r)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	// Validate namespace access
-	ctx := r.Context()
-	canEdit, err := permissions.CanPerformAction(ctx, params.Namespace, "edit")
-	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
-		return
-	}
-	if !canEdit {
-		utils.ErrorResponse(w, http.StatusForbidden, fmt.Sprintf("Edit permission required for namespace: %s", params.Namespace))
+	if err := s.validateExecPermissions(r.Context(), params.Namespace); err != nil {
+		utils.ErrorResponse(w, http.StatusForbidden, err.Error())
 		return
 	}
 
-	// Get Kubernetes client for this request
-	client, err := s.clusterService.GetClient(r)
+	client, restConfig, err := s.getExecClients(r)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	// Get REST config for exec
-	restConfig, err := s.clusterService.GetRESTConfig(r)
-	if err != nil {
-		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	// Create exec service
+	// 2. Business Logic (Executor creation)
 	execService := s.execFactory()
-
-	// Prepare exec request
 	execReq := ExecRequest{
 		Namespace: params.Namespace,
 		PodName:   params.PodName,
 		Container: params.Container,
 	}
-
-	// Create executor (business logic layer)
 	executor, _, err := execService.CreateExecutor(client, restConfig, execReq)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create executor: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to create executor", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": params.Namespace,
+			"pod":       params.PodName,
+			"container": params.Container,
+		})
 		return
 	}
 
-	// Upgrade HTTP connection to WebSocket (HTTP layer - WebSocket handling remains here)
+	// 3. Transport Layer (WebSocket)
+	conn, err := s.upgradeToWebSocket(w, r, *params)
+	if err != nil {
+		// upgradeToWebSocket handles logging
+		return
+	}
+	defer conn.Close()
+
+	// 4. Streaming (IO)
+	s.streamPodConnection(r.Context(), conn, executor, *params)
+}
+
+func (s *Service) validateExecPermissions(ctx context.Context, namespace string) error {
+	canEdit, err := permissions.CanPerformAction(ctx, namespace, "edit")
+	if err != nil {
+		return fmt.Errorf("failed to check permissions: %v", err)
+	}
+	if !canEdit {
+		return fmt.Errorf("edit permission required for namespace: %s", namespace)
+	}
+	return nil
+}
+
+func (s *Service) getExecClients(r *http.Request) (kubernetes.Interface, *rest.Config, error) {
+	client, err := s.clusterService.GetClient(r)
+	if err != nil {
+		return nil, nil, err
+	}
+	restConfig, err := s.clusterService.GetRESTConfig(r)
+	if err != nil {
+		return nil, nil, err
+	}
+	return client, restConfig, nil
+}
+
+func (s *Service) upgradeToWebSocket(w http.ResponseWriter, r *http.Request, params utils.PodParams) (*websocket.Conn, error) {
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
-		CheckOrigin: func(r *http.Request) bool {
-			origin := r.Header.Get("Origin")
-
-			// For WebSocket, be more permissive - allow empty origin for same-origin connections
-			if origin == "" {
-				return true
-			}
-
-			originURL, err := url.Parse(origin)
-			if err != nil {
-				return false
-			}
-
-			// Check allowed origins from env
-			allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
-			if allowedOrigins != "" {
-				origins := strings.Split(allowedOrigins, ",")
-				for _, allowed := range origins {
-					allowed = strings.TrimSpace(allowed)
-					allowedURL, err := url.Parse(allowed)
-					if err != nil {
-						continue
-					}
-					allowedHost := allowedURL.Host
-					originHost := originURL.Host
-					if strings.Contains(allowedHost, ":") {
-						allowedHost = strings.Split(allowedHost, ":")[0]
-					}
-					if strings.Contains(originHost, ":") {
-						originHost = strings.Split(originHost, ":")[0]
-					}
-					schemeMatch := (originURL.Scheme == allowedURL.Scheme) ||
-						(originURL.Scheme == "https" && allowedURL.Scheme == "wss") ||
-						(originURL.Scheme == "wss" && allowedURL.Scheme == "https") ||
-						(originURL.Scheme == "http" && allowedURL.Scheme == "ws") ||
-						(originURL.Scheme == "ws" && allowedURL.Scheme == "http")
-					if schemeMatch && originHost == allowedHost {
-						return true
-					}
-				}
-				return false
-			}
-
-			// If no ALLOWED_ORIGINS, allow same-origin, localhost with valid scheme
-			host := r.Host
-			if forwardedHost := r.Header.Get("X-Forwarded-Host"); forwardedHost != "" {
-				host = forwardedHost
-			}
-			if strings.Contains(host, ":") {
-				host = strings.Split(host, ":")[0]
-			}
-
-			originHost := originURL.Host
-			if strings.Contains(originHost, ":") {
-				originHost = strings.Split(originHost, ":")[0]
-			}
-
-			validScheme := originURL.Scheme == "http" || originURL.Scheme == "https" ||
-				originURL.Scheme == "ws" || originURL.Scheme == "wss"
-
-			hostMatch := originHost == host ||
-				originHost == "localhost" ||
-				originHost == "127.0.0.1" ||
-				strings.HasSuffix(originHost, "."+host) ||
-				strings.HasSuffix(host, "."+originHost)
-
-			return validScheme && hostMatch
-		},
+		CheckOrigin:     checkWebSocketOrigin,
 	}
 
 	setWebSocketCORSHeaders(w, r)
@@ -155,43 +111,43 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 			"host":   r.Host,
 			"pod":    fmt.Sprintf("%s/%s", params.Namespace, params.PodName),
 		})
-		return
+		return nil, err
 	}
-	defer conn.Close()
 
 	utils.LogInfo("WebSocket upgraded successfully", map[string]interface{}{
 		"pod":       fmt.Sprintf("%s/%s", params.Namespace, params.PodName),
 		"container": params.Container,
 	})
 
-	// Configure WebSocket connection with ping/pong for keep-alive
+	return conn, nil
+}
+
+func checkWebSocketOrigin(r *http.Request) bool {
+	return middleware.IsRequestOriginAllowed(r)
+}
+
+func (s *Service) streamPodConnection(ctx context.Context, conn *websocket.Conn, executor remotecommand.Executor, params utils.PodParams) {
+	// Configure WebSocket connection
 	const (
-		pongWait   = 60 * time.Second // Time allowed to read the next pong message
-		pingPeriod = 30 * time.Second // Send pings with this period (must be less than pongWait)
-		writeWait  = 10 * time.Second // Time allowed to write a message
+		pongWait   = 60 * time.Second
+		pingPeriod = 30 * time.Second
+		writeWait  = 10 * time.Second
 	)
 
-	// Set initial read deadline
 	conn.SetReadDeadline(time.Now().Add(pongWait))
-
-	// Handle pong messages - extend the read deadline when we receive a pong
 	conn.SetPongHandler(func(appData string) error {
 		conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
 
-	// Mutex to protect concurrent writes to WebSocket
 	var writeMu sync.Mutex
-
-	// Create pipes for stdin/stdout/stderr
 	stdinReader, stdinWriter := io.Pipe()
 	stdoutReader, stdoutWriter := io.Pipe()
 
-	// Context for cleanup coordination
-	ctx, cancel := context.WithCancel(r.Context())
+	streamCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// Ping ticker to keep connection alive
+	// Start ping loop
 	go func() {
 		ticker := time.NewTicker(pingPeriod)
 		defer ticker.Stop()
@@ -202,17 +158,17 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 				conn.SetWriteDeadline(time.Now().Add(writeWait))
 				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 					writeMu.Unlock()
-					cancel() // Signal to close the connection
+					cancel()
 					return
 				}
 				writeMu.Unlock()
-			case <-ctx.Done():
+			case <-streamCtx.Done():
 				return
 			}
 		}
 	}()
 
-	// Handle WebSocket messages (send to pod stdin) - HTTP layer
+	// Read from WebSocket -> Pod Stdin
 	go func() {
 		defer stdinWriter.Close()
 		defer cancel()
@@ -221,19 +177,14 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				return
 			}
-			// Filter out null characters used for keep-alive (legacy clients)
-			// Only forward non-empty, non-null messages to the shell
-			if len(message) == 0 {
-				continue
-			}
-			if len(message) == 1 && message[0] == 0 {
+			if len(message) == 0 || (len(message) == 1 && message[0] == 0) {
 				continue
 			}
 			stdinWriter.Write(message)
 		}
 	}()
 
-	// Read from pod stdout and send to WebSocket - HTTP layer
+	// Read from Pod Stdout -> WebSocket
 	go func() {
 		defer stdoutReader.Close()
 		defer cancel()
@@ -255,8 +206,7 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	// Execute the command (uses the previously created cancelable context)
-	err = executor.StreamWithContext(ctx, remotecommand.StreamOptions{
+	err := executor.StreamWithContext(streamCtx, remotecommand.StreamOptions{
 		Stdin:  stdinReader,
 		Stdout: stdoutWriter,
 		Stderr: stdoutWriter,

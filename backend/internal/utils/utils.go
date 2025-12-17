@@ -24,6 +24,19 @@ func HandleError(w http.ResponseWriter, err error, userMessage string, statusCod
 	http.Error(w, userMessage, statusCode)
 }
 
+// HandleErrorJSON logs detailed error internally and returns a sanitized JSON error response to the client.
+// Prefer this helper for API endpoints using JSONResponse/ErrorResponse.
+func HandleErrorJSON(w http.ResponseWriter, err error, userMessage string, statusCode int, fields map[string]interface{}) {
+	logFields := map[string]interface{}{
+		"status_code": statusCode,
+	}
+	for k, v := range fields {
+		logFields[k] = v
+	}
+	LogError(err, userMessage, logFields)
+	ErrorResponse(w, statusCode, userMessage)
+}
+
 // CreateTimeoutContext creates a context with a timeout for Kubernetes operations
 // Default timeout is 30 seconds, but can be customized via environment variable
 func CreateTimeoutContext() (context.Context, context.CancelFunc) {

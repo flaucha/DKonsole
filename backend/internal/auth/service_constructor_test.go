@@ -16,9 +16,13 @@ func TestNewService(t *testing.T) {
 	namespace := "default"
 	secretName := "dkonsole-auth" //nolint:gosec // Test secret name
 
-	// Set env for namespace detection
-	os.Setenv("POD_NAMESPACE", namespace)
-	defer os.Unsetenv("POD_NAMESPACE")
+	// Make the test robust in environments where the serviceaccount namespace file exists.
+	if ns, err := getCurrentNamespace(); err == nil && ns != "" {
+		namespace = ns
+	} else {
+		os.Setenv("POD_NAMESPACE", namespace)
+		defer os.Unsetenv("POD_NAMESPACE")
+	}
 
 	t.Run("Initialize with K8s client - Secret Missing (Setup Mode)", func(t *testing.T) {
 		service, err := NewService(client, secretName)

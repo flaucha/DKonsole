@@ -201,7 +201,7 @@ func TestHelmJobService_CreateHelmJob(t *testing.T) {
 				Operation:          "install",
 				ReleaseName:        "my-app",
 				Namespace:          "default",
-				ChartName:          "nginx",
+				ChartName:          "bitnami/nginx",
 				DkonsoleNamespace:  "dkonsole",
 				ServiceAccountName: "default",
 			},
@@ -230,7 +230,7 @@ func TestHelmJobService_CreateHelmJob(t *testing.T) {
 				Operation:          "install",
 				ReleaseName:        "my-app",
 				Namespace:          "default",
-				ChartName:          "nginx",
+				ChartName:          "bitnami/nginx",
 				DkonsoleNamespace:  "dkonsole",
 				ServiceAccountName: "custom-sa",
 			},
@@ -256,7 +256,7 @@ func TestHelmJobService_CreateHelmJob(t *testing.T) {
 				Operation:          "install",
 				ReleaseName:        "my-app",
 				Namespace:          "default",
-				ChartName:          "nginx",
+				ChartName:          "bitnami/nginx",
 				DkonsoleNamespace:  "dkonsole",
 				ServiceAccountName: "custom-sa",
 			},
@@ -273,7 +273,7 @@ func TestHelmJobService_CreateHelmJob(t *testing.T) {
 				Operation:          "install",
 				ReleaseName:        "my-app",
 				Namespace:          "default",
-				ChartName:          "nginx",
+				ChartName:          "bitnami/nginx",
 				DkonsoleNamespace:  "dkonsole",
 				ServiceAccountName: "default",
 			},
@@ -336,7 +336,7 @@ func TestHelmJobService_CreateHelmJob(t *testing.T) {
 func TestHelmJobService_BuildHelmCommand(t *testing.T) {
 	service := NewHelmJobService(nil)
 
-	cmd := service.BuildHelmCommand(HelmCommandRequest{
+	cmd, err := service.BuildHelmCommand(HelmCommandRequest{
 		Operation:    "install",
 		ReleaseName:  "demo",
 		Namespace:    "default",
@@ -346,25 +346,79 @@ func TestHelmJobService_BuildHelmCommand(t *testing.T) {
 		ValuesYAML:   "key: val",
 		ValuesCMName: "values-cm",
 	})
-
-	if len(cmd) != 3 || cmd[0] != "/bin/sh" || cmd[1] != "-c" {
-		t.Fatalf("expected shell command wrapper, got %v", cmd)
-	}
-	if !strings.Contains(cmd[2], "helm install demo charts-example-com/nginx --namespace default --create-namespace") {
-		t.Fatalf("helm command missing install part: %s", cmd[2])
-	}
-	if !strings.Contains(cmd[2], "--version 1.0.0") || !strings.Contains(cmd[2], "-f /tmp/values/values.yaml") {
-		t.Fatalf("helm command missing flags: %s", cmd[2])
+	if err != nil {
+		t.Fatalf("BuildHelmCommand returned error: %v", err)
 	}
 
-	cmdNoRepo := service.BuildHelmCommand(HelmCommandRequest{
+	if len(cmd) < 2 || cmd[0] != "helm" {
+		t.Fatalf("expected helm command, got %v", cmd)
+	}
+	got := strings.Join(cmd, " ")
+	if !strings.Contains(got, "install demo nginx --namespace default --create-namespace") {
+		t.Fatalf("helm command missing install part: %s", got)
+	}
+	if !strings.Contains(got, "--repo https://charts.example.com") {
+		t.Fatalf("helm command missing repo flag: %s", got)
+	}
+	if !strings.Contains(got, "--version 1.0.0") || !strings.Contains(got, "-f /tmp/values/values.yaml") {
+		t.Fatalf("helm command missing flags: %s", got)
+	}
+
+	cmdNoRepo, err := service.BuildHelmCommand(HelmCommandRequest{
 		Operation:   "upgrade",
 		ReleaseName: "demo",
 		Namespace:   "default",
-		ChartName:   "nginx",
+		ChartName:   "bitnami/nginx",
 	})
-	if !strings.Contains(cmdNoRepo[2], "helm repo add bitnami") || !strings.Contains(cmdNoRepo[2], "helm upgrade demo nginx --namespace default") {
-		t.Fatalf("expected default repo setup and upgrade command, got: %s", cmdNoRepo[2])
+	if err != nil {
+		t.Fatalf("BuildHelmCommand returned error: %v", err)
+	}
+	gotNoRepo := strings.Join(cmdNoRepo, " ")
+	if !strings.Contains(gotNoRepo, "upgrade demo nginx --namespace default") || !strings.Contains(gotNoRepo, "--repo https://charts.bitnami.com/bitnami") {
+		t.Fatalf("expected inferred repo URL and upgrade command, got: %s", gotNoRepo)
+	}
+}
+
+func TestHelmJobService_BuildHelmCommand_RejectsMetacharacters(t *testing.T) {
+	service := NewHelmJobService(nil)
+
+	cases := []HelmCommandRequest{
+		{
+			Operation:   "install",
+			ReleaseName: "demo",
+			Namespace:   "default",
+			ChartName:   "nginx;rm -rf /",
+			Repo:        "https://charts.example.com",
+		},
+		{
+			Operation:   "install",
+			ReleaseName: "demo",
+			Namespace:   "default",
+			ChartName:   "nginx",
+			Repo:        "https://charts.example.com\nbad",
+		},
+		{
+			Operation:   "install",
+			ReleaseName: "demo",
+			Namespace:   "default",
+			ChartName:   "nginx",
+			Repo:        "https://charts.example.com",
+			Version:     "$(id)",
+		},
+		{
+			Operation:   "install",
+			ReleaseName: "demo",
+			Namespace:   "default",
+			ChartName:   "-malicious",
+			Repo:        "https://charts.example.com",
+		},
+	}
+
+	for _, tc := range cases {
+		_, err := service.BuildHelmCommand(tc)
+		if err == nil {
+			t.Fatalf("expected error for %+v", tc)
+		}
 	}
 }
 
@@ -382,7 +436,7 @@ func TestHelmJobService_CreateHelmJob_AddsValuesVolume(t *testing.T) {
 		Operation:         "upgrade",
 		ReleaseName:       "demo",
 		Namespace:         "default",
-		ChartName:         "nginx",
+		ChartName:         "bitnami/nginx",
 		DkonsoleNamespace: "dkonsole",
 		ValuesYAML:        "key: val",
 		ValuesCMName:      "values-cm",
@@ -398,5 +452,11 @@ func TestHelmJobService_CreateHelmJob_AddsValuesVolume(t *testing.T) {
 	}
 	if capturedJob.Spec.Template.Spec.Containers[0].VolumeMounts == nil {
 		t.Fatalf("expected volume mount to be set")
+	}
+	if got := capturedJob.Spec.Template.Spec.Containers[0].Command; len(got) != 1 || got[0] != "helm" {
+		t.Fatalf("expected helm command, got %v", got)
+	}
+	if img := capturedJob.Spec.Template.Spec.Containers[0].Image; !strings.Contains(img, "@sha256:") {
+		t.Fatalf("expected pinned image digest, got %q", img)
 	}
 }

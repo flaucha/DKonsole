@@ -2,7 +2,6 @@ package auth
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -72,7 +71,10 @@ func (s *Service) LoginHandler(w http.ResponseWriter, r *http.Request) {
 			utils.ErrorResponse(w, http.StatusUnauthorized, "Invalid credentials")
 			return
 		}
-		utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		utils.HandleErrorJSON(w, err, "Authentication failed", http.StatusInternalServerError, map[string]interface{}{
+			"username": creds.Username,
+			"idp":      creds.IDP,
+		})
 		return
 	}
 
@@ -83,7 +85,7 @@ func (s *Service) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Value:    result.Token,
 		Expires:  result.Expires,
 		HttpOnly: true,
-		Secure:   true, // Should be true in production (HTTPS)
+		Secure:   true, // Required for SameSite=None
 		SameSite: http.SameSiteNoneMode,
 		Path:     "/",
 	})
@@ -96,6 +98,10 @@ func (s *Service) LoginHandler(w http.ResponseWriter, r *http.Request) {
 // It clears the authentication cookie by setting it to expire immediately.
 // Returns a JSON response with a success message.
 func (s *Service) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		utils.ErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
 		Value:    "",
@@ -243,20 +249,26 @@ func (s *Service) ChangePasswordHandler(w http.ResponseWriter, r *http.Request) 
 			utils.ErrorResponse(w, http.StatusUnauthorized, "Current password is incorrect")
 			return
 		}
-		utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		utils.HandleErrorJSON(w, err, "Failed to change password", http.StatusInternalServerError, map[string]interface{}{
+			"username": claims.Username,
+		})
 		return
 	}
 
 	// Hash new password
 	newPasswordHash, err := HashPassword(req.NewPassword)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to hash password: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to change password", http.StatusInternalServerError, map[string]interface{}{
+			"username": claims.Username,
+		})
 		return
 	}
 
 	// Update password in secret
 	if err := k8sRepo.UpdatePassword(ctx, newPasswordHash); err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to update password: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to change password", http.StatusInternalServerError, map[string]interface{}{
+			"username": claims.Username,
+		})
 		return
 	}
 

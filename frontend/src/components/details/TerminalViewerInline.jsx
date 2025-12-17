@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Terminal, Pin, PinOff, X, Minus } from 'lucide-react';
+import { Terminal, Pin, PinOff, X, Minus, RefreshCw } from 'lucide-react';
 import { Terminal as XTerminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { useSettings } from '../../context/SettingsContext';
@@ -22,6 +22,8 @@ const TerminalViewerInline = ({
     const wsRef = useRef(null);
     const containerRef = useRef(null);
     const isActiveRef = useRef(isActive);
+    const [retryTrigger, setRetryTrigger] = React.useState(0);
+    const [showReconnect, setShowReconnect] = React.useState(false);
 
     const { theme } = useSettings();
 
@@ -90,8 +92,13 @@ const TerminalViewerInline = ({
         const term = termRef.current;
         if (!term) return;
 
+        if (!term) return;
+
+        // Reset reconnect button state when parameters change
+        setShowReconnect(false);
+
         let reconnectAttempts = 0;
-        const maxReconnectAttempts = 5;
+        const maxReconnectAttempts = 3;
         let reconnectTimeout = null;
         let isCleaningUp = false;
 
@@ -112,6 +119,7 @@ const TerminalViewerInline = ({
 
             ws.onopen = () => {
                 reconnectAttempts = 0; // Reset on successful connection
+                setShowReconnect(false);
                 term.clear();
                 term.writeln(`\x1b[33mConnected to ${pod}${container ? ` (${container})` : ''}\x1b[0m`);
                 fitAddonRef.current?.fit();
@@ -150,7 +158,7 @@ const TerminalViewerInline = ({
                     reconnectTimeout = setTimeout(connect, delay);
                 } else {
                     term.writeln('\r\n\x1b[31mConnection closed. Max reconnection attempts reached.\x1b[0m');
-                    term.writeln('\x1b[33mClose and reopen terminal to reconnect.\x1b[0m');
+                    setShowReconnect(true);
                 }
             };
 
@@ -175,7 +183,7 @@ const TerminalViewerInline = ({
                 ws.close();
             }
         };
-    }, [namespace, pod, container]);
+    }, [namespace, pod, container, retryTrigger]);
 
     // Refit when content changes and scroll into view
     useEffect(() => {
@@ -208,6 +216,18 @@ const TerminalViewerInline = ({
                     <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 border border-gray-700">WebSocket</span>
                 </div>
                 <div className="flex items-center space-x-1">
+                    {showReconnect && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setRetryTrigger(prev => prev + 1);
+                            }}
+                            className="p-1.5 rounded-md border border-red-700 bg-red-900/30 text-red-300 hover:bg-red-900/60 transition-colors mr-2 flex items-center text-xs animate-pulse"
+                            title="Reconnect"
+                        >
+                            <RefreshCw size={12} className="mr-1" /> Reconnect
+                        </button>
+                    )}
                     {onPinToggle && (
                         <button
                             onClick={(e) => {

@@ -1,12 +1,19 @@
 package k8s
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
+)
+
+const (
+	// MaxBodySize limits the size of request bodies to 1MB to prevent DoS
+	MaxBodySize = 1048576
 )
 
 // UpdateResourceYAML handles HTTP PUT requests to update a Kubernetes resource from YAML.
@@ -23,22 +30,9 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate namespace access if resource is namespaced
-	ctx := r.Context()
-	if namespaced && namespace != "" {
-		// Check if user has edit permission
-		canEdit, err := permissions.CanPerformAction(ctx, namespace, "edit")
-		if err != nil {
-			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
-			return
-		}
-		if !canEdit {
-			utils.ErrorResponse(w, http.StatusForbidden, fmt.Sprintf("Edit permission required for namespace: %s", namespace))
-			return
-		}
-	}
-
 	// Read YAML from request body
+	// Limit request body size to prevent DoS
+	r.Body = http.MaxBytesReader(w, r.Body, MaxBodySize)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Failed to read request body: %v", err))
@@ -59,8 +53,15 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get Client (for discovery)
+	client, err := s.clusterService.GetClient(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	// Create Resource Service
-	resourceService := s.serviceFactory.CreateResourceService(dynamicClient)
+	resourceService := s.serviceFactory.CreateResourceService(dynamicClient, client)
 
 	// Update the resource
 	req := UpdateResourceRequest{
@@ -73,7 +74,23 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 
 	err = resourceService.UpdateResource(ctx, req)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		switch {
+		case errors.Is(err, ErrNamespaceMismatch), errors.Is(err, ErrNamespaceRequired):
+			utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, ErrForbidden), errors.Is(err, ErrAdminRequired):
+			utils.ErrorResponse(w, http.StatusForbidden, err.Error())
+		default:
+			if strings.HasPrefix(err.Error(), "invalid YAML") {
+				utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			utils.HandleErrorJSON(w, err, "Failed to update resource", http.StatusInternalServerError, map[string]interface{}{
+				"kind":       kind,
+				"name":       name,
+				"namespace":  namespace,
+				"namespaced": namespaced,
+			})
+		}
 		return
 	}
 
@@ -84,6 +101,8 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 // CreateResourceYAML handles HTTP POST requests to create a Kubernetes resource from YAML.
 func (s *Service) CreateResourceYAML(w http.ResponseWriter, r *http.Request) {
 	// Read YAML from request body
+	// Limit request body size to prevent DoS
+	r.Body = http.MaxBytesReader(w, r.Body, MaxBodySize)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Failed to read request body: %v", err))
@@ -104,13 +123,20 @@ func (s *Service) CreateResourceYAML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get Client (for discovery)
+	client, err := s.clusterService.GetClient(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	// Create Resource Service
-	resourceService := s.serviceFactory.CreateResourceService(dynamicClient)
+	resourceService := s.serviceFactory.CreateResourceService(dynamicClient, client)
 
 	// Create the resource
 	result, err := resourceService.CreateResource(ctx, yamlData)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		utils.HandleErrorJSON(w, err, "Failed to create resource", http.StatusInternalServerError, nil)
 		return
 	}
 
@@ -121,6 +147,8 @@ func (s *Service) CreateResourceYAML(w http.ResponseWriter, r *http.Request) {
 // ImportResourceYAML handles HTTP POST requests to import multiple Kubernetes resources from YAML.
 func (s *Service) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 	// Read YAML from request body
+	// Limit request body size to prevent DoS
+	r.Body = http.MaxBytesReader(w, r.Body, MaxBodySize)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Failed to read request body: %v", err))
@@ -159,7 +187,7 @@ func (s *Service) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 	// Import resources
 	result, err := importService.ImportResources(ctx, req)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to import resources: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to import resources", http.StatusInternalServerError, nil)
 		return
 	}
 
@@ -186,7 +214,10 @@ func (s *Service) DeleteResource(w http.ResponseWriter, r *http.Request) {
 		// Check if user has edit permission
 		canEdit, err := permissions.CanPerformAction(ctx, namespace, "edit")
 		if err != nil {
-			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
+			utils.HandleErrorJSON(w, err, "Failed to check permissions", http.StatusInternalServerError, map[string]interface{}{
+				"namespace": namespace,
+				"action":    "edit",
+			})
 			return
 		}
 		if !canEdit {
@@ -206,8 +237,15 @@ func (s *Service) DeleteResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get Client (for discovery)
+	client, err := s.clusterService.GetClient(r)
+	if err != nil {
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	// Create Resource Service
-	resourceService := s.serviceFactory.CreateResourceService(dynamicClient)
+	resourceService := s.serviceFactory.CreateResourceService(dynamicClient, client)
 
 	// Delete resource
 	req := DeleteResourceRequest{
@@ -218,7 +256,12 @@ func (s *Service) DeleteResource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := resourceService.DeleteResource(ctx, req); err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		utils.HandleErrorJSON(w, err, "Failed to delete resource", http.StatusInternalServerError, map[string]interface{}{
+			"kind":      kind,
+			"name":      name,
+			"namespace": namespace,
+			"force":     force,
+		})
 		return
 	}
 

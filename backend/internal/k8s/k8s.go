@@ -75,7 +75,7 @@ func (s *Service) GetNamespaces(w http.ResponseWriter, r *http.Request) {
 	// The service will filter namespaces based on user permissions
 	namespaces, err := namespaceService.GetNamespaces(ctx)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get namespaces: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to get namespaces", http.StatusInternalServerError, nil)
 		return
 	}
 
@@ -139,7 +139,11 @@ func (s *Service) GetResources(w http.ResponseWriter, r *http.Request) {
 			utils.ErrorResponse(w, http.StatusForbidden, err.Error())
 			return
 		}
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to list resources: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to list resources", http.StatusInternalServerError, map[string]interface{}{
+			"namespace":     req.Namespace,
+			"kind":          req.Kind,
+			"allNamespaces": req.AllNamespaces,
+		})
 		return
 	}
 
@@ -199,7 +203,10 @@ func (s *Service) ScaleResource(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	canEdit, err := permissions.CanPerformAction(ctx, namespace, "edit")
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to check permissions", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": namespace,
+			"action":    "edit",
+		})
 		return
 	}
 	if !canEdit {
@@ -227,7 +234,11 @@ func (s *Service) ScaleResource(w http.ResponseWriter, r *http.Request) {
 	// Call service to scale deployment (business logic layer)
 	newReplicas, err := deploymentService.ScaleDeployment(ctx, namespace, name, delta)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to scale deployment: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to scale deployment", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": namespace,
+			"name":      name,
+			"delta":     delta,
+		})
 		return
 	}
 
@@ -268,7 +279,7 @@ func (s *Service) GetClusterStats(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Note: GetClusterStats handles errors gracefully and returns partial stats
 		// If we want to be stricter, we could use GetClusterStatsWithErrors
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get cluster stats: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to get cluster stats", http.StatusInternalServerError, nil)
 		return
 	}
 

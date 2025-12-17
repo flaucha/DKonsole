@@ -22,7 +22,14 @@ export const fetchWorkloads = async (fetcher, namespace, kind, currentCluster) =
 
 export const fetchPodLogs = async (fetcher, namespace, pod, container) => {
     const f = fetcher || fetch;
-    const response = await f(`/api/pods/logs?namespace=${namespace}&pod=${pod}&container=${container || ''}`);
+    const params = new URLSearchParams({
+        namespace,
+        pod
+    });
+    if (container !== undefined && container !== null) {
+        params.append('container', container);
+    }
+    const response = await f(`/api/pods/logs?${params.toString()}`);
     if (!response.ok) {
         throw new Error('Failed to fetch logs');
     }

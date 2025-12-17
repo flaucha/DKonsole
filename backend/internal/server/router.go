@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/flaucha/DKonsole/backend/internal/api"
@@ -69,7 +68,7 @@ func NewRouter(deps Dependencies) *http.ServeMux {
 			ctx := r.Context()
 			isAdmin, err := permissions.IsAdmin(ctx, ldapService)
 			if err != nil {
-				utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check admin status: %v", err))
+				utils.HandleErrorJSON(w, err, "Failed to check admin status", http.StatusInternalServerError, nil)
 				return
 			}
 			if !isAdmin {

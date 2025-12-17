@@ -246,7 +246,7 @@ func TestImportResourceYAMLHandler_Success(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", rr.Code)
 	}
-	if !repo.patchCalled {
+	if repo.patchCalls == 0 {
 		t.Fatalf("expected patch to be called during import")
 	}
 }
@@ -579,7 +579,10 @@ func TestImportResourceYAMLHandler_ImportError(t *testing.T) {
 	if rr.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500, got %d", rr.Code)
 	}
-	if !strings.Contains(rr.Body.String(), "resolve failure") {
-		t.Fatalf("expected resolve failure, got %s", rr.Body.String())
+	if !strings.Contains(rr.Body.String(), "Failed to import resources") {
+		t.Fatalf("expected sanitized error message, got %s", rr.Body.String())
+	}
+	if strings.Contains(rr.Body.String(), "resolve failure") {
+		t.Fatalf("expected internal error to be hidden, got %s", rr.Body.String())
 	}
 }

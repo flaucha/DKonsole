@@ -13,7 +13,6 @@ import (
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 
@@ -21,66 +20,6 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
 	"github.com/flaucha/DKonsole/backend/internal/models"
 )
-
-type mockServiceFactory struct {
-	realFactory      *ServiceFactory
-	namespaceService *NamespaceService
-	clusterStatsSvc  *ClusterStatsService
-	deploymentSvc    *DeploymentService
-	resourceSvc      *ResourceService
-	importSvc        *ImportService
-	watchSvc         *WatchService
-}
-
-func newMockServiceFactory() *mockServiceFactory {
-	return &mockServiceFactory{realFactory: NewServiceFactory()}
-}
-
-func (f *mockServiceFactory) CreateResourceService(dynamicClient dynamic.Interface) *ResourceService {
-	if f.resourceSvc != nil {
-		return f.resourceSvc
-	}
-	return f.realFactory.CreateResourceService(dynamicClient)
-}
-
-func (f *mockServiceFactory) CreateImportService(dynamicClient dynamic.Interface, client kubernetes.Interface) *ImportService {
-	if f.importSvc != nil {
-		return f.importSvc
-	}
-	return f.realFactory.CreateImportService(dynamicClient, client)
-}
-
-func (f *mockServiceFactory) CreateNamespaceService(client kubernetes.Interface) *NamespaceService {
-	if f.namespaceService != nil {
-		return f.namespaceService
-	}
-	return f.realFactory.CreateNamespaceService(client)
-}
-
-func (f *mockServiceFactory) CreateClusterStatsService(client kubernetes.Interface) *ClusterStatsService {
-	if f.clusterStatsSvc != nil {
-		return f.clusterStatsSvc
-	}
-	return f.realFactory.CreateClusterStatsService(client)
-}
-
-func (f *mockServiceFactory) CreateDeploymentService(client kubernetes.Interface) *DeploymentService {
-	if f.deploymentSvc != nil {
-		return f.deploymentSvc
-	}
-	return f.realFactory.CreateDeploymentService(client)
-}
-
-func (f *mockServiceFactory) CreateCronJobService(client kubernetes.Interface) *CronJobService {
-	return f.realFactory.CreateCronJobService(client)
-}
-
-func (f *mockServiceFactory) CreateWatchService() *WatchService {
-	if f.watchSvc != nil {
-		return f.watchSvc
-	}
-	return f.realFactory.CreateWatchService()
-}
 
 type stubNamespaceRepository struct {
 	namespaces []corev1.Namespace

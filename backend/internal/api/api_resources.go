@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -91,7 +90,13 @@ func (s *Service) ListAPIResourceObjects(w http.ResponseWriter, r *http.Request)
 	// Call service (business logic layer)
 	result, err := apiService.ListAPIResourceObjects(ctx, listReq)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to list resource: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to list resource", http.StatusInternalServerError, map[string]interface{}{
+			"group":      group,
+			"version":    version,
+			"resource":   resource,
+			"namespace":  namespace,
+			"namespaced": namespacedParam,
+		})
 		return
 	}
 
@@ -153,7 +158,14 @@ func (s *Service) GetAPIResourceYAML(w http.ResponseWriter, r *http.Request) {
 	// Call service to get resource YAML (business logic layer)
 	yamlData, err := apiService.GetResourceYAML(ctx, getReq)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to fetch resource YAML: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to fetch resource YAML", http.StatusInternalServerError, map[string]interface{}{
+			"group":      group,
+			"version":    version,
+			"resource":   resource,
+			"name":       name,
+			"namespace":  namespace,
+			"namespaced": namespaced,
+		})
 		return
 	}
 
@@ -192,7 +204,7 @@ func (s *Service) GetCRDs(w http.ResponseWriter, r *http.Request) {
 
 	result, err := crdService.GetCRDs(r.Context(), req)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to list CRDs: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to list CRDs", http.StatusInternalServerError, nil)
 		return
 	}
 
@@ -244,7 +256,13 @@ func (s *Service) GetCRDResources(w http.ResponseWriter, r *http.Request) {
 
 	result, err := apiService.GetCRDResources(ctx, req)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to list CRD resources: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to list CRD resources", http.StatusInternalServerError, map[string]interface{}{
+			"group":      group,
+			"version":    version,
+			"resource":   resource,
+			"namespace":  namespace,
+			"namespaced": namespaced,
+		})
 		return
 	}
 

@@ -13,10 +13,25 @@ import (
 	"github.com/flaucha/DKonsole/backend/internal/models"
 )
 
-func (s *ResourceListService) listNodes(ctx context.Context, client kubernetes.Interface, opts metav1.ListOptions) ([]models.Resource, error) {
+func (s *ResourceListService) listNodes(ctx context.Context, client kubernetes.Interface, metricsClient metricsv.Interface, opts metav1.ListOptions) ([]models.Resource, error) {
 	list, err := client.CoreV1().Nodes().List(ctx, opts)
 	if err != nil {
 		return nil, err
+	}
+
+	// Build metrics map
+	metricsMap := make(map[string]models.NodeUsage)
+	if metricsClient != nil {
+		if nmList, mErr := metricsClient.MetricsV1beta1().NodeMetricses().List(ctx, opts); mErr == nil {
+			for _, nm := range nmList.Items {
+				cpuMilli := nm.Usage.Cpu().MilliValue()
+				memBytes := nm.Usage.Memory().Value()
+				metricsMap[nm.Name] = models.NodeUsage{
+					CPU:    fmt.Sprintf("%dm", cpuMilli),
+					Memory: fmt.Sprintf("%.1fMi", float64(memBytes)/(1024*1024)),
+				}
+			}
+		}
 	}
 
 	var resources []models.Resource
@@ -46,6 +61,7 @@ func (s *ResourceListService) listNodes(ctx context.Context, client kubernetes.I
 			"unschedulable": i.Spec.Unschedulable,
 			"labels":        i.Labels,
 			"annotations":   i.Annotations,
+			"metrics":       metricsMap[i.Name],
 		}
 
 		status := "Ready"
@@ -100,49 +116,64 @@ func (s *ResourceListService) listPods(ctx context.Context, client kubernetes.In
 	var resources []models.Resource
 	for _, i := range list.Items {
 		var containers []string
+
+		var initContainerNames []string
+		// Include InitContainers in the list of containers
+		for _, c := range i.Spec.InitContainers {
+			containers = append(containers, c.Name)
+			initContainerNames = append(initContainerNames, c.Name)
+		}
 		for _, c := range i.Spec.Containers {
 			containers = append(containers, c.Name)
 		}
 
 		restarts := int32(0)
 		readyCount := int32(0)
-		totalContainers := int32(len(i.Spec.Containers))
+		totalContainers := int32(len(i.Spec.Containers) + len(i.Spec.InitContainers))
 		var containerStatuses []map[string]interface{}
 
-		for _, cs := range i.Status.ContainerStatuses {
-			restarts += cs.RestartCount
-			if cs.Ready {
-				readyCount++
-			}
-
-			containerStatus := map[string]interface{}{
-				"name":         cs.Name,
-				"ready":        cs.Ready,
-				"restartCount": cs.RestartCount,
-				"image":        cs.Image,
-			}
-
-			if cs.State.Waiting != nil {
-				containerStatus["state"] = "Waiting"
-				containerStatus["reason"] = cs.State.Waiting.Reason
-				containerStatus["message"] = cs.State.Waiting.Message
-			} else if cs.State.Running != nil {
-				containerStatus["state"] = "Running"
-				containerStatus["startedAt"] = cs.State.Running.StartedAt.Format(time.RFC3339)
-			} else if cs.State.Terminated != nil {
-				containerStatus["state"] = "Terminated"
-				containerStatus["reason"] = cs.State.Terminated.Reason
-				containerStatus["exitCode"] = cs.State.Terminated.ExitCode
-				if !cs.State.Terminated.StartedAt.IsZero() {
-					containerStatus["startedAt"] = cs.State.Terminated.StartedAt.Format(time.RFC3339)
+		// processStatus is a helper to process container statuses
+		processStatus := func(statuses []corev1.ContainerStatus) {
+			for _, cs := range statuses {
+				restarts += cs.RestartCount
+				if cs.Ready {
+					readyCount++
 				}
-				if !cs.State.Terminated.FinishedAt.IsZero() {
-					containerStatus["finishedAt"] = cs.State.Terminated.FinishedAt.Format(time.RFC3339)
-				}
-			}
 
-			containerStatuses = append(containerStatuses, containerStatus)
+				containerStatus := map[string]interface{}{
+					"name":         cs.Name,
+					"ready":        cs.Ready,
+					"restartCount": cs.RestartCount,
+					"image":        cs.Image,
+				}
+
+				if cs.State.Waiting != nil {
+					containerStatus["state"] = "Waiting"
+					containerStatus["reason"] = cs.State.Waiting.Reason
+					containerStatus["message"] = cs.State.Waiting.Message
+				} else if cs.State.Running != nil {
+					containerStatus["state"] = "Running"
+					containerStatus["startedAt"] = cs.State.Running.StartedAt.Format(time.RFC3339)
+				} else if cs.State.Terminated != nil {
+					containerStatus["state"] = "Terminated"
+					containerStatus["reason"] = cs.State.Terminated.Reason
+					containerStatus["exitCode"] = cs.State.Terminated.ExitCode
+					if !cs.State.Terminated.StartedAt.IsZero() {
+						containerStatus["startedAt"] = cs.State.Terminated.StartedAt.Format(time.RFC3339)
+					}
+					if !cs.State.Terminated.FinishedAt.IsZero() {
+						containerStatus["finishedAt"] = cs.State.Terminated.FinishedAt.Format(time.RFC3339)
+					}
+				}
+
+				containerStatuses = append(containerStatuses, containerStatus)
+			}
 		}
+
+		// Process init container statuses first
+		processStatus(i.Status.InitContainerStatuses)
+		// Process regular container statuses
+		processStatus(i.Status.ContainerStatuses)
 
 		resources = append(resources, models.Resource{
 			Name:      i.Name,
@@ -159,6 +190,7 @@ func (s *ResourceListService) listPods(ctx context.Context, client kubernetes.In
 				"readyCount":        readyCount,
 				"totalContainers":   totalContainers,
 				"containers":        containers,
+				"initContainers":    initContainerNames,
 				"containerStatuses": containerStatuses,
 				"metrics":           metricsMap[i.Name],
 				"labels":            i.Labels,
