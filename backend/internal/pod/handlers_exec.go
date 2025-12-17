@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -16,6 +14,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 
+	"github.com/flaucha/DKonsole/backend/internal/middleware"
 	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
@@ -120,73 +119,7 @@ func (s *Service) upgradeToWebSocket(w http.ResponseWriter, r *http.Request, par
 }
 
 func checkWebSocketOrigin(r *http.Request) bool {
-	origin := r.Header.Get("Origin")
-	if origin == "" {
-		return true // Allow empty origin for same-origin
-	}
-
-	originURL, err := url.Parse(origin)
-	if err != nil {
-		return false
-	}
-
-	// Check allowed origins from env
-	if allowedOrigins := os.Getenv("ALLOWED_ORIGINS"); allowedOrigins != "" {
-		origins := strings.Split(allowedOrigins, ",")
-		for _, allowed := range origins {
-			allowed = strings.TrimSpace(allowed)
-			allowedURL, err := url.Parse(allowed)
-			if err != nil {
-				continue
-			}
-			if isOriginAllowed(originURL, allowedURL) {
-				return true
-			}
-		}
-		return false
-	}
-
-	return isSameOrigin(r, originURL)
-}
-
-func isOriginAllowed(origin, allowed *url.URL) bool {
-	allowedHost := stripPort(allowed.Host)
-	originHost := stripPort(origin.Host)
-
-	schemeMatch := (origin.Scheme == allowed.Scheme) ||
-		(origin.Scheme == "https" && allowed.Scheme == "wss") ||
-		(origin.Scheme == "wss" && allowed.Scheme == "https") ||
-		(origin.Scheme == "http" && allowed.Scheme == "ws") ||
-		(origin.Scheme == "ws" && allowed.Scheme == "http")
-
-	return schemeMatch && originHost == allowedHost
-}
-
-func isSameOrigin(r *http.Request, origin *url.URL) bool {
-	host := r.Host
-	if forwardedHost := r.Header.Get("X-Forwarded-Host"); forwardedHost != "" {
-		host = forwardedHost
-	}
-	host = stripPort(host)
-	originHost := stripPort(origin.Host)
-
-	validScheme := origin.Scheme == "http" || origin.Scheme == "https" ||
-		origin.Scheme == "ws" || origin.Scheme == "wss"
-
-	hostMatch := originHost == host ||
-		originHost == "localhost" ||
-		originHost == "127.0.0.1" ||
-		strings.HasSuffix(originHost, "."+host) ||
-		strings.HasSuffix(host, "."+originHost)
-
-	return validScheme && hostMatch
-}
-
-func stripPort(host string) string {
-	if strings.Contains(host, ":") {
-		return strings.Split(host, ":")[0]
-	}
-	return host
+	return middleware.IsRequestOriginAllowed(r)
 }
 
 func (s *Service) streamPodConnection(ctx context.Context, conn *websocket.Conn, executor remotecommand.Executor, params utils.PodParams) {

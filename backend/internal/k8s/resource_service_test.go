@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -125,11 +126,94 @@ func TestResourceService_UpdateResource_PermissionDenied(t *testing.T) {
 	}
 
 	err := svc.UpdateResource(ctx, req)
-	if err == nil || !strings.Contains(err.Error(), "failed to check permissions") {
-		t.Fatalf("expected permission error, got: %v", err)
+	if err == nil || !errors.Is(err, ErrForbidden) {
+		t.Fatalf("expected forbidden error, got: %v", err)
 	}
 	if repo.patchCalls > 0 {
 		t.Fatalf("expected no patch call on permission failure")
+	}
+}
+
+func TestResourceService_UpdateResource_NamespaceMismatch(t *testing.T) {
+	resolver := &fakeGVRResolver{meta: models.ResourceMeta{Namespaced: true}}
+	repo := &fakeResourceRepo{}
+	svc := NewResourceService(repo, resolver)
+
+	ctx := ctxWithPermissions(map[string]string{"nsA": "edit", "nsB": "edit"})
+	req := UpdateResourceRequest{
+		YAMLContent: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: cm\n  namespace: nsB\ndata:\n  k: v",
+		Kind:        "ConfigMap",
+		Namespace:   "nsA",
+	}
+
+	err := svc.UpdateResource(ctx, req)
+	if err == nil || !errors.Is(err, ErrNamespaceMismatch) {
+		t.Fatalf("expected namespace mismatch error, got: %v", err)
+	}
+	if repo.patchCalls > 0 {
+		t.Fatalf("expected no patch call on namespace mismatch")
+	}
+}
+
+func TestResourceService_UpdateResource_UsesYAMLNamespaceForAuth(t *testing.T) {
+	resolver := &fakeGVRResolver{meta: models.ResourceMeta{Namespaced: true}}
+	repo := &fakeResourceRepo{}
+	svc := NewResourceService(repo, resolver)
+
+	// Only has edit in nsA; YAML targets nsB -> must be forbidden even if query namespace is empty.
+	ctx := ctxWithPermissions(map[string]string{"nsA": "edit"})
+	req := UpdateResourceRequest{
+		YAMLContent: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: cm\n  namespace: nsB\ndata:\n  k: v",
+		Kind:        "ConfigMap",
+	}
+
+	err := svc.UpdateResource(ctx, req)
+	if err == nil || !errors.Is(err, ErrForbidden) {
+		t.Fatalf("expected forbidden error, got: %v", err)
+	}
+	if repo.patchCalls > 0 {
+		t.Fatalf("expected no patch call on forbidden")
+	}
+}
+
+func TestResourceService_UpdateResource_RequiresNamespaceForNamespacedResource(t *testing.T) {
+	resolver := &fakeGVRResolver{meta: models.ResourceMeta{Namespaced: true}}
+	repo := &fakeResourceRepo{}
+	svc := NewResourceService(repo, resolver)
+
+	ctx := ctxWithPermissions(map[string]string{"default": "edit"})
+	req := UpdateResourceRequest{
+		YAMLContent: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: cm\ndata:\n  k: v",
+		Kind:        "ConfigMap",
+	}
+
+	err := svc.UpdateResource(ctx, req)
+	if err == nil || !errors.Is(err, ErrNamespaceRequired) {
+		t.Fatalf("expected namespace required error, got: %v", err)
+	}
+	if repo.patchCalls > 0 {
+		t.Fatalf("expected no patch call without namespace")
+	}
+}
+
+func TestResourceService_UpdateResource_ClusterScopedRequiresAdmin(t *testing.T) {
+	resolver := &fakeGVRResolver{meta: models.ResourceMeta{Namespaced: false}}
+	repo := &fakeResourceRepo{}
+	svc := NewResourceService(repo, resolver)
+
+	ctx := ctxWithPermissions(map[string]string{"default": "edit"})
+	req := UpdateResourceRequest{
+		YAMLContent: "apiVersion: rbac.authorization.k8s.io/v1\nkind: ClusterRole\nmetadata:\n  name: cr\nrules: []",
+		Kind:        "ClusterRole",
+		Namespaced:  false,
+	}
+
+	err := svc.UpdateResource(ctx, req)
+	if err == nil || !errors.Is(err, ErrAdminRequired) {
+		t.Fatalf("expected admin required error, got: %v", err)
+	}
+	if repo.patchCalls > 0 {
+		t.Fatalf("expected no patch call without admin")
 	}
 }
 

@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
+	"strings"
 
 	"github.com/gorilla/websocket"
 
+	"github.com/flaucha/DKonsole/backend/internal/middleware"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -17,28 +18,7 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		origin := r.Header.Get("Origin")
-		if origin == "" {
-			return true // No origin header (e.g. non-browser client), allow
-		}
-
-		// Allow localhost and 127.0.0.1 for local development
-		// In a real production env, this should be configurable
-		u, err := url.Parse(origin)
-		if err != nil {
-			return false
-		}
-
-		if u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" {
-			return true
-		}
-
-		// Check against Host header (same origin)
-		if u.Host == r.Host {
-			return true
-		}
-
-		return false
+		return middleware.IsRequestOriginAllowed(r)
 	},
 }
 
@@ -48,7 +28,15 @@ func (s *Service) StreamResourceCreation(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	origin := strings.TrimSpace(r.Header.Get("Origin"))
+	if origin != "" && !middleware.IsRequestOriginAllowed(r) {
+		http.Error(w, "Origin not allowed", http.StatusForbidden)
+		return
+	}
+	if origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	}
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {

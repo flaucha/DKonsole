@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -33,14 +34,20 @@ import (
 func newTestRouter(t *testing.T) (*http.ServeMux, *models.Handlers) {
 	t.Helper()
 
-	// Set POD_NAMESPACE for k8s repository
-	t.Setenv("POD_NAMESPACE", "default")
+	// Ensure the test namespace matches the namespace resolution logic used by auth.NewService.
+	namespace := "default"
+	if data, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
+		if trimmed := strings.TrimSpace(string(data)); trimmed != "" {
+			namespace = trimmed
+		}
+	}
+	t.Setenv("POD_NAMESPACE", namespace)
 
 	// Create secret with test credentials
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-secret",
-			Namespace: "default",
+			Namespace: namespace,
 		},
 		Data: map[string][]byte{
 			"jwt-secret":          []byte("test-secret"),
@@ -69,7 +76,7 @@ func newTestRouter(t *testing.T) (*http.ServeMux, *models.Handlers) {
 	}
 	ldapService := ldap.NewServiceFactory(clientset, "test-secret").NewService()
 	settingsService := settings.NewServiceFactory(clientset, handlersModel, "test-secret", promService).NewService()
-	logoService := logo.NewService(clientset, "default")
+	logoService := logo.NewService(clientset, namespace)
 
 	tmpDir := t.TempDir()
 

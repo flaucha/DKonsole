@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/flaucha/DKonsole/backend/internal/middleware"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -95,6 +96,11 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
 		utils.ErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	if !middleware.IsRequestOriginOrRefererAllowed(r) {
+		http.Error(w, "Origin not allowed", http.StatusForbidden)
 		return
 	}
 
@@ -284,7 +290,36 @@ func (s *Service) UpdateTokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !middleware.IsRequestOriginOrRefererAllowed(r) {
+		http.Error(w, "Origin not allowed", http.StatusForbidden)
+		return
+	}
+
 	ctx := r.Context()
+
+	// Only allow token updates while setup is still required (e.g. incomplete secret created by Helm).
+	// Once setup is completed (admin user present), this endpoint must be disabled.
+	if s.k8sRepo == nil {
+		utils.ErrorResponse(w, http.StatusInternalServerError, "K8s repository not initialized")
+		return
+	}
+	exists, err := s.checkSecretExists(ctx)
+	if err != nil {
+		utils.LogError(err, "Failed to check secret existence for token update", map[string]interface{}{
+			"endpoint": "/api/setup/token",
+		})
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to validate setup state")
+		return
+	}
+	if !exists {
+		utils.ErrorResponse(w, http.StatusPreconditionFailed, "Setup required. Use /api/setup/complete to initialize the system.")
+		return
+	}
+	adminUser, _ := s.k8sRepo.GetAdminUser()
+	if adminUser != "" {
+		utils.ErrorResponse(w, http.StatusPreconditionFailed, "Setup already completed.")
+		return
+	}
 
 	// Parse request
 	var req UpdateTokenRequest

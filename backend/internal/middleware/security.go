@@ -75,5 +75,7 @@ func buildCSP(r *http.Request) string {
 	// For static files and frontend routes, allow required resources while avoiding inline execution.
 	// Nonces/hashes can be added when wiring the HTML template if inline assets become necessary.
 	// Allow inline styles to support Monaco/Xterm runtime injections; prefer nonces/hashes in future.
-	return "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ws: wss: https://cdn.jsdelivr.net https://unpkg.com; worker-src 'self' blob: https://cdn.jsdelivr.net https://unpkg.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+	return "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; " +
+		"font-src 'self' data:; connect-src 'self' ws: wss:; worker-src 'self' blob:; " +
+		"frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 }

@@ -1,9 +1,11 @@
 package k8s
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/flaucha/DKonsole/backend/internal/permissions"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
@@ -26,21 +28,6 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 	if kind == "" || name == "" {
 		utils.ErrorResponse(w, http.StatusBadRequest, "Missing required parameters: kind, name")
 		return
-	}
-
-	// Validate namespace access if resource is namespaced
-	ctx := r.Context()
-	if namespaced && namespace != "" {
-		// Check if user has edit permission
-		canEdit, err := permissions.CanPerformAction(ctx, namespace, "edit")
-		if err != nil {
-			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
-			return
-		}
-		if !canEdit {
-			utils.ErrorResponse(w, http.StatusForbidden, fmt.Sprintf("Edit permission required for namespace: %s", namespace))
-			return
-		}
 	}
 
 	// Read YAML from request body
@@ -87,7 +74,18 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 
 	err = resourceService.UpdateResource(ctx, req)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		switch {
+		case errors.Is(err, ErrNamespaceMismatch), errors.Is(err, ErrNamespaceRequired):
+			utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, ErrForbidden), errors.Is(err, ErrAdminRequired):
+			utils.ErrorResponse(w, http.StatusForbidden, err.Error())
+		default:
+			if strings.HasPrefix(err.Error(), "invalid YAML") {
+				utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		}
 		return
 	}
 

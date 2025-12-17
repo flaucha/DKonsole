@@ -2,7 +2,11 @@ package helm
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
+	"unicode"
+
+	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
 // CommonHelmRepo represents a common Helm repository
@@ -68,67 +72,103 @@ func (s *HelmJobService) BuildHelmRepoName(repoURL string) string {
 	}
 }
 
-// BuildHelmCommand builds a Helm command for install/upgrade
-func (s *HelmJobService) BuildHelmCommand(req HelmCommandRequest) []string {
-	var cmdParts []string
-
+// BuildHelmCommand builds a Helm command for install/upgrade without invoking a shell.
+func (s *HelmJobService) BuildHelmCommand(req HelmCommandRequest) ([]string, error) {
+	if req.Operation != "install" && req.Operation != "upgrade" {
+		return nil, fmt.Errorf("invalid operation: %s", req.Operation)
+	}
+	if err := utils.ValidateK8sName(req.ReleaseName, "releaseName"); err != nil {
+		return nil, err
+	}
+	if err := utils.ValidateK8sName(req.Namespace, "namespace"); err != nil {
+		return nil, err
+	}
+	if req.ChartName == "" {
+		return nil, fmt.Errorf("chartName is required")
+	}
+	if containsForbiddenHelmChars(req.ChartName) || strings.HasPrefix(req.ChartName, "-") {
+		return nil, fmt.Errorf("invalid chartName")
+	}
 	if req.Repo != "" {
-		repoName := s.BuildHelmRepoName(req.Repo)
-		cmdParts = append(cmdParts, fmt.Sprintf("helm repo add %s %s 2>/dev/null || true", repoName, req.Repo))
-		cmdParts = append(cmdParts, "helm repo update")
-
-		helmCmd := fmt.Sprintf("helm %s %s %s/%s --namespace %s", req.Operation, req.ReleaseName, repoName, req.ChartName, req.Namespace)
-
-		if req.Operation == "install" {
-			helmCmd += " --create-namespace"
+		if containsForbiddenHelmChars(req.Repo) || strings.HasPrefix(req.Repo, "-") {
+			return nil, fmt.Errorf("invalid repo")
 		}
-
-		if req.Version != "" {
-			helmCmd += fmt.Sprintf(" --version %s", req.Version)
+		u, err := url.Parse(req.Repo)
+		if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
+			return nil, fmt.Errorf("invalid repo URL")
 		}
-
-		if req.ValuesYAML != "" && req.ValuesCMName != "" {
-			helmCmd += " -f /tmp/values/values.yaml"
+	}
+	if req.Version != "" {
+		if containsForbiddenHelmChars(req.Version) || strings.HasPrefix(req.Version, "-") {
+			return nil, fmt.Errorf("invalid version")
 		}
-
-		cmdParts = append(cmdParts, helmCmd)
-	} else {
-		// Add common repos
-		repoAddCmds := []string{}
-		for _, repo := range commonRepos {
-			repoAddCmds = append(repoAddCmds, fmt.Sprintf("helm repo add %s %s 2>/dev/null || true", repo.Name, repo.URL))
-		}
-		cmdParts = append(cmdParts, strings.Join(repoAddCmds, " && "))
-		cmdParts = append(cmdParts, "helm repo update")
-
-		// Search for chart in repos
-		searchCmd := fmt.Sprintf("CHART_REPO=$(helm search repo %s --output json 2>/dev/null | grep -o '\"name\":\"[^\"]*/%s\"' | head -1 | sed 's/\"name\":\"\\([^/]*\\)\\/.*/\\1/') || echo ''", req.ChartName, req.ChartName)
-		cmdParts = append(cmdParts, searchCmd)
-
-		// Build command with fallback
-		helmCmd := fmt.Sprintf("if [ -n \"$CHART_REPO\" ] && [ \"$CHART_REPO\" != \"\" ]; then helm %s %s $CHART_REPO/%s --namespace %s", req.Operation, req.ReleaseName, req.ChartName, req.Namespace)
-		if req.Operation == "install" {
-			helmCmd += " --create-namespace"
-		}
-		if req.Version != "" {
-			helmCmd += fmt.Sprintf(" --version %s", req.Version)
-		}
-		if req.ValuesYAML != "" && req.ValuesCMName != "" {
-			helmCmd += " -f /tmp/values/values.yaml"
-		}
-		helmCmd += fmt.Sprintf("; else helm %s %s %s --namespace %s", req.Operation, req.ReleaseName, req.ChartName, req.Namespace)
-		if req.Operation == "install" {
-			helmCmd += " --create-namespace"
-		}
-		if req.Version != "" {
-			helmCmd += fmt.Sprintf(" --version %s", req.Version)
-		}
-		if req.ValuesYAML != "" && req.ValuesCMName != "" {
-			helmCmd += " -f /tmp/values/values.yaml"
-		}
-		helmCmd += "; fi"
-		cmdParts = append(cmdParts, helmCmd)
 	}
 
-	return []string{"/bin/sh", "-c", strings.Join(cmdParts, " && ")}
+	chartArg, repoURL, err := resolveChartAndRepo(req.ChartName, req.Repo)
+	if err != nil {
+		return nil, err
+	}
+
+	args := []string{req.Operation, req.ReleaseName, chartArg, "--namespace", req.Namespace}
+	if req.Operation == "install" {
+		args = append(args, "--create-namespace")
+	}
+	if req.Version != "" {
+		args = append(args, "--version", req.Version)
+	}
+	if req.ValuesYAML != "" && req.ValuesCMName != "" {
+		args = append(args, "-f", "/tmp/values/values.yaml")
+	}
+	if repoURL != "" && !isDirectChartRef(chartArg) {
+		args = append(args, "--repo", repoURL)
+	}
+
+	return append([]string{"helm"}, args...), nil
+}
+
+func isDirectChartRef(chart string) bool {
+	return strings.HasPrefix(chart, "oci://") || strings.HasPrefix(chart, "http://") || strings.HasPrefix(chart, "https://")
+}
+
+func resolveChartAndRepo(chartName, repo string) (chartArg string, repoURL string, err error) {
+	if isDirectChartRef(chartName) {
+		return chartName, "", nil
+	}
+
+	// When repo is provided, accept either "chart" or "repo/chart" and strip the prefix if present.
+	if repo != "" {
+		if parts := strings.Split(chartName, "/"); len(parts) == 2 {
+			return parts[1], repo, nil
+		}
+		return chartName, repo, nil
+	}
+
+	// Without explicit repo URL, require a known repo prefix (e.g. "bitnami/nginx").
+	parts := strings.Split(chartName, "/")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("repo is required unless chartName is a direct URL/OCI ref or uses a known repo prefix (e.g. bitnami/<chart>)")
+	}
+	repoName := parts[0]
+	chart := parts[1]
+	if chart == "" {
+		return "", "", fmt.Errorf("invalid chartName")
+	}
+
+	for _, r := range commonRepos {
+		if strings.EqualFold(r.Name, repoName) {
+			return chart, r.URL, nil
+		}
+	}
+
+	return "", "", fmt.Errorf("unknown chart repo prefix: %s (set repo URL explicitly)", repoName)
+}
+
+func containsForbiddenHelmChars(s string) bool {
+	for _, r := range s {
+		if r == '`' || r == ';' || r == '|' || r == '&' || r == '$' || r == '(' || r == ')' || r == '<' || r == '>' ||
+			r == '\n' || r == '\r' || r == '\t' || unicode.IsSpace(r) || unicode.IsControl(r) {
+			return true
+		}
+	}
+	return false
 }

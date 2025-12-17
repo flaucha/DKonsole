@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,6 +13,13 @@ import (
 
 	"github.com/flaucha/DKonsole/backend/internal/models"
 	"github.com/flaucha/DKonsole/backend/internal/permissions"
+)
+
+var (
+	ErrNamespaceMismatch = errors.New("namespace mismatch")
+	ErrNamespaceRequired = errors.New("namespace required")
+	ErrForbidden         = errors.New("forbidden")
+	ErrAdminRequired     = errors.New("admin required")
 )
 
 // ResourceService provides business logic for Kubernetes resource operations.
@@ -43,17 +51,6 @@ type UpdateResourceRequest struct {
 // Returns an error if the YAML is invalid, the resource cannot be found, or the update fails.
 // It validates namespace permissions before updating.
 func (s *ResourceService) UpdateResource(ctx context.Context, req UpdateResourceRequest) error {
-	// Validate namespace access if resource is namespaced
-	if req.Namespace != "" {
-		// Check if user has edit permission
-		canEdit, err := permissions.CanPerformAction(ctx, req.Namespace, "edit")
-		if err != nil {
-			return fmt.Errorf("failed to check permissions: %w", err)
-		}
-		if !canEdit {
-			return fmt.Errorf("edit permission required for namespace: %s", req.Namespace)
-		}
-	}
 	// Parse YAML to JSON
 	jsonData, err := yaml.YAMLToJSON([]byte(req.YAMLContent))
 	if err != nil {
@@ -72,23 +69,43 @@ func (s *ResourceService) UpdateResource(ctx context.Context, req UpdateResource
 	}
 
 	// Resolve GVR
-	gvr, meta, err := s.gvrResolver.ResolveGVR(ctx, normalizedKind, obj.GetAPIVersion(), fmt.Sprintf("%t", req.Namespaced))
+	gvr, meta, err := s.gvrResolver.ResolveGVR(ctx, normalizedKind, obj.GetAPIVersion(), "")
 	if err != nil {
 		return fmt.Errorf("failed to resolve GVR: %w", err)
 	}
 
-	if req.Namespaced {
-		meta.Namespaced = true
+	queryNamespace := req.Namespace
+	yamlNamespace := obj.GetNamespace()
+
+	// Enforce authorization on the effective namespace (derived from YAML and/or query param).
+	if meta.Namespaced {
+		if queryNamespace != "" && yamlNamespace != "" && queryNamespace != yamlNamespace {
+			return fmt.Errorf("%w: query namespace %q does not match yaml namespace %q", ErrNamespaceMismatch, queryNamespace, yamlNamespace)
+		}
+
+		effectiveNamespace := yamlNamespace
+		if effectiveNamespace == "" {
+			effectiveNamespace = queryNamespace
+		}
+		if effectiveNamespace == "" {
+			return fmt.Errorf("%w", ErrNamespaceRequired)
+		}
+
+		if err := requireEditPermission(ctx, effectiveNamespace); err != nil {
+			return err
+		}
+
+		obj.SetNamespace(effectiveNamespace)
+	} else {
+		if err := requireAdmin(ctx); err != nil {
+			return err
+		}
+		obj.SetNamespace("")
 	}
 
-	// Normalize name and namespace
+	// Normalize name
 	if req.Name != "" {
 		obj.SetName(req.Name)
-	}
-	if req.Namespace != "" && meta.Namespaced {
-		obj.SetNamespace(req.Namespace)
-	} else if !meta.Namespaced {
-		obj.SetNamespace("")
 	}
 
 	// Cleanup metadata
@@ -115,6 +132,31 @@ func (s *ResourceService) UpdateResource(ctx context.Context, req UpdateResource
 		return fmt.Errorf("failed to update resource: %w", err)
 	}
 
+	return nil
+}
+
+func requireEditPermission(ctx context.Context, namespace string) error {
+	claims, err := permissions.GetUserFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("%w: user context missing", ErrForbidden)
+	}
+	if claims.Role == "admin" {
+		return nil
+	}
+	if claims.Permissions == nil || claims.Permissions[namespace] != "edit" {
+		return fmt.Errorf("%w: edit permission required for namespace: %s", ErrForbidden, namespace)
+	}
+	return nil
+}
+
+func requireAdmin(ctx context.Context) error {
+	claims, err := permissions.GetUserFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("%w: user context missing", ErrAdminRequired)
+	}
+	if claims.Role != "admin" {
+		return fmt.Errorf("%w", ErrAdminRequired)
+	}
 	return nil
 }
 

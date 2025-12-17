@@ -132,6 +132,7 @@ func TestSetupCompleteHandler_Success(t *testing.T) {
 
 	body := bytes.NewBufferString(`{"username":"admin","password":"strongpass","jwtSecret":"` + strings.Repeat("b", 32) + `", "serviceAccountToken":"test-token"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/setup/complete", body)
+	req.Header.Set("Origin", "http://example.com")
 	rr := httptest.NewRecorder()
 
 	svc.SetupCompleteHandler(rr, req)
@@ -153,6 +154,7 @@ func TestSetupCompleteHandler_ForbiddenWhenExists(t *testing.T) {
 
 	body := bytes.NewBufferString(`{"username":"admin","password":"strongpass","jwtSecret":"` + strings.Repeat("c", 32) + `", "serviceAccountToken":"test-token"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/setup/complete", body)
+	req.Header.Set("Origin", "http://example.com")
 	rr := httptest.NewRecorder()
 
 	svc.SetupCompleteHandler(rr, req)
@@ -215,6 +217,7 @@ func TestSetupCompleteHandler_AuthError_PreCheck(t *testing.T) {
 
 	body := bytes.NewBufferString(`{"username":"admin","password":"strongpass","jwtSecret":"` + strings.Repeat("e", 32) + `", "serviceAccountToken":"valid-token"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/setup/complete", body)
+	req.Header.Set("Origin", "http://example.com")
 	rr := httptest.NewRecorder()
 
 	svc.SetupCompleteHandler(rr, req)
@@ -237,8 +240,14 @@ func TestSetupCompleteHandler_AuthError_PreCheck(t *testing.T) {
 func TestUpdateTokenHandler(t *testing.T) {
 	svc, client := newSetupService(t, true)
 
+	// Simulate an incomplete secret (missing admin user) so setup is still required.
+	secret, _ := client.CoreV1().Secrets("setup-ns").Get(t.Context(), "dkonsole-auth", metav1.GetOptions{})
+	delete(secret.Data, "admin-username")
+	client.CoreV1().Secrets("setup-ns").Update(t.Context(), secret, metav1.UpdateOptions{})
+
 	body := bytes.NewBufferString(`{"serviceAccountToken":"new-token"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/setup/token", body)
+	req.Header.Set("Origin", "http://example.com")
 	rr := httptest.NewRecorder()
 
 	svc.UpdateTokenHandler(rr, req)
@@ -248,9 +257,24 @@ func TestUpdateTokenHandler(t *testing.T) {
 		t.Fatalf("UpdateTokenHandler failed: %v", rr.Body.String())
 	}
 
-	secret, _ := client.CoreV1().Secrets("setup-ns").Get(t.Context(), "dkonsole-auth", metav1.GetOptions{})
-	if string(secret.Data["service-account-token"]) != "new-token" {
-		t.Errorf("expected token new-token, got %s", string(secret.Data["service-account-token"]))
+	updatedSecret, _ := client.CoreV1().Secrets("setup-ns").Get(t.Context(), "dkonsole-auth", metav1.GetOptions{})
+	if string(updatedSecret.Data["service-account-token"]) != "new-token" {
+		t.Errorf("expected token new-token, got %s", string(updatedSecret.Data["service-account-token"]))
+	}
+}
+
+func TestUpdateTokenHandler_RejectedAfterSetupCompleted(t *testing.T) {
+	svc, _ := newSetupService(t, true)
+
+	body := bytes.NewBufferString(`{"serviceAccountToken":"new-token"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/setup/token", body)
+	req.Header.Set("Origin", "http://example.com")
+	rr := httptest.NewRecorder()
+
+	svc.UpdateTokenHandler(rr, req)
+
+	if rr.Code != http.StatusPreconditionFailed {
+		t.Fatalf("status = %d, want 412. body=%s", rr.Code, rr.Body.String())
 	}
 }
 
@@ -283,6 +307,7 @@ func TestSetupIncompleteSecret(t *testing.T) {
 	// 2. Complete Setup (should succeed and update secret)
 	body := bytes.NewBufferString(`{"username":"admin","password":"strongpass","jwtSecret":"` + strings.Repeat("d", 32) + `", "serviceAccountToken":"updated-token"}`)
 	req = httptest.NewRequest(http.MethodPost, "/api/setup/complete", body)
+	req.Header.Set("Origin", "http://example.com")
 	rr = httptest.NewRecorder()
 
 	svc.SetupCompleteHandler(rr, req)

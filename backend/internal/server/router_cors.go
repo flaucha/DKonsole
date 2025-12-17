@@ -2,10 +2,10 @@ package server
 
 import (
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 
+	"github.com/flaucha/DKonsole/backend/internal/middleware"
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
 
@@ -24,41 +24,7 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		allowed := false
-		if origin != "" {
-			// Exact matches from allowlist
-			if allowedOrigins != "" {
-				origins := strings.Split(allowedOrigins, ",")
-				for _, o := range origins {
-					o = strings.TrimSpace(o)
-					if o != "" && strings.EqualFold(o, origin) {
-						allowed = true
-						break
-					}
-				}
-			}
-
-			// Always allow same-origin requests (host match)
-			if !allowed {
-				originURL, err := url.Parse(origin)
-				if err == nil {
-					host := r.Host
-					if strings.Contains(host, ":") {
-						host, _, _ = strings.Cut(host, ":")
-					}
-					originHost := originURL.Host
-					if strings.Contains(originHost, ":") {
-						originHost, _, _ = strings.Cut(originHost, ":")
-					}
-					if strings.EqualFold(strings.TrimSpace(originHost), strings.TrimSpace(host)) &&
-						(originURL.Scheme == "http" || originURL.Scheme == "https") {
-						allowed = true
-					}
-				}
-			}
-		}
-
-		if !allowed && origin != "" {
+		if origin != "" && !middleware.IsRequestOriginAllowed(r) {
 			utils.LogWarn("CORS: Origin not allowed", map[string]interface{}{
 				"origin": origin,
 				"host":   r.Host,
