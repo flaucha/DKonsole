@@ -17,9 +17,7 @@ import (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return middleware.IsRequestOriginAllowed(r)
-	},
+	CheckOrigin:     middleware.IsRequestOriginAllowed,
 }
 
 // StreamResourceCreation handles SSE for resource creation feedback
