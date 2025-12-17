@@ -47,6 +47,18 @@ secrets.yaml
 backend/docs/*
 !backend/docs/doc.go/
 
+# Build/test artifacts (logs and captured outputs)
+build_*.log
+build_*.txt
+test_output*.txt
+version.txt
+backend/error.log
+backend/test_output*.txt
+backend/test_middleware*.txt
+backend_test_*.txt
+frontend/fe_test_output*.txt
+frontend_test_*.txt
+
 #SEG_FILE
 
 

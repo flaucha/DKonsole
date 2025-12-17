@@ -1,7 +1,0 @@
-# github.com/flaucha/DKonsole/backend/internal/k8s [github.com/flaucha/DKonsole/backend/internal/k8s.test]
-internal/k8s/cronjob_repository_test.go:104:19: cannot use &stubFactory{…} (value of type *stubFactory) as Factory value in struct literal: *stubFactory does not implement Factory (wrong type for method CreateResourceService)
-		have CreateResourceService(dynamic.Interface) *ResourceService
-		want CreateResourceService(dynamic.Interface, kubernetes.Interface) *ResourceService
-internal/k8s/cronjob_repository_test.go:133:19: cannot use &stubFactory{} (value of type *stubFactory) as Factory value in struct literal: *stubFactory does not implement Factory (wrong type for method CreateResourceService)
-		have CreateResourceService(dynamic.Interface) *ResourceService
-		want CreateResourceService(dynamic.Interface, kubernetes.Interface) *ResourceService

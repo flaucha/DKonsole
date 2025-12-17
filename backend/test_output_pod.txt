@@ -1,7 +1,0 @@
-# github.com/flaucha/DKonsole/backend/internal/pod [github.com/flaucha/DKonsole/backend/internal/pod.test]
-internal/pod/handlers_exec.go:59:42: cannot use params (variable of type *utils.PodParams) as utils.PodParams value in argument to s.upgradeToWebSocket
-internal/pod/handlers_exec.go:67:53: cannot use params (variable of type *utils.PodParams) as utils.PodParams value in argument to s.streamPodConnection
-internal/pod/handlers_exec.go:81:52: undefined: kubernetes
-internal/pod/handlers_exec.go:81:75: undefined: rest
-FAIL	github.com/flaucha/DKonsole/backend/internal/pod [build failed]
-FAIL
