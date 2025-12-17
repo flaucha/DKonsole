@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2025-12-17
+
+### Added
+- **Helm/K8s**: Expanded test coverage for security-sensitive operations (Helm and YAML write paths).
+
+### Changed
+- **Security**: Hardened origin validation and reduced internal error detail exposure in API responses.
+- **CI/Tooling**: Pinned `golangci-lint` installation to a known version compatible with Go 1.25.5.
+
+### Fixed
+- **UI**: Monaco YAML editor loading under strict Content Security Policy (CSP).
+- **Kubernetes Client**: Fail-closed TLS behavior in fallback client config (no `Insecure: true` in production).
+
 ## [1.4.10] - 2025-12-11
 
 ### Added

@@ -32,10 +32,11 @@ Access at `http://localhost:8080`
 | `ADMIN_PASSWORD` | Admin password (Argon2 hash format) | No* | Set via web interface |
 | `AUTH_SECRET_NAME` | Kubernetes secret name for authentication | No | `dkonsole-auth` |
 | `POD_NAMESPACE` | Kubernetes namespace (auto-detected from service account) | No | Auto-detected |
-| `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins | No | Same-origin only |
+| `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins | Yes** | (none) |
 | `PROMETHEUS_URL` | Prometheus server URL for historical metrics | No | Metrics disabled |
 
 *Not required in setup mode - configured via web interface during first access*
+**Required for browser access in production (configure your ingress URL origin).**
 
 ## Setup Mode
 
@@ -95,7 +96,7 @@ Default Helm values:
 ## Tags
 
 - `latest`: Points to the most recent stable release
-- Version tags: `1.4.10`, `1.4.9`, `1.4.8`, `1.4.7`, `1.4.6`, `1.4.5`, etc.
+- Version tags: `1.5.0`, `1.4.10`, `1.4.9`, etc.
 
 See [Docker Hub tags](https://hub.docker.com/r/dkonsole/dkonsole/tags) for all available versions.
 

@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.4.10-green.svg)
+![Version](https://img.shields.io/badge/version-1.5.0-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -37,7 +37,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.4.10
+git checkout v1.5.0
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -147,16 +147,23 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.4.10"
+  tag: "1.5.0"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.4.10`
+- **Unified**: `dkonsole/dkonsole:1.5.0`
 
 ## 📝 Changelog
+
+### v1.5.0 (2025-12-17)
+**Security Hardening, Setup Improvements & Helm/K8s Stability**
+
+- **Security**: Hardened origin validation, error handling, and Kubernetes client TLS defaults.
+- **UI**: Fixed Monaco YAML editor loading under strict CSP.
+- **Testing/CI**: Added/expanded security-focused test coverage and pinned golangci-lint install for Go 1.25.5 toolchain.
 
 ### v1.4.10 (2025-12-11)
 **ReplicaSets & UI Enhancements**
@@ -172,20 +179,6 @@ The official image is available at:
 - **Login**: Fixed Cream theme background color issue.
 - **CI**: Fixed frontend test OOM errors with optimized memory limits & exclusions.
 - **Backend**: Massive test coverage increase (100% in k8s) and structural refactoring.
-
-### v1.4.8 (2025-12-08)
-**🚀 LDAP Integration & UI Enhancements**
-
-- **LDAP**: Comprehensive integration with auth flow and K8s operations.
-- **UI**: Generalized filter placeholders and API Explorer styling updates.
-- **Fixes**: Prometheus build errors, Helm service refactoring, and general UI fixes.
-
-### v1.4.5 (2025-12-06)
-**🔧 WebSocket stability & appearance refactor**
-
-- **WebSocket**: Replaced null char keep-alive with ping/pong protocol; added auto-reconnection with exponential backoff.
-- **Appearance**: Simplified settings with dark/cream toggle, font dropdown, and removed animation type selector.
-- **Cream Theme**: Warmer, less bright colors; fixed metric tooltip contrast.
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 
