@@ -28,7 +28,10 @@ func (s *Service) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	hasAccess, err := permissions.HasNamespaceAccess(ctx, params.Namespace)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to check permissions", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": params.Namespace,
+			"action":    "view",
+		})
 		return
 	}
 	if !hasAccess {
@@ -64,7 +67,11 @@ func (s *Service) StreamPodLogs(w http.ResponseWriter, r *http.Request) {
 	// Call service to get log stream (business logic layer)
 	stream, err := logService.StreamLogs(ctx, streamReq)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to open log stream: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to open log stream", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": params.Namespace,
+			"pod":       params.PodName,
+			"container": params.Container,
+		})
 		return
 	}
 	defer stream.Close()

@@ -75,7 +75,10 @@ func (s *Service) DryRunResourceYAML(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Dry run failed: %v", err))
+		utils.HandleErrorJSON(w, err, "Dry run failed", http.StatusInternalServerError, map[string]interface{}{
+			"kind":      gvk.Kind,
+			"namespace": namespace,
+		})
 		return
 	}
 

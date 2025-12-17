@@ -579,7 +579,10 @@ func TestImportResourceYAMLHandler_ImportError(t *testing.T) {
 	if rr.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500, got %d", rr.Code)
 	}
-	if !strings.Contains(rr.Body.String(), "resolve failure") {
-		t.Fatalf("expected resolve failure, got %s", rr.Body.String())
+	if !strings.Contains(rr.Body.String(), "Failed to import resources") {
+		t.Fatalf("expected sanitized error message, got %s", rr.Body.String())
+	}
+	if strings.Contains(rr.Body.String(), "resolve failure") {
+		t.Fatalf("expected internal error to be hidden, got %s", rr.Body.String())
 	}
 }

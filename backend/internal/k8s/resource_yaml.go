@@ -71,7 +71,10 @@ func (s *Service) GetResourceYAML(w http.ResponseWriter, r *http.Request) {
 	if namespacedParam && namespace != "" && namespace != "all" {
 		hasAccess, err := permissions.HasNamespaceAccess(ctx, namespace)
 		if err != nil {
-			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
+			utils.HandleErrorJSON(w, err, "Failed to check permissions", http.StatusInternalServerError, map[string]interface{}{
+				"namespace": namespace,
+				"action":    "view",
+			})
 			return
 		}
 		if !hasAccess {

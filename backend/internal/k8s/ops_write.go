@@ -84,7 +84,12 @@ func (s *Service) UpdateResourceYAML(w http.ResponseWriter, r *http.Request) {
 				utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 				return
 			}
-			utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+			utils.HandleErrorJSON(w, err, "Failed to update resource", http.StatusInternalServerError, map[string]interface{}{
+				"kind":       kind,
+				"name":       name,
+				"namespace":  namespace,
+				"namespaced": namespaced,
+			})
 		}
 		return
 	}
@@ -131,7 +136,7 @@ func (s *Service) CreateResourceYAML(w http.ResponseWriter, r *http.Request) {
 	// Create the resource
 	result, err := resourceService.CreateResource(ctx, yamlData)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		utils.HandleErrorJSON(w, err, "Failed to create resource", http.StatusInternalServerError, nil)
 		return
 	}
 
@@ -182,7 +187,7 @@ func (s *Service) ImportResourceYAML(w http.ResponseWriter, r *http.Request) {
 	// Import resources
 	result, err := importService.ImportResources(ctx, req)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to import resources: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to import resources", http.StatusInternalServerError, nil)
 		return
 	}
 
@@ -209,7 +214,10 @@ func (s *Service) DeleteResource(w http.ResponseWriter, r *http.Request) {
 		// Check if user has edit permission
 		canEdit, err := permissions.CanPerformAction(ctx, namespace, "edit")
 		if err != nil {
-			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
+			utils.HandleErrorJSON(w, err, "Failed to check permissions", http.StatusInternalServerError, map[string]interface{}{
+				"namespace": namespace,
+				"action":    "edit",
+			})
 			return
 		}
 		if !canEdit {
@@ -248,7 +256,12 @@ func (s *Service) DeleteResource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := resourceService.DeleteResource(ctx, req); err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		utils.HandleErrorJSON(w, err, "Failed to delete resource", http.StatusInternalServerError, map[string]interface{}{
+			"kind":      kind,
+			"name":      name,
+			"namespace": namespace,
+			"force":     force,
+		})
 		return
 	}
 

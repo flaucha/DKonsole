@@ -104,7 +104,11 @@ func (h *HTTPHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	// Call service (business logic layer)
 	response, err := promService.GetDeploymentMetrics(ctx, req)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get metrics: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to get metrics", http.StatusInternalServerError, map[string]interface{}{
+			"namespace":  namespace,
+			"deployment": deployment,
+			"range":      rangeParam,
+		})
 		return
 	}
 
@@ -162,7 +166,11 @@ func (h *HTTPHandler) GetPodMetrics(w http.ResponseWriter, r *http.Request) {
 	// Call service (business logic layer)
 	response, err := promService.GetPodMetrics(ctx, req)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get pod metrics: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to get pod metrics", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": namespace,
+			"pod":       podName,
+			"range":     rangeParam,
+		})
 		return
 	}
 
@@ -215,7 +223,9 @@ func (h *HTTPHandler) GetClusterOverview(w http.ResponseWriter, r *http.Request)
 	// Call service (business logic layer)
 	response, err := promService.GetClusterOverview(ctx, req, client)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get cluster overview: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to get cluster overview", http.StatusInternalServerError, map[string]interface{}{
+			"range": rangeParam,
+		})
 		return
 	}
 

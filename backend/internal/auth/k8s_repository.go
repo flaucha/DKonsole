@@ -2,8 +2,10 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -12,6 +14,11 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/flaucha/DKonsole/backend/internal/utils"
+)
+
+var (
+	inClusterConfigFunc = rest.InClusterConfig
+	newForConfigFunc    = kubernetes.NewForConfig
 )
 
 // K8sUserRepository implements UserRepository using Kubernetes secrets.
@@ -265,25 +272,57 @@ func (r *K8sUserRepository) UpdateSecretToken(ctx context.Context, newToken stri
 
 // createEphemeralClient creates a K8s client using the provided token.
 func createEphemeralClient(token string) (kubernetes.Interface, error) {
-	config, err := rest.InClusterConfig()
+	config, err := inClusterConfigFunc()
 	if err != nil {
-		// If InClusterConfig fails (e.g. no SA mounted), manually construct config
-		config = &rest.Config{
-			Host:            "https://" + os.Getenv("KUBERNETES_SERVICE_HOST") + ":" + os.Getenv("KUBERNETES_SERVICE_PORT"),
-			BearerToken:     token,
-			TLSClientConfig: rest.TLSClientConfig{Insecure: true},
+		host := strings.TrimSpace(os.Getenv("KUBERNETES_SERVICE_HOST"))
+		port := strings.TrimSpace(os.Getenv("KUBERNETES_SERVICE_PORT"))
+		if host == "" || port == "" {
+			return nil, fmt.Errorf("failed to build in-cluster config and KUBERNETES_SERVICE_HOST/PORT are not set")
 		}
-		// Try to read CA cert if available
-		if caData, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"); err == nil {
+
+		// If InClusterConfig fails (e.g. no SA mounted), manually construct config.
+		// Security: verify TLS by default (fail closed). Do not disable verification unless explicitly requested.
+		config = &rest.Config{
+			Host:            "https://" + host + ":" + port,
+			BearerToken:     token,
+			TLSClientConfig: rest.TLSClientConfig{Insecure: false},
+		}
+
+		// Try to load the cluster CA certificate (preferred).
+		if caData, readErr := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"); readErr == nil && len(caData) > 0 {
 			config.TLSClientConfig.CAData = caData
-			config.TLSClientConfig.Insecure = false
+		} else if caPEM := strings.TrimSpace(os.Getenv("K8S_CA_PEM")); caPEM != "" {
+			// Optional: allow supplying CA PEM explicitly (e.g. for non-standard mounts).
+			config.TLSClientConfig.CAData = []byte(caPEM)
+		}
+
+		// Explicit dev-only escape hatch. Defaults to secure verification.
+		if strings.EqualFold(strings.TrimSpace(os.Getenv("K8S_INSECURE_SKIP_VERIFY")), "true") {
+			if os.Getenv("GO_ENV") == "production" {
+				return nil, fmt.Errorf("K8S_INSECURE_SKIP_VERIFY is not allowed in production")
+			}
+			utils.LogWarn("K8S_INSECURE_SKIP_VERIFY enabled - TLS certificate verification is disabled for Kubernetes client", nil)
+			config.TLSClientConfig.Insecure = true
+			config.TLSClientConfig.CAData = nil
+		}
+
+		// Fail closed: if we are not explicitly skipping verification, a CA must be provided.
+		if !config.TLSClientConfig.Insecure && len(config.TLSClientConfig.CAData) == 0 {
+			return nil, fmt.Errorf("kubernetes CA certificate is required (set K8S_CA_PEM or ensure /var/run/secrets/kubernetes.io/serviceaccount/ca.crt is mounted)")
 		}
 	} else {
 		config.BearerToken = token
 		config.BearerTokenFile = ""
 	}
 
-	return kubernetes.NewForConfig(config)
+	client, newErr := newForConfigFunc(config)
+	if newErr != nil {
+		return nil, fmt.Errorf("failed to create kubernetes client: %w", newErr)
+	}
+	if client == nil {
+		return nil, errors.New("failed to create kubernetes client: nil client")
+	}
+	return client, nil
 }
 
 // CreateOrUpdateSecret creates or updates the dkonsole-auth secret with the provided credentials.

@@ -2,15 +2,108 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
+	"math/big"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
 )
+
+func mustGenerateTestCACertPEM(t *testing.T) string {
+	t.Helper()
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate key: %v", err)
+	}
+
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		NotBefore:             time.Now().Add(-1 * time.Hour),
+		NotAfter:              time.Now().Add(24 * time.Hour),
+		IsCA:                  true,
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		BasicConstraintsValid: true,
+	}
+
+	derBytes, err := x509.CreateCertificate(rand.Reader, template, template, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		t.Fatalf("failed to create certificate: %v", err)
+	}
+
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes}))
+}
+
+func TestCreateEphemeralClient_TLSFailClosedWhenNoCA(t *testing.T) {
+	origInCluster := inClusterConfigFunc
+	defer func() { inClusterConfigFunc = origInCluster }()
+	inClusterConfigFunc = func() (*rest.Config, error) { // Force fallback path
+		return nil, errors.New("forced")
+	}
+
+	t.Setenv("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+	t.Setenv("K8S_CA_PEM", "")
+	t.Setenv("K8S_INSECURE_SKIP_VERIFY", "")
+	t.Setenv("GO_ENV", "")
+
+	_, err := createEphemeralClient("dummy-token")
+	if err == nil {
+		t.Fatalf("expected error when CA is missing and insecure skip is not enabled")
+	}
+}
+
+func TestCreateEphemeralClient_AllowsExplicitCA(t *testing.T) {
+	origInCluster := inClusterConfigFunc
+	defer func() { inClusterConfigFunc = origInCluster }()
+	inClusterConfigFunc = func() (*rest.Config, error) { // Force fallback path
+		return nil, errors.New("forced")
+	}
+
+	t.Setenv("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+	t.Setenv("K8S_CA_PEM", mustGenerateTestCACertPEM(t))
+	t.Setenv("K8S_INSECURE_SKIP_VERIFY", "")
+	t.Setenv("GO_ENV", "")
+
+	client, err := createEphemeralClient("dummy-token")
+	if err != nil {
+		t.Fatalf("expected success, got err=%v", err)
+	}
+	if client == nil {
+		t.Fatalf("expected non-nil client")
+	}
+}
+
+func TestCreateEphemeralClient_DisallowsInsecureSkipVerifyInProduction(t *testing.T) {
+	origInCluster := inClusterConfigFunc
+	defer func() { inClusterConfigFunc = origInCluster }()
+	inClusterConfigFunc = func() (*rest.Config, error) { // Force fallback path
+		return nil, errors.New("forced")
+	}
+
+	t.Setenv("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+	t.Setenv("K8S_CA_PEM", "")
+	t.Setenv("K8S_INSECURE_SKIP_VERIFY", "true")
+	t.Setenv("GO_ENV", "production")
+
+	_, err := createEphemeralClient("dummy-token")
+	if err == nil {
+		t.Fatalf("expected error when insecure skip verify is enabled in production")
+	}
+}
 
 func TestK8sUserRepository_UpdateSecretToken(t *testing.T) {
 	client := k8sfake.NewSimpleClientset()

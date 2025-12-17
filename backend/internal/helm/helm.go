@@ -55,7 +55,7 @@ func (s *Service) GetHelmReleases(w http.ResponseWriter, r *http.Request) {
 	// Call service to get Helm releases (business logic layer)
 	releases, err := helmService.GetHelmReleases(ctx)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get Helm releases: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to get Helm releases", http.StatusInternalServerError, nil)
 		return
 	}
 

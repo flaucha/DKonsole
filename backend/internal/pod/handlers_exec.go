@@ -52,7 +52,11 @@ func (s *Service) ExecIntoPod(w http.ResponseWriter, r *http.Request) {
 	}
 	executor, _, err := execService.CreateExecutor(client, restConfig, execReq)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create executor: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to create executor", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": params.Namespace,
+			"pod":       params.PodName,
+			"container": params.Container,
+		})
 		return
 	}
 

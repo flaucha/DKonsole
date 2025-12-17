@@ -93,7 +93,12 @@ func (s *Service) UpgradeHelmRelease(w http.ResponseWriter, r *http.Request) {
 	// Call service to upgrade Helm release (business logic layer)
 	result, err := upgradeService.UpgradeHelmRelease(ctx, upgradeReq)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to upgrade Helm release: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to upgrade Helm release", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": req.Namespace,
+			"name":      req.Name,
+			"chart":     req.Chart,
+			"version":   req.Version,
+		})
 		return
 	}
 
@@ -190,7 +195,12 @@ func (s *Service) InstallHelmRelease(w http.ResponseWriter, r *http.Request) {
 	// Call service to install Helm release (business logic layer)
 	result, err := installService.InstallHelmRelease(ctx, installReq)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to install Helm release: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to install Helm release", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": req.Namespace,
+			"name":      req.Name,
+			"chart":     req.Chart,
+			"version":   req.Version,
+		})
 		return
 	}
 

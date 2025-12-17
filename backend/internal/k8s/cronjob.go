@@ -2,7 +2,6 @@ package k8s
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/flaucha/DKonsole/backend/internal/permissions"
@@ -45,7 +44,10 @@ func (s *Service) TriggerCronJob(w http.ResponseWriter, r *http.Request) {
 	// Call service to trigger cronjob (business logic layer)
 	jobName, err := cronJobService.TriggerCronJob(ctx, req.Namespace, req.Name)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to trigger cronjob: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to trigger cronjob", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": req.Namespace,
+			"name":      req.Name,
+		})
 		return
 	}
 

@@ -67,7 +67,7 @@ func TestService_GetPrometheusURLHandler(t *testing.T) {
 				return "", context.DeadlineExceeded
 			},
 			wantStatusCode: http.StatusInternalServerError,
-			wantErrMsg:     "failed to get Prometheus URL",
+			wantErrMsg:     "Failed to get Prometheus URL",
 		},
 	}
 
@@ -187,7 +187,7 @@ func TestService_UpdatePrometheusURLHandler(t *testing.T) {
 				return context.DeadlineExceeded
 			},
 			wantStatusCode: http.StatusInternalServerError,
-			wantErrMsg:     "failed to update Prometheus URL",
+			wantErrMsg:     "Failed to update Prometheus URL",
 		},
 	}
 

@@ -37,7 +37,7 @@ type UpdatePrometheusURLRequest struct {
 func (s *Service) GetPrometheusURLHandler(w http.ResponseWriter, r *http.Request) {
 	promURL, err := s.repo.GetPrometheusURL(r.Context())
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to get Prometheus URL: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to get Prometheus URL", http.StatusInternalServerError, nil)
 		return
 	}
 
@@ -69,7 +69,9 @@ func (s *Service) UpdatePrometheusURLHandler(w http.ResponseWriter, r *http.Requ
 
 	// Update in repository
 	if err := s.repo.UpdatePrometheusURL(r.Context(), req.URL); err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to update Prometheus URL: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to update Prometheus URL", http.StatusInternalServerError, map[string]interface{}{
+			"url": req.URL,
+		})
 		return
 	}
 

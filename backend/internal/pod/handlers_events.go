@@ -26,7 +26,10 @@ func (s *Service) GetPodEvents(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	hasAccess, err := permissions.HasNamespaceAccess(ctx, params.Namespace)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check permissions: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to check permissions", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": params.Namespace,
+			"action":    "view",
+		})
 		return
 	}
 	if !hasAccess {
@@ -54,7 +57,10 @@ func (s *Service) GetPodEvents(w http.ResponseWriter, r *http.Request) {
 	// Call service to get events (business logic layer)
 	events, err := podService.GetPodEvents(ctx, params.Namespace, params.PodName)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get pod events: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to get pod events", http.StatusInternalServerError, map[string]interface{}{
+			"namespace": params.Namespace,
+			"pod":       params.PodName,
+		})
 		return
 	}
 

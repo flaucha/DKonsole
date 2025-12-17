@@ -127,7 +127,9 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 			})
 			exists = false // Treat as not found (or unknown) so we fall through to CreateOrUpdate
 		} else {
-			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to check setup status: %v", err))
+			utils.HandleErrorJSON(w, err, "Failed to check setup status", http.StatusInternalServerError, map[string]interface{}{
+				"endpoint": "/api/setup/complete",
+			})
 			return
 		}
 	}
@@ -224,7 +226,10 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(errStr, "Forbidden") || strings.Contains(errStr, "permission") || strings.Contains(errStr, "forbidden") {
 			utils.ErrorResponse(w, http.StatusForbidden, "Permission denied: Unable to create/update secret. Please verify RBAC permissions allow creating secrets in this namespace.")
 		} else {
-			utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create/update secret: %v", err))
+			utils.HandleErrorJSON(w, err, "Failed to create/update secret", http.StatusInternalServerError, map[string]interface{}{
+				"username":  req.Username,
+				"namespace": s.k8sRepo.namespace,
+			})
 		}
 		return
 	}
@@ -239,7 +244,9 @@ func (s *Service) SetupCompleteHandler(w http.ResponseWriter, r *http.Request) {
 		utils.LogError(err, "Failed to reload service after setup", map[string]interface{}{
 			"username": req.Username,
 		})
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Setup completed, but failed to reload service: %v", err))
+		utils.HandleErrorJSON(w, err, "Setup completed, but failed to reload service", http.StatusInternalServerError, map[string]interface{}{
+			"username": req.Username,
+		})
 		return
 	}
 
@@ -337,7 +344,7 @@ func (s *Service) UpdateTokenHandler(w http.ResponseWriter, r *http.Request) {
 	// This will use the NEW token to create a client and update the secret
 	if err := s.k8sRepo.UpdateSecretToken(ctx, req.ServiceAccountToken); err != nil {
 		utils.LogError(err, "Failed to update token", nil)
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to update token: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to update token", http.StatusInternalServerError, nil)
 		return
 	}
 
@@ -346,7 +353,7 @@ func (s *Service) UpdateTokenHandler(w http.ResponseWriter, r *http.Request) {
 	// Attempt reload
 	if _, err := s.Reload(ctx, req.ServiceAccountToken); err != nil {
 		utils.LogError(err, "Failed to reload service after token update", nil)
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Token updated, but failed to reload service: %v", err))
+		utils.HandleErrorJSON(w, err, "Token updated, but failed to reload service", http.StatusInternalServerError, nil)
 		return
 	}
 

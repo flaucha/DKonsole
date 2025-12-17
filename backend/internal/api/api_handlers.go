@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/flaucha/DKonsole/backend/internal/cluster"
@@ -42,7 +41,7 @@ func (s *Service) ListAPIResources(w http.ResponseWriter, r *http.Request) {
 	// Call service (business logic layer)
 	result, err := apiService.ListAPIResources(ctx)
 	if err != nil {
-		utils.ErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to discover APIs: %v", err))
+		utils.HandleErrorJSON(w, err, "Failed to discover APIs", http.StatusInternalServerError, nil)
 		return
 	}
 
