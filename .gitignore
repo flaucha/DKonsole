@@ -55,6 +55,8 @@ version.txt
 backend/error.log
 backend/test_output*.txt
 backend/test_middleware*.txt
+backend/test_*_latest.txt
+backend/test_result_*.txt
 backend_test_*.txt
 frontend/fe_test_output*.txt
 frontend_test_*.txt
