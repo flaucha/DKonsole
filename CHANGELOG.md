@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.2] - 2025-12-21
+
+### Fixed
+- **Settings/Prometheus**: Refresh Kubernetes client before reading/updating the Prometheus URL so setup tokens are honored.
+
 ## [1.5.1] - 2025-12-19
 
 ### Added

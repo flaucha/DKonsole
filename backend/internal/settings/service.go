@@ -19,6 +19,21 @@ type Service struct {
 	prometheusService *prometheus.HTTPHandler
 }
 
+func (s *Service) refreshRepoClient() {
+	repo, ok := s.repo.(*K8sRepository)
+	if !ok || s.handlersModel == nil {
+		return
+	}
+
+	s.handlersModel.RLock()
+	client := s.handlersModel.Clients["default"]
+	s.handlersModel.RUnlock()
+
+	if client != nil {
+		repo.client = client
+	}
+}
+
 // NewService creates a new settings service
 func NewService(repo Repository, handlersModel *models.Handlers, prometheusService *prometheus.HTTPHandler) *Service {
 	return &Service{
@@ -35,6 +50,7 @@ type UpdatePrometheusURLRequest struct {
 
 // GetPrometheusURLHandler returns the current Prometheus URL
 func (s *Service) GetPrometheusURLHandler(w http.ResponseWriter, r *http.Request) {
+	s.refreshRepoClient()
 	promURL, err := s.repo.GetPrometheusURL(r.Context())
 	if err != nil {
 		utils.HandleErrorJSON(w, err, "Failed to get Prometheus URL", http.StatusInternalServerError, nil)
@@ -48,6 +64,7 @@ func (s *Service) GetPrometheusURLHandler(w http.ResponseWriter, r *http.Request
 
 // UpdatePrometheusURLHandler updates the Prometheus URL
 func (s *Service) UpdatePrometheusURLHandler(w http.ResponseWriter, r *http.Request) {
+	s.refreshRepoClient()
 	var req UpdatePrometheusURLRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, "invalid request body")

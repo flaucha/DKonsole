@@ -16,7 +16,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "1.5.1"
+        "version": "1.5.2"
     },
     "host": "localhost:8080",
     "basePath": "/",

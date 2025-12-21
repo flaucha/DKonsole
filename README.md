@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.5.1-green.svg)
+![Version](https://img.shields.io/badge/version-1.5.2-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -37,7 +37,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.5.1
+git checkout v1.5.2
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -147,16 +147,21 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.5.1"
+  tag: "1.5.2"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.5.1`
+- **Unified**: `dkonsole/dkonsole:1.5.2`
 
 ## 📝 Changelog
+
+### v1.5.2 (2025-12-21)
+**Prometheus Settings Fix**
+
+- **Settings/Prometheus**: Refresh Kubernetes client before reading/updating the Prometheus URL so setup tokens are honored.
 
 ### v1.5.1 (2025-12-19)
 **Security Fixes**
@@ -172,13 +177,6 @@ The official image is available at:
 - **Security**: Hardened origin validation, error handling, and Kubernetes client TLS defaults.
 - **UI**: Fixed Monaco YAML editor loading under strict CSP.
 - **Testing/CI**: Added/expanded security-focused test coverage and pinned golangci-lint install for Go 1.25.5 toolchain.
-
-### v1.4.10 (2025-12-11)
-**ReplicaSets & UI Enhancements**
-
-- **Added**: Full support for ReplicaSets (list, details, pods).
-- **UI**: Shortened image tags with copy-on-click for Deployments and ReplicaSets.
-- **Fixed**: Backend linting issues.
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 

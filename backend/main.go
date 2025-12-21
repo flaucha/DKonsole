@@ -1,5 +1,5 @@
 // @title DKonsole API
-// @version 1.5.1
+// @version 1.5.2
 // @description API para gestión de recursos Kubernetes y Helm releases
 // @termsOfService http://swagger.io/terms/
 
