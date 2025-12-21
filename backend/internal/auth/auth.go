@@ -3,13 +3,17 @@ package auth
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/flaucha/DKonsole/backend/internal/utils"
 )
+
+const minJWTSecretLenBytes = 32
 
 // Service provides HTTP handlers for authentication operations.
 // It follows a layered architecture:
@@ -26,6 +30,27 @@ type Service struct {
 	secretName    string
 	ClientFactory func(token string) (kubernetes.Interface, error) // Factory for creating K8s clients
 	OnReload      func(token string)                               // Callback to notify about reload (e.g. to update global clients)
+}
+
+func validateJWTSecret(secret []byte) error {
+	if len(secret) == 0 {
+		return fmt.Errorf("jwt secret is not configured")
+	}
+	if len(secret) < minJWTSecretLenBytes {
+		return fmt.Errorf("jwt secret must be at least %d bytes", minJWTSecretLenBytes)
+	}
+	return nil
+}
+
+func newSetupModeService(k8sClient kubernetes.Interface, secretName string, k8sRepo *K8sUserRepository) *Service {
+	return &Service{
+		authService: nil, // Will be nil in setup mode
+		jwtService:  nil, // Will be nil in setup mode
+		k8sRepo:     k8sRepo,
+		setupMode:   true,
+		k8sClient:   k8sClient,
+		secretName:  secretName,
+	}
 }
 
 // SetLDAPAuthenticator sets the LDAP authenticator for the auth service
@@ -55,6 +80,8 @@ func NewService(k8sClient kubernetes.Interface, secretName string) (*Service, er
 	var setupMode bool
 	var k8sRepo *K8sUserRepository
 
+	isProduction := os.Getenv("GO_ENV") == "production"
+
 	if k8sClient != nil && secretName != "" {
 		// Try to use Kubernetes secrets
 		repo, err := NewK8sUserRepository(k8sClient, secretName)
@@ -68,7 +95,8 @@ func NewService(k8sClient kubernetes.Interface, secretName string) (*Service, er
 		} else {
 			k8sRepo = repo
 			// Check if secret exists
-			ctx := context.Background()
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
 			exists, err := repo.SecretExists(ctx)
 			if err != nil {
 				utils.LogWarn("Failed to check secret existence, falling back to environment variables", map[string]interface{}{
@@ -78,38 +106,49 @@ func NewService(k8sClient kubernetes.Interface, secretName string) (*Service, er
 				jwtSecret = GetJWTSecret()
 			} else if !exists {
 				// Secret doesn't exist - setup mode
-				setupMode = true
 				utils.LogInfo("Running in setup mode - secret does not exist", map[string]interface{}{
 					"secret_name": secretName,
 				})
 				// Don't initialize authService in setup mode - it will fail without credentials
-				return &Service{
-					authService: nil, // Will be nil in setup mode
-					jwtService:  nil, // Will be nil in setup mode
-					k8sRepo:     k8sRepo,
-					setupMode:   true,
-					k8sClient:   k8sClient,
-					secretName:  secretName,
-				}, nil
+				return newSetupModeService(k8sClient, secretName, k8sRepo), nil
 			} else {
 				// Secret exists - use K8s repository
 				userRepo = k8sRepo
-				// Get JWT secret from the secret
+				// Get JWT secret from the secret. If the app cannot read secrets (RBAC),
+				// we fall back to env vars (typically injected by the pod spec).
 				secret, err := k8sClient.CoreV1().Secrets(repo.namespace).Get(ctx, secretName, metav1.GetOptions{})
 				if err != nil {
-					return nil, fmt.Errorf("failed to get JWT secret from Kubernetes secret: %w", err)
+					utils.LogWarn("Failed to read auth secret, falling back to environment variables", map[string]interface{}{
+						"error":       err.Error(),
+						"secret_name": secretName,
+					})
+					userRepo = NewEnvUserRepository()
+					jwtSecret = GetJWTSecret()
+				} else {
+					jwtSecretBytes := secret.Data["jwt-secret"]
+					if len(jwtSecretBytes) == 0 {
+						// Common case: Helm (or another installer) created an empty secret to satisfy mounts/env refs.
+						// Treat it as incomplete setup and allow the setup flow to populate it.
+						utils.LogWarn("Auth secret exists but is missing jwt-secret; entering setup mode", map[string]interface{}{
+							"secret_name": secretName,
+						})
+						return newSetupModeService(k8sClient, secretName, k8sRepo), nil
+					}
+					jwtSecret = jwtSecretBytes
 				}
-				jwtSecretBytes, exists := secret.Data["jwt-secret"]
-				if !exists || len(jwtSecretBytes) == 0 {
-					return nil, fmt.Errorf("jwt-secret key not found in secret")
-				}
-				jwtSecret = jwtSecretBytes
 			}
 		}
 	} else {
 		// No K8s client provided - use environment variables
 		userRepo = NewEnvUserRepository()
 		jwtSecret = GetJWTSecret()
+	}
+
+	if err := validateJWTSecret(jwtSecret); err != nil {
+		if isProduction {
+			return nil, fmt.Errorf("invalid JWT secret (set JWT_SECRET or complete setup): %w", err)
+		}
+		return nil, fmt.Errorf("invalid JWT secret: %w", err)
 	}
 
 	// Initialize services (only if not in setup mode)
@@ -200,6 +239,9 @@ func (s *Service) Reload(ctx context.Context, tokenOverride string) (bool, error
 	jwtSecretBytes, exists := secret.Data["jwt-secret"]
 	if !exists || len(jwtSecretBytes) == 0 {
 		return false, fmt.Errorf("jwt-secret key not found in secret during reload")
+	}
+	if err := validateJWTSecret(jwtSecretBytes); err != nil {
+		return false, fmt.Errorf("invalid jwt-secret in secret during reload: %w", err)
 	}
 
 	// Initialize services with new credentials

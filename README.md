@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.5.0-green.svg)
+![Version](https://img.shields.io/badge/version-1.5.1-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -37,7 +37,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.5.0
+git checkout v1.5.1
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -147,16 +147,24 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.5.0"
+  tag: "1.5.1"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.5.0`
+- **Unified**: `dkonsole/dkonsole:1.5.1`
 
 ## 📝 Changelog
+
+### v1.5.1 (2025-12-19)
+**Security Fixes**
+
+- **Security**: Fail-fast when JWT secret is missing/invalid and allow setup when auth Secret is incomplete.
+- **Helm/K8s**: Stop creating a placeholder auth Secret by default.
+- **Pods**: Expanded diagnostics with richer events, conditions, and probe visibility.
+- **UI/Logs**: Simplified log display with a single default color.
 
 ### v1.5.0 (2025-12-17)
 **Security Hardening, Setup Improvements & Helm/K8s Stability**
@@ -171,14 +179,6 @@ The official image is available at:
 - **Added**: Full support for ReplicaSets (list, details, pods).
 - **UI**: Shortened image tags with copy-on-click for Deployments and ReplicaSets.
 - **Fixed**: Backend linting issues.
-
-### v1.4.9 (2025-12-10)
-**🎨 Theme Cleanup, CI Fixes & Backend Refactor**
-
-- **UI**: Removed "Light" and unused themes; only Dark and Cream remain.
-- **Login**: Fixed Cream theme background color issue.
-- **CI**: Fixed frontend test OOM errors with optimized memory limits & exclusions.
-- **Backend**: Massive test coverage increase (100% in k8s) and structural refactoring.
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 

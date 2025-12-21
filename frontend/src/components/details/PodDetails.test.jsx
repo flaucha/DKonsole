@@ -64,6 +64,44 @@ describe('PodDetails', () => {
                 image: 'image-2:latest',
             },
         ],
+        conditions: [
+            {
+                type: 'Ready',
+                status: 'False',
+                reason: 'ContainersNotReady',
+                message: 'containers with unready status',
+                lastTransitionTime: '2023-01-01T00:02:00Z',
+            },
+        ],
+        statusReason: 'Unschedulable',
+        statusMessage: '0/1 nodes are available',
+        qosClass: 'Burstable',
+        startTime: '2023-01-01T00:00:00Z',
+        serviceAccount: 'default',
+        containerProbes: [
+            {
+                name: 'container-1',
+                image: 'image-1:latest',
+                readinessProbe: {
+                    handler: { type: 'httpGet', path: '/healthz', port: '8080', scheme: 'HTTP' },
+                    initialDelaySeconds: 5,
+                    timeoutSeconds: 2,
+                    periodSeconds: 10,
+                    successThreshold: 1,
+                    failureThreshold: 3,
+                },
+                livenessProbe: null,
+                startupProbe: {
+                    handler: { type: 'exec', command: ['cat', '/tmp/ready'] },
+                    initialDelaySeconds: 1,
+                    timeoutSeconds: 1,
+                    periodSeconds: 5,
+                    successThreshold: 1,
+                    failureThreshold: 5,
+                },
+            },
+        ],
+        initContainerProbes: [],
     };
 
     const mockPod = {
@@ -151,6 +189,12 @@ describe('PodDetails', () => {
         expect(screen.getByText('Started')).toBeInTheDocument();
         expect(screen.getByText('Failed')).toBeInTheDocument();
         expect(screen.getByText('x2')).toBeInTheDocument();
+        expect(screen.getByText('Describe Summary')).toBeInTheDocument();
+        expect(screen.getByText('Pod Conditions')).toBeInTheDocument();
+        expect(screen.getByText('Probe Configuration')).toBeInTheDocument();
+        expect(screen.getByText('Unschedulable')).toBeInTheDocument();
+        expect(screen.getByText('HTTP GET /healthz • port 8080')).toBeInTheDocument();
+        expect(screen.getByText('Exec: cat /tmp/ready')).toBeInTheDocument();
     });
 
     it('should handle event fetch error', async () => {

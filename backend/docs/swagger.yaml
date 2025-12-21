@@ -1,0 +1,127 @@
+basePath: /
+definitions:
+  auth.LoginResponse:
+    properties:
+      role:
+        description: User role (typically "admin")
+        type: string
+    type: object
+  models.Credentials:
+    properties:
+      idp:
+        description: '"core" or "ldap" - optional, defaults to trying both'
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: DKonsole Support
+    url: https://github.com/flaucha/DKonsole/backend
+  description: API para gestión de recursos Kubernetes y Helm releases
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: DKonsole API
+  version: 1.5.1
+paths:
+  /api/login:
+    post:
+      consumes:
+      - application/json
+      description: Autentica un usuario y retorna un JWT token
+      parameters:
+      - description: Credenciales de usuario
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/models.Credentials'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Autenticación exitosa
+          schema:
+            $ref: '#/definitions/auth.LoginResponse'
+        "400":
+          description: Cuerpo de solicitud inválido
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Credenciales inválidas
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Autenticar usuario
+      tags:
+      - auth
+  /api/me:
+    get:
+      description: Retorna la información del usuario autenticado
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Información del usuario
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: No autenticado
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Obtener usuario actual
+      tags:
+      - auth
+  /api/namespaces:
+    get:
+      description: Retorna todos los namespaces de Kubernetes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lista de namespaces
+          schema:
+            items:
+              type: object
+            type: array
+        "400":
+          description: Error en la solicitud
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Error del servidor
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Listar namespaces
+      tags:
+      - k8s
+schemes:
+- http
+- https
+securityDefinitions:
+  Bearer:
+    description: 'JWT token obtenido del endpoint /api/login. Formato: "Bearer {token}"'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

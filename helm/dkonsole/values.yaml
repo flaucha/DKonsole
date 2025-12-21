@@ -34,7 +34,7 @@ allowedOrigins: "https://dkonsole.lan"
 # -----------------------------------------------------------------------------
 image:
   repository: dkonsole/dkonsole
-  tag: "1.5.0"
+  tag: "1.5.1"
   pullPolicy: Always
 
 # Image pull secrets (optional)
@@ -62,21 +62,17 @@ fullnameOverride: ""
 #
 # The secret name follows the pattern: {release-name}-auth
 # Example: If release name is "dkonsole", secret will be "dkonsole-auth"
+#
+# Setup mode uses a Kubernetes token provided in the UI.
+# Helm does not create ServiceAccounts or RBAC for setup.
+
+# Optional: create an empty placeholder Secret at install time.
+# Default is false: the application creates the Secret during Setup Mode.
+authSecret:
+  create: false
 
 # -----------------------------------------------------------------------------
-# 4. Service Account Configuration
-# -----------------------------------------------------------------------------
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
-
-# -----------------------------------------------------------------------------
-# 5. Pod Configuration
+# 4. Pod Configuration
 # -----------------------------------------------------------------------------
 # Pod annotations (optional)
 podAnnotations: {}
@@ -91,19 +87,19 @@ podSecurityContext:
 securityContext: {}
 
 # -----------------------------------------------------------------------------
-# 6. Service Configuration
+# 5. Service Configuration
 # -----------------------------------------------------------------------------
 service:
   type: ClusterIP
   port: 8080
 
 # -----------------------------------------------------------------------------
-# 7. Replica Configuration
+# 6. Replica Configuration
 # -----------------------------------------------------------------------------
 replicaCount: 1
 
 # -----------------------------------------------------------------------------
-# 8. Resource Limits and Requests
+# 7. Resource Limits and Requests
 # -----------------------------------------------------------------------------
 resources:
   limits:
@@ -114,7 +110,7 @@ resources:
     memory: 128Mi
 
 # -----------------------------------------------------------------------------
-# 9. Autoscaling Configuration (Optional)
+# 8. Autoscaling Configuration (Optional)
 # -----------------------------------------------------------------------------
 autoscaling:
   enabled: false
@@ -123,7 +119,7 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
 
 # -----------------------------------------------------------------------------
-# 10. Node Selection and Scheduling
+# 9. Node Selection and Scheduling
 # -----------------------------------------------------------------------------
 # Node selector (optional)
 nodeSelector: {}
@@ -135,7 +131,7 @@ tolerations: []
 affinity: {}
 
 # -----------------------------------------------------------------------------
-# 11. Prometheus Integration (Optional)
+# 10. Prometheus Integration (Optional)
 # -----------------------------------------------------------------------------
 # Configure the Prometheus endpoint to enable historical metrics for Pods
 # If not set, the Metrics tab will not be displayed in Pod details
@@ -145,24 +141,3 @@ affinity: {}
 #   - Time range selector (1h, 6h, 12h, 1d, 7d, 15d)
 #   - Metrics tab in Pod details view
 prometheusUrl: ""
-
-# -----------------------------------------------------------------------------
-# 12. RBAC Permissions (Required for dashboard functionality)
-# -----------------------------------------------------------------------------
-# FULL ACCESS to ALL resources (both cluster-scoped and namespaced) - allows importing ANY Kubernetes resource via YAML
-rbac:
-  create: true
-  # Cluster-wide resources - FULL ACCESS to create/update/delete cluster-scoped resources
-  # This allows importing ClusterRole, ClusterRoleBinding, PersistentVolume, StorageClass, etc.
-  clusterResources:
-    - apiGroups: ["*"]
-      resources: ["*"]
-      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  nonResourceURLs:
-    - "*"
-  # Namespaced resources - FULL ACCESS to all resources in all API groups
-  # This allows importing ANY Kubernetes resource via YAML
-  namespacedResources:
-    - apiGroups: ["*"]
-      resources: ["*"]
-      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

@@ -48,4 +48,3 @@ app.kubernetes.io/name: {{ include "dkonsole.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
-

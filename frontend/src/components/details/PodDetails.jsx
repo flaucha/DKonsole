@@ -30,6 +30,9 @@ const PodDetails = ({ details, pod }) => {
     const [loadingEvents, setLoadingEvents] = useState(false);
     const containers = details.containers || [];
     const metrics = details.metrics || {};
+    const conditions = details.conditions || [];
+    const containerProbes = details.containerProbes || [];
+    const initContainerProbes = details.initContainerProbes || [];
     const terminalContainerRef = useRef(null);
     const logsContainerRef = useRef(null);
 
@@ -79,6 +82,75 @@ const PodDetails = ({ details, pod }) => {
     const isFullHeightTab = activeTab === 'logs' || activeTab === 'terminal';
     // Calculate height: viewport height minus header, tabs, and padding (approximately)
     const fullHeight = 'calc(100vh - 300px)';
+
+    const formatProbeHandler = (probe) => {
+        if (!probe || !probe.handler || !probe.handler.type) {
+            return 'Not configured';
+        }
+
+        const handler = probe.handler;
+        switch (handler.type) {
+            case 'exec': {
+                const command = Array.isArray(handler.command) ? handler.command.join(' ') : '';
+                return command ? `Exec: ${command}` : 'Exec';
+            }
+            case 'httpGet': {
+                const scheme = handler.scheme ? handler.scheme.toUpperCase() : 'HTTP';
+                const path = handler.path || '/';
+                const parts = [`${scheme} GET ${path}`];
+                if (handler.port) {
+                    parts.push(`port ${handler.port}`);
+                }
+                if (handler.host) {
+                    parts.push(`host ${handler.host}`);
+                }
+                return parts.join(' • ');
+            }
+            case 'tcpSocket': {
+                const parts = ['TCP'];
+                if (handler.port) {
+                    parts.push(`port ${handler.port}`);
+                }
+                if (handler.host) {
+                    parts.push(`host ${handler.host}`);
+                }
+                return parts.join(' • ');
+            }
+            case 'grpc': {
+                const parts = ['gRPC'];
+                if (handler.port) {
+                    parts.push(`port ${handler.port}`);
+                }
+                if (handler.service) {
+                    parts.push(`service ${handler.service}`);
+                }
+                return parts.join(' • ');
+            }
+            default:
+                return 'Not configured';
+        }
+    };
+
+    const formatProbeTiming = (probe) => {
+        if (!probe) {
+            return '';
+        }
+        const delay = probe.initialDelaySeconds ?? 0;
+        const timeout = probe.timeoutSeconds ?? 0;
+        const period = probe.periodSeconds ?? 0;
+        const success = probe.successThreshold ?? 0;
+        const failure = probe.failureThreshold ?? 0;
+        return `delay ${delay}s • timeout ${timeout}s • period ${period}s • success ${success} • failure ${failure}`;
+    };
+
+    const describeItems = [
+        { label: 'Status Reason', value: details.statusReason },
+        { label: 'Status Message', value: details.statusMessage },
+        { label: 'QoS Class', value: details.qosClass },
+        { label: 'Start Time', value: details.startTime ? formatDateTime(details.startTime) : '' },
+        { label: 'Service Account', value: details.serviceAccount },
+    ];
+    const hasDescribe = describeItems.some(item => item.value);
 
     return (
         <div className="mt-2 flex flex-col" style={{ height: isFullHeightTab ? fullHeight : 'auto' }}>
@@ -229,6 +301,147 @@ const PodDetails = ({ details, pod }) => {
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center">
+                                    <Activity size={16} className="mr-2" />
+                                    Describe Summary
+                                </h4>
+                                {hasDescribe ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                                        {describeItems.map(item => item.value ? (
+                                            <div key={item.label} className="text-gray-400">
+                                                <span className="text-gray-500">{item.label}:</span>{' '}
+                                                <span className="text-gray-200">{item.value}</span>
+                                            </div>
+                                        ) : null)}
+                                    </div>
+                                ) : (
+                                    <div className="text-gray-500 italic">No describe data available</div>
+                                )}
+                            </div>
+
+                            <div>
+                                <h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center">
+                                    <Activity size={16} className="mr-2" />
+                                    Pod Conditions
+                                </h4>
+                                {conditions.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {conditions.map((condition, idx) => {
+                                            const status = condition.status || 'Unknown';
+                                            const statusClass = status === 'True'
+                                                ? 'bg-green-900/30 text-green-400'
+                                                : status === 'False'
+                                                    ? 'bg-red-900/30 text-red-400'
+                                                    : 'bg-yellow-900/30 text-yellow-400';
+                                            return (
+                                                <div key={idx} className="p-3 bg-gray-800 rounded-md border border-gray-700">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <div className="flex items-center space-x-2">
+                                                            <span className="text-xs font-medium text-gray-200">{condition.type}</span>
+                                                            <span className={`px-2 py-0.5 text-xs rounded ${statusClass}`}>
+                                                                {status}
+                                                            </span>
+                                                            {condition.reason && (
+                                                                <span className="text-xs text-gray-400">{condition.reason}</span>
+                                                            )}
+                                                        </div>
+                                                        {condition.lastTransitionTime && (
+                                                            <div className="text-xs text-gray-500">
+                                                                Updated: {formatDateTimeShort(condition.lastTransitionTime)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {condition.message && (
+                                                        <div className="text-xs text-gray-400">{condition.message}</div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="text-gray-500 italic">No conditions available</div>
+                                )}
+                            </div>
+
+                            <div>
+                                <h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center">
+                                    <Activity size={16} className="mr-2" />
+                                    Probe Configuration
+                                </h4>
+                                {containerProbes.length === 0 && initContainerProbes.length === 0 ? (
+                                    <div className="text-gray-500 italic">No probe data available</div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {containerProbes.length > 0 && (
+                                            <div className="space-y-2">
+                                                <div className="text-xs uppercase tracking-wide text-gray-500">Containers</div>
+                                                {containerProbes.map((container, idx) => (
+                                                    <div key={idx} className="p-3 bg-gray-800 rounded-md border border-gray-700">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <span className="text-sm font-medium text-white">{container.name}</span>
+                                                            {container.image && (
+                                                                <span className="text-xs text-gray-500">{container.image}</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                                            {[
+                                                                { label: 'Readiness', probe: container.readinessProbe },
+                                                                { label: 'Liveness', probe: container.livenessProbe },
+                                                                { label: 'Startup', probe: container.startupProbe },
+                                                            ].map(({ label, probe }) => (
+                                                                <div key={label} className="text-xs text-gray-400">
+                                                                    <div className="text-[11px] uppercase tracking-wide text-gray-500 mb-1">{label}</div>
+                                                                    <div className="text-gray-200">{formatProbeHandler(probe)}</div>
+                                                                    {probe && (
+                                                                        <div className="text-[11px] text-gray-500 mt-1">
+                                                                            {formatProbeTiming(probe)}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {initContainerProbes.length > 0 && (
+                                            <div className="space-y-2">
+                                                <div className="text-xs uppercase tracking-wide text-gray-500">Init Containers</div>
+                                                {initContainerProbes.map((container, idx) => (
+                                                    <div key={idx} className="p-3 bg-gray-800 rounded-md border border-gray-700">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <span className="text-sm font-medium text-white">{container.name}</span>
+                                                            {container.image && (
+                                                                <span className="text-xs text-gray-500">{container.image}</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                                            {[
+                                                                { label: 'Readiness', probe: container.readinessProbe },
+                                                                { label: 'Liveness', probe: container.livenessProbe },
+                                                                { label: 'Startup', probe: container.startupProbe },
+                                                            ].map(({ label, probe }) => (
+                                                                <div key={label} className="text-xs text-gray-400">
+                                                                    <div className="text-[11px] uppercase tracking-wide text-gray-500 mb-1">{label}</div>
+                                                                    <div className="text-gray-200">{formatProbeHandler(probe)}</div>
+                                                                    {probe && (
+                                                                        <div className="text-[11px] text-gray-500 mt-1">
+                                                                            {formatProbeTiming(probe)}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>

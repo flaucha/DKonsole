@@ -3,10 +3,12 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 
@@ -175,6 +177,54 @@ func (s *ResourceListService) listPods(ctx context.Context, client kubernetes.In
 		// Process regular container statuses
 		processStatus(i.Status.ContainerStatuses)
 
+		var conditions []map[string]interface{}
+		for _, condition := range i.Status.Conditions {
+			info := map[string]interface{}{
+				"type":   string(condition.Type),
+				"status": string(condition.Status),
+			}
+			if condition.Reason != "" {
+				info["reason"] = condition.Reason
+			}
+			if condition.Message != "" {
+				info["message"] = condition.Message
+			}
+			if !condition.LastTransitionTime.IsZero() {
+				info["lastTransitionTime"] = condition.LastTransitionTime.Format(time.RFC3339)
+			}
+			if !condition.LastProbeTime.IsZero() {
+				info["lastProbeTime"] = condition.LastProbeTime.Format(time.RFC3339)
+			}
+			conditions = append(conditions, info)
+		}
+
+		var containerProbes []map[string]interface{}
+		for _, c := range i.Spec.Containers {
+			containerProbes = append(containerProbes, map[string]interface{}{
+				"name":           c.Name,
+				"image":          c.Image,
+				"readinessProbe": probeToInfo(c.ReadinessProbe),
+				"livenessProbe":  probeToInfo(c.LivenessProbe),
+				"startupProbe":   probeToInfo(c.StartupProbe),
+			})
+		}
+
+		var initContainerProbes []map[string]interface{}
+		for _, c := range i.Spec.InitContainers {
+			initContainerProbes = append(initContainerProbes, map[string]interface{}{
+				"name":           c.Name,
+				"image":          c.Image,
+				"readinessProbe": probeToInfo(c.ReadinessProbe),
+				"livenessProbe":  probeToInfo(c.LivenessProbe),
+				"startupProbe":   probeToInfo(c.StartupProbe),
+			})
+		}
+
+		startTime := ""
+		if i.Status.StartTime != nil && !i.Status.StartTime.IsZero() {
+			startTime = i.Status.StartTime.Format(time.RFC3339)
+		}
+
 		resources = append(resources, models.Resource{
 			Name:      i.Name,
 			Namespace: i.Namespace,
@@ -183,20 +233,98 @@ func (s *ResourceListService) listPods(ctx context.Context, client kubernetes.In
 			Created:   i.CreationTimestamp.Format(time.RFC3339),
 			UID:       string(i.UID),
 			Details: map[string]interface{}{
-				"node":              i.Spec.NodeName,
-				"ip":                i.Status.PodIP,
-				"restarts":          restarts,
-				"ready":             fmt.Sprintf("%d/%d", readyCount, totalContainers),
-				"readyCount":        readyCount,
-				"totalContainers":   totalContainers,
-				"containers":        containers,
-				"initContainers":    initContainerNames,
-				"containerStatuses": containerStatuses,
-				"metrics":           metricsMap[i.Name],
-				"labels":            i.Labels,
+				"node":                i.Spec.NodeName,
+				"ip":                  i.Status.PodIP,
+				"restarts":            restarts,
+				"ready":               fmt.Sprintf("%d/%d", readyCount, totalContainers),
+				"readyCount":          readyCount,
+				"totalContainers":     totalContainers,
+				"containers":          containers,
+				"initContainers":      initContainerNames,
+				"containerStatuses":   containerStatuses,
+				"containerProbes":     containerProbes,
+				"initContainerProbes": initContainerProbes,
+				"metrics":             metricsMap[i.Name],
+				"labels":              i.Labels,
+				"conditions":          conditions,
+				"statusReason":        i.Status.Reason,
+				"statusMessage":       i.Status.Message,
+				"qosClass":            string(i.Status.QOSClass),
+				"startTime":           startTime,
+				"serviceAccount":      i.Spec.ServiceAccountName,
 			},
 		})
 	}
 
 	return resources, nil
+}
+
+func probeToInfo(probe *corev1.Probe) map[string]interface{} {
+	if probe == nil {
+		return nil
+	}
+
+	info := map[string]interface{}{
+		"initialDelaySeconds": probe.InitialDelaySeconds,
+		"timeoutSeconds":      probe.TimeoutSeconds,
+		"periodSeconds":       probe.PeriodSeconds,
+		"successThreshold":    probe.SuccessThreshold,
+		"failureThreshold":    probe.FailureThreshold,
+	}
+
+	handler := map[string]interface{}{}
+	switch {
+	case probe.Exec != nil:
+		handler["type"] = "exec"
+		handler["command"] = probe.Exec.Command
+	case probe.HTTPGet != nil:
+		handler["type"] = "httpGet"
+		handler["path"] = probe.HTTPGet.Path
+		handler["port"] = formatIntOrString(probe.HTTPGet.Port)
+		if probe.HTTPGet.Host != "" {
+			handler["host"] = probe.HTTPGet.Host
+		}
+		if probe.HTTPGet.Scheme != "" {
+			handler["scheme"] = string(probe.HTTPGet.Scheme)
+		}
+		if len(probe.HTTPGet.HTTPHeaders) > 0 {
+			headers := make([]map[string]string, 0, len(probe.HTTPGet.HTTPHeaders))
+			for _, header := range probe.HTTPGet.HTTPHeaders {
+				headers = append(headers, map[string]string{
+					"name":  header.Name,
+					"value": header.Value,
+				})
+			}
+			handler["headers"] = headers
+		}
+	case probe.TCPSocket != nil:
+		handler["type"] = "tcpSocket"
+		handler["port"] = formatIntOrString(probe.TCPSocket.Port)
+		if probe.TCPSocket.Host != "" {
+			handler["host"] = probe.TCPSocket.Host
+		}
+	case probe.GRPC != nil:
+		handler["type"] = "grpc"
+		handler["port"] = probe.GRPC.Port
+		if probe.GRPC.Service != nil {
+			handler["service"] = *probe.GRPC.Service
+		}
+	}
+
+	if len(handler) > 0 {
+		info["handler"] = handler
+	}
+
+	return info
+}
+
+func formatIntOrString(value intstr.IntOrString) string {
+	switch value.Type {
+	case intstr.Int:
+		return strconv.Itoa(value.IntValue())
+	case intstr.String:
+		return value.StrVal
+	default:
+		return ""
+	}
 }

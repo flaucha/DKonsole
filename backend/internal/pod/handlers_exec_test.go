@@ -48,9 +48,9 @@ type MockEventRepository struct {
 	mock.Mock
 }
 
-func (m *MockEventRepository) GetEvents(ctx context.Context, namespace, podName string) ([]corev1.Event, error) {
+func (m *MockEventRepository) GetEvents(ctx context.Context, namespace, podName string) ([]EventInfo, error) {
 	args := m.Called(ctx, namespace, podName)
-	return args.Get(0).([]corev1.Event), args.Error(1)
+	return args.Get(0).([]EventInfo), args.Error(1)
 }
 
 // MockLogRepository

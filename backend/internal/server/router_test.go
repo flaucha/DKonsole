@@ -50,7 +50,7 @@ func newTestRouter(t *testing.T) (*http.ServeMux, *models.Handlers) {
 			Namespace: namespace,
 		},
 		Data: map[string][]byte{
-			"jwt-secret":          []byte("test-secret"),
+			"jwt-secret":          []byte(strings.Repeat("a", 32)),
 			"admin-username":      []byte("admin"),
 			"admin-password-hash": []byte("$argon2id$v=19$m=65536,t=1,p=2$hash$hash"), // Mock hash
 		},

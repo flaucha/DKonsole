@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2025-12-19
+
+### Added
+- **Pods**: Expanded diagnostics in Pod details (events, conditions, probe configuration).
+
+### Changed
+- **Helm**: Simplified chart defaults (setup uses token; no ServiceAccount/RBAC creation).
+- **UI/Logs**: Removed log color selector and use a single default color for readability.
+
+### Fixed
+- **Auth**: Fail-fast when the effective JWT secret is missing/invalid to prevent signing/validating with an empty key.
+- **Auth/Setup**: Treat an existing but incomplete auth Secret (missing `jwt-secret`) as Setup Mode instead of crashing on startup.
+- **Setup**: Prevent nil dereference in `/api/setup/status` when running without a Kubernetes-backed auth repository.
+- **Helm**: Stop creating a placeholder auth Secret by default (the app creates it during Setup Mode).
+- **Pods**: Event stream now includes `events.k8s.io` alongside core events for better diagnostics.
+
 ## [1.5.0] - 2025-12-17
 
 ### Added

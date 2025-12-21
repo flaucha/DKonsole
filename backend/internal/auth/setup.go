@@ -37,6 +37,20 @@ func (s *Service) SetupStatusHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
+	// If auth is configured via environment variables (no K8s repo), setup mode is not applicable.
+	// Return "setupRequired=false" to keep the UI flow stable and avoid nil dereferences.
+	s.mu.RLock()
+	k8sRepo := s.k8sRepo
+	k8sClientOK := s.k8sClient != nil
+	s.mu.RUnlock()
+	if k8sRepo == nil {
+		utils.JSONResponse(w, http.StatusOK, SetupStatusResponse{
+			SetupRequired:       false,
+			TokenUpdateRequired: false,
+		})
+		return
+	}
+
 	// Check if secret exists
 	exists, err := s.checkSecretExists(ctx)
 	tokenUpdateRequired := false
@@ -55,8 +69,8 @@ func (s *Service) SetupStatusHandler(w http.ResponseWriter, r *http.Request) {
 			// 3. Fixing incomplete secrets (like Helm deploy with missing JWT)
 			utils.LogWarn("Setup status check failed with auth error, defaulting to Full Setup mode", map[string]interface{}{
 				"error":     errStr,
-				"namespace": s.k8sRepo.namespace,
-				"client_ok": s.k8sClient != nil,
+				"namespace": k8sRepo.namespace,
+				"client_ok": k8sClientOK,
 			})
 			// tokenUpdateRequired remains false. !exists (which is true because err != nil) will trigger SetupRequired.
 		} else {
@@ -70,7 +84,7 @@ func (s *Service) SetupStatusHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Logic update: Even if secret exists, we must check if Admin User is set.
 	// If secret exists but no admin user, it's NOT a completed setup (e.g. Helm created secret with token only).
-	adminUser, _ := s.k8sRepo.GetAdminUser()
+	adminUser, _ := k8sRepo.GetAdminUser()
 
 	// Setup is required if:
 	// 1. Secret doesn't exist (!exists)

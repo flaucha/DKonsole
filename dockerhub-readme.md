@@ -43,7 +43,7 @@ Access at `http://localhost:8080`
 If the authentication secret does not exist, DKonsole automatically enters Setup Mode:
 
 1. Access the web interface
-2. Complete the setup form (admin username, password, optional JWT secret)
+2. Complete the setup form (admin username, password, optional JWT secret, and a Kubernetes token)
 3. Secret is created automatically in Kubernetes
 4. Service reloads configuration without pod restart
 5. Login with configured credentials
@@ -55,7 +55,6 @@ The secret name follows the pattern: `{release-name}-auth` (default: `dkonsole-a
 For production deployments, use the Helm chart. See the [GitHub repository](https://github.com/flaucha/DKonsole) for installation instructions and full documentation.
 
 The Helm chart handles:
-- ServiceAccount creation with RBAC permissions
 - Ingress configuration
 - Persistent volume for custom logos (optional)
 - Resource limits and requests
@@ -73,7 +72,7 @@ The Helm chart handles:
 - Argon2id password hashing with secure random salt
 - JWT sessions stored in HTTP-only cookies
 - Security headers middleware enabled
-- RBAC support via Kubernetes ServiceAccount
+- RBAC depends on the Kubernetes token configured during setup
 
 ## Volumes
 
@@ -96,7 +95,7 @@ Default Helm values:
 ## Tags
 
 - `latest`: Points to the most recent stable release
-- Version tags: `1.5.0`, `1.4.10`, `1.4.9`, etc.
+- Version tags: `1.5.1`, `1.5.0`, `1.4.10`, `1.4.9`, etc.
 
 See [Docker Hub tags](https://hub.docker.com/r/dkonsole/dkonsole/tags) for all available versions.
 

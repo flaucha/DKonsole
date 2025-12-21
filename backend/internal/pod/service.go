@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-
-	corev1 "k8s.io/api/core/v1"
 )
 
 // PodService provides business logic for pod-related operations.
@@ -27,27 +25,8 @@ func (s *PodService) GetPodEvents(ctx context.Context, namespace, podName string
 		return nil, fmt.Errorf("failed to get events: %w", err)
 	}
 
-	eventList := s.transformEvents(events)
-	s.sortEventsByLastSeen(eventList)
-
-	return eventList, nil
-}
-
-// transformEvents converts Kubernetes events to EventInfo DTOs
-func (s *PodService) transformEvents(events []corev1.Event) []EventInfo {
-	var eventList []EventInfo
-	for _, event := range events {
-		eventList = append(eventList, EventInfo{
-			Type:      event.Type,
-			Reason:    event.Reason,
-			Message:   event.Message,
-			Count:     event.Count,
-			FirstSeen: event.FirstTimestamp.Time,
-			LastSeen:  event.LastTimestamp.Time,
-			Source:    fmt.Sprintf("%s/%s", event.Source.Component, event.Source.Host),
-		})
-	}
-	return eventList
+	s.sortEventsByLastSeen(events)
+	return events, nil
 }
 
 // sortEventsByLastSeen sorts events by LastSeen timestamp

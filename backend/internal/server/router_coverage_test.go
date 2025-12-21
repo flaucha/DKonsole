@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -17,7 +18,7 @@ func addAuthHeader(t *testing.T, req *http.Request, claims models.Claims) *http.
 		RegisteredClaims: jwt.RegisteredClaims{},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, authClaims)
-	tokenString, err := token.SignedString([]byte("test-secret")) // Matches newTestRouter secret
+	tokenString, err := token.SignedString([]byte(strings.Repeat("a", 32))) // Matches newTestRouter secret
 	if err != nil {
 		t.Fatalf("failed to sign token: %v", err)
 	}

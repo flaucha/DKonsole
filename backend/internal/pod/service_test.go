@@ -6,32 +6,29 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // mockEventRepository is a mock implementation of EventRepository
 type mockEventRepository struct {
-	getEventsFunc func(ctx context.Context, namespace, podName string) ([]corev1.Event, error)
+	getEventsFunc func(ctx context.Context, namespace, podName string) ([]EventInfo, error)
 }
 
-func (m *mockEventRepository) GetEvents(ctx context.Context, namespace, podName string) ([]corev1.Event, error) {
+func (m *mockEventRepository) GetEvents(ctx context.Context, namespace, podName string) ([]EventInfo, error) {
 	if m.getEventsFunc != nil {
 		return m.getEventsFunc(ctx, namespace, podName)
 	}
-	return []corev1.Event{}, nil
+	return []EventInfo{}, nil
 }
 
 func TestPodService_GetPodEvents(t *testing.T) {
-	now := metav1.Now()
-	earlier := metav1.NewTime(now.Time.Add(-1 * time.Hour))
+	now := time.Now()
+	earlier := now.Add(-1 * time.Hour)
 
 	tests := []struct {
 		name            string
 		namespace       string
 		podName         string
-		getEventsFunc   func(ctx context.Context, namespace, podName string) ([]corev1.Event, error)
+		getEventsFunc   func(ctx context.Context, namespace, podName string) ([]EventInfo, error)
 		wantErr         bool
 		wantCount       int
 		wantFirstReason string // After sorting, most recent should be first
@@ -41,49 +38,25 @@ func TestPodService_GetPodEvents(t *testing.T) {
 			name:      "successful events retrieval",
 			namespace: "default",
 			podName:   "test-pod",
-			getEventsFunc: func(ctx context.Context, namespace, podName string) ([]corev1.Event, error) {
-				return []corev1.Event{
+			getEventsFunc: func(ctx context.Context, namespace, podName string) ([]EventInfo, error) {
+				return []EventInfo{
 					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "event-1",
-							Namespace: namespace,
-						},
-						Type:           corev1.EventTypeNormal,
-						Reason:         "Started",
-						Message:        "Container started",
-						Count:          1,
-						FirstTimestamp: earlier,
-						LastTimestamp:  earlier,
-						Source: corev1.EventSource{
-							Component: "kubelet",
-							Host:      "node1",
-						},
-						InvolvedObject: corev1.ObjectReference{
-							Kind:      "Pod",
-							Name:      podName,
-							Namespace: namespace,
-						},
+						Type:      "Normal",
+						Reason:    "Started",
+						Message:   "Container started",
+						Count:     1,
+						FirstSeen: earlier,
+						LastSeen:  earlier,
+						Source:    "kubelet/node1",
 					},
 					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "event-2",
-							Namespace: namespace,
-						},
-						Type:           corev1.EventTypeWarning,
-						Reason:         "Failed",
-						Message:        "Container failed",
-						Count:          2,
-						FirstTimestamp: earlier,
-						LastTimestamp:  now, // More recent
-						Source: corev1.EventSource{
-							Component: "kubelet",
-							Host:      "node1",
-						},
-						InvolvedObject: corev1.ObjectReference{
-							Kind:      "Pod",
-							Name:      podName,
-							Namespace: namespace,
-						},
+						Type:      "Warning",
+						Reason:    "Failed",
+						Message:   "Container failed",
+						Count:     2,
+						FirstSeen: earlier,
+						LastSeen:  now, // More recent
+						Source:    "kubelet/node1",
 					},
 				}, nil
 			},
@@ -95,8 +68,8 @@ func TestPodService_GetPodEvents(t *testing.T) {
 			name:      "empty events list",
 			namespace: "default",
 			podName:   "test-pod",
-			getEventsFunc: func(ctx context.Context, namespace, podName string) ([]corev1.Event, error) {
-				return []corev1.Event{}, nil
+			getEventsFunc: func(ctx context.Context, namespace, podName string) ([]EventInfo, error) {
+				return []EventInfo{}, nil
 			},
 			wantErr:   false,
 			wantCount: 0,
@@ -105,7 +78,7 @@ func TestPodService_GetPodEvents(t *testing.T) {
 			name:      "repository error",
 			namespace: "default",
 			podName:   "test-pod",
-			getEventsFunc: func(ctx context.Context, namespace, podName string) ([]corev1.Event, error) {
+			getEventsFunc: func(ctx context.Context, namespace, podName string) ([]EventInfo, error) {
 				return nil, errors.New("repository error")
 			},
 			wantErr: true,
@@ -115,23 +88,19 @@ func TestPodService_GetPodEvents(t *testing.T) {
 			name:      "events sorted by LastSeen (most recent first)",
 			namespace: "default",
 			podName:   "test-pod",
-			getEventsFunc: func(ctx context.Context, namespace, podName string) ([]corev1.Event, error) {
-				return []corev1.Event{
+			getEventsFunc: func(ctx context.Context, namespace, podName string) ([]EventInfo, error) {
+				return []EventInfo{
 					{
-						ObjectMeta:     metav1.ObjectMeta{Name: "event-1", Namespace: namespace},
-						Reason:         "OldEvent",
-						FirstTimestamp: earlier,
-						LastTimestamp:  earlier,
-						Source:         corev1.EventSource{Component: "kubelet", Host: "node1"},
-						InvolvedObject: corev1.ObjectReference{Kind: "Pod", Name: podName, Namespace: namespace},
+						Reason:    "OldEvent",
+						FirstSeen: earlier,
+						LastSeen:  earlier,
+						Source:    "kubelet/node1",
 					},
 					{
-						ObjectMeta:     metav1.ObjectMeta{Name: "event-2", Namespace: namespace},
-						Reason:         "NewEvent",
-						FirstTimestamp: earlier,
-						LastTimestamp:  now, // More recent
-						Source:         corev1.EventSource{Component: "kubelet", Host: "node1"},
-						InvolvedObject: corev1.ObjectReference{Kind: "Pod", Name: podName, Namespace: namespace},
+						Reason:    "NewEvent",
+						FirstSeen: earlier,
+						LastSeen:  now, // More recent
+						Source:    "kubelet/node1",
 					},
 				}, nil
 			},

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
@@ -23,6 +24,8 @@ func TestK8sEventRepository_GetEvents_Success(t *testing.T) {
 			Name:      "pod1",
 			Namespace: "ns",
 		},
+		Reason:  "Started",
+		Message: "Container started",
 	})
 	repo := NewK8sEventRepository(client)
 
@@ -30,7 +33,39 @@ func TestK8sEventRepository_GetEvents_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetEvents returned error: %v", err)
 	}
-	if len(events) != 1 || events[0].Name != "evt1" {
+	if len(events) != 1 || events[0].Reason != "Started" {
+		t.Fatalf("unexpected events: %+v", events)
+	}
+}
+
+func TestK8sEventRepository_GetEvents_CoreFailureUsesEventsV1(t *testing.T) {
+	client := k8sfake.NewSimpleClientset(&eventsv1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "evt1",
+			Namespace: "ns",
+		},
+		Reason: "Pulled",
+		Note:   "Container image pulled",
+		Regarding: corev1.ObjectReference{
+			Kind:      "Pod",
+			Name:      "pod1",
+			Namespace: "ns",
+		},
+	})
+	client.Fake.PrependReactor("list", "events", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		listAction, ok := action.(k8stesting.ListAction)
+		if ok && listAction.GetResource().Group == "" {
+			return true, nil, fmt.Errorf("core list failed")
+		}
+		return false, nil, nil
+	})
+	repo := NewK8sEventRepository(client)
+
+	events, err := repo.GetEvents(context.Background(), "ns", "pod1")
+	if err != nil {
+		t.Fatalf("GetEvents returned error: %v", err)
+	}
+	if len(events) != 1 || events[0].Reason != "Pulled" {
 		t.Fatalf("unexpected events: %+v", events)
 	}
 }
