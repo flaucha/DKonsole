@@ -18,6 +18,7 @@ var ldapDialer = func(url string, opts ...ldap.DialOpt) (LDAPConnection, error) 
 
 // prepareAuthentication validates the request and retrieves LDAP configuration
 func (s *Service) prepareAuthentication(ctx context.Context, username string) (*models.LDAPConfig, error) {
+	s.refreshRepoClient()
 	// Validate input
 	if err := validateLDAPUsername(username); err != nil {
 		utils.LogWarn("Invalid username format", map[string]interface{}{

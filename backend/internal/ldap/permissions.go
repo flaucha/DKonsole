@@ -12,6 +12,7 @@ import (
 // GetUserPermissions retrieves the permissions for a user based on their LDAP groups
 // If the user belongs to an admin group, returns empty permissions (admin has full access)
 func (s *Service) GetUserPermissions(ctx context.Context, username string) (map[string]string, error) {
+	s.refreshRepoClient()
 	// Get user groups first
 	groups, err := s.GetUserGroups(ctx, username)
 	if err != nil {

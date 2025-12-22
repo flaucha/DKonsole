@@ -36,6 +36,7 @@ type UpdateCredentialsRequest struct {
 
 // GetConfigHandler returns the current LDAP configuration
 func (s *Service) GetConfigHandler(w http.ResponseWriter, r *http.Request) {
+	s.refreshRepoClient()
 	config, err := s.repo.GetConfig(r.Context())
 	if err != nil {
 		utils.HandleErrorJSON(w, err, "Failed to get LDAP config", http.StatusInternalServerError, nil)
@@ -48,6 +49,7 @@ func (s *Service) GetConfigHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetLDAPStatusHandler returns whether LDAP is enabled (public endpoint for login page)
 func (s *Service) GetLDAPStatusHandler(w http.ResponseWriter, r *http.Request) {
+	s.refreshRepoClient()
 	config, err := s.repo.GetConfig(r.Context())
 	if err != nil {
 		// If error, assume LDAP is not enabled
@@ -64,6 +66,7 @@ func (s *Service) GetLDAPStatusHandler(w http.ResponseWriter, r *http.Request) {
 
 // UpdateConfigHandler updates the LDAP configuration
 func (s *Service) UpdateConfigHandler(w http.ResponseWriter, r *http.Request) {
+	s.refreshRepoClient()
 	var req UpdateConfigRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, "invalid request body")
@@ -115,6 +118,7 @@ func (s *Service) UpdateConfigHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetGroupsHandler returns the current LDAP groups configuration
 func (s *Service) GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
+	s.refreshRepoClient()
 	groups, err := s.repo.GetGroups(r.Context())
 	if err != nil {
 		utils.HandleErrorJSON(w, err, "Failed to get LDAP groups", http.StatusInternalServerError, nil)
@@ -126,6 +130,7 @@ func (s *Service) GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 
 // UpdateGroupsHandler updates the LDAP groups configuration
 func (s *Service) UpdateGroupsHandler(w http.ResponseWriter, r *http.Request) {
+	s.refreshRepoClient()
 	var req UpdateGroupsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.LogWarn("Failed to decode LDAP groups request", map[string]interface{}{
@@ -179,6 +184,7 @@ func (s *Service) UpdateGroupsHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetCredentialsHandler returns whether credentials are set and the username (but not the password)
 func (s *Service) GetCredentialsHandler(w http.ResponseWriter, r *http.Request) {
+	s.refreshRepoClient()
 	username, _, err := s.repo.GetCredentials(r.Context())
 	if err != nil {
 		utils.HandleErrorJSON(w, err, "Failed to get LDAP credentials", http.StatusInternalServerError, nil)
@@ -193,6 +199,7 @@ func (s *Service) GetCredentialsHandler(w http.ResponseWriter, r *http.Request) 
 
 // UpdateCredentialsHandler updates the LDAP credentials
 func (s *Service) UpdateCredentialsHandler(w http.ResponseWriter, r *http.Request) {
+	s.refreshRepoClient()
 	var req UpdateCredentialsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.ErrorResponse(w, http.StatusBadRequest, "invalid request body")

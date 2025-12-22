@@ -13,6 +13,7 @@ import (
 
 // GetUserGroups retrieves the groups for a user from LDAP
 func (s *Service) GetUserGroups(ctx context.Context, username string) ([]string, error) {
+	s.refreshRepoClient()
 	utils.LogInfo("GetUserGroups called", map[string]interface{}{
 		"username": username,
 	})
@@ -216,6 +217,7 @@ func (s *Service) getUserGroupsWithRepo(ctx context.Context, repo LDAPClientRepo
 
 // ValidateUserGroup checks if the user belongs to the required group (if configured)
 func (s *Service) ValidateUserGroup(ctx context.Context, username string) error {
+	s.refreshRepoClient()
 	utils.LogInfo("ValidateUserGroup called", map[string]interface{}{
 		"username": username,
 	})

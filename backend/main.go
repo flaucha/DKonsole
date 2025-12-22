@@ -181,6 +181,7 @@ func main() {
 	// Initialize LDAP service (non-blocking - will work even if LDAP is not configured)
 	ldapFactory := ldap.NewServiceFactory(clientset, secretName)
 	ldapService := ldapFactory.NewService()
+	ldapService.SetHandlersModel(handlersModel)
 
 	// Connect LDAP to auth service (non-blocking - will check if enabled on first login)
 	// We set it up here so it's available, but it won't block startup if LDAP is not configured

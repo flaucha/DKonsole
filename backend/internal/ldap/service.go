@@ -12,13 +12,35 @@ import (
 
 // Service provides business logic for LDAP operations
 type Service struct {
-	repo   Repository
-	client *LDAPClient
-	mu     sync.RWMutex
+	repo          Repository
+	client        *LDAPClient
+	handlersModel *models.Handlers
+	mu            sync.RWMutex
+}
+
+// SetHandlersModel wires the global handlers model for refreshing the K8s client.
+func (s *Service) SetHandlersModel(handlersModel *models.Handlers) {
+	s.handlersModel = handlersModel
+}
+
+func (s *Service) refreshRepoClient() {
+	repo, ok := s.repo.(*K8sRepository)
+	if !ok || s.handlersModel == nil {
+		return
+	}
+
+	s.handlersModel.RLock()
+	client := s.handlersModel.Clients["default"]
+	s.handlersModel.RUnlock()
+
+	if client != nil {
+		repo.client = client
+	}
 }
 
 // GetConfig returns the LDAP configuration (for internal use)
 func (s *Service) GetConfig(ctx context.Context) (*models.LDAPConfig, error) {
+	s.refreshRepoClient()
 	return s.repo.GetConfig(ctx)
 }
 
@@ -31,6 +53,7 @@ func NewService(repo Repository) *Service {
 
 // initializeClient initializes or updates the LDAP client with current config
 func (s *Service) initializeClient(ctx context.Context) error {
+	s.refreshRepoClient()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
