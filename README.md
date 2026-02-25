@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.5.3-green.svg)
+![Version](https://img.shields.io/badge/version-1.5.4-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -37,7 +37,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.5.3
+git checkout v1.5.4
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -147,16 +147,23 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.5.3"
+  tag: "1.5.4"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.5.3`
+- **Unified**: `dkonsole/dkonsole:1.5.4`
 
 ## 📝 Changelog
+
+### v1.5.4 (2026-02-25)
+**Security & CI Hardening**
+
+- **Security/Go**: Upgraded Go toolchain/runtime pinning to `1.25.7` across CI and build scripts.
+- **Security**: Fixed `govulncheck` pipeline failures caused by standard library vulnerabilities.
+- **CI**: Synchronized PR frontend test execution with OOM-safe CI settings and standardized backend Codecov upload configuration.
 
 ### v1.5.3 (2025-12-21)
 **LDAP Settings Fix**

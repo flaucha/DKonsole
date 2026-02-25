@@ -34,7 +34,7 @@ allowedOrigins: "https://dkonsole.lan"
 # -----------------------------------------------------------------------------
 image:
   repository: dkonsole/dkonsole
-  tag: "1.5.3"
+  tag: "1.5.4"
   pullPolicy: Always
 
 # Image pull secrets (optional)

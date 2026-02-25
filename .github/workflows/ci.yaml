@@ -21,7 +21,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.5'
+          go-version: '1.25.7'
 
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -43,10 +43,10 @@ jobs:
         working-directory: ./backend
         run: go vet ./...
 
-      - name: Install golangci-lint (built with Go 1.25.5)
+      - name: Install golangci-lint (built with Go 1.25.7)
         working-directory: ./backend
         env:
-          GOTOOLCHAIN: go1.25.5
+          GOTOOLCHAIN: go1.25.7
         run: |
           go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
 
@@ -73,7 +73,7 @@ jobs:
         uses: codecov/codecov-action@v5
         if: always()
         with:
-          file: ./backend/coverage.out
+          files: ./backend/coverage.out
           flags: backend
           name: backend-coverage
 

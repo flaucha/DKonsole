@@ -19,7 +19,7 @@ RUN npm run build
 RUN ls -la /app/frontend/dist/ || (echo "ERROR: Frontend build failed - dist directory not found" && exit 1)
 
 # Stage 2: Build Backend (align with go.mod 1.25)
-FROM golang:1.25.5-alpine AS backend-builder
+FROM golang:1.25.7-alpine AS backend-builder
 
 WORKDIR /app/backend
 

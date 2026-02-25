@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.4] - 2026-02-25
+
+### Changed
+- **Security/Go Toolchain**: Upgraded Go runtime and toolchain pinning from `1.25.5` to `1.25.7` across CI workflows, Docker build, and backend tooling scripts.
+
+### Fixed
+- **CI/Security**: Resolved `govulncheck` failures caused by Go standard library vulnerabilities (`GO-2026-4341`, `GO-2026-4340`, `GO-2026-4337`).
+- **CI/PR Checks**: Aligned frontend test execution with OOM-safe settings used in release CI and standardized backend Codecov upload settings.
+
 ## [1.5.3] - 2025-12-21
 
 ### Fixed

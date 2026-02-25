@@ -54,17 +54,17 @@ GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
 GO_MAJOR=$(echo $GO_VERSION | cut -d'.' -f1)
 GO_MINOR=$(echo $GO_VERSION | cut -d'.' -f2)
 
-# Verificar versión mínima requerida (Go 1.16+ para io/fs, pero el proyecto requiere 1.25.5)
+# Verificar versión mínima requerida (Go 1.16+ para io/fs, pero el proyecto requiere 1.25.7)
 if [ "$GO_MAJOR" -lt 1 ] || ([ "$GO_MAJOR" -eq 1 ] && [ "$GO_MINOR" -lt 16 ]); then
-    error "Go versión $GO_VERSION detectada. Se requiere Go 1.16 o superior (el proyecto requiere Go 1.25.5)"
+    error "Go versión $GO_VERSION detectada. Se requiere Go 1.16 o superior (el proyecto requiere Go 1.25.7)"
     echo ""
     echo "Opciones para actualizar Go:"
     echo "  1. Descargar desde https://go.dev/dl/"
     echo "  2. Usar g (gestor de versiones): go install github.com/voidint/g@latest"
-    echo "  3. Usar Docker: docker run --rm -v \$(pwd)/backend:/app -w /app golang:1.25.5-alpine go test ./..."
+    echo "  3. Usar Docker: docker run --rm -v \$(pwd)/backend:/app -w /app golang:1.25.7-alpine go test ./..."
     exit 1
 elif [ "$GO_MAJOR" -eq 1 ] && [ "$GO_MINOR" -lt 25 ]; then
-    warning "Go versión $GO_VERSION detectada. Se recomienda Go 1.25.5 o superior"
+    warning "Go versión $GO_VERSION detectada. Se recomienda Go 1.25.7 o superior"
     warning "Algunas características pueden no funcionar correctamente"
 fi
 
@@ -142,11 +142,11 @@ else
     if grep -q "malformed module path\|cannot load\|missing dot" /tmp/gomod_output.txt; then
         error "Error al descargar dependencias debido a versión incompatible de Go"
         error "Tu versión de Go ($GO_VERSION) es demasiado antigua"
-        error "Se requiere Go 1.16+ (recomendado: Go 1.25.5+)"
+        error "Se requiere Go 1.16+ (recomendado: Go 1.25.7+)"
         echo ""
         echo "Soluciones:"
         echo "  1. Actualizar Go: https://go.dev/dl/"
-        echo "  2. Usar g: go install github.com/voidint/g@latest && g install 1.25.5"
+        echo "  2. Usar g: go install github.com/voidint/g@latest && g install 1.25.7"
         echo "  3. Usar Docker (ver scripts/README_TESTS.md)"
         rm -f /tmp/gomod_output.txt
         exit 1
@@ -179,7 +179,7 @@ if [ "$RUN_VET" = true ]; then
         if grep -q "malformed module path\|cannot load\|missing dot" /tmp/govet_output.txt; then
             error "go vet falló debido a versión incompatible de Go"
             warning "Tu versión de Go ($GO_VERSION) es demasiado antigua para este proyecto"
-            warning "Se requiere Go 1.16+ (recomendado: Go 1.25.5+)"
+            warning "Se requiere Go 1.16+ (recomendado: Go 1.25.7+)"
             echo ""
             info "Omitiendo go vet y continuando con los tests..."
             warning "Los tests pueden fallar si la versión de Go es incompatible"
