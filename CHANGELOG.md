@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.5] - 2026-02-25
+
+### Fixed
+- **Frontend/Security**: Updated `frontend/package-lock.json` with `npm audit fix` to remediate vulnerabilities reported in CI (`ajv`, `lodash`, `minimatch`, `react-router`).
+- **CI/Frontend**: Restored `npm audit --audit-level=high` passing in pipeline after dependency resolution updates.
+
 ## [1.5.4] - 2026-02-25
 
 ### Changed

@@ -27,7 +27,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: DKonsole API
-  version: 1.5.4
+  version: 1.5.5
 paths:
   /api/login:
     post:

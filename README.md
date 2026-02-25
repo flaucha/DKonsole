@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.5.4-green.svg)
+![Version](https://img.shields.io/badge/version-1.5.5-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -37,7 +37,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.5.4
+git checkout v1.5.5
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -147,16 +147,22 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.5.4"
+  tag: "1.5.5"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.5.4`
+- **Unified**: `dkonsole/dkonsole:1.5.5`
 
 ## 📝 Changelog
+
+### v1.5.5 (2026-02-25)
+**Frontend Security Dependencies**
+
+- **Frontend**: Applied `npm audit fix` and updated lockfile to remove known vulnerabilities (`ajv`, `lodash`, `minimatch`, `react-router`).
+- **CI**: `npm audit --audit-level=high` passes again in frontend pipeline.
 
 ### v1.5.4 (2026-02-25)
 **Security & CI Hardening**
