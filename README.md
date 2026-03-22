@@ -68,13 +68,40 @@ After applying the manifest, access the web interface to complete the initial se
 
 2. **Access the web interface** via port-forward or your ingress URL
 
-3. **Complete the setup form**:
+3. **Create a Kubernetes ServiceAccount token** and paste it into the setup form:
+   ```bash
+   kubectl -n dkonsole create serviceaccount dkonsole-admin
+
+   kubectl create clusterrolebinding dkonsole-admin \
+     --clusterrole=cluster-admin \
+     --serviceaccount=dkonsole:dkonsole-admin
+
+   kubectl -n dkonsole create token dkonsole-admin
+   ```
+
+   For Kubernetes versions without `kubectl create token`, you can generate a long-lived token with a Secret:
+   ```bash
+   kubectl -n dkonsole apply -f - <<'EOF'
+   apiVersion: v1
+   kind: Secret
+   metadata:
+     name: dkonsole-admin-token
+     annotations:
+       kubernetes.io/service-account.name: dkonsole-admin
+   type: kubernetes.io/service-account-token
+   EOF
+
+   kubectl -n dkonsole get secret dkonsole-admin-token -o jsonpath='{.data.token}' | base64 -d && echo
+   ```
+
+4. **Complete the setup form**:
    - Enter admin username
    - Enter admin password (minimum 8 characters)
+   - Paste the ServiceAccount token generated above
    - Optionally set a JWT secret (or leave empty for auto-generation)
    - Click "Complete Setup"
 
-4. **Login** with the credentials you configured
+5. **Login** with the credentials you configured
 
 The setup creates a Kubernetes secret (`{release-name}-auth`) automatically with:
 - Admin username
