@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.7] - 2026-03-22
+
+### Fixed
+- **CI/Trivy**: Replaced `aquasecurity/trivy-action` wrapper usage in filesystem/config scans with direct Trivy CLI Docker invocations after GitHub Actions started producing invalid/truncated SARIF output for clean scans.
+- **Release/Pipeline**: Cut a follow-up patch release so the tag pipeline runs with the corrected Trivy workflow definitions.
+
 ## [1.5.6] - 2026-03-22
 
 ### Fixed

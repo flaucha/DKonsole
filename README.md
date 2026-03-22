@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.5.6-green.svg)
+![Version](https://img.shields.io/badge/version-1.5.7-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -37,7 +37,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.5.6
+git checkout v1.5.7
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -147,16 +147,22 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.5.6"
+  tag: "1.5.7"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.5.6`
+- **Unified**: `dkonsole/dkonsole:1.5.7`
 
 ## 📝 Changelog
+
+### v1.5.7 (2026-03-22)
+**Trivy Workflow Fix**
+
+- **CI/Trivy**: Replaced `aquasecurity/trivy-action` wrapper usage in filesystem/config scans with direct Trivy CLI Docker invocations after GitHub Actions produced invalid SARIF for clean scans.
+- **Release/Pipeline**: Cut a follow-up patch release so the tag pipeline runs with the corrected workflow definitions.
 
 ### v1.5.6 (2026-03-22)
 **Security Scanner Fixes**
@@ -170,13 +176,6 @@ The official image is available at:
 
 - **Frontend**: Applied `npm audit fix` and updated lockfile to remove known vulnerabilities (`ajv`, `lodash`, `minimatch`, `react-router`).
 - **CI**: `npm audit --audit-level=high` passes again in frontend pipeline.
-
-### v1.5.4 (2026-02-25)
-**Security & CI Hardening**
-
-- **Security/Go**: Upgraded Go toolchain/runtime pinning from `1.25.5` to `1.25.7` across CI workflows, Docker build, and backend tooling scripts.
-- **Security**: Fixed `govulncheck` pipeline failures caused by standard library vulnerabilities.
-- **CI**: Synchronized PR frontend test execution with OOM-safe CI settings and standardized backend Codecov upload configuration.
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 
