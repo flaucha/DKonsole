@@ -43,17 +43,23 @@ Perform the following file updates precisely.
   - Remove the oldest version entry if there are more than 3 versions.
   - Keep the format consistent with CHANGELOG.md entries.
 
-### 2.4 Helm Chart
-- **File**: `helm/dkonsole/Chart.yaml`
-- **Action**: Update `version` and `appVersion` fields.
-- **File**: `helm/dkonsole/values.yaml`
-- **Action**: Update `image.tag` field.
+### 2.4 Deployment Manifest
+- **File**: `deploy/dkonsole.yaml`
+- **Action**: Update the image tag and installation examples to the new release.
+- **File**: `scripts/render-manifest.sh`
+- **Action**: Keep the raw-manifest renderer in sync if manifest structure changes.
 
-### 2.5 Swagger Documentation
+### 2.5 Helm Chart (Legacy Compatibility)
+- **File**: `helm/dkonsole/Chart.yaml`
+- **Action**: Update `version` and `appVersion` fields if the legacy chart is still kept in the repo.
+- **File**: `helm/dkonsole/values.yaml`
+- **Action**: Update `image.tag` field if the legacy chart is still kept in the repo.
+
+### 2.6 Swagger Documentation
 - **Task**: Ensure Swagger documentation is updated for the new release.
 - **Action**: Generate/Update Swagger docs if necessary and include them in the commit.
 
-### 2.6 Docker Hub README
+### 2.7 Docker Hub README
 - **File**: `dockerhub-readme.md`
 - **Action**: Update `dockerhub-readme.md` with the same format in each release.
   - Ensure version references in the Tags section are current (if applicable).
@@ -61,7 +67,7 @@ Perform the following file updates precisely.
   - The file will be automatically pushed to Docker Hub by the CI pipeline after the image is built.
 
 ## 3. Git Operations
-1. **Stage**: `git add VERSION CHANGELOG.md README.md dockerhub-readme.md helm/dkonsole/Chart.yaml helm/dkonsole/values.yaml`
+1. **Stage**: `git add VERSION CHANGELOG.md README.md dockerhub-readme.md deploy/dkonsole.yaml scripts/render-manifest.sh helm/dkonsole/Chart.yaml helm/dkonsole/values.yaml`
 2. **Commit**: `git commit -m "chore: release vVERSION"`
 3. **Push**: `git push origin main`
 4. **Tag**: `git tag -a vVERSION -m "Release vVERSION"`

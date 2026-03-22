@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-03-22
+
+### Added
+- **Deployment**: Added a single-file Kubernetes manifest in `deploy/dkonsole.yaml` for direct `kubectl apply` installs.
+- **Deployment**: Added `scripts/render-manifest.sh` so `DKONSOLE_DOMAIN` can inject an Ingress and matching `ALLOWED_ORIGINS` without Helm.
+
+### Changed
+- **Distribution**: Simplified the primary install path from Helm-first to manifest-first for easier raw GitHub installs.
+
 ## [1.5.7] - 2026-03-22
 
 ### Fixed

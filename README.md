@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.5.7-green.svg)
+![Version](https://img.shields.io/badge/version-1.6.0-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -29,61 +29,44 @@ Almost all this project, from backend to frontend and infrastructure code, was g
 
 ## 🚀 Quick Start
 
-### 1. Deploy with Helm
+### 1. Apply the Single Manifest
 
 ```bash
-# Add the repo (if applicable) or clone
-git clone https://github.com/flaucha/DKonsole.git
-cd DKonsole
+# Latest stable manifest install
+kubectl apply -f https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/deploy/dkonsole.yaml
 
-# Checkout the latest stable version
-git checkout v1.5.7
-
-# Configure ingress and allowedOrigins (at minimum)
-vim ./helm/dkonsole/values.yaml
-
-# Install
-helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
-
-# After installation, access the web interface to complete the initial setup
+# Access locally
+kubectl -n dkonsole port-forward svc/dkonsole 8080:8080
 ```
+
+### 2. Optional Ingress via `DKONSOLE_DOMAIN`
+
+If `DKONSOLE_DOMAIN` is defined, the renderer appends an `Ingress` and configures `ALLOWED_ORIGINS` for that host.
+
+```bash
+export DKONSOLE_DOMAIN=dkonsole.example.com
+
+bash <(curl -fsSL https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/scripts/render-manifest.sh) \
+  https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/deploy/dkonsole.yaml \
+  | kubectl apply -f -
+```
+
+Optional environment variables for the renderer:
+
+- `DKONSOLE_INGRESS_CLASS`: defaults to `nginx`
+- `DKONSOLE_ORIGIN_SCHEME`: defaults to `https`
 
 ## ⚙️ Configuration
 
-The `values.yaml` file is designed to be simple. You only need to configure the essentials:
+### 1. Initial Setup (Web Interface)
+After applying the manifest, access the web interface to complete the initial setup:
 
-### 1. Ingress (Required for external access)
-Configure your domain and TLS settings to access the dashboard.
-
-```yaml
-ingress:
-  enabled: true
-  className: "nginx"
-  annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-  hosts:
-    - host: dkonsole.lan
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: dkonsole-tls
-      hosts:
-        - dkonsole.lan
-
-# Required for setup mode via ingress (CORS)
-allowedOrigins: "https://dkonsole.lan"
-```
-
-### 2. Initial Setup (Web Interface)
-After deploying the Helm chart, access the web interface to complete the initial setup:
-
-1. **Deploy the chart** (no authentication configuration needed):
+1. **Deploy the manifest** (no authentication configuration needed):
    ```bash
-   helm install dkonsole ./helm/dkonsole -n dkonsole --create-namespace
+   kubectl apply -f https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/deploy/dkonsole.yaml
    ```
 
-2. **Access the web interface** via your ingress URL
+2. **Access the web interface** via port-forward or your ingress URL
 
 3. **Complete the setup form**:
    - Enter admin username
@@ -98,13 +81,14 @@ The setup creates a Kubernetes secret (`{release-name}-auth`) automatically with
 - Argon2-hashed password
 - JWT secret for session security
 
-**Note:** The secret is created automatically by the application. You don't need to configure authentication in Helm values.
+**Note:** The secret is created automatically by the application. You don't need to pre-create authentication data.
 
 ### 3. Prometheus Integration (Optional)
-Enable historical metrics by configuring your Prometheus endpoint.
+Enable historical metrics by adding `PROMETHEUS_URL` to the Deployment environment.
 
 ```yaml
-prometheusUrl: "http://prometheus-server.monitoring.svc.cluster.local:9090"
+- name: PROMETHEUS_URL
+  value: "http://prometheus-server.monitoring.svc.cluster.local:9090"
 ```
 
 **Features enabled with Prometheus:**
@@ -112,7 +96,7 @@ prometheusUrl: "http://prometheus-server.monitoring.svc.cluster.local:9090"
 - Time range selector (1 hour, 6 hours, 12 hours, 1 day, 7 days, 15 days)
 - Metrics tab in Pod details view
 
-**Note:** If `prometheusUrl` is not configured, the Metrics tab will not be displayed.
+**Note:** If `PROMETHEUS_URL` is not configured, the Metrics tab will not be displayed.
 
 ### 4. Security
 
@@ -141,22 +125,35 @@ trivy image dkonsole:test
 ```
 
 
-### 5. Docker Image (Optional)
-By default, it uses the official image. You can change tag or repository if needed.
+### 5. Manifest Details
+
+The single manifest installs:
+
+- Namespace `dkonsole`
+- Deployment `dkonsole`
+- ClusterIP Service `dkonsole`
+- Optional Ingress when `DKONSOLE_DOMAIN` is provided to the renderer
+
+If you need to customize the image manually, edit the manifest before applying it:
 
 ```yaml
-image:
-  repository: dkonsole/dkonsole
-  tag: "1.5.7"
+image: dkonsole/dkonsole:1.6.0
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.5.7`
+- **Unified**: `dkonsole/dkonsole:1.6.0`
 
 ## 📝 Changelog
+
+### v1.6.0 (2026-03-22)
+**Single Manifest Install**
+
+- **Deployment**: Added `deploy/dkonsole.yaml` for direct `kubectl apply` installs.
+- **Deployment**: Added `scripts/render-manifest.sh` to append an Ingress when `DKONSOLE_DOMAIN` is set.
+- **Docs**: Switched the primary installation guide from Helm to the single-manifest workflow.
 
 ### v1.5.7 (2026-03-22)
 **Trivy Workflow Fix**
@@ -170,12 +167,6 @@ The official image is available at:
 - **Frontend/Security**: Added npm overrides for `dompurify` and `flatted` and regenerated the lockfile so GitHub Actions `npm audit` passes again.
 - **Helm/Security**: Hardened the default container security context and mounted a writable `/tmp` volume so Trivy no longer flags the chart for missing `readOnlyRootFilesystem`.
 - **CI/Runtime Security**: Bumped Go/toolchain pins to `1.25.8`, moved Trivy actions off `@master`, and updated the runtime image to Alpine `3.22`.
-
-### v1.5.5 (2026-02-25)
-**Frontend Security Dependencies**
-
-- **Frontend**: Applied `npm audit fix` and updated lockfile to remove known vulnerabilities (`ajv`, `lodash`, `minimatch`, `react-router`).
-- **CI**: `npm audit --audit-level=high` passes again in frontend pipeline.
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 

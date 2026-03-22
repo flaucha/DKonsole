@@ -52,13 +52,20 @@ The secret name follows the pattern: `{release-name}-auth` (default: `dkonsole-a
 
 ## Kubernetes Deployment
 
-For production deployments, use the Helm chart. See the [GitHub repository](https://github.com/flaucha/DKonsole) for installation instructions and full documentation.
+For production deployments, use the single manifest:
 
-The Helm chart handles:
-- Ingress configuration
-- Persistent volume for custom logos (optional)
-- Resource limits and requests
-- Autoscaling (optional)
+```bash
+kubectl apply -f https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/deploy/dkonsole.yaml
+```
+
+If you want an ingress, define `DKONSOLE_DOMAIN` and render the manifest:
+
+```bash
+export DKONSOLE_DOMAIN=dkonsole.example.com
+bash <(curl -fsSL https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/scripts/render-manifest.sh) \
+  https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/deploy/dkonsole.yaml \
+  | kubectl apply -f -
+```
 
 ## Image Layers
 
@@ -86,7 +93,7 @@ The Helm chart handles:
 
 ## Resource Requirements
 
-Default Helm values:
+Default manifest resource values:
 - **CPU Request**: 100m
 - **CPU Limit**: 500m
 - **Memory Request**: 128Mi
@@ -95,7 +102,7 @@ Default Helm values:
 ## Tags
 
 - `latest`: Points to the most recent stable release
-- Version tags: `1.5.7`, `1.5.6`, `1.5.5`, `1.5.4`, etc.
+- Version tags: `1.6.0`, `1.5.7`, `1.5.6`, `1.5.5`, etc.
 
 See [Docker Hub tags](https://hub.docker.com/r/dkonsole/dkonsole/tags) for all available versions.
 
