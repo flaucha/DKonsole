@@ -34,7 +34,7 @@ allowedOrigins: "https://dkonsole.lan"
 # -----------------------------------------------------------------------------
 image:
   repository: dkonsole/dkonsole
-  tag: "1.5.5"
+  tag: "1.5.6"
   pullPolicy: Always
 
 # Image pull secrets (optional)
@@ -83,8 +83,13 @@ podSecurityContext:
   runAsGroup: 1000
   fsGroup: 2000
 
-# Container Security Context (optional)
-securityContext: {}
+# Container Security Context
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
 
 # -----------------------------------------------------------------------------
 # 5. Service Configuration

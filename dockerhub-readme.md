@@ -5,7 +5,7 @@ Modern Kubernetes dashboard built with AI. Provides a web interface to manage cl
 ## Image Information
 
 - **Repository**: `dkonsole/dkonsole`
-- **Base Image**: `alpine:3.19`
+- **Base Image**: `alpine:3.22`
 - **Port**: `8080`
 - **User**: Non-root (UID 1000, GID 1000)
 - **Health Check**: `/healthz` endpoint
@@ -63,8 +63,8 @@ The Helm chart handles:
 ## Image Layers
 
 - **Frontend Builder**: Node.js 22 Alpine - builds React application
-- **Backend Builder**: Go 1.25.7 Alpine - compiles Go backend
-- **Runtime**: Alpine 3.19 - minimal production image
+- **Backend Builder**: Go 1.25.8 Alpine 3.22 - compiles Go backend
+- **Runtime**: Alpine 3.22 - minimal production image
 
 ## Security
 
@@ -95,7 +95,7 @@ Default Helm values:
 ## Tags
 
 - `latest`: Points to the most recent stable release
-- Version tags: `1.5.5`, `1.5.2`, `1.5.1`, `1.5.0`, etc.
+- Version tags: `1.5.6`, `1.5.5`, `1.5.4`, `1.5.3`, etc.
 
 See [Docker Hub tags](https://hub.docker.com/r/dkonsole/dkonsole/tags) for all available versions.
 

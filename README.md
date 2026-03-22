@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.5.5-green.svg)
+![Version](https://img.shields.io/badge/version-1.5.6-green.svg)
 
 **DKonsole** is a modern, lightweight Kubernetes dashboard built with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
 
@@ -37,7 +37,7 @@ git clone https://github.com/flaucha/DKonsole.git
 cd DKonsole
 
 # Checkout the latest stable version
-git checkout v1.5.5
+git checkout v1.5.6
 
 # Configure ingress and allowedOrigins (at minimum)
 vim ./helm/dkonsole/values.yaml
@@ -147,16 +147,23 @@ By default, it uses the official image. You can change tag or repository if need
 ```yaml
 image:
   repository: dkonsole/dkonsole
-  tag: "1.5.5"
+  tag: "1.5.6"
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.5.5`
+- **Unified**: `dkonsole/dkonsole:1.5.6`
 
 ## 📝 Changelog
+
+### v1.5.6 (2026-03-22)
+**Security Scanner Fixes**
+
+- **Frontend/Security**: Added npm overrides for `dompurify` and `flatted` and regenerated the lockfile so GitHub Actions `npm audit` passes again.
+- **Helm/Security**: Hardened the default container security context and mounted a writable `/tmp` volume so Trivy no longer flags the chart for missing `readOnlyRootFilesystem`.
+- **CI/Runtime Security**: Bumped Go/toolchain pins to `1.25.8`, moved Trivy actions off `@master`, and updated the runtime image to Alpine `3.22`.
 
 ### v1.5.5 (2026-02-25)
 **Frontend Security Dependencies**
@@ -167,27 +174,9 @@ The official image is available at:
 ### v1.5.4 (2026-02-25)
 **Security & CI Hardening**
 
-- **Security/Go**: Upgraded Go toolchain/runtime pinning to `1.25.7` across CI and build scripts.
+- **Security/Go**: Upgraded Go toolchain/runtime pinning from `1.25.5` to `1.25.7` across CI workflows, Docker build, and backend tooling scripts.
 - **Security**: Fixed `govulncheck` pipeline failures caused by standard library vulnerabilities.
 - **CI**: Synchronized PR frontend test execution with OOM-safe CI settings and standardized backend Codecov upload configuration.
-
-### v1.5.3 (2025-12-21)
-**LDAP Settings Fix**
-
-- **LDAP**: Refresh Kubernetes client before reading/updating LDAP configuration so setup tokens work.
-
-### v1.5.2 (2025-12-21)
-**Prometheus Settings Fix**
-
-- **Settings/Prometheus**: Refresh Kubernetes client before reading/updating the Prometheus URL so setup tokens are honored.
-
-### v1.5.1 (2025-12-19)
-**Security Fixes**
-
-- **Security**: Fail-fast when JWT secret is missing/invalid and allow setup when auth Secret is incomplete.
-- **Helm/K8s**: Stop creating a placeholder auth Secret by default.
-- **Pods**: Expanded diagnostics with richer events, conditions, and probe visibility.
-- **UI/Logs**: Simplified log display with a single default color.
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 

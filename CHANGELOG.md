@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.6] - 2026-03-22
+
+### Fixed
+- **Frontend/Security**: Added npm overrides for `dompurify` and `flatted` and regenerated the lockfile so GitHub Actions `npm audit` passes again.
+- **Helm/Security**: Hardened the default container security context and mounted a writable `/tmp` volume so Trivy no longer flags the chart for missing `readOnlyRootFilesystem`.
+- **CI/Runtime Security**: Bumped Go/toolchain pins to `1.25.8`, moved Trivy actions off `@master`, and updated the runtime image to Alpine `3.22` to clear current scanner findings in CI and container builds.
+
 ## [1.5.5] - 2026-02-25
 
 ### Fixed

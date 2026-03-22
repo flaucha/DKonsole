@@ -21,7 +21,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.7'
+          go-version: '1.25.8'
 
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -43,10 +43,10 @@ jobs:
         working-directory: ./backend
         run: go vet ./...
 
-      - name: Install golangci-lint (built with Go 1.25.7)
+      - name: Install golangci-lint (built with Go 1.25.8)
         working-directory: ./backend
         env:
-          GOTOOLCHAIN: go1.25.7
+          GOTOOLCHAIN: go1.25.8
         run: |
           go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
 
@@ -135,7 +135,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.9.2
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -162,7 +162,7 @@ jobs:
           fetch-depth: 0  # Fetch all history for tags
 
       - name: Run Trivy vulnerability scanner on Dockerfile
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.9.2
         with:
           scan-type: 'config'
           scan-ref: '.'

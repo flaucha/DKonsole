@@ -19,7 +19,7 @@ RUN npm run build
 RUN ls -la /app/frontend/dist/ || (echo "ERROR: Frontend build failed - dist directory not found" && exit 1)
 
 # Stage 2: Build Backend (align with go.mod 1.25)
-FROM golang:1.25.7-alpine AS backend-builder
+FROM golang:1.25.8-alpine3.22 AS backend-builder
 
 WORKDIR /app/backend
 
@@ -35,7 +35,7 @@ ENV GOFLAGS=-mod=mod
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 # Stage 3: Final image
-FROM alpine:3.19
+FROM alpine:3.22
 
 RUN apk --no-cache add ca-certificates wget && \
     addgroup -S app && adduser -S -G app -u 1000 app

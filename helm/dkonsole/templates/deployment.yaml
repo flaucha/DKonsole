@@ -87,11 +87,15 @@ spec:
         - name: auth-volume
           mountPath: /etc/dkonsole/auth
           readOnly: true
+        - name: tmp-volume
+          mountPath: /tmp
       volumes:
       - name: auth-volume
         secret:
           secretName: {{ include "dkonsole.fullname" . }}-auth
           optional: true
+      - name: tmp-volume
+        emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

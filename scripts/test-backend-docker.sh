@@ -43,12 +43,12 @@ if [ ! -d "backend" ]; then
 fi
 
 info "Usando Docker para ejecutar tests del backend"
-info "Imagen: golang:1.25.7-alpine"
+info "Imagen: golang:1.25.8-alpine3.22"
 echo ""
 
 # Variables
-GO_VERSION="1.25.7"
-IMAGE="golang:${GO_VERSION}-alpine"
+GO_VERSION="1.25.8"
+IMAGE="golang:${GO_VERSION}-alpine3.22"
 COVERAGE=false
 MODULE=""
 VERBOSE=true

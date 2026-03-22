@@ -66,7 +66,7 @@ if [ "$SKIP_TESTS" = false ]; then
     # Backend Tests
     echo "📋 Testing Backend..."
     cd backend
-    export GOTOOLCHAIN=go1.25.7
+    export GOTOOLCHAIN=go1.25.8
 
     # Update go.mod
     echo "  🔄 Updating go.mod..."
@@ -85,7 +85,7 @@ if [ "$SKIP_TESTS" = false ]; then
     echo "  🔍 Running golangci-lint..."
     if ! command_exists golangci-lint || [[ "$(golangci-lint version 2>&1)" != *"go$(go version | grep -oP 'go\d+\.\d+')"* ]]; then
         echo "    Installing golangci-lint with current Go version..."
-        GOTOOLCHAIN=go1.25.7 go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+        GOTOOLCHAIN=go1.25.8 go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
     fi
     "$(go env GOPATH)/bin/golangci-lint" run --timeout=5m ./... || { echo "❌ golangci-lint failed"; exit 1; }
     echo "  ✅ golangci-lint passed"
@@ -97,7 +97,7 @@ if [ "$SKIP_TESTS" = false ]; then
         echo "  ✅ govulncheck passed (no vulnerabilities found)"
     else
         echo "  ⚠️  govulncheck not found, installing..."
-        GOTOOLCHAIN=go1.25.7 go install golang.org/x/vuln/cmd/govulncheck@latest
+        GOTOOLCHAIN=go1.25.8 go install golang.org/x/vuln/cmd/govulncheck@latest
         "$(go env GOPATH)/bin/govulncheck" ./... || { echo "❌ govulncheck found vulnerabilities"; exit 1; }
         echo "  ✅ govulncheck passed (no vulnerabilities found)"
     fi
