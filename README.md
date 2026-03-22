@@ -76,8 +76,14 @@ After applying the manifest, access the web interface to complete the initial se
      --clusterrole=cluster-admin \
      --serviceaccount=dkonsole:dkonsole-admin
 
+   # Short-lived token
    kubectl -n dkonsole create token dkonsole-admin
+
+   # Long-lived token request (for example, 1 year)
+   kubectl -n dkonsole create token dkonsole-admin --duration=8760h
    ```
+
+   `--duration` is subject to the maximum TTL allowed by your Kubernetes API server. If the cluster enforces a lower limit, the issued token may expire sooner.
 
    For Kubernetes versions without `kubectl create token`, you can generate a long-lived token with a Secret:
    ```bash
