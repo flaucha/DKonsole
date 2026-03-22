@@ -34,14 +34,8 @@ Perform the following file updates precisely.
 ### 2.3 README.md
 - **File**: `README.md`
 - **Action 1 (Badge)**: Update version badge regex `version-[0-9.]+-green` to `version-NEW_VERSION-green`.
-- **Action 2 (Checkout)**: Update git checkout command regex `git checkout v[0-9.]+` to `git checkout vNEW_VERSION`.
-- **Action 3 (Docker Tag)**: Update Docker tag regex `tag: "[0-9.]+"` to `tag: "NEW_VERSION"`.
-- **Action 4 (Image Ref)**: Update image reference regex `dkonsole:[0-9.]+` to `dkonsole:NEW_VERSION`.
-- **Action 5 (Changelog)**:
-  - **IMPORTANT**: The README changelog section must contain ONLY the last 3 versions (NEW_VERSION and the 2 previous ones).
-  - Add the new changelog entry at the top of the "Changelog" section.
-  - Remove the oldest version entry if there are more than 3 versions.
-  - Keep the format consistent with CHANGELOG.md entries.
+- **Action 2 (Manifest URLs)**: Update raw GitHub URLs that reference `v[0-9.]+` to `vNEW_VERSION`.
+- **Action 3 (Image Ref)**: Update image reference regex `dkonsole:[0-9.]+` to `dkonsole:NEW_VERSION`.
 
 ### 2.4 Deployment Manifest
 - **File**: `deploy/dkonsole.yaml`
@@ -49,17 +43,11 @@ Perform the following file updates precisely.
 - **File**: `scripts/render-manifest.sh`
 - **Action**: Keep the raw-manifest renderer in sync if manifest structure changes.
 
-### 2.5 Helm Chart (Legacy Compatibility)
-- **File**: `helm/dkonsole/Chart.yaml`
-- **Action**: Update `version` and `appVersion` fields if the legacy chart is still kept in the repo.
-- **File**: `helm/dkonsole/values.yaml`
-- **Action**: Update `image.tag` field if the legacy chart is still kept in the repo.
-
-### 2.6 Swagger Documentation
+### 2.5 Swagger Documentation
 - **Task**: Ensure Swagger documentation is updated for the new release.
 - **Action**: Generate/Update Swagger docs if necessary and include them in the commit.
 
-### 2.7 Docker Hub README
+### 2.6 Docker Hub README
 - **File**: `dockerhub-readme.md`
 - **Action**: Update `dockerhub-readme.md` with the same format in each release.
   - Ensure version references in the Tags section are current (if applicable).
@@ -67,7 +55,7 @@ Perform the following file updates precisely.
   - The file will be automatically pushed to Docker Hub by the CI pipeline after the image is built.
 
 ## 3. Git Operations
-1. **Stage**: `git add VERSION CHANGELOG.md README.md dockerhub-readme.md deploy/dkonsole.yaml scripts/render-manifest.sh helm/dkonsole/Chart.yaml helm/dkonsole/values.yaml`
+1. **Stage**: `git add VERSION CHANGELOG.md README.md dockerhub-readme.md deploy/dkonsole.yaml scripts/render-manifest.sh backend/main.go .github/workflows/*.yml docs/RELEASE.md`
 2. **Commit**: `git commit -m "chore: release vVERSION"`
 3. **Push**: `git push origin main`
 4. **Tag**: `git tag -a vVERSION -m "Release vVERSION"`
@@ -98,17 +86,7 @@ After the GitHub Actions pipeline completes (or manually):
    > [!IMPORTANT]
    > **Latest Tag**: The `latest` tag MUST be created and pushed for every release to ensure users can pull the most recent stable version.
 
-## 5. Cleanup (Optional - Periodic Maintenance)
-Periodically clean up test tags from Docker Hub to keep the repository clean:
-
-1. **Get Docker Hub token**: Create a token at https://hub.docker.com/settings/security
-2. **Run cleanup script**:
-   ```bash
-   ./scripts/cleanup-docker-tags.sh <docker_hub_username> <docker_hub_token>
-   ```
-   This will delete all tags containing "test" (case insensitive).
-
-## 6. Verification
+## 5. Verification
 - Monitor GitHub Actions for the tag push.
 - Verify Docker Hub for the new tag `dkonsole/dkonsole:VERSION`.
 - Verify Docker Hub for the updated `dkonsole/dkonsole:latest` tag.

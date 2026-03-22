@@ -1,10 +1,9 @@
 # DKonsole 
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![AI Generated](https://img.shields.io/badge/AI-Generated-100000?style=flat&logo=openai&logoColor=white)
-![Version](https://img.shields.io/badge/version-1.6.0-green.svg)
+![Version](https://img.shields.io/badge/version-2.0.0-green.svg)
 
-**DKonsole** is a modern, lightweight Kubernetes dashboard built with **Artificial Intelligence**. It provides an intuitive interface to manage your cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
+**DKonsole** is a modern, lightweight Kubernetes dashboard for managing cluster resources, viewing logs, opening exec sessions, editing YAML, and browsing historical metrics with optional Prometheus integration.
 
 <img width="1907" height="903" alt="image" src="https://github.com/user-attachments/assets/d9335687-7fed-4c74-bcff-47bdd7a1c9aa" />
 
@@ -12,10 +11,6 @@
 
 <img width="1917" height="867" alt="image" src="https://github.com/user-attachments/assets/54746925-0521-4847-b85a-0928e5d08055" />
 
-
-## 🤖 Built with AI
-
-Almost all this project, from backend to frontend and infrastructure code, was generated using advanced AI agents. It demonstrates the power of AI in modern software development.
 
 ## ✨ Features
 
@@ -33,7 +28,7 @@ Almost all this project, from backend to frontend and infrastructure code, was g
 
 ```bash
 # Latest stable manifest install
-kubectl apply -f https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/deploy/dkonsole.yaml
+kubectl apply -f https://raw.githubusercontent.com/flaucha/DKonsole/v2.0.0/deploy/dkonsole.yaml
 
 # Access locally
 kubectl -n dkonsole port-forward svc/dkonsole 8080:8080
@@ -46,8 +41,8 @@ If `DKONSOLE_DOMAIN` is defined, the renderer appends an `Ingress` and configure
 ```bash
 export DKONSOLE_DOMAIN=dkonsole.example.com
 
-bash <(curl -fsSL https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/scripts/render-manifest.sh) \
-  https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/deploy/dkonsole.yaml \
+bash <(curl -fsSL https://raw.githubusercontent.com/flaucha/DKonsole/v2.0.0/scripts/render-manifest.sh) \
+  https://raw.githubusercontent.com/flaucha/DKonsole/v2.0.0/deploy/dkonsole.yaml \
   | kubectl apply -f -
 ```
 
@@ -63,7 +58,7 @@ After applying the manifest, access the web interface to complete the initial se
 
 1. **Deploy the manifest** (no authentication configuration needed):
    ```bash
-   kubectl apply -f https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/deploy/dkonsole.yaml
+   kubectl apply -f https://raw.githubusercontent.com/flaucha/DKonsole/v2.0.0/deploy/dkonsole.yaml
    ```
 
 2. **Access the web interface** via port-forward or your ingress URL
@@ -109,7 +104,7 @@ After applying the manifest, access the web interface to complete the initial se
 
 5. **Login** with the credentials you configured
 
-The setup creates a Kubernetes secret (`{release-name}-auth`) automatically with:
+The setup creates a Kubernetes secret (`dkonsole-auth` by default; configurable with `AUTH_SECRET_NAME`) automatically with:
 - Admin username
 - Argon2-hashed password
 - JWT secret for session security
@@ -170,36 +165,18 @@ The single manifest installs:
 If you need to customize the image manually, edit the manifest before applying it:
 
 ```yaml
-image: dkonsole/dkonsole:1.6.0
+image: dkonsole/dkonsole:2.0.0
 ```
 
 ## 🐳 Docker Image
 
 The official image is available at:
 
-- **Unified**: `dkonsole/dkonsole:1.6.0`
+- **Unified**: `dkonsole/dkonsole:2.0.0`
 
 ## 📝 Changelog
 
-### v1.6.0 (2026-03-22)
-**Single Manifest Install**
-
-- **Deployment**: Added `deploy/dkonsole.yaml` for direct `kubectl apply` installs.
-- **Deployment**: Added `scripts/render-manifest.sh` to append an Ingress when `DKONSOLE_DOMAIN` is set.
-- **Docs**: Switched the primary installation guide from Helm to the single-manifest workflow.
-
-### v1.5.7 (2026-03-22)
-**Trivy Workflow Fix**
-
-- **CI/Trivy**: Replaced `aquasecurity/trivy-action` wrapper usage in filesystem/config scans with direct Trivy CLI Docker invocations after GitHub Actions produced invalid SARIF for clean scans.
-- **Release/Pipeline**: Cut a follow-up patch release so the tag pipeline runs with the corrected workflow definitions.
-
-### v1.5.6 (2026-03-22)
-**Security Scanner Fixes**
-
-- **Frontend/Security**: Added npm overrides for `dompurify` and `flatted` and regenerated the lockfile so GitHub Actions `npm audit` passes again.
-- **Helm/Security**: Hardened the default container security context and mounted a writable `/tmp` volume so Trivy no longer flags the chart for missing `readOnlyRootFilesystem`.
-- **CI/Runtime Security**: Bumped Go/toolchain pins to `1.25.8`, moved Trivy actions off `@master`, and updated the runtime image to Alpine `3.22`.
+Version `2.0.0` removes the deprecated repository Helm chart and keeps the single-manifest install as the supported distribution path.
 
 For the complete changelog, see [CHANGELOG.md](./CHANGELOG.md)
 
@@ -230,7 +207,7 @@ For questions or feedback, please contact: **flaucha@gmail.com**
 
 ## 🏗️ Arquitectura
 
-For detailed coding standards and contribution guidelines, please refer to [CODING_GUIDELINES.md](./CODING_GUIDELINES.md).
+For detailed coding standards and contribution guidelines, please refer to [docs/iacf/CODING_GUIDELINES.md](./docs/iacf/CODING_GUIDELINES.md).
 
 DKonsole utiliza una arquitectura orientada al dominio en el backend, organizando el código en módulos especializados dentro de `backend/internal/`:
 

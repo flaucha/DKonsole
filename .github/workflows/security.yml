@@ -6,8 +6,8 @@ on:
   pull_request:
     branches: [ main, develop ]
   schedule:
-    # Escaneo diario a las 2 AM
-    - cron: '0 2 * * *'
+    # Escaneo semanal los viernes a las 22:00 UTC
+    - cron: '0 22 * * 5'
 
 jobs:
   dependency-scan:

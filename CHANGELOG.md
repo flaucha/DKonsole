@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-03-22
+
+### Changed
+- **Distribution**: Removed the deprecated repository Helm chart. Supported Kubernetes installation is now the single manifest in `deploy/dkonsole.yaml`.
+- **Security/CI**: Reduced the scheduled security scan cadence from daily to weekly, running Friday nights.
+- **Maintenance**: Simplified release documentation and removed stale references to chart-specific release steps and missing helper scripts.
+
 ## [1.6.0] - 2026-03-22
 
 ### Added

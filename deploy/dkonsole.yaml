@@ -1,11 +1,11 @@
 # DKonsole single-manifest install
 # Plain apply:
-#   kubectl apply -f https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/deploy/dkonsole.yaml
+#   kubectl apply -f https://raw.githubusercontent.com/flaucha/DKonsole/v2.0.0/deploy/dkonsole.yaml
 #
 # Optional ingress rendering:
 #   DKONSOLE_DOMAIN=dkonsole.example.com \
-#   bash <(curl -fsSL https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/scripts/render-manifest.sh) \
-#     https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/deploy/dkonsole.yaml | kubectl apply -f -
+#   bash <(curl -fsSL https://raw.githubusercontent.com/flaucha/DKonsole/v2.0.0/scripts/render-manifest.sh) \
+#     https://raw.githubusercontent.com/flaucha/DKonsole/v2.0.0/deploy/dkonsole.yaml | kubectl apply -f -
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -58,7 +58,7 @@ spec:
         fsGroup: 2000
       containers:
         - name: dkonsole
-          image: dkonsole/dkonsole:1.6.0
+          image: dkonsole/dkonsole:2.0.0
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

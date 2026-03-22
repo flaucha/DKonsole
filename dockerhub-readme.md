@@ -1,6 +1,6 @@
 # DKonsole
 
-Modern Kubernetes dashboard built with AI. Provides a web interface to manage cluster resources, view logs, execute commands in pods, and monitor historical metrics with Prometheus integration.
+Modern Kubernetes dashboard for managing cluster resources, viewing logs, executing commands in pods, and monitoring historical metrics with optional Prometheus integration.
 
 ## Image Information
 
@@ -48,22 +48,22 @@ If the authentication secret does not exist, DKonsole automatically enters Setup
 4. Service reloads configuration without pod restart
 5. Login with configured credentials
 
-The secret name follows the pattern: `{release-name}-auth` (default: `dkonsole-auth`)
+The secret name defaults to `dkonsole-auth` and can be overridden with `AUTH_SECRET_NAME`.
 
 ## Kubernetes Deployment
 
 For production deployments, use the single manifest:
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/deploy/dkonsole.yaml
+kubectl apply -f https://raw.githubusercontent.com/flaucha/DKonsole/v2.0.0/deploy/dkonsole.yaml
 ```
 
 If you want an ingress, define `DKONSOLE_DOMAIN` and render the manifest:
 
 ```bash
 export DKONSOLE_DOMAIN=dkonsole.example.com
-bash <(curl -fsSL https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/scripts/render-manifest.sh) \
-  https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/deploy/dkonsole.yaml \
+bash <(curl -fsSL https://raw.githubusercontent.com/flaucha/DKonsole/v2.0.0/scripts/render-manifest.sh) \
+  https://raw.githubusercontent.com/flaucha/DKonsole/v2.0.0/deploy/dkonsole.yaml \
   | kubectl apply -f -
 ```
 
@@ -83,8 +83,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/flaucha/DKonsole/v1.6.0/scri
 
 ## Volumes
 
-- `/home/app/data`: Persistent storage for custom logos (optional, requires PVC)
-- `/home/app/.kube/config`: Kubernetes config file (for local testing, read-only recommended)
+- `/home/app/.kube/config`: Kubernetes config file for local testing (read-only recommended)
+- `/home/app/data`: Optional only for non-Kubernetes/local fallback logo storage
 
 ## Health Checks
 
@@ -102,7 +102,7 @@ Default manifest resource values:
 ## Tags
 
 - `latest`: Points to the most recent stable release
-- Version tags: `1.6.0`, `1.5.7`, `1.5.6`, `1.5.5`, etc.
+- Version tags: `2.0.0`, `1.6.0`, `1.5.7`, `1.5.6`, etc.
 
 See [Docker Hub tags](https://hub.docker.com/r/dkonsole/dkonsole/tags) for all available versions.
 

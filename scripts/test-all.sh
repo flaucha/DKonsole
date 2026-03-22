@@ -75,4 +75,4 @@ fi
 echo "========================================"
 echo -e "${GREEN}✅ Todos los tests completados${NC}"
 echo ""
-echo "Para más información, consulta TESTING.md"
+echo "Para más información, consulta README.md y los scripts de test en ./scripts"

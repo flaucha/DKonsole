@@ -1,5 +1,5 @@
 // @title DKonsole API
-// @version 1.6.0
+// @version 2.0.0
 // @description API para gestión de recursos Kubernetes y Helm releases
 // @termsOfService http://swagger.io/terms/
 
@@ -99,8 +99,8 @@ func main() {
 		utils.LogInfo("Starting in Setup Mode (no K8s client available)", nil)
 	}
 
-	// Initialize auth service with Kubernetes client
-	// Secret name follows Helm chart convention: {release-name}-auth, default: dkonsole-auth
+	// Initialize auth service with Kubernetes client.
+	// By default the authentication secret is named dkonsole-auth.
 	const defaultSecretName = "dkonsole-auth" // #nosec G101 -- This is a secret name, not a credential
 	secretName := os.Getenv("AUTH_SECRET_NAME")
 	if secretName == "" {
